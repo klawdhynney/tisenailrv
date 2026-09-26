@@ -3,14 +3,14 @@ import type { Regras, Ticket } from "./types";
 const MIN = 60 * 1000;
 
 function parseHM(hm: string) {
-  const [h, m] = hm.split(":").map(Number);
-  return (h || 0) * 60 + (m || 0);
+  const partes = (hm || "00:00").split(":");
+  return (Number(partes[0]) || 0) * 60 + (Number(partes[1]) || 0);
 }
 
 export function toDate(data: string, hora?: string | null) {
-  const [y, m, d] = data.split("-").map(Number);
-  const [hh, mm] = (hora || "00:00").split(":").map(Number);
-  return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0, 0);
+  const p = (data || "1970-01-01").split("-").map(Number);
+  const h = (hora || "00:00").split(":").map(Number);
+  return new Date(p[0] || 1970, (p[1] || 1) - 1, p[2] || 1, h[0] || 0, h[1] || 0, 0, 0);
 }
 
 function ymd(d: Date) {

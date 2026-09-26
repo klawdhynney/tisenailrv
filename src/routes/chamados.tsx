@@ -184,12 +184,17 @@ function Chamados() {
                         onChange={(e) => {
                           const status = e.target.value as Status;
                           const hoje = new Date();
-                          const patch: Record<string, unknown> = { status };
-                          if (status === "Resolvido" && !t.fechadoEm) {
-                            patch.fechadoEm = hoje.toISOString().slice(0, 10);
-                            patch.horario = hoje.toTimeString().slice(0, 5);
-                          }
-                          updateTicket(t.id, patch);
+                          const fechar = status === "Resolvido" && !t.fechadoEm;
+                          updateTicket(
+                            t.id,
+                            fechar
+                              ? {
+                                  status,
+                                  fechadoEm: `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`,
+                                  horario: hoje.toTimeString().slice(0, 5),
+                                }
+                              : { status },
+                          );
                         }}
                       >
                         {STATUS_LIST.map((s) => (

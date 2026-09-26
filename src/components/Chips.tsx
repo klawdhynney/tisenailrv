@@ -11,14 +11,16 @@ function Chip({ cor, children }: { cor: { bg: string; text: string }; children: 
   );
 }
 
+const NEUTRO = { bg: "#D9D9D9", text: "#1F1F1F" };
+
 export function PrioridadeChip({ valor }: { valor: Prioridade }) {
-  return <Chip cor={CORES_PRIORIDADE[valor] ?? CORES_SLA["—"]}>{valor}</Chip>;
+  return <Chip cor={CORES_PRIORIDADE[valor] ?? NEUTRO}>{valor}</Chip>;
 }
 
 export function StatusChip({ valor }: { valor: Status }) {
-  return <Chip cor={CORES_STATUS[valor] ?? CORES_SLA["—"]}>{valor}</Chip>;
+  return <Chip cor={CORES_STATUS[valor] ?? NEUTRO}>{valor}</Chip>;
 }
 
 export function SlaChip({ valor }: { valor: string }) {
-  return <Chip cor={CORES_SLA[valor] ?? CORES_SLA["—"]}>{valor}</Chip>;
+  return <Chip cor={CORES_SLA[valor] ?? NEUTRO}>{valor}</Chip>;
 }
