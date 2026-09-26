@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AbrirRouteImport } from './routes/abrir'
+import { Route as ChamadosRouteImport } from './routes/chamados'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const AbrirRoute = AbrirRouteImport.update({
   path: '/abrir',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChamadosRoute = ChamadosRouteImport.update({
+  id: '/chamados',
+  path: '/chamados',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/abrir': typeof AbrirRoute
+  '/chamados': typeof ChamadosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/abrir': typeof AbrirRoute
+  '/chamados': typeof ChamadosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/abrir': typeof AbrirRoute
+  '/chamados': typeof ChamadosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/abrir'
+  fullPaths: '/' | '/abrir' | '/chamados'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/abrir'
-  id: '__root__' | '/' | '/abrir'
+  to: '/' | '/abrir' | '/chamados'
+  id: '__root__' | '/' | '/abrir' | '/chamados'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AbrirRoute: typeof AbrirRoute
+  ChamadosRoute: typeof ChamadosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AbrirRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chamados': {
+      id: '/chamados'
+      path: '/chamados'
+      fullPath: '/chamados'
+      preLoaderRoute: typeof ChamadosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AbrirRoute: AbrirRoute,
+  ChamadosRoute: ChamadosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
