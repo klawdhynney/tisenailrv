@@ -218,17 +218,17 @@ function Dashboard() {
                   data={porProblema}
                   dataKey="value"
                   nameKey="name"
-                  innerRadius={55}
-                  outerRadius={110}
+                  innerRadius={50}
+                  outerRadius={95}
                   paddingAngle={2}
                   onClick={(d: { name?: string }) => d?.name && setFoco({ tipo: "problema", valor: d.name })}
-                  label={(p: { name?: string; percent?: number }) => `${p.name}: ${Math.round((p.percent ?? 0) * 100)}%`}
                 >
                   {porProblema.map((_, i) => (
                     <Cell key={i} fill={GOOGLE[i % GOOGLE.length]} cursor="pointer" />
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend verticalAlign="bottom" height={56} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -243,15 +243,15 @@ function Dashboard() {
                   data={porSetor}
                   dataKey="value"
                   nameKey="name"
-                  outerRadius={110}
+                  outerRadius={95}
                   onClick={(d: { name?: string }) => d?.name && setFoco({ tipo: "setor", valor: d.name })}
-                  label={(p: { name?: string; value?: number }) => `${p.name}: ${p.value}`}
                 >
                   {porSetor.map((_, i) => (
                     <Cell key={i} fill={GOOGLE[(i + 2) % GOOGLE.length]} cursor="pointer" />
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend verticalAlign="bottom" height={56} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
