@@ -33,17 +33,25 @@ const campoVazio = {
   prioridade: "Média" as Prioridade,
 };
 
+interface Erros {
+  solicitante?: string;
+  setor?: string;
+  local?: string;
+  categoria?: string;
+  descricao?: string;
+}
+
 function AbrirChamado() {
   const { regras, addTicket } = useStore();
   const navigate = useNavigate();
   const [form, setForm] = useState(campoVazio);
-  const [erros, setErros] = useState<Record<string, string>>({});
+  const [erros, setErros] = useState<Erros>({});
 
   const set = (k: keyof typeof campoVazio, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   function enviar(e: React.FormEvent) {
     e.preventDefault();
-    const novosErros: Record<string, string> = {};
+    const novosErros: Erros = {};
     if (!form.solicitante.trim()) novosErros.solicitante = "Informe seu nome.";
     if (!form.setor) novosErros.setor = "Escolha o setor.";
     if (form.local.trim().length < 3)
@@ -187,7 +195,7 @@ function AbrirChamado() {
   );
 }
 
-function Campo({ label, erro, children }: { label: string; erro?: string; children: React.ReactNode }) {
+function Campo({ label, erro, children }: { label: string; erro?: string | undefined; children: React.ReactNode }) {
   return (
     <div>
       <Label className="mb-2 block">{label}</Label>

@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Dados dos chamados
+Os chamados e as regras de SLA ficam em `src/lib/store.tsx` (contexto React + localStorage, semente em `src/data/tickets.seed.json`); o cálculo de SLA fica isolado em `src/lib/sla.ts` para que planilha e dashboard usem exatamente a mesma regra.
