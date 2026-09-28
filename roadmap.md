@@ -36,3 +36,10 @@ Avisos no Teams e Outlook permanecem adiados para outro upgrade.
 - [x] Mostrar no dashboard o andamento por número de chamado, sem nomes, contatos nem descrições; preservar detalhes completos apenas para o gestor e o dono do e-mail confirmado.
 - [x] Exigir e-mail sem exigir login para abrir chamado; permitir complementar chamado após confirmar a posse do e-mail por código ou acessar com Google/Microsoft.
 - [x] Destacar a marca SENAI em círculo ao lado do título e remover a marca d’água sem remover a foto tecnológica.
+## Refinamentos de apresentação e planilha
+
+- [ ] Ampliar a marca SENAI no banner e arredondar superfícies, planilhas, filtros e botões.
+- [ ] Reordenar a ação Ver chamado e permitir escolher colunas e filtros da planilha nas regras, com confirmação.
+- [ ] Atualizar atalhos e títulos dos gráficos e modernizar abertura e atendimento.
+- [ ] Mostrar prazo e situação do SLA no acompanhamento público sem expor dados pessoais.
+- [ ] Ativar correção ortográfica pt-BR nos textos e avaliar aprimoramento opcional por IA.
