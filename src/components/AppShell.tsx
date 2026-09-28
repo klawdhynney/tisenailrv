@@ -24,7 +24,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [aberto, setAberto] = useState(false);
   const [escuro, setEscuro] = useState(false);
   useEffect(() => { setEscuro(localStorage.getItem("tema-ti") === "escuro"); }, []);
-  useEffect(() => { document.documentElement.classList.toggle("dark", escuro); localStorage.setItem("tema-ti", escuro ? "escuro" : "claro"); }, [escuro]);
+  useEffect(() => { document.documentElement.classList.toggle("dark", escuro); }, [escuro]);
+  const alternarTema = () => setEscuro((atual) => {
+    const novo = !atual;
+    localStorage.setItem("tema-ti", novo ? "escuro" : "claro");
+    return novo;
+  });
   const { isGestor, session, sair } = useStore();
   const itens = [...navPublico, ...(isGestor ? navGestor : [])];
 
@@ -66,7 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="ml-auto hidden items-center gap-2 lg:flex">
             {links(false)}
             {botaoConta}
-             <Button variant="outline" size="icon" aria-label={escuro ? "Usar tema claro" : "Usar tema escuro"} title={escuro ? "Tema claro" : "Tema escuro"} onClick={() => setEscuro((v) => !v)}>{escuro ? <Sun className="size-4" /> : <Moon className="size-4" />}</Button>
+              <Button variant="outline" size="icon" aria-label={escuro ? "Usar tema claro" : "Usar tema escuro"} title={escuro ? "Tema claro" : "Tema escuro"} onClick={alternarTema}>{escuro ? <Sun className="size-4" /> : <Moon className="size-4" />}</Button>
           </nav>
            <Button variant="outline" size="icon" className="ml-auto lg:hidden"
             onClick={() => setAberto((v) => !v)}
@@ -80,7 +85,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="flex flex-col gap-2 border-t border-border bg-card p-3 lg:hidden">
             {links(true)}
             {botaoConta}
-             <Button variant="outline" onClick={() => setEscuro((v) => !v)}>{escuro ? <Sun className="size-4" /> : <Moon className="size-4" />}{escuro ? "Tema claro" : "Tema escuro"}</Button>
+              <Button variant="outline" onClick={alternarTema}>{escuro ? <Sun className="size-4" /> : <Moon className="size-4" />}{escuro ? "Tema claro" : "Tema escuro"}</Button>
           </nav>
         )}
       </header>

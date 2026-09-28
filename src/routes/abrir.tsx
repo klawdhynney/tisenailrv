@@ -13,7 +13,7 @@ import { PRIORIDADES, type Prioridade, CORES_PRIORIDADE } from "@/lib/types";
 export const Route = createFileRoute("/abrir")({
   head: () => ({
     meta: [
-      { title: "Abrir Chamado de TI | Central de Chamados" },
+      { title: "Abrir Chamado de TI | CENTRAL DE CHAMADOS DE TI SENAI LRV" },
       { name: "description", content: "Formulário simples para abrir um chamado de TI informando setor, local exato e descrição do problema." },
       { property: "og:title", content: "Abrir Chamado de TI" },
       { property: "og:description", content: "Registre seu chamado de TI em poucos segundos." },

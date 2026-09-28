@@ -30,7 +30,8 @@ export const importarChamados = createServerFn({ method: "POST" })
     for (const item of data) {
       const registro = { aberto_em: item.abertoEm, hora: item.hora, solicitante: item.solicitante, setor: item.setor, descricao: item.descricao };
       const fingerprint = chave(registro);
-      if ((item.id && ids.has(item.id)) || chaves.has(fingerprint)) { ignorados++; continue; }
+      // Imported numbering can collide with an unrelated ticket. Content is the deduplication key.
+      if (chaves.has(fingerprint)) { ignorados++; continue; }
       const payload = {
         ...registro, local: item.local, categoria: item.categoria || null,
         prioridade: item.prioridade, status: item.status, responsavel: item.responsavel ?? null,
