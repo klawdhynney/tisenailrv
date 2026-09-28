@@ -15,7 +15,7 @@ function data(v: unknown) {
 }
 function hora(v: unknown) {
   if (v instanceof Date) return `${String(v.getHours()).padStart(2, "0")}:${String(v.getMinutes()).padStart(2, "0")}`;
-  if (typeof v === "number") return `${String(Math.floor(v * 24) % 24).padStart(2, "0")}:${String(Math.round((v * 1440) % 60) % 60).padStart(2, "0")}`;
+  if (typeof v === "number") { const minutos = Math.round(((v % 1) + 1) % 1 * 1440) % 1440; return `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`; }
   return texto(v).match(/^\d{1,2}:\d{2}/)?.[0].padStart(5, "0") ?? "00:00";
 }
 
@@ -45,7 +45,7 @@ export async function lerPlanilha(file: File) {
         solicitante: texto(row["solicitante"]), setor: texto(row["setor"]) || "Não informado",
         local: texto(row["local"]), descricao, categoria: texto(row["categoria"]),
         prioridade, status: status ?? "Aberto", responsavel: texto(row["responsavel"]) || null,
-        fechadoEm: data(row["fechado em"]) || null, horario: texto(row["horario"]) || null,
+        fechadoEm: data(row["fechado em"]) || null, horario: row["horario"] === "" ? null : hora(row["horario"]),
         procedimento: texto(row["procedimento realizado"] ?? row["procedimento"]) || null,
         slaReiniciadoEm: texto(row["sla reiniciado em"]) || null,
       });
