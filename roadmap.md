@@ -23,3 +23,8 @@ Avisos no Teams e Outlook permanecem adiados para outro upgrade.
 - [x] Reposicionar os três indicadores ao lado do título.
 - [x] Usar a marca SENAI LRV enviada como marca d’água discreta, mantendo a imagem tecnológica.
 - [x] Preservar a autenticação da gestão para proteger dados pessoais e ações administrativas.
+
+## Contas de gestão
+
+- [x] Aceitar as três contas de gestor informadas, inclusive e-mails pessoais, sem perfil adicional.
+- [x] Restaurar o acesso Google além do Microsoft, mantendo chamados completos restritos aos gestores autenticados.

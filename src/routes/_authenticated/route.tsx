@@ -2,13 +2,12 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
-import { emailCorporativo, sessaoMicrosoft } from "@/lib/corporate";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user || !emailCorporativo(data.user.email) || !sessaoMicrosoft(data.user.app_metadata?.provider)) throw redirect({ to: "/auth" });
+    if (error || !data.user) throw redirect({ to: "/auth" });
     return { user: data.user };
   },
   component: AreaGestor,
@@ -23,7 +22,7 @@ function AreaGestor() {
         <ShieldAlert className="mx-auto h-10 w-10 text-[var(--g-yellow)]" />
         <h1 className="mt-4 text-xl font-bold">Acesso restrito à equipe de TI</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Sua conta ({session?.user.email}) ainda não tem permissão de gestor. Peça ao responsável pela TI para liberar seu acesso.
+          Sua conta ({session?.user.email}) não tem permissão de gestor. Entre com uma das contas autorizadas.
         </p>
       </div>
     );
