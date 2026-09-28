@@ -151,6 +151,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_ticket_information: {
+        Args: { additional_text: string; ticket_id: number }
+        Returns: boolean
+      }
       claim_manager_access: { Args: never; Returns: boolean }
       has_role: {
         Args: {
@@ -160,6 +164,21 @@ export type Database = {
         Returns: boolean
       }
       is_named_manager: { Args: never; Returns: boolean }
+      public_ticket_progress: {
+        Args: never
+        Returns: {
+          aberto_em: string
+          categoria: string
+          fechado_em: string
+          id: number
+          prioridade: string
+          status: string
+        }[]
+      }
+      verified_ticket_owner: {
+        Args: { ticket_email: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "gestor"

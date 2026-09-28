@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import { useStore } from "@/lib/store-context";
 import { PRIORIDADES, REGRAS_PADRAO, STATUS_LIST, type Periodo, type Status } from "@/lib/types";
 import { CORES_PRIORIDADE } from "@/lib/types";
@@ -26,28 +28,21 @@ export const Route = createFileRoute("/_authenticated/regras")({
 const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 function Regras() {
-  const { regras, setRegras } = useStore();
-
-  const salvar = (patch: Partial<typeof regras>) => setRegras({ ...regras, ...patch });
+  const { regras: regrasSalvas, setRegras } = useStore();
+  const [regras, setDraft] = useState(regrasSalvas);
+  useEffect(() => setDraft(regrasSalvas), [regrasSalvas]);
+  const salvar = (patch: Partial<typeof regras>) => setDraft(prev => ({ ...prev, ...patch }));
+  const alterado = JSON.stringify(regras) !== JSON.stringify(regrasSalvas);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Regras e prioridades</h1>
-          <p className="mt-1 text-muted-foreground">
-            Tudo o que for alterado aqui é aplicado imediatamente na planilha e no dashboard.
-          </p>
+          <p className="mt-1 text-muted-foreground">As alterações entram em vigor depois de salvar.</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => {
-            setRegras(REGRAS_PADRAO);
-            toast.success("Regras restauradas para o padrão.");
-          }}
-        >
-          <RotateCcw className="mr-2 h-4 w-4" /> Restaurar padrão
-        </Button>
+        <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setDraft(REGRAS_PADRAO)}><RotateCcw className="mr-2 h-4 w-4" /> Restaurar padrão</Button>
+        <ConfirmAction title="Salvar alterações nas regras?" description="Os prazos e as pausas de SLA serão atualizados após sua confirmação." confirmLabel="Sim, salvar regras" disabled={!alterado} onConfirm={async () => { const ok = await setRegras(regras); toast[ok ? "success" : "error"](ok ? "Regras salvas." : "Não foi possível salvar as regras."); }}>Salvar alterações</ConfirmAction></div>
       </div>
 
       <Card>

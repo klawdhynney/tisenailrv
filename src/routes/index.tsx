@@ -24,11 +24,10 @@ function Inicio() {
     <section className="relative isolate overflow-hidden rounded-md border border-border bg-card shadow-sm">
       <img src={labImage} alt="Ambiente de tecnologia e atendimento de TI" width={1536} height={768} className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-25 dark:opacity-15" />
       <div className="absolute inset-0 -z-10 bg-card/80" />
-      <img src={senaiAsset.url} alt="" aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 -z-10 hidden h-full w-1/2 object-contain object-center opacity-[0.07] sm:block dark:opacity-[0.1]" />
       <div className="grid min-h-[300px] gap-8 px-6 py-8 sm:px-12 sm:py-10 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.72fr)] lg:items-center">
         <div>
           <p className="inline-flex items-center gap-2 rounded-full bg-card/90 px-3 py-1 text-xs font-bold uppercase text-primary shadow-sm"><Activity className="size-4" /> Atendimento de TI · SENAI LRV</p>
-          <h1 className="mt-5 max-w-xl text-4xl font-bold leading-tight text-foreground sm:text-5xl">TI Senai LRV</h1>
+          <div className="mt-5 flex items-center gap-4"><img src={senaiAsset.url} alt="SENAI Lucas do Rio Verde" className="size-20 shrink-0 rounded-full border-2 border-border bg-card object-contain p-2 shadow-md sm:size-24" /><h1 className="max-w-xl text-4xl font-bold leading-tight text-foreground sm:text-5xl">TI Senai LRV</h1></div>
           <p className="mt-3 max-w-md text-base font-medium leading-relaxed text-foreground">Sua central para registrar problemas de tecnologia e acompanhar o atendimento da unidade.</p>
           <div className="mt-5 flex flex-wrap gap-3"><Button asChild size="lg" variant="google-green"><Link to="/abrir">Abrir chamado <ArrowRight /></Link></Button><Button asChild size="lg" variant="google-blue"><Link to="/dashboard">Ver dashboard <BarChart3 /></Link></Button></div>
         </div>

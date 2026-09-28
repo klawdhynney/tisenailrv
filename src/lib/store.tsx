@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { gestorAutorizado } from "./corporate";
 import { StoreContext } from "./store-context";
 import { REGRAS_PADRAO, type Regras, type Ticket, type Prioridade, type Status } from "./types";
 
@@ -71,13 +70,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     setAuthPronto(false);
     (async () => {
-      const eligible = gestorAutorizado(session?.user.email, session?.user.app_metadata?.provider);
-      if (eligible) await supabase.rpc("claim_manager_access");
-      const { data } = eligible
-        ? await supabase.from("user_roles").select("role").eq("user_id", uid).eq("role", "gestor").maybeSingle()
-        : { data: null };
+       await supabase.rpc("claim_manager_access");
+       const { data } = await supabase.rpc("is_named_manager");
         if (!ativo) return;
-        setIsGestor(!!data && eligible);
+         setIsGestor(data === true);
         setAuthPronto(true);
     })();
     return () => {
@@ -133,42 +129,41 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
   }, [isGestor, authPronto]);
 
-  const addTicket = useCallback(async (t: Omit<Ticket, "id">) => {
+  const addTicket = useCallback(async (t: Omit<Ticket, "id">, email: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     const payload = {
       ...toRow(t),
       // Public submissions are timestamped at the database, not by the visitor's device.
       aberto_em: undefined, hora: undefined,
       criado_por: user?.id ?? null,
-      solicitante_email: null,
+       solicitante_email: email.trim().toLowerCase(),
     };
     const { error } = await supabase.from("tickets").insert(payload as never);
     if (error) console.error("Falha ao registrar chamado", error.message);
     return !error;
   }, []);
 
-  const updateTicket = useCallback((id: number, patch: Partial<Ticket>) => {
-    setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
-    supabase.from("tickets").update(toRow(patch) as never).eq("id", id).then(({ error }) => {
-      if (error) console.error(error);
-    });
+   const updateTicket = useCallback(async (id: number, patch: Partial<Ticket>) => {
+     const { error } = await supabase.from("tickets").update(toRow(patch) as never).eq("id", id);
+     if (error) { console.error(error); return false; }
+     setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+     return true;
   }, []);
 
-  const removeTicket = useCallback((id: number) => {
-    setTickets((prev) => prev.filter((t) => t.id !== id));
-    supabase.from("tickets").delete().eq("id", id).then(({ error }) => {
-      if (error) console.error(error);
-    });
+   const removeTicket = useCallback(async (id: number) => {
+     const { error } = await supabase.from("tickets").delete().eq("id", id);
+     if (error) { console.error(error); return false; }
+     setTickets((prev) => prev.filter((t) => t.id !== id));
+     return true;
   }, []);
 
-  const setRegras = useCallback((r: Regras) => {
-    setRegrasState(r);
-    supabase
+   const setRegras = useCallback(async (r: Regras) => {
+     const { error } = await supabase
       .from("configuracoes")
-      .upsert({ id: 1, regras: r as never, updated_at: new Date().toISOString() })
-      .then(({ error }) => {
-        if (error) console.error(error);
-      });
+       .upsert({ id: 1, regras: r as never, updated_at: new Date().toISOString() });
+     if (error) { console.error(error); return false; }
+     setRegrasState(r);
+     return true;
   }, []);
 
   const sair = useCallback(async () => {

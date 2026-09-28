@@ -24,6 +24,7 @@ export const Route = createFileRoute("/abrir")({
 
 const campoVazio = {
   solicitante: "",
+  email: "",
   contato: "",
   setor: "",
   local: "",
@@ -33,6 +34,7 @@ const campoVazio = {
 
 interface Erros {
   solicitante?: string;
+  email?: string;
   setor?: string;
   local?: string;
   categoria?: string;
@@ -52,6 +54,7 @@ function AbrirChamado() {
     e.preventDefault();
     const novosErros: Erros = {};
     if (!form.solicitante.trim()) novosErros.solicitante = "Informe seu nome.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) novosErros.email = "Informe um e-mail válido.";
     if (!form.setor) novosErros.setor = "Escolha o setor.";
     if (form.local.trim().length < 3)
       novosErros.local = "Obrigatório: informe onde está o problema (sala, andar, bloco, pavilhão...).";
@@ -63,6 +66,7 @@ function AbrirChamado() {
       return;
     }
 
+    if (!window.confirm("Deseja realmente enviar este chamado? Confira os dados antes de confirmar.")) return;
     if (enviando) return;
     setEnviando(true);
     const ok = await addTicket({
@@ -80,7 +84,7 @@ function AbrirChamado() {
       fechadoEm: null,
       horario: null,
       procedimento: null,
-    });
+    }, form.email);
     setEnviando(false);
     if (!ok) {
       toast.error("Não foi possível registrar o chamado. Tente novamente.");
@@ -105,10 +109,13 @@ function AbrirChamado() {
               <Campo label="Seu nome *" erro={erros.solicitante}>
                 <Input value={form.solicitante} onChange={(e) => set("solicitante", e.target.value)} placeholder="Ex.: Maria Heloisa" />
               </Campo>
-              <Campo label="WhatsApp (opcional)">
-                <Input type="tel" value={form.contato} onChange={(e) => set("contato", e.target.value)} placeholder="Ex.: (65) 99999-9999" />
+              <Campo label="E-mail *" erro={erros.email}>
+                <Input type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="seu@email.com" />
               </Campo>
             </div>
+            <Campo label="WhatsApp (opcional)">
+              <Input type="tel" value={form.contato} onChange={(e) => set("contato", e.target.value)} placeholder="Ex.: (65) 99999-9999" />
+            </Campo>
 
             <div className="grid gap-5 sm:grid-cols-2">
               <Campo label="Setor *" erro={erros.setor}>
