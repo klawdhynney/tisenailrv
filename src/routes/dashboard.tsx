@@ -43,7 +43,16 @@ function Dashboard() {
   const [progressSize, setProgressSize] = useState(10);
   useEffect(() => {
     let mounted = true;
-    const load = async () => { const { data } = await supabase.rpc("public_ticket_progress"); if (mounted) setProgress(data ?? []); };
+    const load = async () => {
+      const all: typeof progress = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await supabase.rpc("public_ticket_progress").range(offset, offset + 999);
+        if (error) { console.error("Falha ao carregar andamento público", error.message); return; }
+        all.push(...(data ?? []));
+        if (!data || data.length < 1000) break;
+      }
+      if (mounted) setProgress(all);
+    };
     void load();
     const channel = supabase.channel("public-progress-refresh").on("postgres_changes", { event: "*", schema: "public", table: "ticket_public_stats" }, () => void load()).subscribe();
     return () => { mounted = false; void supabase.removeChannel(channel); };
