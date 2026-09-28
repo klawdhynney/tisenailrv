@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "Usuario corporativo abre chamado" ON public.tickets;
+CREATE POLICY "Usuario corporativo Microsoft abre chamado" ON public.tickets FOR INSERT TO authenticated WITH CHECK (auth.uid() = criado_por AND lower(solicitante_email) = lower(auth.jwt() ->> 'email') AND (lower(auth.jwt() ->> 'email') LIKE '%@senaimt.%' OR lower(auth.jwt() ->> 'email') LIKE '%@sesisenaimt.%') AND (auth.jwt() -> 'app_metadata' ->> 'provider') IN ('microsoft', 'azure') AND status = 'Aberto' AND responsavel IS NULL AND procedimento IS NULL AND fechado_em IS NULL);

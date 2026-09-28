@@ -30,7 +30,7 @@ import {
   type Prioridade,
 } from "@/lib/types";
 
-export const Route = createFileRoute("/_authenticated/dashboard")({
+export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard de Chamados de TI | Central de TI" },

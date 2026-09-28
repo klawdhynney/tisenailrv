@@ -15,6 +15,13 @@
       "when": 1790568621299,
       "tag": "0001_secure_microsoft_ticket_access_and_public_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790568664467,
+      "tag": "0002_require_microsoft_identity_for_ticket_creation",
+      "breakpoints": true
     }
   ]
 }
