@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790561043987,
+      "tag": "0000_chamados_e_gestor",
+      "breakpoints": true
+    }
+  ]
 }

@@ -65,7 +65,7 @@ function AbrirChamado() {
     }
 
     const agora = new Date();
-    const id = addTicket({
+    const ok = await addTicket({
       abertoEm: `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}-${String(agora.getDate()).padStart(2, "0")}`,
       hora: agora.toTimeString().slice(0, 5),
       solicitante: form.solicitante.trim(),
@@ -81,9 +81,13 @@ function AbrirChamado() {
       horario: null,
       procedimento: null,
     });
-    toast.success(`Chamado nº ${id} registrado! A TI já pode visualizar.`);
+    if (!ok) {
+      toast.error("Não foi possível registrar o chamado. Tente novamente.");
+      return;
+    }
+    toast.success("Chamado registrado! A equipe de TI já recebeu.");
     setForm(campoVazio);
-    navigate({ to: "/chamados" });
+    navigate({ to: "/" });
   }
 
   const prazo = regras.prazos[form.prioridade];
