@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { TextoAssistido } from "@/components/TextoAssistido";
 import { useStore } from "@/lib/store-context";
 import { PRIORIDADES, STATUS_LIST, type Ticket } from "@/lib/types";
 import { calcularSla, formatarData, formatarDataHora } from "@/lib/sla";
+import { sugerirPrioridade } from "@/lib/sugerir-prioridade.functions";
 
 export const Route = createFileRoute("/_authenticated/chamados/$ticketId")({
   head: () => ({ meta: [
@@ -31,6 +32,8 @@ function TicketDetail() {
 function TicketEditor({ ticket, regras, updateTicket }: { ticket: Ticket; regras: ReturnType<typeof useStore>["regras"]; updateTicket: ReturnType<typeof useStore>["updateTicket"] }) {
   const [draft, setDraft] = useState(ticket);
   const [saving, setSaving] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggested, setSuggested] = useState<Ticket["prioridade"] | null>(null);
   useEffect(() => setDraft(ticket), [ticket]);
   const sla = calcularSla(ticket, regras);
   const field = <K extends keyof Ticket>(key: K, value: Ticket[K]) => setDraft(prev => ({ ...prev, [key]: value }));
@@ -52,6 +55,12 @@ function TicketEditor({ ticket, regras, updateTicket }: { ticket: Ticket; regras
     finally { setSaving(false); }
   }
   const hasChanges = editable.some(k => draft[k] !== ticket[k]);
+  async function suggestPriority() {
+    setSuggesting(true);
+    try { setSuggested(await sugerirPrioridade({ data: { id: ticket.id } })); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível sugerir uma prioridade."); }
+    finally { setSuggesting(false); }
+  }
   return <div className="mx-auto max-w-4xl space-y-6">
     <Button asChild variant="outline"><Link to="/atendimento"><ArrowLeft className="size-4" /> Voltar à planilha</Link></Button>
     <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5"><div><h1 className="text-3xl font-bold">Chamado #{ticket.id}</h1><p className="mt-1 text-muted-foreground">Aberto em {formatarData(ticket.abertoEm, ticket.hora)} · Prazo: {formatarDataHora(sla.prazo)} · {sla.situacao}</p></div>
@@ -64,7 +73,7 @@ function TicketEditor({ ticket, regras, updateTicket }: { ticket: Ticket; regras
       <label className="grid gap-2 text-sm font-medium">Local exato<Input value={draft.local} onChange={e => field("local", e.target.value)} /></label>
       <label className="grid gap-2 text-sm font-medium">Categoria<select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.categoria ?? ""} onChange={e => field("categoria", e.target.value)}>{regras.categorias.map(c => <option key={c}>{c}</option>)}</select></label>
       <label className="grid gap-2 text-sm font-medium">Responsável<select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.responsavel ?? ""} onChange={e => field("responsavel", e.target.value || null)}><option value="">Não atribuído</option>{regras.responsaveis.map(r => <option key={r}>{r}</option>)}</select></label>
-      <label className="grid gap-2 text-sm font-medium">Prioridade<select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.prioridade} onChange={e => field("prioridade", e.target.value as Ticket["prioridade"])}>{PRIORIDADES.map(p => <option key={p}>{p}</option>)}</select></label>
+       <div className="space-y-2"><label className="grid gap-2 text-sm font-medium">Prioridade<select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.prioridade} onChange={e => field("prioridade", e.target.value as Ticket["prioridade"])}>{PRIORIDADES.map(p => <option key={p}>{p}</option>)}</select></label><Button type="button" size="sm" variant="outline" disabled={suggesting} onClick={suggestPriority}><Sparkles /> {suggesting ? "Analisando…" : "Sugerir prioridade com IA"}</Button>{suggested && <div className="flex flex-wrap items-center gap-2 text-sm">Sugestão: <strong>{suggested}</strong><Button size="sm" type="button" variant="google-green" onClick={() => { field("prioridade", suggested); setSuggested(null); }}>Aplicar no rascunho</Button></div>}</div>
       <label className="grid gap-2 text-sm font-medium">Status<select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.status} onChange={e => field("status", e.target.value as Ticket["status"])}>{STATUS_LIST.map(s => <option key={s}>{s}</option>)}</select></label>
     </div>
      <label className="grid gap-2 text-sm font-medium">Descrição<TextoAssistido value={draft.descricao} onChange={value => field("descricao", value)} /></label>
