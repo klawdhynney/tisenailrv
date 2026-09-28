@@ -118,8 +118,8 @@ function AbrirChamado() {
               </Campo>
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
-              <Campo label="Telefone / ramal (opcional)">
-                <Input value={form.contato} onChange={(e) => set("contato", e.target.value)} placeholder="Ex.: ramal 2045" />
+              <Campo label="WhatsApp (opcional)">
+                <Input type="tel" value={form.contato} onChange={(e) => set("contato", e.target.value)} placeholder="Ex.: (65) 99999-9999" />
               </Campo>
             </div>
 

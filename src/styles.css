@@ -152,3 +152,27 @@
     color: var(--color-foreground);
   }
 }
+
+@media print {
+  header, footer, .no-print {
+    display: none !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .dashboard-print {
+    color: black !important;
+  }
+
+  table {
+    font-size: 8px !important;
+  }
+}

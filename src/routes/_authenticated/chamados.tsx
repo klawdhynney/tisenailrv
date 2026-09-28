@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useRef } from "react";
-import { Download, Plus, Search, Trash2, Upload } from "lucide-react";
+import { Download, FileCode2, FileSpreadsheet, FileText, Plus, Printer, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { lerPlanilha } from "@/lib/importarExcel";
 import { importarChamados } from "@/lib/import.functions";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { PrioridadeChip, SlaChip, StatusChip } from "@/components/Chips";
 import { mesDoTicket, useStore } from "@/lib/store";
 import { calcularSla, formatarData, formatarDataHora, formatarDuracao } from "@/lib/sla";
+import { exportarCsv, exportarPdf, exportarXlsx, exportarXml, ticketsParaLinhas } from "@/lib/exportar";
 import {
   CORES_PRIORIDADE,
   CORES_STATUS,
@@ -77,23 +78,8 @@ function Chamados() {
       .map((t) => ({ t, sla: calcularSla(t, regras) }));
   }, [tickets, regras, mes, busca, fPrioridade, fStatus]);
 
-  function exportarCsv() {
-    const head = [
-      "Nº","Aberto em","Hora","Solicitante","Setor","Local","Descrição","Prioridade","Responsável","Status","Fechado em","Horário","Procedimento","Prazo do SLA","SLA",
-    ];
-    const linhasCsv = linhas.map(({ t, sla }) =>
-      [t.id, t.abertoEm, t.hora, t.solicitante, t.setor, t.local, t.descricao, t.prioridade, t.responsavel ?? "", t.status, t.fechadoEm ?? "", t.horario ?? "", t.procedimento ?? "", formatarDataHora(sla.prazo), sla.situacao]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(";"),
-    );
-    const blob = new Blob(["\uFEFF" + [head.join(";"), ...linhasCsv].join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Chamados_${mes}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+  const dadosExportacao = () => ticketsParaLinhas(linhas.map(({ t }) => t));
+  const nomeExportacao = `Chamados_${mes}`;
 
   return (
     <div>
@@ -104,12 +90,14 @@ function Chamados() {
             Uma aba por mês, com as mesmas configurações e cores automáticas.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="no-print flex flex-wrap gap-2">
           <input ref={arquivoRef} type="file" accept=".xlsx,.xls" className="hidden" aria-label="Arquivo Excel" onChange={(e) => importar(e.target.files?.[0])} />
           <Button variant="outline" disabled={importando} onClick={() => arquivoRef.current?.click()}><Upload className="mr-2 h-4 w-4" />{importando ? "Importando…" : "Importar Excel"}</Button>
-          <Button variant="outline" onClick={exportarCsv}>
-            <Download className="mr-2 h-4 w-4" /> Exportar CSV
-          </Button>
+          <Button variant="outline" onClick={() => exportarCsv(dadosExportacao(), nomeExportacao)}><Download /> CSV</Button>
+          <Button variant="outline" onClick={() => exportarXlsx(dadosExportacao(), nomeExportacao)}><FileSpreadsheet /> XLSX</Button>
+          <Button variant="outline" onClick={() => exportarXml(dadosExportacao(), nomeExportacao)}><FileCode2 /> XML</Button>
+          <Button variant="outline" onClick={() => exportarPdf(dadosExportacao(), nomeExportacao, `Planilha de chamados — ${mes}`)}><FileText /> PDF</Button>
+          <Button variant="outline" onClick={() => window.print()}><Printer /> Imprimir</Button>
           <Button asChild>
             <Link to="/abrir">
               <Plus className="mr-2 h-4 w-4" /> Novo chamado
@@ -118,16 +106,17 @@ function Chamados() {
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-1 border-b border-border">
+      <div className="no-print mt-6 flex flex-wrap gap-1 border-b border-border">
         {MESES_DISPONIVEIS.map((m, i) => {
           const cores = ["var(--g-blue)", "var(--g-red)", "var(--g-yellow)", "var(--g-green)"];
           const total = tickets.filter((t) => mesDoTicket(t) === m.key).length;
           const ativo = mes === m.key;
           return (
-            <button
+            <Button
+              variant="ghost"
               key={m.key}
               onClick={() => setMes(m.key)}
-              className="-mb-px rounded-t-lg border-b-4 px-4 py-2 text-sm font-semibold transition"
+              className="-mb-px h-auto rounded-t-lg border-b-4 px-4 py-2 text-sm font-semibold transition"
               style={{
                 borderColor: ativo ? cores[i % 4] : "transparent",
                 color: ativo ? cores[i % 4] : undefined,
@@ -135,14 +124,14 @@ function Chamados() {
               }}
             >
               {m.label} <span className="ml-1 text-xs text-muted-foreground">({total})</span>
-            </button>
+            </Button>
           );
         })}
       </div>
 
       <Card className="mt-4">
         <CardContent className="pt-6">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="no-print flex flex-wrap items-center gap-3">
             <div className="relative min-w-[220px] flex-1">
               <Search className="absolute top-2.5 left-3 h-4 w-4 text-muted-foreground" />
               <Input className="pl-9" placeholder="Buscar por descrição, solicitante, setor, local..." value={busca} onChange={(e) => setBusca(e.target.value)} />
@@ -176,10 +165,10 @@ function Chamados() {
                   <tr key={t.id} className={i % 2 ? "bg-muted/40" : ""}>
                     <td className="px-3 py-2 font-medium">{t.id}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{formatarData(t.abertoEm, t.hora)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{t.solicitante}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{t.setor}</td>
-                    <td className="px-3 py-2">{t.local || "—"}</td>
-                    <td className="max-w-[320px] px-3 py-2">{t.descricao}</td>
+                    <td className="px-3 py-2 whitespace-nowrap"><CelulaEditavel valor={t.solicitante} aoSalvar={(valor) => updateTicket(t.id, { solicitante: valor })} largura="w-36" /></td>
+                    <td className="px-3 py-2 whitespace-nowrap"><CelulaEditavel valor={t.setor} aoSalvar={(valor) => updateTicket(t.id, { setor: valor })} largura="w-32" /></td>
+                    <td className="px-3 py-2"><CelulaEditavel valor={t.local} aoSalvar={(valor) => updateTicket(t.id, { local: valor })} largura="w-44" /></td>
+                    <td className="max-w-[320px] px-3 py-2"><CelulaEditavel valor={t.descricao} aoSalvar={(valor) => updateTicket(t.id, { descricao: valor })} largura="w-64" /></td>
                     <td className="px-3 py-2">
                       <select
                         className="rounded-full px-2 py-1 text-xs font-semibold"
@@ -235,13 +224,15 @@ function Chamados() {
                       </div>
                     </td>
                     <td className="px-3 py-2">
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="text-muted-foreground hover:text-[var(--g-red)]"
                         title="Excluir chamado"
                         onClick={() => removeTicket(t.id)}
                       >
                         <Trash2 className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -269,4 +260,9 @@ function Chamados() {
       </Card>
     </div>
   );
+}
+
+function CelulaEditavel({ valor, aoSalvar, largura }: { valor: string; aoSalvar: (valor: string) => void; largura: string }) {
+  const [rascunho, setRascunho] = useState(valor);
+  return <input className={`${largura} rounded border border-transparent bg-transparent px-1 py-1 hover:border-input focus:border-input focus:outline-none`} value={rascunho} onChange={(e) => setRascunho(e.target.value)} onBlur={() => rascunho !== valor && aoSalvar(rascunho.trim())} />;
 }
