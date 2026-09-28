@@ -7,12 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
+import { emailCorporativo, sessaoMicrosoft } from "@/lib/corporate";
 import { PRIORIDADES, type Prioridade, CORES_PRIORIDADE } from "@/lib/types";
 
 export const Route = createFileRoute("/abrir")({
   head: () => ({
     meta: [
-      { title: "Abrir Chamado de TI | Central de Chamados" },
+      { title: "Abrir Chamado de TI | CENTRAL DE CHAMADOS DE TI SENAI LRV" },
       { name: "description", content: "Formulário simples para abrir um chamado de TI informando setor, local exato e descrição do problema." },
       { property: "og:title", content: "Abrir Chamado de TI" },
       { property: "og:description", content: "Registre seu chamado de TI em poucos segundos." },
@@ -42,7 +43,7 @@ interface Erros {
 }
 
 function AbrirChamado() {
-  const { regras, addTicket } = useStore();
+  const { regras, addTicket, session } = useStore();
   const navigate = useNavigate();
   const [form, setForm] = useState(campoVazio);
   const [erros, setErros] = useState<Erros>({});
@@ -51,6 +52,10 @@ function AbrirChamado() {
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
+    if (!session || !emailCorporativo(session.user.email) || !sessaoMicrosoft(session.user.app_metadata?.provider)) {
+      toast.error("Entre com sua conta Microsoft institucional para abrir um chamado.");
+      return;
+    }
     const novosErros: Erros = {};
     if (!form.solicitante.trim()) novosErros.solicitante = "Informe seu nome.";
     if (!form.setor) novosErros.setor = "Escolha o setor.";
@@ -95,11 +100,17 @@ function AbrirChamado() {
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="text-3xl font-bold tracking-tight">Abrir chamado de TI</h1>
-      <p className="mt-2 text-muted-foreground">
-        Preencha os campos abaixo. Quanto mais claro o local e a descrição, mais rápido o atendimento.
-      </p>
+      <p className="mt-2 text-muted-foreground">Preencha os campos abaixo. Quanto mais claro o local e a descrição, mais rápido o atendimento.</p>
+      {!session || !emailCorporativo(session.user.email) || !sessaoMicrosoft(session.user.app_metadata?.provider) ? (
+        <div className="mt-6 border-l-4 border-primary bg-muted p-5">
+          <p className="mb-4">Para abrir seu primeiro chamado, entre com um e-mail @senaimt ou @sesisenaimt da sua conta Microsoft.</p>
+          <Button onClick={() => navigate({ to: "/auth" })}>Entrar com Microsoft</Button>
+        </div>
+      ) : (
+        <p className="mt-4 text-sm text-muted-foreground">E-mail institucional: <strong className="text-foreground">{session.user.email}</strong></p>
+      )}
 
-      <Card className="mt-6">
+      {session && emailCorporativo(session.user.email) && sessaoMicrosoft(session.user.app_metadata?.provider) && <Card className="mt-6">
         <CardHeader>
           <CardTitle>Dados do chamado</CardTitle>
         </CardHeader>
@@ -194,7 +205,7 @@ function AbrirChamado() {
             </Button>
           </form>
         </CardContent>
-      </Card>
+      </Card>}
     </div>
   );
 }

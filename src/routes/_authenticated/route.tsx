@@ -2,12 +2,13 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
+import { emailCorporativo, sessaoMicrosoft } from "@/lib/corporate";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
+    if (error || !data.user || !emailCorporativo(data.user.email) || !sessaoMicrosoft(data.user.app_metadata?.provider)) throw redirect({ to: "/auth" });
     return { user: data.user };
   },
   component: AreaGestor,

@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { Download, Plus, Search, Trash2 } from "lucide-react";
+import { useMemo, useState, useRef } from "react";
+import { Download, Plus, Search, Trash2, Upload } from "lucide-react";
+import { toast } from "sonner";
+import { lerPlanilha } from "@/lib/importarExcel";
+import { importarChamados } from "@/lib/import.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -37,6 +40,20 @@ function Chamados() {
   const [busca, setBusca] = useState("");
   const [fPrioridade, setFPrioridade] = useState("Todas");
   const [fStatus, setFStatus] = useState("Todos");
+  const arquivoRef = useRef<HTMLInputElement>(null);
+  const [importando, setImportando] = useState(false);
+  async function importar(file?: File) {
+    if (!file) return;
+    setImportando(true);
+    try {
+      const { linhas, erros } = await lerPlanilha(file);
+      if (erros.length) { toast.error(`Importação cancelada: ${erros[0]}`); return; }
+      if (!linhas.length) { toast.error("Nenhuma linha de chamados encontrada."); return; }
+      const { inseridos, ignorados } = await importarChamados({ data: linhas });
+      toast.success(`${inseridos} importados; ${ignorados} já existentes ignorados.`);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Falha ao importar arquivo."); }
+    finally { setImportando(false); if (arquivoRef.current) arquivoRef.current.value = ""; }
+  }
 
   const linhas = useMemo(() => {
     return tickets
@@ -83,6 +100,8 @@ function Chamados() {
           </p>
         </div>
         <div className="flex gap-2">
+          <input ref={arquivoRef} type="file" accept=".xlsx,.xls" className="hidden" aria-label="Arquivo Excel" onChange={(e) => importar(e.target.files?.[0])} />
+          <Button variant="outline" disabled={importando} onClick={() => arquivoRef.current?.click()}><Upload className="mr-2 h-4 w-4" />{importando ? "Importando…" : "Importar Excel"}</Button>
           <Button variant="outline" onClick={exportarCsv}>
             <Download className="mr-2 h-4 w-4" /> Exportar CSV
           </Button>

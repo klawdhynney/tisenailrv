@@ -8,6 +8,34 @@
       "when": 1790561043987,
       "tag": "0000_chamados_e_gestor",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790568621299,
+      "tag": "0001_secure_microsoft_ticket_access_and_public_stats",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790568664467,
+      "tag": "0002_require_microsoft_identity_for_ticket_creation",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790568788189,
+      "tag": "0003_enable_realtime_public_ticket_aggregates",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790568803648,
+      "tag": "0004_enforce_microsoft_domain_for_manager_data",
+      "breakpoints": true
     }
   ]
 }

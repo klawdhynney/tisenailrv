@@ -32,12 +32,40 @@ export type Database = {
         }
         Relationships: []
       }
+      ticket_public_stats: {
+        Row: {
+          categoria: string
+          mes: string
+          prioridade: string
+          setor: string
+          status: string
+          total: number
+        }
+        Insert: {
+          categoria: string
+          mes: string
+          prioridade: string
+          setor: string
+          status: string
+          total: number
+        }
+        Update: {
+          categoria?: string
+          mes?: string
+          prioridade?: string
+          setor?: string
+          status?: string
+          total?: number
+        }
+        Relationships: []
+      }
       tickets: {
         Row: {
           aberto_em: string
           categoria: string | null
           contato: string | null
           created_at: string
+          criado_por: string | null
           descricao: string
           fechado_em: string | null
           hora: string
@@ -50,6 +78,7 @@ export type Database = {
           setor: string
           sla_reiniciado_em: string | null
           solicitante: string
+          solicitante_email: string | null
           status: string
           updated_at: string
         }
@@ -58,6 +87,7 @@ export type Database = {
           categoria?: string | null
           contato?: string | null
           created_at?: string
+          criado_por?: string | null
           descricao: string
           fechado_em?: string | null
           hora?: string
@@ -70,6 +100,7 @@ export type Database = {
           setor: string
           sla_reiniciado_em?: string | null
           solicitante: string
+          solicitante_email?: string | null
           status?: string
           updated_at?: string
         }
@@ -78,6 +109,7 @@ export type Database = {
           categoria?: string | null
           contato?: string | null
           created_at?: string
+          criado_por?: string | null
           descricao?: string
           fechado_em?: string | null
           hora?: string
@@ -90,6 +122,7 @@ export type Database = {
           setor?: string
           sla_reiniciado_em?: string | null
           solicitante?: string
+          solicitante_email?: string | null
           status?: string
           updated_at?: string
         }

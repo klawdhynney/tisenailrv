@@ -1,16 +1,17 @@
 import { Link } from "@tanstack/react-router";
-import { BarChart3, FilePlus2, Settings2, Table2, Home, Menu, Headset, LogIn, LogOut } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { BarChart3, FilePlus2, Settings2, Table2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
 
 const navPublico = [
   { to: "/", label: "Início", icon: Home, cor: "var(--g-blue)" },
   { to: "/abrir", label: "Abrir Chamado", icon: FilePlus2, cor: "var(--g-green)" },
+  { to: "/dashboard", label: "Dashboard", icon: BarChart3, cor: "var(--g-red)" },
 ] as const;
 
 const navGestor = [
   { to: "/atendimento", label: "Atendimento", icon: Headset, cor: "var(--g-green)" },
-  { to: "/dashboard", label: "Dashboard", icon: BarChart3, cor: "var(--g-red)" },
   { to: "/chamados", label: "Planilha", icon: Table2, cor: "var(--g-yellow)" },
   { to: "/regras", label: "Regras", icon: Settings2, cor: "var(--g-blue)" },
 ] as const;
@@ -21,6 +22,19 @@ const ativoCls = "border-[var(--g-blue)] bg-muted shadow-[0_0_16px_-4px_var(--g-
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [aberto, setAberto] = useState(false);
+  const [escuro, setEscuro] = useState(false);
+  useEffect(() => {
+    const salvo = localStorage.getItem("tema-ti") === "escuro";
+    document.documentElement.classList.toggle("dark", salvo);
+    setEscuro(salvo);
+  }, []);
+  useEffect(() => { document.documentElement.classList.toggle("dark", escuro); }, [escuro]);
+  const alternarTema = () => {
+    const novo = !document.documentElement.classList.contains("dark");
+    document.documentElement.classList.toggle("dark", novo);
+    localStorage.setItem("tema-ti", novo ? "escuro" : "claro");
+    setEscuro(novo);
+  };
   const { isGestor, session, sair } = useStore();
   const itens = [...navPublico, ...(isGestor ? navGestor : [])];
 
@@ -40,9 +54,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     ));
 
   const botaoConta = session ? (
-    <button onClick={() => sair()} className={linkCls}>
+    <Button variant="outline" onClick={() => sair()} className={linkCls}>
       <LogOut className="h-4 w-4 text-[var(--g-red)]" /> Sair
-    </button>
+    </Button>
   ) : (
     <Link to="/auth" className={linkCls}>
       <LogIn className="h-4 w-4 text-[var(--g-yellow)]" /> Área do gestor
@@ -57,31 +71,32 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="flex h-9 w-9 items-center justify-center rounded-xl border-2 border-[var(--g-blue)] bg-primary text-lg font-bold text-primary-foreground">
               TI
             </span>
-            <span className="hidden text-base font-semibold tracking-tight sm:block">Central de Chamados</span>
+             <span className="max-w-[200px] text-xs font-semibold leading-tight text-primary sm:max-w-none sm:text-sm">CENTRAL DE CHAMADOS DE TI SENAI LRV</span>
           </Link>
           <nav className="ml-auto hidden items-center gap-2 lg:flex">
             {links(false)}
             {botaoConta}
+              <Button variant="outline" size="icon" aria-label={escuro ? "Usar tema claro" : "Usar tema escuro"} title={escuro ? "Tema claro" : "Tema escuro"} onClick={alternarTema}>{escuro ? <Sun className="size-4" /> : <Moon className="size-4" />}</Button>
           </nav>
-          <button
-            className="ml-auto rounded-lg border-2 border-border p-2 hover:bg-muted lg:hidden"
+           <Button variant="outline" size="icon" className="ml-auto lg:hidden"
             onClick={() => setAberto((v) => !v)}
             aria-label="Abrir menu"
           >
             <Menu className="h-5 w-5" />
-          </button>
+           </Button>
         </div>
         <div className="h-1 w-full bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
         {aberto && (
           <nav className="flex flex-col gap-2 border-t border-border bg-card p-3 lg:hidden">
             {links(true)}
             {botaoConta}
+              <Button variant="outline" onClick={alternarTema}>{escuro ? <Sun className="size-4" /> : <Moon className="size-4" />}{escuro ? "Tema claro" : "Tema escuro"}</Button>
           </nav>
         )}
       </header>
       <main className="mx-auto max-w-7xl px-4 py-8">{children}</main>
       <footer className="mt-12 border-t border-border py-6 text-center text-xs text-muted-foreground">
-        Central de Chamados de TI
+         CENTRAL DE CHAMADOS DE TI SENAI LRV
       </footer>
     </div>
   );
