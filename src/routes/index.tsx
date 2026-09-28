@@ -1,33 +1,46 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, BarChart3, FilePlus2 } from "lucide-react";
+import { ArrowRight, BarChart3, FilePlus2, Table2, Settings2, Headset, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
+import labImage from "@/assets/technology-lab.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
-    { title: "CENTRAL DE CHAMADOS DE TI SENAI LRV | Início" },
-    { name: "description", content: "Abra um chamado de TI e acompanhe os indicadores públicos do SENAI LRV." },
-    { property: "og:title", content: "CENTRAL DE CHAMADOS DE TI SENAI LRV" },
-    { property: "og:description", content: "Abra um chamado de TI e acompanhe os indicadores públicos." },
+    { title: "TI Senai LRV | Início" },
+    { name: "description", content: "Abra chamados de TI e acompanhe os indicadores públicos do Senai LRV." },
+    { property: "og:title", content: "TI Senai LRV" },
+    { property: "og:description", content: "Abra chamados e acompanhe os indicadores públicos de atendimento." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
   ] }), component: Inicio,
 });
 
 function Inicio() {
-  const { publicStats } = useStore();
+  const { publicStats, isGestor } = useStore();
   const total = publicStats.reduce((n, r) => n + r.total, 0);
   const andamento = publicStats.filter((r) => !["Resolvido", "Cancelado"].includes(r.status)).reduce((n, r) => n + r.total, 0);
-  return <div className="space-y-12">
-    <section className="border-b-4 border-primary py-8 sm:py-12">
-      <p className="text-sm font-bold uppercase text-muted-foreground">Atendimento de TI • SENAI LRV</p>
-      <h1 className="mt-5 max-w-4xl text-4xl font-bold leading-tight text-primary sm:text-5xl">CENTRAL DE CHAMADOS DE TI SENAI LRV</h1>
-      <p className="mt-5 max-w-xl text-lg text-muted-foreground">Registre sua solicitação com a conta Microsoft institucional e acompanhe os indicadores de atendimento.</p>
-      <div className="mt-7 flex flex-wrap gap-3"><Button asChild size="lg"><Link to="/abrir">Abrir chamado <ArrowRight className="ml-2 size-4" /></Link></Button><Button asChild size="lg" variant="outline"><Link to="/dashboard">Ver dashboard</Link></Button></div>
+  const resolvidos = publicStats.filter((r) => r.status === "Resolvido").reduce((n, r) => n + r.total, 0);
+  return <div className="space-y-9">
+    <section className="relative isolate overflow-hidden rounded-md border border-border bg-card shadow-sm">
+      <img src={labImage} alt="Ambiente de tecnologia e atendimento de TI" width={1536} height={768} className="absolute inset-0 -z-10 h-full w-full object-cover object-center opacity-35 dark:opacity-20" />
+      <div className="min-h-[350px] px-6 py-10 sm:min-h-[390px] sm:px-12 sm:py-14">
+        <p className="inline-flex items-center gap-2 rounded-full bg-card/90 px-3 py-1 text-xs font-bold uppercase text-primary shadow-sm"><Activity className="size-4" /> Atendimento de TI · SENAI LRV</p>
+        <h1 className="mt-8 max-w-xl text-4xl font-bold leading-tight text-foreground sm:text-5xl">TI Senai LRV</h1>
+        <p className="mt-5 max-w-md text-base font-medium leading-relaxed text-foreground">Sua central para registrar problemas de tecnologia e acompanhar o atendimento da unidade.</p>
+        <div className="mt-7 flex flex-wrap gap-3"><Button asChild size="lg" variant="google-blue"><Link to="/abrir">Abrir chamado <ArrowRight /></Link></Button><Button asChild size="lg" variant="google-green"><Link to="/dashboard">Ver dashboard <BarChart3 /></Link></Button></div>
+      </div>
+      <div className="h-2 bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
     </section>
-    <div className="grid gap-5 sm:grid-cols-2">
-      <Link to="/abrir" className="group border-l-4 border-g-green bg-card p-6 transition-colors hover:bg-muted"><FilePlus2 className="size-7 text-g-green" /><h2 className="mt-4 text-xl font-semibold">Abrir chamado</h2><p className="mt-2 text-muted-foreground">Informe seu setor, local e o que precisa de atendimento.</p><ArrowRight className="mt-5 size-5 text-primary transition-transform group-hover:translate-x-1" /></Link>
-      <Link to="/dashboard" className="group border-l-4 border-g-blue bg-card p-6 transition-colors hover:bg-muted"><BarChart3 className="size-7 text-g-blue" /><h2 className="mt-4 text-xl font-semibold">Dashboard público</h2><p className="mt-2 text-muted-foreground">Acompanhe a evolução dos chamados sem expor informações pessoais.</p><ArrowRight className="mt-5 size-5 text-primary transition-transform group-hover:translate-x-1" /></Link>
+    <div className="grid gap-4 sm:grid-cols-3">
+      {[["Chamados registrados", total, "border-g-blue", "text-g-blue"], ["Em atendimento", andamento, "border-g-yellow", "text-g-yellow"], ["Resolvidos", resolvidos, "border-g-green", "text-g-green"]].map(([label, count, border, color]) => <div key={String(label)} className={`border-l-4 ${border} bg-card px-5 py-4 shadow-sm`}><strong className={`block text-3xl ${color}`}>{count}</strong><span className="text-sm text-muted-foreground">{label}</span></div>)}
     </div>
-    <div className="flex flex-wrap gap-12 border-t border-border py-7 text-sm"><p><strong className="block text-3xl text-primary">{total}</strong> chamados registrados</p><p><strong className="block text-3xl text-primary">{andamento}</strong> em atendimento</p></div>
+    <section className="border-t border-border pt-7"><h2 className="mb-5 text-xl font-bold">Acesso rápido</h2><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Acesso to="/abrir" icon={FilePlus2} titulo="Abrir chamado" descricao="Informe seu e-mail, local e problema." cor="border-g-blue" texto="text-g-blue" />
+      <Acesso to="/dashboard" icon={BarChart3} titulo="Dashboard público" descricao="Veja os números e gráficos de atendimento." cor="border-g-green" texto="text-g-green" />
+      {isGestor && <><Acesso to="/chamados" icon={Table2} titulo="Planilha de chamados" descricao="Consulte e importe os registros mensais." cor="border-g-yellow" texto="text-g-yellow" /><Acesso to="/regras" icon={Settings2} titulo="Regras e prioridades" descricao="Ajuste os prazos e o expediente." cor="border-g-red" texto="text-g-red" /><Acesso to="/atendimento" icon={Headset} titulo="Atendimento" descricao="Assuma e atualize os chamados." cor="border-g-blue" texto="text-g-blue" /></>}
+    </div></section>
   </div>;
+}
+
+function Acesso({ to, icon: Icon, titulo, descricao, cor, texto }: { to: "/abrir" | "/dashboard" | "/chamados" | "/regras" | "/atendimento"; icon: typeof FilePlus2; titulo: string; descricao: string; cor: string; texto: string }) {
+  return <Link to={to} className={`group border-t-4 ${cor} bg-card p-5 shadow-sm transition-transform hover:-translate-y-1 hover:shadow-md`}><Icon className={`size-7 ${texto}`} /><h3 className="mt-4 font-semibold">{titulo}</h3><p className="mt-2 min-h-12 text-sm text-muted-foreground">{descricao}</p><ArrowRight className={`mt-3 size-5 ${texto} transition-transform group-hover:translate-x-1`} /></Link>;
 }

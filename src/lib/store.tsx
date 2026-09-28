@@ -51,7 +51,7 @@ interface Ctx {
   session: Session | null;
   isGestor: boolean;
   authPronto: boolean;
-  addTicket: (t: Omit<Ticket, "id">) => Promise<boolean>;
+  addTicket: (t: Omit<Ticket, "id">, email: string) => Promise<boolean>;
   updateTicket: (id: number, patch: Partial<Ticket>) => void;
   removeTicket: (id: number) => void;
   setRegras: (r: Regras) => void;
@@ -150,10 +150,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
   }, [isGestor, authPronto]);
 
-  const addTicket = useCallback(async (t: Omit<Ticket, "id">) => {
+  const addTicket = useCallback(async (t: Omit<Ticket, "id">, email: string) => {
+    if (!emailCorporativo(email)) return false;
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !emailCorporativo(user.email) || !sessaoMicrosoft(user.app_metadata?.provider)) return false;
-    const { error } = await supabase.from("tickets").insert({ ...toRow(t), criado_por: user.id, solicitante_email: user.email } as never);
+    const isInstitutional = user && emailCorporativo(user.email) && sessaoMicrosoft(user.app_metadata?.provider);
+    if (user && (!isInstitutional || user.email?.toLowerCase() !== email.toLowerCase())) await supabase.auth.signOut();
+    const payload = {
+      ...toRow(t),
+      // Public submissions are timestamped at the database, not by the visitor's device.
+      aberto_em: undefined, hora: undefined,
+      criado_por: isInstitutional && user?.email?.toLowerCase() === email.toLowerCase() ? user.id : null,
+      solicitante_email: email.toLowerCase(),
+    };
+    const { error } = await supabase.from("tickets").insert(payload as never);
+    if (error) console.error("Falha ao registrar chamado", error.message);
     return !error;
   }, []);
 

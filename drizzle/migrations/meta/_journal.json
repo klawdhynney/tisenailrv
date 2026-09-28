@@ -36,6 +36,20 @@
       "when": 1790568803648,
       "tag": "0004_enforce_microsoft_domain_for_manager_data",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790573187757,
+      "tag": "0005_permitir_abertura_publica_limitada",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790573201176,
+      "tag": "0006_fixar_horario_servidor_abertura_publica",
+      "breakpoints": true
     }
   ]
 }

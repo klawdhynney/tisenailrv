@@ -12,7 +12,7 @@ import { CORES_PRIORIDADE } from "@/lib/types";
 export const Route = createFileRoute("/_authenticated/regras")({
   head: () => ({
     meta: [
-      { title: "Regras e Prioridades do SLA | Central de TI" },
+      { title: "Regras e prioridades | TI Senai LRV" },
       { name: "description", content: "Configure prazos por prioridade, horário de atendimento, feriados, férias e pausas automáticas do SLA." },
       { property: "og:title", content: "Regras e Prioridades do SLA" },
       { property: "og:description", content: "O gestor edita aqui os prazos e as pausas; o dashboard recalcula tudo na hora." },

@@ -5,20 +5,16 @@ import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
 
 const navPublico = [
-  { to: "/", label: "Início", icon: Home, cor: "var(--g-blue)" },
-  { to: "/abrir", label: "Abrir Chamado", icon: FilePlus2, cor: "var(--g-green)" },
-  { to: "/dashboard", label: "Dashboard", icon: BarChart3, cor: "var(--g-red)" },
+  { to: "/", label: "Início", icon: Home, variante: "google-blue" },
+  { to: "/abrir", label: "Abrir Chamado", icon: FilePlus2, variante: "google-green" },
+  { to: "/dashboard", label: "Dashboard", icon: BarChart3, variante: "google-red" },
 ] as const;
 
 const navGestor = [
-  { to: "/atendimento", label: "Atendimento", icon: Headset, cor: "var(--g-green)" },
-  { to: "/chamados", label: "Planilha", icon: Table2, cor: "var(--g-yellow)" },
-  { to: "/regras", label: "Regras", icon: Settings2, cor: "var(--g-blue)" },
+  { to: "/atendimento", label: "Atendimento", icon: Headset, variante: "google-green" },
+  { to: "/chamados", label: "Planilha", icon: Table2, variante: "google-yellow" },
+  { to: "/regras", label: "Regras", icon: Settings2, variante: "google-blue" },
 ] as const;
-
-const linkCls =
-  "flex items-center gap-2 rounded-lg border-2 border-border px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:border-[var(--g-blue)] hover:bg-muted";
-const ativoCls = "border-[var(--g-blue)] bg-muted shadow-[0_0_16px_-4px_var(--g-blue)]";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [aberto, setAberto] = useState(false);
@@ -40,38 +36,38 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const links = (mobile: boolean) =>
     itens.map((item) => (
+      <Button asChild variant={item.variante} key={item.to}>
       <Link
         key={item.to}
         to={item.to}
         onClick={() => mobile && setAberto(false)}
-        className={linkCls}
-        activeProps={{ className: ativoCls }}
         activeOptions={{ exact: item.to === "/" }}
       >
-        <item.icon className="h-4 w-4" style={{ color: item.cor }} />
+        <item.icon className="h-4 w-4" />
         {item.label}
       </Link>
+      </Button>
     ));
 
   const botaoConta = session ? (
-    <Button variant="outline" onClick={() => sair()} className={linkCls}>
+    <Button variant="outline" onClick={() => sair()}>
       <LogOut className="h-4 w-4 text-[var(--g-red)]" /> Sair
     </Button>
   ) : (
-    <Link to="/auth" className={linkCls}>
+    <Button asChild variant="google-yellow"><Link to="/auth">
       <LogIn className="h-4 w-4 text-[var(--g-yellow)]" /> Área do gestor
-    </Link>
+    </Link></Button>
   );
 
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b-2 border-border bg-card/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
-          <Link to="/" className="flex items-center gap-2">
+           <Link to="/" className="flex shrink-0 items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl border-2 border-[var(--g-blue)] bg-primary text-lg font-bold text-primary-foreground">
               TI
             </span>
-             <span className="max-w-[200px] text-xs font-semibold leading-tight text-primary sm:max-w-none sm:text-sm">CENTRAL DE CHAMADOS DE TI SENAI LRV</span>
+             <span className="text-sm font-bold text-foreground sm:text-base">TI Senai LRV</span>
           </Link>
           <nav className="ml-auto hidden items-center gap-2 lg:flex">
             {links(false)}
@@ -96,7 +92,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
       <main className="mx-auto max-w-7xl px-4 py-8">{children}</main>
       <footer className="mt-12 border-t border-border py-6 text-center text-xs text-muted-foreground">
-         CENTRAL DE CHAMADOS DE TI SENAI LRV
+          TI Senai LRV
       </footer>
     </div>
   );
