@@ -11,9 +11,9 @@ import { emailCorporativo, sessaoMicrosoft } from "@/lib/corporate";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Entrar | CENTRAL DE CHAMADOS DE TI SENAI LRV" },
+      { title: "Área do gestor | TI Senai LRV" },
       { name: "description", content: "Acesse os chamados com sua conta Microsoft institucional." },
-      { property: "og:title", content: "Entrar na Central de Chamados de TI SENAI LRV" },
+      { property: "og:title", content: "Área do gestor | TI Senai LRV" },
       { property: "og:description", content: "Acesso com a conta Microsoft institucional." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -28,7 +28,7 @@ function AuthPage() {
   const [carregando, setCarregando] = useState(false);
 
   useEffect(() => {
-    if (session && emailCorporativo(session.user.email) && sessaoMicrosoft(session.user.app_metadata?.provider)) navigate({ to: "/abrir" });
+    if (session && emailCorporativo(session.user.email) && sessaoMicrosoft(session.user.app_metadata?.provider)) navigate({ to: "/atendimento" });
   }, [session, navigate]);
 
   async function microsoft() {
@@ -41,7 +41,7 @@ function AuthPage() {
   return (
     <div className="mx-auto max-w-md border-t-4 border-primary bg-card p-8">
       <h1 className="text-2xl font-bold">Acesso institucional</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Use sua conta Microsoft com e-mail @senaimt ou @sesisenaimt.</p>
+      <p className="mt-2 text-sm text-muted-foreground">A área de gestão é reservada à equipe autorizada. Entre com sua conta Microsoft institucional.</p>
       {session && (!emailCorporativo(session.user.email) || !sessaoMicrosoft(session.user.app_metadata?.provider)) && <p className="mt-4 text-sm text-destructive">Esta conta não é uma conta Microsoft institucional. Saia dela antes de entrar novamente.</p>}
       <Button className="mt-6 w-full" onClick={microsoft} disabled={carregando}>Entrar com Microsoft</Button>
     </div>

@@ -80,10 +80,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-       { title: "CENTRAL DE CHAMADOS DE TI SENAI LRV" },
+        { title: "TI Senai LRV" },
        { name: "description", content: "Abertura e acompanhamento de chamados de TI SENAI LRV." },
       { name: "author", content: "Lovable" },
-       { property: "og:title", content: "CENTRAL DE CHAMADOS DE TI SENAI LRV" },
+        { property: "og:title", content: "TI Senai LRV" },
        { property: "og:description", content: "Abertura e acompanhamento de chamados de TI SENAI LRV." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
