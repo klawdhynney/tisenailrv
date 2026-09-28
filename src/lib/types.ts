@@ -68,8 +68,8 @@ export interface Regras {
   planilha?: { filtros: string[]; colunas: string[] };
 }
 
-export const FILTROS_PLANILHA = ["Mês", "Prioridade", "Status", "Busca", "Por página"] as const;
-export const COLUNAS_PLANILHA = ["Ver chamado", "Nº", "Aberto em", "Solicitante", "E-mail", "WhatsApp", "Setor / local", "Descrição", "Categoria", "Prioridade", "Responsável", "Status", "Procedimento", "Fechado em", "Prazo", "SLA"] as const;
+export const FILTROS_PLANILHA = ["Mês", "Prioridade", "Status", "Busca", "Por página", "Categoria", "Setor", "Responsável", "SLA"] as const;
+export const COLUNAS_PLANILHA = ["Ver chamado", "Nº", "Aberto em", "Solicitante", "Setor", "Descrição do problema", "Prioridade", "Status", "SLA", "Prazo", "Responsável", "Procedimento", "Fechado em", "E-mail", "WhatsApp", "Categoria"] as const;
 
 export const MESES = [
   "Janeiro",

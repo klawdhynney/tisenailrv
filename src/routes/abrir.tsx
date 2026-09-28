@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
+import { TextoAssistido } from "@/components/TextoAssistido";
 
 export const Route = createFileRoute("/abrir")({
   head: () => ({
@@ -157,12 +158,7 @@ function AbrirChamado() {
             </Campo>
 
             <Campo label="Descrição do problema *" erro={erros.descricao}>
-              <Textarea
-                rows={4}
-                value={form.descricao}
-                onChange={(e) => set("descricao", e.target.value)}
-                placeholder="Conte o que está acontecendo, desde quando e o que já tentou fazer."
-              />
+              <TextoAssistido rows={4} value={form.descricao} onChange={value => set("descricao", value)} />
             </Campo>
 
             <Button type="submit" size="lg" disabled={enviando} className="w-full sm:w-auto">

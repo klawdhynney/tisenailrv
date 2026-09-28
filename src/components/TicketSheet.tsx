@@ -10,14 +10,16 @@ import { COLUNAS_PLANILHA, FILTROS_PLANILHA, MESES_DISPONIVEIS, PRIORIDADES, STA
 
 export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
   const { tickets, regras, hidratado } = useStore();
-  const colunas = COLUNAS_PLANILHA.filter(c => (regras.planilha?.colunas ?? [...COLUNAS_PLANILHA]).includes(c));
+  const configuradas = regras.planilha?.colunas ?? [...COLUNAS_PLANILHA];
+  const colunas = COLUNAS_PLANILHA.filter(c => configuradas.includes(c) || (c === "Setor" && configuradas.includes("Setor / local")) || (c === "Descrição do problema" && configuradas.includes("Descrição")));
   const filtros = regras.planilha?.filtros ?? [...FILTROS_PLANILHA];
   const [month, setMonth] = useState("todos"), [status, setStatus] = useState("Todos"), [priority, setPriority] = useState("Todas"), [search, setSearch] = useState("");
+  const [category, setCategory] = useState("Todas"), [sector, setSector] = useState("Todos"), [assignee, setAssignee] = useState("Todos"), [slaFilter, setSlaFilter] = useState("Todos");
   const [pageSize, setPageSize] = useState(10), [page, setPage] = useState(1);
   const topRef = useRef<HTMLDivElement>(null), bottomRef = useRef<HTMLDivElement>(null), syncing = useRef(false);
-  const rows = useMemo(() => tickets.filter(t => (!filtros.includes("Mês") || month === "todos" || t.abertoEm.startsWith(month)) && (!filtros.includes("Status") || status === "Todos" || t.status === status) && (!filtros.includes("Prioridade") || priority === "Todas" || t.prioridade === priority) && (!filtros.includes("Busca") || !search || [t.id, t.solicitante, t.setor, t.local, t.descricao, t.responsavel].join(" ").toLowerCase().includes(search.toLowerCase())))
-    .sort((a, b) => attendance ? (Number(["Resolvido", "Cancelado"].includes(a.status)) - Number(["Resolvido", "Cancelado"].includes(b.status)) || b.id - a.id) : b.id - a.id), [tickets, month, status, priority, search, attendance, regras.planilha]);
-  useEffect(() => setPage(1), [month, status, priority, search, pageSize]);
+  const rows = useMemo(() => tickets.filter(t => (!filtros.includes("Mês") || month === "todos" || t.abertoEm.startsWith(month)) && (!filtros.includes("Status") || status === "Todos" || t.status === status) && (!filtros.includes("Prioridade") || priority === "Todas" || t.prioridade === priority) && (!filtros.includes("Categoria") || category === "Todas" || t.categoria === category) && (!filtros.includes("Setor") || sector === "Todos" || t.setor === sector) && (!filtros.includes("Responsável") || assignee === "Todos" || (t.responsavel || "Não atribuído") === assignee) && (!filtros.includes("SLA") || slaFilter === "Todos" || calcularSla(t, regras).situacao === slaFilter) && (!filtros.includes("Busca") || !search || [t.id, t.solicitante, t.setor, t.local, t.descricao, t.responsavel].join(" ").toLowerCase().includes(search.toLowerCase())))
+    .sort((a, b) => attendance ? (Number(["Resolvido", "Cancelado"].includes(a.status)) - Number(["Resolvido", "Cancelado"].includes(b.status)) || b.id - a.id) : b.id - a.id), [tickets, month, status, priority, category, sector, assignee, slaFilter, search, attendance, regras]);
+  useEffect(() => setPage(1), [month, status, priority, category, sector, assignee, slaFilter, search, pageSize]);
   const pages = Math.max(1, Math.ceil(rows.length / pageSize));
   const visible = rows.slice((Math.min(page, pages) - 1) * pageSize, Math.min(page, pages) * pageSize);
   useEffect(() => { if (topRef.current && bottomRef.current) topRef.current.firstElementChild?.setAttribute("style", `width:${bottomRef.current.scrollWidth}px;height:1px`); }, [visible]);
@@ -34,6 +36,10 @@ export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
        {filtros.includes("Mês") && <label className="grid gap-1 text-sm font-medium">Mês<select aria-label="Mês da planilha" className="h-10 rounded-xl border border-input bg-background px-3" value={month} onChange={e => setMonth(e.target.value)}><option value="todos">Todos</option>{MESES_DISPONIVEIS.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}</select></label>}
        {filtros.includes("Prioridade") && <label className="grid gap-1 text-sm font-medium">Prioridade<select aria-label="Prioridade da planilha" className="h-10 rounded-xl border border-input bg-background px-3" value={priority} onChange={e => setPriority(e.target.value)}><option>Todas</option>{PRIORIDADES.map(p => <option key={p}>{p}</option>)}</select></label>}
        {filtros.includes("Status") && <label className="grid gap-1 text-sm font-medium">Status<select aria-label="Status da planilha" className="h-10 rounded-xl border border-input bg-background px-3" value={status} onChange={e => setStatus(e.target.value)}><option>Todos</option>{STATUS_LIST.map(s => <option key={s}>{s}</option>)}</select></label>}
+        {filtros.includes("Categoria") && <label className="grid gap-1 text-sm font-medium">Categoria<select aria-label="Categoria da planilha" className="h-10 rounded-xl border border-input bg-background px-3" value={category} onChange={e => setCategory(e.target.value)}><option>Todas</option>{[...new Set(tickets.map(t => t.categoria).filter(Boolean))].map(c => <option key={c}>{c}</option>)}</select></label>}
+        {filtros.includes("Setor") && <label className="grid gap-1 text-sm font-medium">Setor<select aria-label="Setor da planilha" className="h-10 rounded-xl border border-input bg-background px-3" value={sector} onChange={e => setSector(e.target.value)}><option>Todos</option>{[...new Set(tickets.map(t => t.setor))].map(s => <option key={s}>{s}</option>)}</select></label>}
+        {filtros.includes("Responsável") && <label className="grid gap-1 text-sm font-medium">Responsável<select aria-label="Responsável da planilha" className="h-10 rounded-xl border border-input bg-background px-3" value={assignee} onChange={e => setAssignee(e.target.value)}><option>Todos</option><option>Não atribuído</option>{[...new Set(tickets.map(t => t.responsavel).filter((x): x is string => Boolean(x)))].map(r => <option key={r}>{r}</option>)}</select></label>}
+        {filtros.includes("SLA") && <label className="grid gap-1 text-sm font-medium">SLA<select aria-label="SLA da planilha" className="h-10 rounded-xl border border-input bg-background px-3" value={slaFilter} onChange={e => setSlaFilter(e.target.value)}>{["Todos", "No prazo", "Estourado", "Pausado", "Cancelado"].map(s => <option key={s}>{s}</option>)}</select></label>}
        {filtros.includes("Busca") && <label className="relative min-w-48 flex-1"><span className="sr-only">Buscar chamados</span><Search className="absolute left-3 top-3 size-4 text-muted-foreground" /><Input className="pl-9" placeholder="Buscar chamado" value={search} onChange={e => setSearch(e.target.value)} /></label>}
        {filtros.includes("Por página") && <label className="grid gap-1 text-sm font-medium">Por página<select aria-label="Chamados por página" className="h-10 rounded-xl border border-input bg-background px-3" value={pageSize} onChange={e => setPageSize(Number(e.target.value))}>{[10,30,50,100].map(n => <option key={n} value={n}>{n}</option>)}</select></label>}
     </div>
@@ -53,8 +59,8 @@ function TicketRow({ ticket: t, colunas }: { ticket: Ticket; colunas: string[] }
   const cells: Record<string, React.ReactNode> = {
     "Ver chamado": action, "Nº": <strong>#{t.id}</strong>, "Aberto em": formatarData(t.abertoEm, t.hora),
     "Solicitante": t.solicitante, "E-mail": t.solicitanteEmail || "—", "WhatsApp": t.contato || "—",
-    "Setor / local": <span className="block max-w-52">{t.setor} · {t.local}</span>,
-    "Descrição": <span className="line-clamp-2 max-w-72">{t.descricao}</span>, "Categoria": t.categoria,
+     "Setor": <span className="block max-w-52">{t.setor} · {t.local}</span>,
+     "Descrição do problema": <span className="line-clamp-2 max-w-72">{t.descricao}</span>, "Categoria": t.categoria,
     "Prioridade": <PrioridadeChip valor={t.prioridade} />, "Responsável": t.responsavel || "—",
     "Status": <StatusChip valor={t.status} />,
     "Procedimento": <span className="line-clamp-2 max-w-72">{t.procedimento || "—"}</span>,

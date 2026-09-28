@@ -38,8 +38,9 @@ Avisos no Teams e Outlook permanecem adiados para outro upgrade.
 - [x] Destacar a marca SENAI em círculo ao lado do título e remover a marca d’água sem remover a foto tecnológica.
 ## Refinamentos de apresentação e planilha
 
-- [ ] Ampliar a marca SENAI no banner e arredondar superfícies, planilhas, filtros e botões.
-- [ ] Reordenar a ação Ver chamado e permitir escolher colunas e filtros da planilha nas regras, com confirmação.
-- [ ] Atualizar atalhos e títulos dos gráficos e modernizar abertura e atendimento.
-- [ ] Mostrar prazo e situação do SLA no acompanhamento público sem expor dados pessoais.
-- [ ] Ativar correção ortográfica pt-BR nos textos e avaliar aprimoramento opcional por IA.
+- [x] Ampliar a marca SENAI no banner e arredondar superfícies, planilhas, filtros e botões.
+- [x] Reordenar a ação Ver chamado e permitir escolher colunas e filtros da planilha nas regras, com confirmação.
+- [x] Atualizar atalhos e títulos dos gráficos e modernizar abertura e atendimento.
+- [x] Mostrar prazo e situação do SLA no acompanhamento público sem expor dados pessoais.
+- [x] Ativar correção ortográfica pt-BR e revisão opcional de texto e sugestões técnicas por IA para todos os usuários.
+- [x] Reorganizar colunas do atendimento, colocar Salvar ao final, abrir acompanhamento pelo botão dos filtros e oferecer sugestão de prioridade ao gestor baseada no histórico agregado de resolvidos (aplicação manual com confirmação ao salvar).

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { BarChart3, ChartArea, Download, PieChartIcon, Printer, Table2 } from "lucide-react";
+import { BarChart3, ChartArea, ClipboardList, Download, Eye, PieChartIcon, Printer, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SlaChip } from "@/components/Chips";
 import { calcularSla, formatarData, formatarDataHora } from "@/lib/sla";
@@ -46,6 +46,10 @@ function Dashboard() {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const id = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(id); }, []);
   const [progressSize, setProgressSize] = useState(10);
+  const [showProgress, setShowProgress] = useState(false);
+  useEffect(() => {
+    if (window.location.hash === "#acompanhamento") setShowProgress(true);
+  }, []);
   useEffect(() => {
     let mounted = true;
     const load = async () => {
@@ -101,6 +105,7 @@ function Dashboard() {
         <label className="grid gap-1 text-xs font-bold">Prioridade<select aria-label="Prioridade" className="h-11 min-w-40 rounded-xl border-2 border-g-red bg-background px-3 text-sm font-normal" value={prioridade} onChange={(e) => setPrioridade(e.target.value)}><option>Todas</option>{PRIORIDADES.map((p) => <option key={p}>{p}</option>)}</select></label>
         <label className="grid gap-1 text-xs font-bold">Status<select aria-label="Status" className="h-11 min-w-40 rounded-xl border-2 border-g-green bg-background px-3 text-sm font-normal" value={status} onChange={(e) => setStatus(e.target.value)}><option>Todos</option>{STATUS_LIST.map((s) => <option key={s}>{s}</option>)}</select></label>
         {foco && <Button className="self-end" variant="google-yellow" onClick={() => setFoco(null)}>Limpar: {foco.nome} ×</Button>}
+         <Button className="self-end" variant="google-blue" aria-expanded={showProgress} aria-controls="acompanhamento" onClick={() => { setShowProgress(v => !v); if (!showProgress) window.setTimeout(() => document.getElementById("acompanhamento")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }}><ClipboardList /> Acompanhar chamados</Button>
       </div>
     </section>
 
@@ -112,11 +117,10 @@ function Dashboard() {
       <Grafico dados={dados} tipo={tipoGrafico} cor={cor} aoClicar={clicar} />
       {visao === "problemas" && <p className="mt-3 text-xs text-muted-foreground">Ranking consolidado a partir das 72 descrições preenchidas na planilha enviada.</p>}
     </section>
-    <section id="acompanhamento" className="scroll-mt-28 space-y-4 border-t-2 border-border pt-6"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-2xl font-bold">Acompanhamento dos chamados</h2><p className="text-sm text-muted-foreground">Consulte o número, o andamento e o prazo. Dados pessoais aparecem somente na sua conta.</p></div><div className="flex flex-wrap items-end gap-3"><Button variant="google-blue" onClick={() => { setProgressPage(1); setProgressSize(100); }}>Todos os Chamados</Button><label className="grid gap-1 text-sm font-medium">Por página<select aria-label="Chamados públicos por página" className="h-10 rounded-xl border border-input bg-background px-3" value={progressSize} onChange={e => { setProgressSize(Number(e.target.value)); setProgressPage(1); }}>{[10,30,50,100].map(n => <option key={n}>{n}</option>)}</select></label></div></div>
-      <div className="overflow-x-auto rounded-xl border border-border"><table className="w-full min-w-[880px] border-separate border-spacing-0 text-left text-sm"><thead><tr className="border-b-2 border-g-blue bg-muted">{["Nº", "Abertura", "Categoria", "Prioridade", "Status", "Fechamento", "Prazo", "SLA"].map(x => <th key={x} className="px-3 py-3">{x}</th>)}</tr></thead><tbody>{progress.slice((progressPage-1)*progressSize, progressPage*progressSize).map(t => <tr key={t.id} className="border-b border-border even:bg-muted/40"><td className="px-3 py-3 font-bold">#{t.id}</td><td className="px-3 py-3">{formatarData(t.aberto_em)}</td><td className="px-3 py-3">{t.categoria}</td><td className="px-3 py-3">{t.prioridade}</td><td className="px-3 py-3">{t.status}</td><td className="px-3 py-3">{formatarData(t.fechado_em)}</td><td className="whitespace-nowrap px-3 py-3">{formatarDataHora(calcularSla({ abertoEm: t.aberto_em, hora: t.hora, prioridade: t.prioridade as Ticket["prioridade"], status: t.status as Ticket["status"], fechadoEm: t.fechado_em, horario: t.horario, slaReiniciadoEm: t.sla_reiniciado_em } as Ticket, regras, now).prazo)}</td><td className="px-3 py-3"><SlaChip valor={calcularSla({ abertoEm: t.aberto_em, hora: t.hora, prioridade: t.prioridade as Ticket["prioridade"], status: t.status as Ticket["status"], fechadoEm: t.fechado_em, horario: t.horario, slaReiniciadoEm: t.sla_reiniciado_em } as Ticket, regras, now).situacao} /></td></tr>)}</tbody></table></div>
+    {showProgress && <section id="acompanhamento" className="scroll-mt-28 space-y-4 border-t-2 border-border pt-6"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-2xl font-bold">Acompanhamento dos chamados</h2><p className="text-sm text-muted-foreground">Consulte o número, o andamento e o prazo. Dados pessoais aparecem somente na sua conta.</p></div><div className="flex flex-wrap items-end gap-3"><Button variant="google-blue" onClick={() => { setProgressPage(1); setProgressSize(100); }}>Todos os Chamados</Button><label className="grid gap-1 text-sm font-medium">Por página<select aria-label="Chamados públicos por página" className="h-10 rounded-xl border border-input bg-background px-3" value={progressSize} onChange={e => { setProgressSize(Number(e.target.value)); setProgressPage(1); }}>{[10,30,50,100].map(n => <option key={n}>{n}</option>)}</select></label></div></div>
+      <div className="overflow-x-auto rounded-xl border border-border"><table className="w-full min-w-[980px] border-separate border-spacing-0 text-left text-sm"><thead><tr className="border-b-2 border-g-blue bg-muted">{["Ver chamado", "Nº", "Abertura", "Categoria", "Prioridade", "Status", "Fechamento", "Prazo", "SLA"].map(x => <th key={x} className="px-3 py-3">{x}</th>)}</tr></thead><tbody>{progress.slice((progressPage-1)*progressSize, progressPage*progressSize).map(t => <tr key={t.id} className="border-b border-border even:bg-muted/40"><td className="px-3 py-3"><Button asChild size="sm" variant="outline"><Link to="/meus-chamados"><Eye /> Ver chamado</Link></Button></td><td className="px-3 py-3 font-bold">#{t.id}</td><td className="px-3 py-3">{formatarData(t.aberto_em)}</td><td className="px-3 py-3">{t.categoria}</td><td className="px-3 py-3">{t.prioridade}</td><td className="px-3 py-3">{t.status}</td><td className="px-3 py-3">{formatarData(t.fechado_em)}</td><td className="whitespace-nowrap px-3 py-3">{formatarDataHora(calcularSla({ abertoEm: t.aberto_em, hora: t.hora, prioridade: t.prioridade as Ticket["prioridade"], status: t.status as Ticket["status"], fechadoEm: t.fechado_em, horario: t.horario, slaReiniciadoEm: t.sla_reiniciado_em } as Ticket, regras, now).prazo)}</td><td className="px-3 py-3"><SlaChip valor={calcularSla({ abertoEm: t.aberto_em, hora: t.hora, prioridade: t.prioridade as Ticket["prioridade"], status: t.status as Ticket["status"], fechadoEm: t.fechado_em, horario: t.horario, slaReiniciadoEm: t.sla_reiniciado_em } as Ticket, regras, now).situacao} /></td></tr>)}</tbody></table></div>
       <div className="flex flex-wrap items-center justify-between gap-3"><span className="text-sm text-muted-foreground">{progress.length} chamado(s) · página {progressPage} de {Math.max(1, Math.ceil(progress.length/progressSize))}</span><div className="flex gap-2"><Button variant="outline" disabled={progressPage <= 1} onClick={() => setProgressPage(x => x-1)}>Anterior</Button><Button variant="outline" disabled={progressPage >= Math.ceil(progress.length/progressSize)} onClick={() => setProgressPage(x => x+1)}>Próxima</Button></div></div>
-      <Button asChild variant="outline"><Link to="/meus-chamados">Ver meus chamados e enviar informações</Link></Button>
-    </section>
+    </section>}
   </div>;
 }
 
