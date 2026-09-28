@@ -17,7 +17,7 @@ import {
   type Status,
 } from "@/lib/types";
 
-export const Route = createFileRoute("/chamados")({
+export const Route = createFileRoute("/_authenticated/chamados")({
   head: () => ({
     meta: [
       { title: "Planilha de Chamados | Central de TI" },

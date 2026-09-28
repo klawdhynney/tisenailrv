@@ -9,7 +9,7 @@ import { useStore } from "@/lib/store";
 import { PRIORIDADES, REGRAS_PADRAO, STATUS_LIST, type Periodo, type Status } from "@/lib/types";
 import { CORES_PRIORIDADE } from "@/lib/types";
 
-export const Route = createFileRoute("/regras")({
+export const Route = createFileRoute("/_authenticated/regras")({
   head: () => ({
     meta: [
       { title: "Regras e Prioridades do SLA | Central de TI" },
