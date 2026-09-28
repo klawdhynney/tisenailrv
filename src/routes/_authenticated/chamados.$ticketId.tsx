@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { TextoAssistido } from "@/components/TextoAssistido";
 import { useStore } from "@/lib/store-context";
 import { PRIORIDADES, STATUS_LIST, type Ticket } from "@/lib/types";
 import { calcularSla, formatarData, formatarDataHora } from "@/lib/sla";
@@ -67,8 +68,8 @@ function TicketEditor({ ticket, regras, updateTicket }: { ticket: Ticket; regras
       <label className="grid gap-2 text-sm font-medium">Prioridade<select className="h-10 rounded border border-input bg-background px-3" value={draft.prioridade} onChange={e => field("prioridade", e.target.value as Ticket["prioridade"])}>{PRIORIDADES.map(p => <option key={p}>{p}</option>)}</select></label>
       <label className="grid gap-2 text-sm font-medium">Status<select className="h-10 rounded border border-input bg-background px-3" value={draft.status} onChange={e => field("status", e.target.value as Ticket["status"])}>{STATUS_LIST.map(s => <option key={s}>{s}</option>)}</select></label>
     </div>
-    <label className="grid gap-2 text-sm font-medium">Descrição<Textarea rows={5} value={draft.descricao} onChange={e => field("descricao", e.target.value)} /></label>
-    <label className="grid gap-2 text-sm font-medium">Procedimento / atendimento<Textarea rows={5} value={draft.procedimento ?? ""} onChange={e => field("procedimento", e.target.value || null)} /></label>
+     <label className="grid gap-2 text-sm font-medium">Descrição<TextoAssistido value={draft.descricao} onChange={value => field("descricao", value)} /></label>
+     <label className="grid gap-2 text-sm font-medium">Procedimento / atendimento<TextoAssistido value={draft.procedimento ?? ""} onChange={value => field("procedimento", value || null)} /></label>
     <p className="text-sm text-muted-foreground">Fechamento: {formatarData(ticket.fechadoEm, ticket.horario)}</p>
   </div>;
 }
