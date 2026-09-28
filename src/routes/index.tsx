@@ -25,7 +25,7 @@ function Inicio() {
       <img src={labImage} alt="Ambiente de tecnologia e atendimento de TI" width={1536} height={768} className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-25 dark:opacity-15" />
       <div className="absolute inset-0 -z-10 bg-card/80" />
       <div className="grid min-h-[330px] gap-7 px-5 py-6 sm:px-9 lg:grid-cols-[minmax(180px,0.46fr)_minmax(0,1fr)_minmax(220px,0.65fr)] lg:items-center">
-        <div className="mx-auto w-full max-w-[270px] rounded-2xl bg-[linear-gradient(135deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)] p-1 shadow-lg sm:max-w-[300px]"><img src={senaiAsset.url} alt="SENAI Lucas do Rio Verde" className="h-44 w-full rounded-xl bg-card object-contain p-4 sm:h-60 lg:h-[300px]" /></div>
+         <div className="mx-auto w-fit max-w-full overflow-hidden rounded-2xl border-4 border-g-blue bg-card shadow-lg"><img src={senaiAsset.url} alt="SENAI Lucas do Rio Verde" className="block h-44 w-auto max-w-full rounded-xl object-contain sm:h-60 lg:h-[300px]" /></div>
         <div>
           <p className="inline-flex items-center gap-2 rounded-full bg-card/90 px-3 py-1 text-xs font-bold uppercase text-primary shadow-sm"><Activity className="size-4" /> Atendimento de TI · SENAI LRV</p>
           <h1 className="mt-5 max-w-xl text-4xl font-bold leading-tight text-foreground sm:text-5xl">TI Senai LRV</h1>
