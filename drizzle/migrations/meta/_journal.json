@@ -50,6 +50,13 @@
       "when": 1790573201176,
       "tag": "0006_fixar_horario_servidor_abertura_publica",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790578581209,
+      "tag": "0007_permitir_chamado_publico_sem_email",
+      "breakpoints": true
     }
   ]
 }
