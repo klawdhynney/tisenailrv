@@ -175,6 +175,20 @@ export type Database = {
           status: string
         }[]
       }
+      public_ticket_sla_progress: {
+        Args: never
+        Returns: {
+          aberto_em: string
+          categoria: string
+          fechado_em: string
+          hora: string
+          horario: string
+          id: number
+          prioridade: string
+          sla_reiniciado_em: string
+          status: string
+        }[]
+      }
       verified_ticket_owner: {
         Args: { ticket_email: string }
         Returns: boolean
