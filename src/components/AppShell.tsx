@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { BarChart3, FilePlus2, Settings2, Table2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun } from "lucide-react";
+import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
-import siteMark from "@/assets/ti-site-mark.png";
+import senaiAsset from "@/assets/senai-lrv.png.asset.json";
 
 const navPublico = [
   { to: "/", label: "Início", icon: Home, variante: "google-blue" },
@@ -13,7 +13,6 @@ const navPublico = [
 
 const navGestor = [
   { to: "/atendimento", label: "Atendimento", icon: Headset, variante: "google-green" },
-  { to: "/chamados", label: "Planilha", icon: Table2, variante: "google-yellow" },
   { to: "/regras", label: "Regras", icon: Settings2, variante: "google-blue" },
 ] as const;
 
@@ -56,7 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     </Button>
   ) : (
     <Button asChild variant="google-yellow"><Link to="/auth">
-      <LogIn className="h-4 w-4 text-[var(--g-yellow)]" /> Área do gestor
+      <LogIn className="h-4 w-4 text-[var(--g-yellow)]" /> Entrar
     </Link></Button>
   );
 
@@ -65,7 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b-2 border-border bg-card/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
            <Link to="/" className="flex shrink-0 items-center gap-2">
-             <img src={siteMark} alt="Marca TI" width={40} height={40} className="size-10 rounded-full shadow-sm" />
+              <img src={senaiAsset.url} alt="SENAI LRV" width={40} height={40} className="size-10 rounded-full border border-border bg-card object-contain p-1 shadow-sm" />
              <span className="text-sm font-bold text-foreground sm:text-base">TI Senai LRV</span>
           </Link>
           <nav className="ml-auto hidden items-center gap-2 lg:flex">

@@ -14,9 +14,11 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AbrirRouteImport } from './routes/abrir'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as MeusChamadosRouteImport } from './routes/meus-chamados'
 import { Route as AuthenticatedAtendimentoRouteImport } from './routes/_authenticated/atendimento'
 import { Route as AuthenticatedChamadosRouteImport } from './routes/_authenticated/chamados'
 import { Route as AuthenticatedRegrasRouteImport } from './routes/_authenticated/regras'
+import { Route as AuthenticatedChamadosTicketIdRouteImport } from './routes/_authenticated/chamados.$ticketId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -42,6 +44,11 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MeusChamadosRoute = MeusChamadosRouteImport.update({
+  id: '/meus-chamados',
+  path: '/meus-chamados',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAtendimentoRoute =
   AuthenticatedAtendimentoRouteImport.update({
     id: '/atendimento',
@@ -58,24 +65,34 @@ const AuthenticatedRegrasRoute = AuthenticatedRegrasRouteImport.update({
   path: '/regras',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedChamadosTicketIdRoute =
+  AuthenticatedChamadosTicketIdRouteImport.update({
+    id: '/$ticketId',
+    path: '/$ticketId',
+    getParentRoute: () => AuthenticatedChamadosRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/abrir': typeof AbrirRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/meus-chamados': typeof MeusChamadosRoute
   '/atendimento': typeof AuthenticatedAtendimentoRoute
-  '/chamados': typeof AuthenticatedChamadosRoute
+  '/chamados': typeof AuthenticatedChamadosRouteWithChildren
   '/regras': typeof AuthenticatedRegrasRoute
+  '/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/abrir': typeof AbrirRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/meus-chamados': typeof MeusChamadosRoute
   '/atendimento': typeof AuthenticatedAtendimentoRoute
-  '/chamados': typeof AuthenticatedChamadosRoute
+  '/chamados': typeof AuthenticatedChamadosRouteWithChildren
   '/regras': typeof AuthenticatedRegrasRoute
+  '/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -84,9 +101,11 @@ export interface FileRoutesById {
   '/abrir': typeof AbrirRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/meus-chamados': typeof MeusChamadosRoute
   '/_authenticated/atendimento': typeof AuthenticatedAtendimentoRoute
-  '/_authenticated/chamados': typeof AuthenticatedChamadosRoute
+  '/_authenticated/chamados': typeof AuthenticatedChamadosRouteWithChildren
   '/_authenticated/regras': typeof AuthenticatedRegrasRoute
+  '/_authenticated/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -95,18 +114,22 @@ export interface FileRouteTypes {
     | '/abrir'
     | '/auth'
     | '/dashboard'
+    | '/meus-chamados'
     | '/atendimento'
     | '/chamados'
     | '/regras'
+    | '/chamados/$ticketId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/abrir'
     | '/auth'
     | '/dashboard'
+    | '/meus-chamados'
     | '/atendimento'
     | '/chamados'
     | '/regras'
+    | '/chamados/$ticketId'
   id:
     | '__root__'
     | '/'
@@ -114,9 +137,11 @@ export interface FileRouteTypes {
     | '/abrir'
     | '/auth'
     | '/dashboard'
+    | '/meus-chamados'
     | '/_authenticated/atendimento'
     | '/_authenticated/chamados'
     | '/_authenticated/regras'
+    | '/_authenticated/chamados/$ticketId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -125,6 +150,7 @@ export interface RootRouteChildren {
   AbrirRoute: typeof AbrirRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
+  MeusChamadosRoute: typeof MeusChamadosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -164,6 +190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/meus-chamados': {
+      id: '/meus-chamados'
+      path: '/meus-chamados'
+      fullPath: '/meus-chamados'
+      preLoaderRoute: typeof MeusChamadosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/atendimento': {
       id: '/_authenticated/atendimento'
       path: '/atendimento'
@@ -185,18 +218,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRegrasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/chamados/$ticketId': {
+      id: '/_authenticated/chamados/$ticketId'
+      path: '/$ticketId'
+      fullPath: '/chamados/$ticketId'
+      preLoaderRoute: typeof AuthenticatedChamadosTicketIdRouteImport
+      parentRoute: typeof AuthenticatedChamadosRoute
+    }
   }
 }
 
+interface AuthenticatedChamadosRouteChildren {
+  AuthenticatedChamadosTicketIdRoute: typeof AuthenticatedChamadosTicketIdRoute
+}
+
+const AuthenticatedChamadosRouteChildren: AuthenticatedChamadosRouteChildren = {
+  AuthenticatedChamadosTicketIdRoute: AuthenticatedChamadosTicketIdRoute,
+}
+
+const AuthenticatedChamadosRouteWithChildren =
+  AuthenticatedChamadosRoute._addFileChildren(
+    AuthenticatedChamadosRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAtendimentoRoute: typeof AuthenticatedAtendimentoRoute
-  AuthenticatedChamadosRoute: typeof AuthenticatedChamadosRoute
+  AuthenticatedChamadosRoute: typeof AuthenticatedChamadosRouteWithChildren
   AuthenticatedRegrasRoute: typeof AuthenticatedRegrasRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAtendimentoRoute: AuthenticatedAtendimentoRoute,
-  AuthenticatedChamadosRoute: AuthenticatedChamadosRoute,
+  AuthenticatedChamadosRoute: AuthenticatedChamadosRouteWithChildren,
   AuthenticatedRegrasRoute: AuthenticatedRegrasRoute,
 }
 
@@ -209,6 +262,7 @@ const rootRouteChildren: RootRouteChildren = {
   AbrirRoute: AbrirRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
+  MeusChamadosRoute: MeusChamadosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

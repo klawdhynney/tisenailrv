@@ -28,3 +28,11 @@ Avisos no Teams e Outlook permanecem adiados para outro upgrade.
 
 - [x] Aceitar as três contas de gestor informadas, inclusive e-mails pessoais, sem perfil adicional.
 - [x] Restaurar o acesso Google além do Microsoft, mantendo chamados completos restritos aos gestores autenticados.
+
+## Atendimento pela planilha e acompanhamento
+
+- [x] Unificar atendimento e planilha do gestor, com página “Ver chamado”, botão Salvar e confirmação antes das alterações; confirmação também para regras, envio e importação.
+- [x] Juntar setor e local na apresentação da planilha; limitar a 10 registros inicialmente e oferecer 10, 30, 50 ou 100, com rolagem horizontal superior.
+- [x] Mostrar no dashboard o andamento por número de chamado, sem nomes, contatos nem descrições; preservar detalhes completos apenas para o gestor e o dono do e-mail confirmado.
+- [x] Exigir e-mail sem exigir login para abrir chamado; permitir complementar chamado após confirmar a posse do e-mail por código ou acessar com Google/Microsoft.
+- [x] Destacar a marca SENAI em círculo ao lado do título e remover a marca d’água sem remover a foto tecnológica.

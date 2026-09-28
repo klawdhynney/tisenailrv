@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { gestorAutorizado } from "./corporate";
 
 const linha = z.object({
   id: z.number().int().positive().optional(), abertoEm: z.string().regex(/^\d{4}-\d\d-\d\d$/),
@@ -18,9 +17,8 @@ export const importarChamados = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.array(linha).min(1).max(1000).parse(input))
   .handler(async ({ context, data }) => {
-    const { data: role, error: roleError } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId).eq("role", "gestor").maybeSingle();
-    const provider = context.claims.app_metadata?.provider;
-    if (roleError || !role || !gestorAutorizado(context.claims.email, provider)) throw new Error("Apenas gestores autorizados podem importar chamados.");
+    const { data: allowed, error: roleError } = await context.supabase.rpc("is_named_manager");
+    if (roleError || allowed !== true) throw new Error("Apenas gestores autorizados podem importar chamados.");
     const existentes: { aberto_em: string; hora: string; solicitante: string; setor: string; descricao: string }[] = [];
     for (let offset = 0; ; offset += 1000) {
       const { data: pagina, error } = await context.supabase.from("tickets")

@@ -11,10 +11,10 @@ export interface StoreValue {
   session: Session | null;
   isGestor: boolean;
   authPronto: boolean;
-  addTicket: (t: Omit<Ticket, "id">) => Promise<boolean>;
-  updateTicket: (id: number, patch: Partial<Ticket>) => void;
-  removeTicket: (id: number) => void;
-  setRegras: (r: Regras) => void;
+  addTicket: (t: Omit<Ticket, "id">, email: string) => Promise<boolean>;
+  updateTicket: (id: number, patch: Partial<Ticket>) => Promise<boolean>;
+  removeTicket: (id: number) => Promise<boolean>;
+  setRegras: (r: Regras) => Promise<boolean>;
   sair: () => Promise<void>;
 }
 

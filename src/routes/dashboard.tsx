@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { BarChart3, ChartArea, Download, PieChartIcon, Printer, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { MESES_DISPONIVEIS, PRIORIDADES, STATUS_LIST, CORES_PRIORIDADE, CORES_STATUS, type Prioridade, type Status } from "@/lib/types";
 
 export const Route = createFileRoute("/dashboard")({
@@ -36,6 +38,25 @@ type Item = { name: string; value: number };
 
 function Dashboard() {
   const { publicStats, isGestor } = useStore();
+  const [progress, setProgress] = useState<Database["public"]["Functions"]["public_ticket_progress"]["Returns"]>([]);
+  const [progressPage, setProgressPage] = useState(1);
+  const [progressSize, setProgressSize] = useState(10);
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      const all: typeof progress = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await supabase.rpc("public_ticket_progress").range(offset, offset + 999);
+        if (error) { console.error("Falha ao carregar andamento público", error.message); return; }
+        all.push(...(data ?? []));
+        if (!data || data.length < 1000) break;
+      }
+      if (mounted) setProgress(all);
+    };
+    void load();
+    const channel = supabase.channel("public-progress-refresh").on("postgres_changes", { event: "*", schema: "public", table: "ticket_public_stats" }, () => void load()).subscribe();
+    return () => { mounted = false; void supabase.removeChannel(channel); };
+  }, []);
   const [mes, setMes] = useState("todos");
   const [prioridade, setPrioridade] = useState("Todas");
   const [status, setStatus] = useState("Todos");
@@ -85,6 +106,11 @@ function Dashboard() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-2xl font-bold">{VISOES.find((v) => v.id === visao)?.label}</h2><p className="text-sm text-muted-foreground">{dados.reduce((n, x) => n + x.value, 0)} chamado(s) representados</p></div><div className="no-print flex gap-2" aria-label="Tipo de gráfico"><Button size="sm" variant={tipoGrafico === "pizza" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("pizza")}><PieChartIcon /> Pizza</Button><Button size="sm" variant={tipoGrafico === "barras" ? "google-red" : "outline"} onClick={() => setTipoGrafico("barras")}><BarChart3 /> Barras</Button><Button size="sm" variant={tipoGrafico === "area" ? "google-green" : "outline"} onClick={() => setTipoGrafico("area")}><ChartArea /> Área</Button></div></div>
       <Grafico dados={dados} tipo={tipoGrafico} cor={cor} aoClicar={clicar} />
       {visao === "problemas" && <p className="mt-3 text-xs text-muted-foreground">Ranking consolidado a partir das 72 descrições preenchidas na planilha enviada.</p>}
+    </section>
+    <section className="space-y-4 border-t-2 border-border pt-6"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-2xl font-bold">Acompanhamento dos chamados</h2><p className="text-sm text-muted-foreground">Consulte o número do chamado e o andamento. Dados pessoais aparecem somente na sua conta.</p></div><label className="grid gap-1 text-sm font-medium">Por página<select aria-label="Chamados públicos por página" className="h-10 rounded border border-input bg-background px-3" value={progressSize} onChange={e => { setProgressSize(Number(e.target.value)); setProgressPage(1); }}>{[10,30,50,100].map(n => <option key={n}>{n}</option>)}</select></label></div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[680px] border-collapse text-left text-sm"><thead><tr className="border-b-2 border-g-blue bg-muted">{["Nº", "Abertura", "Categoria", "Prioridade", "Status", "Fechamento"].map(x => <th key={x} className="px-3 py-3">{x}</th>)}</tr></thead><tbody>{progress.slice((progressPage-1)*progressSize, progressPage*progressSize).map(t => <tr key={t.id} className="border-b border-border even:bg-muted/40"><td className="px-3 py-3 font-bold">#{t.id}</td><td className="px-3 py-3">{t.aberto_em}</td><td className="px-3 py-3">{t.categoria}</td><td className="px-3 py-3">{t.prioridade}</td><td className="px-3 py-3">{t.status}</td><td className="px-3 py-3">{t.fechado_em ?? "—"}</td></tr>)}</tbody></table></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><span className="text-sm text-muted-foreground">{progress.length} chamado(s) · página {progressPage} de {Math.max(1, Math.ceil(progress.length/progressSize))}</span><div className="flex gap-2"><Button variant="outline" disabled={progressPage <= 1} onClick={() => setProgressPage(x => x-1)}>Anterior</Button><Button variant="outline" disabled={progressPage >= Math.ceil(progress.length/progressSize)} onClick={() => setProgressPage(x => x+1)}>Próxima</Button></div></div>
+      <Button asChild variant="outline"><Link to="/meus-chamados">Ver meus chamados e enviar informações</Link></Button>
     </section>
   </div>;
 }
