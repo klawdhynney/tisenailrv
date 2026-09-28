@@ -15,8 +15,8 @@ export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
   const [month, setMonth] = useState("todos"), [status, setStatus] = useState("Todos"), [priority, setPriority] = useState("Todas"), [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(10), [page, setPage] = useState(1);
   const topRef = useRef<HTMLDivElement>(null), bottomRef = useRef<HTMLDivElement>(null), syncing = useRef(false);
-  const rows = useMemo(() => tickets.filter(t => (month === "todos" || t.abertoEm.startsWith(month)) && (status === "Todos" || t.status === status) && (priority === "Todas" || t.prioridade === priority) && (!search || [t.id, t.solicitante, t.setor, t.local, t.descricao, t.responsavel].join(" ").toLowerCase().includes(search.toLowerCase())))
-    .sort((a, b) => attendance ? (Number(["Resolvido", "Cancelado"].includes(a.status)) - Number(["Resolvido", "Cancelado"].includes(b.status)) || b.id - a.id) : b.id - a.id), [tickets, month, status, priority, search, attendance]);
+  const rows = useMemo(() => tickets.filter(t => (!filtros.includes("Mês") || month === "todos" || t.abertoEm.startsWith(month)) && (!filtros.includes("Status") || status === "Todos" || t.status === status) && (!filtros.includes("Prioridade") || priority === "Todas" || t.prioridade === priority) && (!filtros.includes("Busca") || !search || [t.id, t.solicitante, t.setor, t.local, t.descricao, t.responsavel].join(" ").toLowerCase().includes(search.toLowerCase())))
+    .sort((a, b) => attendance ? (Number(["Resolvido", "Cancelado"].includes(a.status)) - Number(["Resolvido", "Cancelado"].includes(b.status)) || b.id - a.id) : b.id - a.id), [tickets, month, status, priority, search, attendance, regras.planilha]);
   useEffect(() => setPage(1), [month, status, priority, search, pageSize]);
   const pages = Math.max(1, Math.ceil(rows.length / pageSize));
   const visible = rows.slice((Math.min(page, pages) - 1) * pageSize, Math.min(page, pages) * pageSize);
