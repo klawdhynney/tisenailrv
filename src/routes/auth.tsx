@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { emailCorporativo, sessaoMicrosoft } from "@/lib/corporate";
 
 export const Route = createFileRoute("/auth")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Área do gestor | TI Senai LRV" },
