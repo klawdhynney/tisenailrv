@@ -22,7 +22,6 @@ export const importarChamados = createServerFn({ method: "POST" })
     if (roleError || !role || context.claims.email?.toLowerCase() !== GESTOR_EMAIL) throw new Error("Apenas o gestor autorizado pode importar chamados.");
     const { data: existentes, error } = await context.supabase.from("tickets").select("id,aberto_em,hora,solicitante,setor,descricao");
     if (error) throw error;
-    const ids = new Set((existentes ?? []).map((t) => t.id));
     const chave = (t: { aberto_em: string; hora: string; solicitante: string; setor: string; descricao: string }) =>
       [t.aberto_em, t.hora, t.solicitante, t.setor, t.descricao].map((v) => v.trim().toLocaleLowerCase("pt-BR")).join("|");
     const chaves = new Set((existentes ?? []).map(chave));
@@ -41,7 +40,6 @@ export const importarChamados = createServerFn({ method: "POST" })
       // The generated identity owns new IDs. Source IDs are used only to recognize existing tickets.
       const result = await context.supabase.from("tickets").insert(payload).select("id").single();
       if (result.error) throw new Error(`Importação interrompida após ${inseridos} chamados: ${result.error.message}`);
-      if (result.data) ids.add(result.data.id);
       chaves.add(fingerprint);
       inseridos++;
     }
