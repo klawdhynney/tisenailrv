@@ -7,13 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
-import { emailCorporativo, sessaoMicrosoft } from "@/lib/corporate";
-import { PRIORIDADES, type Prioridade, CORES_PRIORIDADE } from "@/lib/types";
+import { emailCorporativo } from "@/lib/corporate";
+import { PRIORIDADES, type Prioridade } from "@/lib/types";
 
 export const Route = createFileRoute("/abrir")({
   head: () => ({
     meta: [
-      { title: "Abrir Chamado de TI | CENTRAL DE CHAMADOS DE TI SENAI LRV" },
+      { title: "Abrir chamado | TI Senai LRV" },
       { name: "description", content: "Formulário simples para abrir um chamado de TI informando setor, local exato e descrição do problema." },
       { property: "og:title", content: "Abrir Chamado de TI" },
       { property: "og:description", content: "Registre seu chamado de TI em poucos segundos." },
@@ -26,6 +26,7 @@ export const Route = createFileRoute("/abrir")({
 
 const campoVazio = {
   solicitante: "",
+  email: "",
   contato: "",
   setor: "",
   local: "",
@@ -36,6 +37,7 @@ const campoVazio = {
 
 interface Erros {
   solicitante?: string;
+  email?: string;
   setor?: string;
   local?: string;
   categoria?: string;
@@ -43,21 +45,19 @@ interface Erros {
 }
 
 function AbrirChamado() {
-  const { regras, addTicket, session } = useStore();
+  const { regras, addTicket } = useStore();
   const navigate = useNavigate();
   const [form, setForm] = useState(campoVazio);
   const [erros, setErros] = useState<Erros>({});
+  const [enviando, setEnviando] = useState(false);
 
   const set = (k: keyof typeof campoVazio, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
-    if (!session || !emailCorporativo(session.user.email) || !sessaoMicrosoft(session.user.app_metadata?.provider)) {
-      toast.error("Entre com sua conta Microsoft institucional para abrir um chamado.");
-      return;
-    }
     const novosErros: Erros = {};
     if (!form.solicitante.trim()) novosErros.solicitante = "Informe seu nome.";
+    if (!emailCorporativo(form.email.trim())) novosErros.email = "Informe um e-mail institucional @senaimt ou @sesisenaimt válido.";
     if (!form.setor) novosErros.setor = "Escolha o setor.";
     if (form.local.trim().length < 3)
       novosErros.local = "Obrigatório: informe onde está o problema (sala, andar, bloco, pavilhão...).";
@@ -69,10 +69,11 @@ function AbrirChamado() {
       return;
     }
 
-    const agora = new Date();
+    if (enviando) return;
+    setEnviando(true);
     const ok = await addTicket({
-      abertoEm: `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}-${String(agora.getDate()).padStart(2, "0")}`,
-      hora: agora.toTimeString().slice(0, 5),
+      abertoEm: "",
+      hora: "",
       solicitante: form.solicitante.trim(),
       setor: form.setor,
       local: form.local.trim(),
@@ -85,7 +86,8 @@ function AbrirChamado() {
       fechadoEm: null,
       horario: null,
       procedimento: null,
-    });
+    }, form.email.trim());
+    setEnviando(false);
     if (!ok) {
       toast.error("Não foi possível registrar o chamado. Tente novamente.");
       return;
@@ -101,16 +103,7 @@ function AbrirChamado() {
     <div className="mx-auto max-w-3xl">
       <h1 className="text-3xl font-bold tracking-tight">Abrir chamado de TI</h1>
       <p className="mt-2 text-muted-foreground">Preencha os campos abaixo. Quanto mais claro o local e a descrição, mais rápido o atendimento.</p>
-      {!session || !emailCorporativo(session.user.email) || !sessaoMicrosoft(session.user.app_metadata?.provider) ? (
-        <div className="mt-6 border-l-4 border-primary bg-muted p-5">
-          <p className="mb-4">Para abrir seu primeiro chamado, entre com um e-mail @senaimt ou @sesisenaimt da sua conta Microsoft.</p>
-          <Button onClick={() => navigate({ to: "/auth" })}>Entrar com Microsoft</Button>
-        </div>
-      ) : (
-        <p className="mt-4 text-sm text-muted-foreground">E-mail institucional: <strong className="text-foreground">{session.user.email}</strong></p>
-      )}
-
-      {session && emailCorporativo(session.user.email) && sessaoMicrosoft(session.user.app_metadata?.provider) && <Card className="mt-6">
+      <Card className="mt-6">
         <CardHeader>
           <CardTitle>Dados do chamado</CardTitle>
         </CardHeader>
@@ -120,6 +113,11 @@ function AbrirChamado() {
               <Campo label="Seu nome *" erro={erros.solicitante}>
                 <Input value={form.solicitante} onChange={(e) => set("solicitante", e.target.value)} placeholder="Ex.: Maria Heloisa" />
               </Campo>
+              <Campo label="E-mail institucional *" erro={erros.email}>
+                <Input type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="nome@senaimt.ind.br" />
+              </Campo>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
               <Campo label="Telefone / ramal (opcional)">
                 <Input value={form.contato} onChange={(e) => set("contato", e.target.value)} placeholder="Ex.: ramal 2045" />
               </Campo>
@@ -178,19 +176,15 @@ function AbrirChamado() {
                 {PRIORIDADES.map((p) => {
                   const ativo = form.prioridade === p;
                   return (
-                    <button
+                    <Button
                       type="button"
                       key={p}
                       onClick={() => set("prioridade", p)}
-                      className="rounded-full px-4 py-1.5 text-sm font-semibold ring-offset-2 transition"
-                      style={{
-                        backgroundColor: ativo ? CORES_PRIORIDADE[p].bg : "transparent",
-                        color: ativo ? CORES_PRIORIDADE[p].text : undefined,
-                        border: `2px solid ${CORES_PRIORIDADE[p].bg}`,
-                      }}
+                      variant={ativo ? "default" : "outline"}
+                      className="rounded-full"
                     >
                       {p}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -200,12 +194,12 @@ function AbrirChamado() {
               </p>
             </div>
 
-            <Button type="submit" size="lg" className="w-full sm:w-auto">
-              Enviar chamado
+            <Button type="submit" size="lg" disabled={enviando} className="w-full sm:w-auto">
+              {enviando ? "Enviando…" : "Enviar chamado"}
             </Button>
           </form>
         </CardContent>
-      </Card>}
+      </Card>
     </div>
   );
 }
