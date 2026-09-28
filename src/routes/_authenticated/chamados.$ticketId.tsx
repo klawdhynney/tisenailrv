@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Save, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,13 @@ function TicketEditor({ ticket, regras, updateTicket }: { ticket: Ticket; regras
   const [saving, setSaving] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [suggested, setSuggested] = useState<Ticket["prioridade"] | null>(null);
+  const autoSuggestedId = useRef<number | null>(null);
   useEffect(() => setDraft(ticket), [ticket]);
+  useEffect(() => {
+    if (ticket.status !== "Aberto" || autoSuggestedId.current === ticket.id) return;
+    autoSuggestedId.current = ticket.id;
+    void suggestPriority();
+  }, [ticket.id, ticket.status]);
   const sla = calcularSla(ticket, regras);
   const field = <K extends keyof Ticket>(key: K, value: Ticket[K]) => setDraft(prev => ({ ...prev, [key]: value }));
   const editable = ["solicitante", "setor", "local", "descricao", "categoria", "prioridade", "responsavel", "status", "procedimento", "contato"] as const;
@@ -73,7 +79,7 @@ function TicketEditor({ ticket, regras, updateTicket }: { ticket: Ticket; regras
       <label className="grid gap-2 text-sm font-medium">Local exato<Input value={draft.local} onChange={e => field("local", e.target.value)} /></label>
       <label className="grid gap-2 text-sm font-medium">Categoria<select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.categoria ?? ""} onChange={e => field("categoria", e.target.value)}>{regras.categorias.map(c => <option key={c}>{c}</option>)}</select></label>
       <label className="grid gap-2 text-sm font-medium">Responsável<select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.responsavel ?? ""} onChange={e => field("responsavel", e.target.value || null)}><option value="">Não atribuído</option>{regras.responsaveis.map(r => <option key={r}>{r}</option>)}</select></label>
-       <div className="space-y-2"><label className="grid gap-2 text-sm font-medium">Prioridade<select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.prioridade} onChange={e => field("prioridade", e.target.value as Ticket["prioridade"])}>{PRIORIDADES.map(p => <option key={p}>{p}</option>)}</select></label><Button type="button" size="sm" variant="outline" disabled={suggesting} onClick={suggestPriority}><Sparkles /> {suggesting ? "Analisando…" : "Sugerir prioridade com IA"}</Button>{suggested && <div className="flex flex-wrap items-center gap-2 text-sm">Sugestão: <strong>{suggested}</strong><Button size="sm" type="button" variant="google-green" onClick={() => { field("prioridade", suggested); setSuggested(null); }}>Aplicar no rascunho</Button></div>}</div>
+       <div className="space-y-2"><label className="grid gap-2 text-sm font-medium">Prioridade<select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.prioridade} onChange={e => field("prioridade", e.target.value as Ticket["prioridade"])}>{PRIORIDADES.map(p => <option key={p}>{p}</option>)}</select></label><Button type="button" size="sm" variant="outline" disabled={suggesting} onClick={suggestPriority}><Sparkles /> {suggesting ? "Analisando…" : "Sugerir prioridade com IA"}</Button>{suggested && <div className="flex flex-wrap items-center gap-2 text-sm">Sugestão: <strong>{suggested}</strong><Button size="sm" type="button" variant="google-green" onClick={() => { field("prioridade", suggested); setSuggested(null); }}>Aplicar no rascunho</Button></div>}<p className="text-xs text-muted-foreground">Chamados abertos recebem uma sugestão automática ao serem visualizados. A prioridade só muda após você aplicar e salvar.</p></div>
       <label className="grid gap-2 text-sm font-medium">Status<select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.status} onChange={e => field("status", e.target.value as Ticket["status"])}>{STATUS_LIST.map(s => <option key={s}>{s}</option>)}</select></label>
     </div>
      <label className="grid gap-2 text-sm font-medium">Descrição<TextoAssistido value={draft.descricao} onChange={value => field("descricao", value)} /></label>
