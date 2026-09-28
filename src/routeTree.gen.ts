@@ -10,14 +10,21 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AbrirRouteImport } from './routes/abrir'
-import { Route as ChamadosRouteImport } from './routes/chamados'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as RegrasRouteImport } from './routes/regras'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedAtendimentoRouteImport } from './routes/_authenticated/atendimento'
+import { Route as AuthenticatedChamadosRouteImport } from './routes/_authenticated/chamados'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedRegrasRouteImport } from './routes/_authenticated/regras'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AbrirRoute = AbrirRouteImport.update({
@@ -25,58 +32,98 @@ const AbrirRoute = AbrirRouteImport.update({
   path: '/abrir',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChamadosRoute = ChamadosRouteImport.update({
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAtendimentoRoute =
+  AuthenticatedAtendimentoRouteImport.update({
+    id: '/atendimento',
+    path: '/atendimento',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedChamadosRoute = AuthenticatedChamadosRouteImport.update({
   id: '/chamados',
   path: '/chamados',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const DashboardRoute = DashboardRouteImport.update({
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const RegrasRoute = RegrasRouteImport.update({
+const AuthenticatedRegrasRoute = AuthenticatedRegrasRouteImport.update({
   id: '/regras',
   path: '/regras',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/abrir': typeof AbrirRoute
-  '/chamados': typeof ChamadosRoute
-  '/dashboard': typeof DashboardRoute
-  '/regras': typeof RegrasRoute
+  '/auth': typeof AuthRoute
+  '/atendimento': typeof AuthenticatedAtendimentoRoute
+  '/chamados': typeof AuthenticatedChamadosRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/regras': typeof AuthenticatedRegrasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/abrir': typeof AbrirRoute
-  '/chamados': typeof ChamadosRoute
-  '/dashboard': typeof DashboardRoute
-  '/regras': typeof RegrasRoute
+  '/auth': typeof AuthRoute
+  '/atendimento': typeof AuthenticatedAtendimentoRoute
+  '/chamados': typeof AuthenticatedChamadosRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/regras': typeof AuthenticatedRegrasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/abrir': typeof AbrirRoute
-  '/chamados': typeof ChamadosRoute
-  '/dashboard': typeof DashboardRoute
-  '/regras': typeof RegrasRoute
+  '/auth': typeof AuthRoute
+  '/_authenticated/atendimento': typeof AuthenticatedAtendimentoRoute
+  '/_authenticated/chamados': typeof AuthenticatedChamadosRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/regras': typeof AuthenticatedRegrasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/abrir' | '/chamados' | '/dashboard' | '/regras'
+  fullPaths:
+    | '/'
+    | '/abrir'
+    | '/auth'
+    | '/atendimento'
+    | '/chamados'
+    | '/dashboard'
+    | '/regras'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/abrir' | '/chamados' | '/dashboard' | '/regras'
-  id: '__root__' | '/' | '/abrir' | '/chamados' | '/dashboard' | '/regras'
+  to:
+    | '/'
+    | '/abrir'
+    | '/auth'
+    | '/atendimento'
+    | '/chamados'
+    | '/dashboard'
+    | '/regras'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/abrir'
+    | '/auth'
+    | '/_authenticated/atendimento'
+    | '/_authenticated/chamados'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/regras'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AbrirRoute: typeof AbrirRoute
-  ChamadosRoute: typeof ChamadosRoute
-  DashboardRoute: typeof DashboardRoute
-  RegrasRoute: typeof RegrasRoute
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -88,6 +135,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/abrir': {
       id: '/abrir'
       path: '/abrir'
@@ -95,36 +149,66 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AbrirRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/chamados': {
-      id: '/chamados'
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/atendimento': {
+      id: '/_authenticated/atendimento'
+      path: '/atendimento'
+      fullPath: '/atendimento'
+      preLoaderRoute: typeof AuthenticatedAtendimentoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/chamados': {
+      id: '/_authenticated/chamados'
       path: '/chamados'
       fullPath: '/chamados'
-      preLoaderRoute: typeof ChamadosRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedChamadosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/dashboard': {
-      id: '/dashboard'
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/regras': {
-      id: '/regras'
+    '/_authenticated/regras': {
+      id: '/_authenticated/regras'
       path: '/regras'
       fullPath: '/regras'
-      preLoaderRoute: typeof RegrasRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedRegrasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAtendimentoRoute: typeof AuthenticatedAtendimentoRoute
+  AuthenticatedChamadosRoute: typeof AuthenticatedChamadosRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedRegrasRoute: typeof AuthenticatedRegrasRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAtendimentoRoute: AuthenticatedAtendimentoRoute,
+  AuthenticatedChamadosRoute: AuthenticatedChamadosRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedRegrasRoute: AuthenticatedRegrasRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AbrirRoute: AbrirRoute,
-  ChamadosRoute: ChamadosRoute,
-  DashboardRoute: DashboardRoute,
-  RegrasRoute: RegrasRoute,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
