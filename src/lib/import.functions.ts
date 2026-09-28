@@ -20,11 +20,17 @@ export const importarChamados = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { data: role, error: roleError } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId).eq("role", "gestor").maybeSingle();
     if (roleError || !role || context.claims.email?.toLowerCase() !== GESTOR_EMAIL) throw new Error("Apenas o gestor autorizado pode importar chamados.");
-    const { data: existentes, error } = await context.supabase.from("tickets").select("id,aberto_em,hora,solicitante,setor,descricao");
-    if (error) throw error;
+    const existentes: { aberto_em: string; hora: string; solicitante: string; setor: string; descricao: string }[] = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data: pagina, error } = await context.supabase.from("tickets")
+        .select("aberto_em,hora,solicitante,setor,descricao").order("id").range(offset, offset + 999);
+      if (error) throw error;
+      existentes.push(...(pagina ?? []));
+      if (!pagina || pagina.length < 1000) break;
+    }
     const chave = (t: { aberto_em: string; hora: string; solicitante: string; setor: string; descricao: string }) =>
       [t.aberto_em, t.hora, t.solicitante, t.setor, t.descricao].map((v) => v.trim().toLocaleLowerCase("pt-BR")).join("|");
-    const chaves = new Set((existentes ?? []).map(chave));
+    const chaves = new Set(existentes.map(chave));
     let inseridos = 0, ignorados = 0;
     for (const item of data) {
       const registro = { aberto_em: item.abertoEm, hora: item.hora, solicitante: item.solicitante, setor: item.setor, descricao: item.descricao };
