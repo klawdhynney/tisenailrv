@@ -49,7 +49,12 @@ function Chamados() {
       const { linhas, erros } = await lerPlanilha(file);
       if (erros.length) { toast.error(`Importação cancelada: ${erros[0]}`); return; }
       if (!linhas.length) { toast.error("Nenhuma linha de chamados encontrada."); return; }
-      const { inseridos, ignorados } = await importarChamados({ data: linhas });
+      let inseridos = 0, ignorados = 0;
+      for (let i = 0; i < linhas.length; i += 500) {
+        const resultado = await importarChamados({ data: linhas.slice(i, i + 500) });
+        inseridos += resultado.inseridos;
+        ignorados += resultado.ignorados;
+      }
       toast.success(`${inseridos} importados; ${ignorados} já existentes ignorados.`);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Falha ao importar arquivo."); }
     finally { setImportando(false); if (arquivoRef.current) arquivoRef.current.value = ""; }

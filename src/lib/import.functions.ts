@@ -19,7 +19,8 @@ export const importarChamados = createServerFn({ method: "POST" })
   .inputValidator((input) => z.array(linha).min(1).max(1000).parse(input))
   .handler(async ({ context, data }) => {
     const { data: role, error: roleError } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId).eq("role", "gestor").maybeSingle();
-    if (roleError || !role || context.claims.email?.toLowerCase() !== GESTOR_EMAIL) throw new Error("Apenas o gestor autorizado pode importar chamados.");
+    const provider = context.claims.app_metadata?.provider;
+    if (roleError || !role || context.claims.email?.toLowerCase() !== GESTOR_EMAIL || (provider !== "microsoft" && provider !== "azure")) throw new Error("Apenas o gestor autorizado com conta Microsoft pode importar chamados.");
     const existentes: { aberto_em: string; hora: string; solicitante: string; setor: string; descricao: string }[] = [];
     for (let offset = 0; ; offset += 1000) {
       const { data: pagina, error } = await context.supabase.from("tickets")
