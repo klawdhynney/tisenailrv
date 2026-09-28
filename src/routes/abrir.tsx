@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { Cpu, MapPin, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -97,11 +98,11 @@ function AbrirChamado() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-3xl font-bold tracking-tight">Abrir chamado de TI</h1>
-      <p className="mt-2 text-muted-foreground">Preencha os campos abaixo. Quanto mais claro o local e a descrição, mais rápido o atendimento.</p>
-      <Card className="mt-6">
+      <div className="rounded-2xl border-l-4 border-g-green bg-card px-5 py-5 shadow-sm"><div className="flex items-center gap-3"><span className="rounded-xl bg-g-green/15 p-3 text-g-green"><Cpu className="size-7" /></span><h1 className="text-3xl font-bold">Abrir chamado de TI</h1></div>
+      <p className="mt-2 text-muted-foreground">Preencha os campos abaixo. Quanto mais claro o local e a descrição, mais rápido o atendimento.</p></div>
+      <Card className="mt-6 rounded-2xl border-t-4 border-g-blue shadow-md">
         <CardHeader>
-          <CardTitle>Dados do chamado</CardTitle>
+          <CardTitle className="flex items-center gap-2"><MapPin className="size-5 text-g-blue" /> Dados do chamado</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={enviar} className="grid gap-5">
@@ -120,7 +121,7 @@ function AbrirChamado() {
             <div className="grid gap-5 sm:grid-cols-2">
               <Campo label="Setor *" erro={erros.setor}>
                 <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm"
                   value={form.setor}
                   onChange={(e) => set("setor", e.target.value)}
                 >
@@ -132,7 +133,7 @@ function AbrirChamado() {
               </Campo>
               <Campo label="Tipo de problema *" erro={erros.categoria}>
                 <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm"
                   value={form.categoria}
                   onChange={(e) => set("categoria", e.target.value)}
                 >
@@ -165,7 +166,7 @@ function AbrirChamado() {
             </Campo>
 
             <Button type="submit" size="lg" disabled={enviando} className="w-full sm:w-auto">
-              {enviando ? "Enviando…" : "Enviar chamado"}
+              <Send className="size-4" /> {enviando ? "Enviando…" : "Enviar chamado"}
             </Button>
           </form>
         </CardContent>
