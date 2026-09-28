@@ -13,6 +13,7 @@ function fromRow(r: Row): Ticket {
     abertoEm: r.aberto_em,
     hora: r.hora,
     solicitante: r.solicitante,
+    solicitanteEmail: r.solicitante_email,
     setor: r.setor,
     local: r.local,
     descricao: r.descricao,
@@ -31,7 +32,7 @@ function fromRow(r: Row): Ticket {
 function toRow(p: Partial<Ticket>) {
   const m: Record<string, unknown> = {};
   const map: Record<string, string> = {
-    abertoEm: "aberto_em", hora: "hora", solicitante: "solicitante", setor: "setor", local: "local",
+    abertoEm: "aberto_em", hora: "hora", solicitante: "solicitante", solicitanteEmail: "solicitante_email", setor: "setor", local: "local",
     descricao: "descricao", categoria: "categoria", prioridade: "prioridade", responsavel: "responsavel",
     status: "status", fechadoEm: "fechado_em", horario: "horario", procedimento: "procedimento",
     contato: "contato", slaReiniciadoEm: "sla_reiniciado_em",

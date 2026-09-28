@@ -23,6 +23,7 @@ export interface Ticket {
   abertoEm: string; // yyyy-mm-dd
   hora: string; // HH:mm
   solicitante: string;
+  solicitanteEmail?: string | null;
   setor: string;
   local: string;
   descricao: string;
