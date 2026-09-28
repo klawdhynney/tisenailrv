@@ -154,7 +154,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!emailCorporativo(email)) return false;
     const { data: { user } } = await supabase.auth.getUser();
     const isInstitutional = user && emailCorporativo(user.email) && sessaoMicrosoft(user.app_metadata?.provider);
-    if (user && !isInstitutional) await supabase.auth.signOut();
+    if (user && (!isInstitutional || user.email?.toLowerCase() !== email.toLowerCase())) await supabase.auth.signOut();
     const payload = {
       ...toRow(t),
       // Public submissions are timestamped at the database, not by the visitor's device.
