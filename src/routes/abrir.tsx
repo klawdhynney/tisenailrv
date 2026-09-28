@@ -7,8 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
-import { emailCorporativo } from "@/lib/corporate";
-import { PRIORIDADES, type Prioridade } from "@/lib/types";
 
 export const Route = createFileRoute("/abrir")({
   head: () => ({
@@ -26,18 +24,15 @@ export const Route = createFileRoute("/abrir")({
 
 const campoVazio = {
   solicitante: "",
-  email: "",
   contato: "",
   setor: "",
   local: "",
   categoria: "",
   descricao: "",
-  prioridade: "Média" as Prioridade,
 };
 
 interface Erros {
   solicitante?: string;
-  email?: string;
   setor?: string;
   local?: string;
   categoria?: string;
@@ -57,7 +52,6 @@ function AbrirChamado() {
     e.preventDefault();
     const novosErros: Erros = {};
     if (!form.solicitante.trim()) novosErros.solicitante = "Informe seu nome.";
-    if (!emailCorporativo(form.email.trim())) novosErros.email = "Informe um e-mail institucional @senaimt ou @sesisenaimt válido.";
     if (!form.setor) novosErros.setor = "Escolha o setor.";
     if (form.local.trim().length < 3)
       novosErros.local = "Obrigatório: informe onde está o problema (sala, andar, bloco, pavilhão...).";
@@ -79,14 +73,14 @@ function AbrirChamado() {
       local: form.local.trim(),
       categoria: form.categoria,
       descricao: form.descricao.trim(),
-      prioridade: form.prioridade,
+      prioridade: "Média",
       responsavel: null,
       status: "Aberto",
       contato: form.contato.trim() || null,
       fechadoEm: null,
       horario: null,
       procedimento: null,
-    }, form.email.trim());
+    });
     setEnviando(false);
     if (!ok) {
       toast.error("Não foi possível registrar o chamado. Tente novamente.");
@@ -96,8 +90,6 @@ function AbrirChamado() {
     setForm(campoVazio);
     navigate({ to: "/" });
   }
-
-  const prazo = regras.prazos[form.prioridade];
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -113,11 +105,6 @@ function AbrirChamado() {
               <Campo label="Seu nome *" erro={erros.solicitante}>
                 <Input value={form.solicitante} onChange={(e) => set("solicitante", e.target.value)} placeholder="Ex.: Maria Heloisa" />
               </Campo>
-              <Campo label="E-mail institucional *" erro={erros.email}>
-                <Input type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="nome@senaimt.ind.br" />
-              </Campo>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2">
               <Campo label="WhatsApp (opcional)">
                 <Input type="tel" value={form.contato} onChange={(e) => set("contato", e.target.value)} placeholder="Ex.: (65) 99999-9999" />
               </Campo>
@@ -169,30 +156,6 @@ function AbrirChamado() {
                 placeholder="Conte o que está acontecendo, desde quando e o que já tentou fazer."
               />
             </Campo>
-
-            <div>
-              <Label className="mb-2 block">Prioridade</Label>
-              <div className="flex flex-wrap gap-2">
-                {PRIORIDADES.map((p) => {
-                  const ativo = form.prioridade === p;
-                  return (
-                    <Button
-                      type="button"
-                      key={p}
-                      onClick={() => set("prioridade", p)}
-                      variant={ativo ? "default" : "outline"}
-                      className="rounded-full"
-                    >
-                      {p}
-                    </Button>
-                  );
-                })}
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Prazo de atendimento para {form.prioridade}: <strong>{prazo} horas úteis</strong> (contadas apenas no
-                horário de atendimento, de {regras.expediente.inicio} às {regras.expediente.fim}, de segunda a sexta).
-              </p>
-            </div>
 
             <Button type="submit" size="lg" disabled={enviando} className="w-full sm:w-auto">
               {enviando ? "Enviando…" : "Enviar chamado"}

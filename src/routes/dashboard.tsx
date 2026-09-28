@@ -56,7 +56,7 @@ function Dashboard() {
   const dados: Item[] = visao === "problemas" && mes === "todos" && prioridade === "Todas" && status === "Todos" && !foco
     ? RECORRENTES.map((item) => ({ ...item }))
     : visao === "problemas" ? categorias : visao === "setores" ? setores : contar(visao === "prioridades" ? "prioridade" : "status");
-  const cor = (nome: string, i: number) => visao === "prioridades" ? CORES_PRIORIDADE[nome as Prioridade]?.bg ?? CORES[i % CORES.length] : visao === "status" ? CORES_STATUS[nome as Status]?.bg ?? CORES[i % CORES.length] : CORES[i % CORES.length];
+  const cor = (nome: string, i: number) => visao === "prioridades" ? CORES_PRIORIDADE[nome as Prioridade]?.bg ?? CORES[i % CORES.length] ?? "var(--g-blue)" : visao === "status" ? CORES_STATUS[nome as Status]?.bg ?? CORES[i % CORES.length] ?? "var(--g-blue)" : CORES[i % CORES.length] ?? "var(--g-blue)";
   const clicar = (nome: string) => visao === "problemas" && !RECORRENTES.some((item) => item.name === nome) ? setFoco({ tipo: "categoria", nome }) : visao === "setores" ? setFoco({ tipo: "setor", nome }) : undefined;
   const baixarResumo = () => {
     const conteudo = [["Visão", "Item", "Chamados"], ...dados.map((r) => [visao, r.name, String(r.value)])].map((r) => r.map((v) => `"${v.replace(/"/g, '""')}"`).join(";")).join("\n");

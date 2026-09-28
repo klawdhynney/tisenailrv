@@ -15,3 +15,11 @@
 - [x] Manter a gestão autenticada durante a avaliação para proteger os dados pessoais dos chamados.
 
 Avisos no Teams e Outlook permanecem adiados para outro upgrade.
+
+## Ajustes de acesso e início
+
+- [x] Permitir abertura pública sem login e sem e-mail.
+- [x] Retirar a prioridade do formulário; novos chamados entram como Média para triagem do gestor.
+- [x] Reposicionar os três indicadores ao lado do título.
+- [x] Usar a marca SENAI LRV enviada como marca d’água discreta, mantendo a imagem tecnológica.
+- [x] Preservar a autenticação da gestão para proteger dados pessoais e ações administrativas.
