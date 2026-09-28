@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { Download, FileCode2, FileSpreadsheet, FileText, Plus, Printer, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -24,6 +24,12 @@ export const Route = createFileRoute("/_authenticated/chamados")({
 });
 
 function Chamados() {
+  const isDetail = useRouterState({ select: state => state.location.pathname !== "/chamados" && state.location.pathname.startsWith("/chamados/") });
+  if (isDetail) return <Outlet />;
+  return <Planilha />;
+}
+
+function Planilha() {
   const { tickets } = useStore();
   const arquivoRef = useRef<HTMLInputElement>(null);
   const [importando, setImportando] = useState(false);
