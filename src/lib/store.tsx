@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { emailCorporativo, sessaoMicrosoft } from "./corporate";
 import { REGRAS_PADRAO, type Regras, type Ticket, type Prioridade, type Status } from "./types";
 
 type Row = Database["public"]["Tables"]["tickets"]["Row"];
@@ -44,6 +45,7 @@ function toRow(p: Partial<Ticket>) {
 
 interface Ctx {
   tickets: Ticket[];
+  publicStats: Database["public"]["Tables"]["ticket_public_stats"]["Row"][];
   regras: Regras;
   hidratado: boolean;
   session: Session | null;
@@ -60,6 +62,7 @@ const StoreContext = createContext<Ctx | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [publicStats, setPublicStats] = useState<Database["public"]["Tables"]["ticket_public_stats"]["Row"][]>([]);
   const [regras, setRegrasState] = useState<Regras>(REGRAS_PADRAO);
   const [hidratado, setHidratado] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
@@ -91,13 +94,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .maybeSingle()
       .then(({ data }) => {
         if (!ativo) return;
-        setIsGestor(!!data);
+        setIsGestor(!!data && emailCorporativo(session?.user.email) && sessaoMicrosoft(session?.user.app_metadata?.provider));
         setAuthPronto(true);
       });
     return () => {
       ativo = false;
     };
-  }, [session?.user.id]);
+  }, [session?.user.id, session?.user.email, session?.user.app_metadata?.provider]);
+
+  useEffect(() => {
+    const carregar = () => supabase.from("ticket_public_stats").select("*").then(({ data }) => setPublicStats(data ?? []));
+    carregar();
+    const channel = supabase.channel("public-stats-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "ticket_public_stats" }, carregar).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   // Regras (públicas) + tempo real
   useEffect(() => {
@@ -140,7 +151,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [isGestor, authPronto]);
 
   const addTicket = useCallback(async (t: Omit<Ticket, "id">) => {
-    const { error } = await supabase.from("tickets").insert(toRow(t) as never);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !emailCorporativo(user.email) || !sessaoMicrosoft(user.app_metadata?.provider)) return false;
+    const { error } = await supabase.from("tickets").insert({ ...toRow(t), criado_por: user.id, solicitante_email: user.email } as never);
     return !error;
   }, []);
 
@@ -173,8 +186,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ tickets, regras, hidratado, session, isGestor, authPronto, addTicket, updateTicket, removeTicket, setRegras, sair }),
-    [tickets, regras, hidratado, session, isGestor, authPronto, addTicket, updateTicket, removeTicket, setRegras, sair],
+    () => ({ tickets, publicStats, regras, hidratado, session, isGestor, authPronto, addTicket, updateTicket, removeTicket, setRegras, sair }),
+    [tickets, publicStats, regras, hidratado, session, isGestor, authPronto, addTicket, updateTicket, removeTicket, setRegras, sair],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
