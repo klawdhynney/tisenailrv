@@ -3,6 +3,7 @@ import { BarChart3, FilePlus2, Settings2, Table2, Home, Menu, Headset, LogIn, Lo
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
+import siteMark from "@/assets/ti-site-mark.png";
 
 const navPublico = [
   { to: "/", label: "Início", icon: Home, variante: "google-blue" },
@@ -64,9 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b-2 border-border bg-card/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
            <Link to="/" className="flex shrink-0 items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl border-2 border-[var(--g-blue)] bg-primary text-lg font-bold text-primary-foreground">
-              TI
-            </span>
+             <img src={siteMark} alt="Marca TI" width={40} height={40} className="size-10 rounded-full shadow-sm" />
              <span className="text-sm font-bold text-foreground sm:text-base">TI Senai LRV</span>
           </Link>
           <nav className="ml-auto hidden items-center gap-2 lg:flex">
