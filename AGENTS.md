@@ -10,4 +10,6 @@
 <!-- LOVABLE:END -->
 
 ## Dados dos chamados
-Os chamados e as regras de SLA ficam em `src/lib/store.tsx` (contexto React + localStorage, semente em `src/data/tickets.seed.json`); o cálculo de SLA fica isolado em `src/lib/sla.ts` para que planilha e dashboard usem exatamente a mesma regra.
+Os chamados e as regras de SLA ficam no Lovable Cloud, acessados em `src/lib/store.tsx`; o cálculo de SLA fica isolado em `src/lib/sla.ts` para a planilha do gestor usar a mesma regra.
+O dashboard público lê apenas totais agrupados da tabela `ticket_public_stats`, não os registros privados de `tickets`, para proteger dados pessoais.
+Importações Excel são validadas no navegador e gravadas por função autenticada com verificação de gestor, preservando IDs existentes e ignorando duplicados.
