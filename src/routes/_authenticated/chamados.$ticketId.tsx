@@ -34,9 +34,10 @@ function TicketEditor({ ticket, regras, updateTicket }: { ticket: Ticket; regras
   useEffect(() => setDraft(ticket), [ticket]);
   const sla = calcularSla(ticket, regras);
   const field = <K extends keyof Ticket>(key: K, value: Ticket[K]) => setDraft(prev => ({ ...prev, [key]: value }));
+  const editable = ["solicitante", "setor", "local", "descricao", "categoria", "prioridade", "responsavel", "status", "procedimento", "contato"] as const;
   async function save() {
     const patch: Partial<Ticket> = {};
-    for (const key of ["solicitante", "setor", "local", "descricao", "categoria", "prioridade", "responsavel", "status", "procedimento", "contato"] as const) {
+    for (const key of editable) {
       if (draft[key] !== ticket[key]) Object.assign(patch, { [key]: draft[key] });
     }
     if (!Object.keys(patch).length) return;
@@ -50,7 +51,7 @@ function TicketEditor({ ticket, regras, updateTicket }: { ticket: Ticket; regras
     try { const ok = await updateTicket(ticket.id, patch); toast[ok ? "success" : "error"](ok ? "Chamado salvo." : "Não foi possível salvar o chamado."); }
     finally { setSaving(false); }
   }
-  const hasChanges = ["solicitante", "setor", "local", "descricao", "categoria", "prioridade", "responsavel", "status", "procedimento", "contato"].some(k => draft[k as keyof Ticket] !== ticket[k as keyof Ticket]);
+  const hasChanges = editable.some(k => draft[k] !== ticket[k]);
   return <div className="mx-auto max-w-4xl space-y-6">
     <Button asChild variant="outline"><Link to="/atendimento"><ArrowLeft className="size-4" /> Voltar à planilha</Link></Button>
     <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5"><div><h1 className="text-3xl font-bold">Chamado #{ticket.id}</h1><p className="mt-1 text-muted-foreground">Aberto em {formatarData(ticket.abertoEm, ticket.hora)} · Prazo: {formatarDataHora(sla.prazo)} · {sla.situacao}</p></div>
