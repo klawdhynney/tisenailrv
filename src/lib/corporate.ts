@@ -1,9 +1,10 @@
-export const GESTOR_EMAIL = "claudinei.lima@senaimt.ind.br";
+export const GESTOR_EMAILS = [
+  "claudinei.lima@senaimt.ind.br",
+  "claudineigoncalvesdelima@hotmail.com",
+  "klawdhynney@gmail.com",
+] as const;
 
-export function emailCorporativo(email?: string | null) {
-  return !!email && /^[^@\s]+@(?:senaimt|sesisenaimt)\.[^@\s]+$/i.test(email);
-}
-
-export function sessaoMicrosoft(provider?: string | null) {
-  return provider === "microsoft" || provider === "azure";
+export function gestorAutorizado(email?: string | null, provider?: string | null) {
+  return !!email && GESTOR_EMAILS.some((allowed) => allowed === email.toLowerCase())
+    && (provider === "google" || provider === "microsoft" || provider === "azure");
 }

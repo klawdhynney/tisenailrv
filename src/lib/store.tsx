@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { emailCorporativo, sessaoMicrosoft } from "./corporate";
+import { gestorAutorizado } from "./corporate";
 import { REGRAS_PADRAO, type Regras, type Ticket, type Prioridade, type Status } from "./types";
 
 type Row = Database["public"]["Tables"]["tickets"]["Row"];
@@ -86,17 +86,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return;
     }
     setAuthPronto(false);
-    supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", uid)
-      .eq("role", "gestor")
-      .maybeSingle()
-      .then(({ data }) => {
+    (async () => {
+      const eligible = gestorAutorizado(session?.user.email, session?.user.app_metadata?.provider);
+      if (eligible) await supabase.rpc("claim_manager_access");
+      const { data } = eligible
+        ? await supabase.from("user_roles").select("role").eq("user_id", uid).eq("role", "gestor").maybeSingle()
+        : { data: null };
         if (!ativo) return;
-        setIsGestor(!!data && emailCorporativo(session?.user.email) && sessaoMicrosoft(session?.user.app_metadata?.provider));
+        setIsGestor(!!data && eligible);
         setAuthPronto(true);
-      });
+    })();
     return () => {
       ativo = false;
     };
@@ -152,7 +151,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const addTicket = useCallback(async (t: Omit<Ticket, "id">) => {
     const { data: { user } } = await supabase.auth.getUser();
-    const isInstitutional = user && emailCorporativo(user.email) && sessaoMicrosoft(user.app_metadata?.provider);
+    const isInstitutional = user && gestorAutorizado(user.email, user.app_metadata?.provider);
     const payload = {
       ...toRow(t),
       // Public submissions are timestamped at the database, not by the visitor's device.
