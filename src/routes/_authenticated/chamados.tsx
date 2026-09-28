@@ -8,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PrioridadeChip, SlaChip, StatusChip } from "@/components/Chips";
-import { mesDoTicket, useStore } from "@/lib/store";
+import { useStore } from "@/lib/store-context";
+import { mesDoTicket } from "@/lib/types";
 import { calcularSla, formatarData, formatarDataHora, formatarDuracao } from "@/lib/sla";
 import { exportarCsv, exportarPdf, exportarXlsx, exportarXml, ticketsParaLinhas } from "@/lib/exportar";
 import {

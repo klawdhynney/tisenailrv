@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { BarChart3, ChartArea, Download, PieChartIcon, Printer, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useStore } from "@/lib/store";
+import { useStore } from "@/lib/store-context";
 import { MESES_DISPONIVEIS, PRIORIDADES, STATUS_LIST, CORES_PRIORIDADE, CORES_STATUS, type Prioridade, type Status } from "@/lib/types";
 
 export const Route = createFileRoute("/dashboard")({

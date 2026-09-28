@@ -37,6 +37,10 @@ export interface Ticket {
   slaReiniciadoEm?: string | null;
 }
 
+export function mesDoTicket(t: Ticket) {
+  return t.abertoEm?.slice(0, 7) ?? "";
+}
+
 export interface Periodo {
   id: string;
   tipo: "Férias coletivas" | "Férias" | "Viagem a serviço" | "Atestado médico" | "Outro";

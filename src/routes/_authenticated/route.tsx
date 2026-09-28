@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useStore } from "@/lib/store";
+import { useStore } from "@/lib/store-context";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { lovable } from "@/integrations/lovable";
-import { useStore } from "@/lib/store";
+import { useStore } from "@/lib/store-context";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/auth")({
