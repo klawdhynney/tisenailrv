@@ -71,6 +71,13 @@
       "when": 1790578842583,
       "tag": "0009_corrigir_atualizacao_dos_indicadores",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790579705969,
+      "tag": "0010_allow_named_managers_google_microsoft",
+      "breakpoints": true
     }
   ]
 }
