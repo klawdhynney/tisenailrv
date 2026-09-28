@@ -49,7 +49,7 @@ function AbrirChamado() {
 
   const set = (k: keyof typeof campoVazio, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  function enviar(e: React.FormEvent) {
+  async function enviar(e: React.FormEvent) {
     e.preventDefault();
     const novosErros: Erros = {};
     if (!form.solicitante.trim()) novosErros.solicitante = "Informe seu nome.";

@@ -42,7 +42,7 @@ function AuthPage() {
         ? await supabase.auth.signInWithPassword({ email, password: senha })
         : await supabase.auth.signUp({ email, password: senha, options: { emailRedirectTo: window.location.origin + "/auth" } });
     setCarregando(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     if (modo === "cadastrar") toast.success("Conta criada! Confirme pelo link enviado ao seu e-mail.");
   }
 

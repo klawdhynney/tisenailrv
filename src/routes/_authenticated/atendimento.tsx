@@ -111,13 +111,13 @@ function CartaoChamado({ t, tecnico }: { t: Ticket; tecnico: string }) {
   }
 
   function assumir() {
-    if (!tecnico) return toast.error("Escolha seu nome no topo da página.");
+    if (!tecnico) { toast.error("Escolha seu nome no topo da página."); return; }
     updateTicket(t.id, { responsavel: tecnico, status: "Em andamento" });
     toast.success(`Você assumiu o chamado nº ${t.id}`);
   }
 
   function resolver() {
-    if (proc.trim().length < 5) return toast.error("Descreva o que foi feito antes de resolver.");
+    if (proc.trim().length < 5) { toast.error("Descreva o que foi feito antes de resolver."); return; }
     mudarStatus("Resolvido");
   }
 
