@@ -66,7 +66,7 @@
 }
 
 :root {
-  --radius: 0.75rem;
+  --radius: 1rem;
   /* Paleta Google */
   --g-blue: #4285f4;
   --g-red: #ea4335;
@@ -147,6 +147,8 @@
     border-color: var(--color-border);
   }
 
+  select { border-radius: var(--radius); }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -162,6 +164,8 @@
     max-width: none !important;
     padding: 0 !important;
   }
+
+  select { border-radius: var(--radius); }
 
   body {
     background: white !important;
