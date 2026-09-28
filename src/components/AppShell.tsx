@@ -23,13 +23,18 @@ const ativoCls = "border-[var(--g-blue)] bg-muted shadow-[0_0_16px_-4px_var(--g-
 export function AppShell({ children }: { children: ReactNode }) {
   const [aberto, setAberto] = useState(false);
   const [escuro, setEscuro] = useState(false);
-  useEffect(() => { setEscuro(localStorage.getItem("tema-ti") === "escuro"); }, []);
+  useEffect(() => {
+    const salvo = localStorage.getItem("tema-ti") === "escuro";
+    document.documentElement.classList.toggle("dark", salvo);
+    setEscuro(salvo);
+  }, []);
   useEffect(() => { document.documentElement.classList.toggle("dark", escuro); }, [escuro]);
-  const alternarTema = () => setEscuro((atual) => {
-    const novo = !atual;
+  const alternarTema = () => {
+    const novo = !document.documentElement.classList.contains("dark");
+    document.documentElement.classList.toggle("dark", novo);
     localStorage.setItem("tema-ti", novo ? "escuro" : "claro");
-    return novo;
-  });
+    setEscuro(novo);
+  };
   const { isGestor, session, sair } = useStore();
   const itens = [...navPublico, ...(isGestor ? navGestor : [])];
 
