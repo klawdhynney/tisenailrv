@@ -57,6 +57,13 @@
       "when": 1790578581209,
       "tag": "0007_permitir_chamado_publico_sem_email",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790578668934,
+      "tag": "0008_remover_limite_por_email_vazio",
+      "breakpoints": true
     }
   ]
 }
