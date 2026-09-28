@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Download, Printer, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { calcularSla, formatarData, formatarDataHora } from "@/lib/sla";
 import { useStore } from "@/lib/store";
 import { MESES_DISPONIVEIS, PRIORIDADES, STATUS_LIST, CORES_PRIORIDADE, CORES_STATUS, type Prioridade, type Status } from "@/lib/types";
 
@@ -47,7 +48,7 @@ function GraficoPizza({ dados, cores, aoClicar }: { dados: Item[]; cores?: ((nam
 }
 
 function Dashboard() {
-  const { publicStats, isGestor } = useStore();
+  const { publicStats, isGestor, tickets, regras } = useStore();
   const [mes, setMes] = useState("2026-09");
   const [prioridade, setPrioridade] = useState("Todas");
   const [status, setStatus] = useState("Todos");
@@ -84,5 +85,9 @@ function Dashboard() {
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2"><h2 className="text-2xl font-bold">{VISOES.find((v) => v.id === visao)?.label}</h2><p className="text-sm text-muted-foreground">{total} chamado(s) no período selecionado</p></div>
       {visao === "prioridades" && dados.length ? <div className="h-[370px] min-w-0"><ResponsiveContainer width="100%" height="100%"><BarChart data={dados} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="name" tick={{ fill: "var(--foreground)" }} /><YAxis allowDecimals={false} tick={{ fill: "var(--foreground)" }} /><Tooltip /><Bar dataKey="value" name="Chamados" radius={[4, 4, 0, 0]}>{dados.map((d) => <Cell key={d.name} fill={CORES_PRIORIDADE[d.name as Prioridade]?.bg ?? CORES[0]} />)}</Bar></BarChart></ResponsiveContainer></div> : <GraficoPizza dados={dados} cores={visao === "status" ? (name) => CORES_STATUS[name as Status]?.bg ?? CORES[0] : undefined} aoClicar={visao === "problemas" ? (nome) => setFoco({ tipo: "categoria", nome }) : visao === "setores" ? (nome) => setFoco({ tipo: "setor", nome }) : undefined} />}
     </section>
+    {isGestor && <section className="border-t-2 border-border pt-8">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-2xl font-bold">Planilha completa de chamados</h2><p className="mt-1 text-sm text-muted-foreground">Visível apenas para a gestão autorizada.</p></div><Button asChild variant="google-yellow"><Link to="/chamados"><Table2 /> Abrir planilha para editar</Link></Button></div>
+      <div className="overflow-x-auto border border-border bg-card"><table className="w-full min-w-[1400px] text-left text-sm"><thead className="bg-muted"><tr>{["Nº", "Abertura", "Solicitante", "Setor", "Local", "Descrição", "Categoria", "Prioridade", "Responsável", "Status", "Fechamento", "Procedimento", "Prazo SLA", "SLA"].map((h) => <th key={h} className="whitespace-nowrap border-b border-border px-3 py-3">{h}</th>)}</tr></thead><tbody>{tickets.filter((t) => mes === "todos" || t.abertoEm.startsWith(mes)).map((t) => { const sla = calcularSla(t, regras); return <tr key={t.id} className="border-b border-border align-top"><td className="px-3 py-3">{t.id}</td><td className="whitespace-nowrap px-3 py-3">{formatarData(t.abertoEm, t.hora)}</td><td className="px-3 py-3">{t.solicitante}</td><td className="px-3 py-3">{t.setor}</td><td className="px-3 py-3">{t.local}</td><td className="min-w-48 px-3 py-3">{t.descricao}</td><td className="px-3 py-3">{t.categoria || "—"}</td><td className="px-3 py-3">{t.prioridade}</td><td className="px-3 py-3">{t.responsavel || "—"}</td><td className="px-3 py-3">{t.status}</td><td className="whitespace-nowrap px-3 py-3">{formatarData(t.fechadoEm, t.horario)}</td><td className="min-w-48 px-3 py-3">{t.procedimento || "—"}</td><td className="whitespace-nowrap px-3 py-3">{formatarDataHora(sla.prazo)}</td><td className="px-3 py-3">{sla.situacao}</td></tr>; })}</tbody></table></div>
+    </section>}
   </div>;
 }
