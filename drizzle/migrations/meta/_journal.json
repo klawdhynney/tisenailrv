@@ -29,6 +29,13 @@
       "when": 1790568788189,
       "tag": "0003_enable_realtime_public_ticket_aggregates",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790568803648,
+      "tag": "0004_enforce_microsoft_domain_for_manager_data",
+      "breakpoints": true
     }
   ]
 }

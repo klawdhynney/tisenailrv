@@ -1,0 +1,14 @@
+DROP POLICY IF EXISTS "Gestor ve chamados" ON public.tickets;
+CREATE POLICY "Gestor Microsoft ve chamados" ON public.tickets FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'gestor') AND (auth.jwt() -> 'app_metadata' ->> 'provider') IN ('microsoft','azure') AND lower(auth.jwt() ->> 'email') = 'claudinei.lima@senaimt.ind.br');
+DROP POLICY IF EXISTS "Gestor atualiza chamados" ON public.tickets;
+CREATE POLICY "Gestor Microsoft atualiza chamados" ON public.tickets FOR UPDATE TO authenticated USING (public.has_role(auth.uid(), 'gestor') AND (auth.jwt() -> 'app_metadata' ->> 'provider') IN ('microsoft','azure') AND lower(auth.jwt() ->> 'email') = 'claudinei.lima@senaimt.ind.br') WITH CHECK (public.has_role(auth.uid(), 'gestor') AND (auth.jwt() -> 'app_metadata' ->> 'provider') IN ('microsoft','azure') AND lower(auth.jwt() ->> 'email') = 'claudinei.lima@senaimt.ind.br');
+DROP POLICY IF EXISTS "Gestor cria chamados" ON public.tickets;
+CREATE POLICY "Gestor Microsoft cria chamados" ON public.tickets FOR INSERT TO authenticated WITH CHECK (public.has_role(auth.uid(), 'gestor') AND (auth.jwt() -> 'app_metadata' ->> 'provider') IN ('microsoft','azure') AND lower(auth.jwt() ->> 'email') = 'claudinei.lima@senaimt.ind.br');
+DROP POLICY IF EXISTS "Gestor exclui chamados" ON public.tickets;
+CREATE POLICY "Gestor Microsoft exclui chamados" ON public.tickets FOR DELETE TO authenticated USING (public.has_role(auth.uid(), 'gestor') AND (auth.jwt() -> 'app_metadata' ->> 'provider') IN ('microsoft','azure') AND lower(auth.jwt() ->> 'email') = 'claudinei.lima@senaimt.ind.br');
+DROP POLICY IF EXISTS "Gestor altera regras" ON public.configuracoes;
+CREATE POLICY "Gestor Microsoft altera regras" ON public.configuracoes FOR UPDATE TO authenticated USING (public.has_role(auth.uid(), 'gestor') AND (auth.jwt() -> 'app_metadata' ->> 'provider') IN ('microsoft','azure') AND lower(auth.jwt() ->> 'email') = 'claudinei.lima@senaimt.ind.br') WITH CHECK (public.has_role(auth.uid(), 'gestor') AND (auth.jwt() -> 'app_metadata' ->> 'provider') IN ('microsoft','azure') AND lower(auth.jwt() ->> 'email') = 'claudinei.lima@senaimt.ind.br');
+DROP POLICY IF EXISTS "Gestor cria regras" ON public.configuracoes;
+CREATE POLICY "Gestor Microsoft cria regras" ON public.configuracoes FOR INSERT TO authenticated WITH CHECK (public.has_role(auth.uid(), 'gestor') AND (auth.jwt() -> 'app_metadata' ->> 'provider') IN ('microsoft','azure') AND lower(auth.jwt() ->> 'email') = 'claudinei.lima@senaimt.ind.br');
+DROP POLICY IF EXISTS "Usuario corporativo ve seus chamados" ON public.tickets;
+CREATE POLICY "Usuario Microsoft ve seus chamados" ON public.tickets FOR SELECT TO authenticated USING (criado_por = auth.uid() AND (auth.jwt() -> 'app_metadata' ->> 'provider') IN ('microsoft','azure') AND (lower(auth.jwt() ->> 'email') LIKE '%@senaimt.%' OR lower(auth.jwt() ->> 'email') LIKE '%@sesisenaimt.%'));
