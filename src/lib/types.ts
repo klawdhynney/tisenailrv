@@ -65,7 +65,11 @@ export interface Regras {
   setores: string[];
   categorias: string[];
   responsaveis: string[];
+  planilha?: { filtros: string[]; colunas: string[] };
 }
+
+export const FILTROS_PLANILHA = ["Mês", "Prioridade", "Status", "Busca", "Por página"] as const;
+export const COLUNAS_PLANILHA = ["Ver chamado", "Nº", "Aberto em", "Solicitante", "E-mail", "WhatsApp", "Setor / local", "Descrição", "Categoria", "Prioridade", "Responsável", "Status", "Procedimento", "Fechado em", "Prazo", "SLA"] as const;
 
 export const MESES = [
   "Janeiro",
@@ -164,4 +168,5 @@ export const REGRAS_PADRAO: Regras = {
     "Petterson Camargo",
     "Wagner Barbosa",
   ],
+  planilha: { filtros: [...FILTROS_PLANILHA], colunas: [...COLUNAS_PLANILHA] },
 };

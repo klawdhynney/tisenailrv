@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { useStore } from "@/lib/store-context";
-import { PRIORIDADES, REGRAS_PADRAO, STATUS_LIST, type Periodo, type Status } from "@/lib/types";
+import { COLUNAS_PLANILHA, FILTROS_PLANILHA, PRIORIDADES, REGRAS_PADRAO, STATUS_LIST, type Periodo, type Status } from "@/lib/types";
 import { CORES_PRIORIDADE } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/regras")({
@@ -204,6 +204,10 @@ function Regras() {
         <ListaEditavel titulo="Tipos de problema" itens={regras.categorias} onChange={(categorias) => salvar({ categorias })} />
         <ListaEditavel titulo="Equipe de TI" itens={regras.responsaveis} onChange={(responsaveis) => salvar({ responsaveis })} />
       </div>
+      <section className="grid gap-5 lg:grid-cols-2">
+        <Card><CardHeader><CardTitle>Filtros da planilha de atendimento</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-2">{FILTROS_PLANILHA.map(nome => <Button key={nome} type="button" variant={(regras.planilha?.filtros ?? [...FILTROS_PLANILHA]).includes(nome) ? "google-blue" : "outline"} aria-pressed={(regras.planilha?.filtros ?? [...FILTROS_PLANILHA]).includes(nome)} onClick={() => { const atuais = regras.planilha?.filtros ?? [...FILTROS_PLANILHA]; salvar({ planilha: { colunas: regras.planilha?.colunas ?? [...COLUNAS_PLANILHA], filtros: atuais.includes(nome) ? atuais.filter(x => x !== nome) : [...atuais, nome] } }); }}>{nome}</Button>)}</CardContent></Card>
+        <Card><CardHeader><CardTitle>Colunas da planilha de atendimento</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-2">{COLUNAS_PLANILHA.map(nome => <Button key={nome} type="button" variant={(regras.planilha?.colunas ?? [...COLUNAS_PLANILHA]).includes(nome) ? "google-green" : "outline"} aria-pressed={(regras.planilha?.colunas ?? [...COLUNAS_PLANILHA]).includes(nome)} onClick={() => { const atuais = regras.planilha?.colunas ?? [...COLUNAS_PLANILHA]; salvar({ planilha: { filtros: regras.planilha?.filtros ?? [...FILTROS_PLANILHA], colunas: atuais.includes(nome) ? atuais.filter(x => x !== nome) : [...atuais, nome] } }); }}>{nome}</Button>)}</CardContent></Card>
+      </section>
     </div>
   );
 }
