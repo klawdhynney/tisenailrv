@@ -55,7 +55,7 @@ function TicketEditor({ ticket, regras, updateTicket }: { ticket: Ticket; regras
   return <div className="mx-auto max-w-4xl space-y-6">
     <Button asChild variant="outline"><Link to="/atendimento"><ArrowLeft className="size-4" /> Voltar à planilha</Link></Button>
     <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5"><div><h1 className="text-3xl font-bold">Chamado #{ticket.id}</h1><p className="mt-1 text-muted-foreground">Aberto em {formatarData(ticket.abertoEm, ticket.hora)} · Prazo: {formatarDataHora(sla.prazo)} · {sla.situacao}</p></div>
-      <ConfirmAction title={`Salvar alterações no chamado #${ticket.id}?`} description="Confira os dados antes de confirmar. As alterações aparecerão no acompanhamento do chamado." confirmLabel="Sim, salvar" onConfirm={save} disabled={!hasChanges || saving}><Save className="size-4" /> {saving ? "Salvando…" : "Salvar"}</ConfirmAction></div>
+      </div>
     <div className="grid gap-5 sm:grid-cols-2">
       <label className="grid gap-2 text-sm font-medium">Solicitante<Input value={draft.solicitante} onChange={e => field("solicitante", e.target.value)} /></label>
       <label className="grid gap-2 text-sm font-medium">E-mail do solicitante<Input value={ticket.solicitanteEmail || "Não informado na planilha original"} readOnly /></label>
@@ -70,5 +70,6 @@ function TicketEditor({ ticket, regras, updateTicket }: { ticket: Ticket; regras
      <label className="grid gap-2 text-sm font-medium">Descrição<TextoAssistido value={draft.descricao} onChange={value => field("descricao", value)} /></label>
      <label className="grid gap-2 text-sm font-medium">Procedimento / atendimento<TextoAssistido value={draft.procedimento ?? ""} onChange={value => field("procedimento", value || null)} /></label>
     <p className="text-sm text-muted-foreground">Fechamento: {formatarData(ticket.fechadoEm, ticket.horario)}</p>
+    <div className="flex justify-end border-t border-border pt-5"><ConfirmAction title={`Salvar alterações no chamado #${ticket.id}?`} description="Confira os dados antes de confirmar. As alterações aparecerão no acompanhamento do chamado." confirmLabel="Sim, salvar" onConfirm={save} disabled={!hasChanges || saving}><Save className="size-4" /> {saving ? "Salvando…" : "Salvar"}</ConfirmAction></div>
   </div>;
 }
