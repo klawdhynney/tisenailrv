@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { BarChart3, FilePlus2, Settings2, Table2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { useStore } from "@/lib/store";
+import { useStore } from "@/lib/store-context";
 import siteMark from "@/assets/ti-site-mark.png";
 
 const navPublico = [

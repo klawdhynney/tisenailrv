@@ -1,8 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { gestorAutorizado } from "./corporate";
+import { StoreContext } from "./store-context";
 import { REGRAS_PADRAO, type Regras, type Ticket, type Prioridade, type Status } from "./types";
 
 type Row = Database["public"]["Tables"]["tickets"]["Row"];
@@ -42,23 +43,6 @@ function toRow(p: Partial<Ticket>) {
   }
   return m;
 }
-
-interface Ctx {
-  tickets: Ticket[];
-  publicStats: Database["public"]["Tables"]["ticket_public_stats"]["Row"][];
-  regras: Regras;
-  hidratado: boolean;
-  session: Session | null;
-  isGestor: boolean;
-  authPronto: boolean;
-  addTicket: (t: Omit<Ticket, "id">) => Promise<boolean>;
-  updateTicket: (id: number, patch: Partial<Ticket>) => void;
-  removeTicket: (id: number) => void;
-  setRegras: (r: Regras) => void;
-  sair: () => Promise<void>;
-}
-
-const StoreContext = createContext<Ctx | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -199,12 +183,3 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
 
-export function useStore() {
-  const ctx = useContext(StoreContext);
-  if (!ctx) throw new Error("useStore precisa estar dentro de StoreProvider");
-  return ctx;
-}
-
-export function mesDoTicket(t: Ticket) {
-  return t.abertoEm?.slice(0, 7) ?? "";
-}

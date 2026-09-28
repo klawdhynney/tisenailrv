@@ -16,3 +16,4 @@ Importações Excel são validadas no navegador e gravadas por função autentic
 Chamados públicos podem ser abertos sem login e sem e-mail, usando validações de conteúdo no banco e prioridade Média inicial; gestão completa exige uma das três contas autorizadas via Google ou Microsoft e papel de gestor verificado no banco para preservar dados pessoais.
 O painel público mostra agregados; a planilha completa dentro do painel só é montada para gestores autorizados, pois o navegador público nunca recebe os registros privados.
 As exportações de dashboard e planilha são geradas no navegador; dados detalhados só entram nos arquivos após a autorização do gestor, evitando criar cópias públicas no servidor.
+O contexto e o hook `useStore` ficam em módulo separado do `StoreProvider`, e utilitários de chamados ficam em `types.ts`, para atualizações da interface não substituírem o contexto em uso e deixarem a página em branco.

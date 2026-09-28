@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, MapPin, Phone, Play, XCircle } from "lucide-react";
-import { useStore } from "@/lib/store";
+import { useStore } from "@/lib/store-context";
 import { calcularSla, formatarData, formatarDataHora, formatarDuracao } from "@/lib/sla";
 import { PrioridadeChip, SlaChip, StatusChip } from "@/components/Chips";
 import { Button } from "@/components/ui/button";

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, BarChart3, FilePlus2, LogIn, ListFilter, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useStore } from "@/lib/store";
+import { useStore } from "@/lib/store-context";
 import labImage from "@/assets/technology-lab.jpg";
 import senaiAsset from "@/assets/senai-lrv.png.asset.json";
 
