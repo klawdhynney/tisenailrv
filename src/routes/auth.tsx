@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { lovable } from "@/integrations/lovable";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { gestorAutorizado } from "@/lib/corporate";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -42,7 +41,7 @@ function AuthPage() {
       <h1 className="text-2xl font-bold">Acesso do gestor</h1>
       <p className="mt-2 text-sm text-muted-foreground">Entre com uma das contas autorizadas para gerenciar os chamados.</p>
       {session && authPronto && !isGestor && <p className="mt-4 text-sm text-destructive">A conta {session.user.email} não tem acesso à gestão. Entre com outra conta.</p>}
-      {session && !gestorAutorizado(session.user.email, session.user.app_metadata?.provider) && <Button variant="outline" className="mt-4 w-full" onClick={() => sair()}>Sair desta conta</Button>}
+      {session && authPronto && !isGestor && <Button variant="outline" className="mt-4 w-full" onClick={() => sair()}>Sair desta conta</Button>}
       <div className="mt-6 grid gap-3">
         <Button className="w-full" onClick={() => entrar("microsoft")} disabled={carregando}>Entrar com Microsoft</Button>
         <Button variant="outline" className="w-full" onClick={() => entrar("google")} disabled={carregando}>Entrar com Google</Button>

@@ -151,12 +151,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const addTicket = useCallback(async (t: Omit<Ticket, "id">) => {
     const { data: { user } } = await supabase.auth.getUser();
-    const isInstitutional = user && gestorAutorizado(user.email, user.app_metadata?.provider);
     const payload = {
       ...toRow(t),
       // Public submissions are timestamped at the database, not by the visitor's device.
       aberto_em: undefined, hora: undefined,
-      criado_por: isInstitutional ? user.id : null,
+      criado_por: user?.id ?? null,
       solicitante_email: null,
     };
     const { error } = await supabase.from("tickets").insert(payload as never);
