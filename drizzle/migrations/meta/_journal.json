@@ -8,6 +8,13 @@
       "when": 1790561043987,
       "tag": "0000_chamados_e_gestor",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790568621299,
+      "tag": "0001_secure_microsoft_ticket_access_and_public_stats",
+      "breakpoints": true
     }
   ]
 }
