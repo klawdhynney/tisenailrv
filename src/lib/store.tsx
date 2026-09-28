@@ -114,11 +114,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setHidratado(authPronto);
       return;
     }
-    const carregar = () =>
-      supabase.from("tickets").select("*").order("id").then(({ data }) => {
-        setTickets((data ?? []).map(fromRow));
-        setHidratado(true);
-      });
+     const carregar = async () => {
+       const all: Row[] = [];
+       for (let offset = 0; ; offset += 1000) {
+         const { data, error } = await supabase.from("tickets").select("*").order("id").range(offset, offset + 999);
+         if (error) { console.error("Falha ao carregar chamados", error.message); break; }
+         all.push(...(data ?? []));
+         if (!data || data.length < 1000) break;
+       }
+       setTickets(all.map(fromRow));
+       setHidratado(true);
+     };
     carregar();
     const ch = supabase
       .channel("tickets-rt")

@@ -42,11 +42,11 @@ function Inicio() {
       <Acesso to="/dashboard" icon={BarChart3} titulo="Dashboard" descricao="Veja os indicadores atualizados." cor="border-g-blue" texto="text-g-blue" />
       <Acesso to="/dashboard" icon={ListFilter} titulo="Problemas recorrentes" descricao="Confira os cinco problemas mais frequentes." cor="border-g-red" texto="text-g-red" />
       <Acesso to="/dashboard" icon={Activity} titulo="Status dos chamados" descricao="Acompanhe abertos, pausados e resolvidos." cor="border-g-yellow" texto="text-g-yellow" />
-      <Acesso to="/auth" icon={LogIn} titulo={isGestor ? "Área do gestor" : "Acesso do gestor"} descricao="Atenda e gerencie a planilha completa." cor="border-g-blue" texto="text-g-blue" />
+      <Acesso to={isGestor ? "/atendimento" : "/auth"} icon={LogIn} titulo={isGestor ? "Área do gestor" : "Acesso do gestor"} descricao="Atenda e gerencie a planilha completa." cor="border-g-blue" texto="text-g-blue" />
     </div></section>
   </div>;
 }
 
-function Acesso({ to, icon: Icon, titulo, descricao, cor, texto }: { to: "/abrir" | "/dashboard" | "/auth"; icon: typeof FilePlus2; titulo: string; descricao: string; cor: string; texto: string }) {
+function Acesso({ to, icon: Icon, titulo, descricao, cor, texto }: { to: "/abrir" | "/dashboard" | "/auth" | "/atendimento"; icon: typeof FilePlus2; titulo: string; descricao: string; cor: string; texto: string }) {
   return <Link to={to} className={`group border-t-4 ${cor} bg-card p-5 shadow-sm transition-transform hover:-translate-y-1 hover:shadow-md`}><Icon className={`size-7 ${texto}`} /><h3 className="mt-4 font-semibold">{titulo}</h3><p className="mt-2 min-h-12 text-sm text-muted-foreground">{descricao}</p><ArrowRight className={`mt-3 size-5 ${texto} transition-transform group-hover:translate-x-1`} /></Link>;
 }
