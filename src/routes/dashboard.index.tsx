@@ -21,7 +21,16 @@ export const Route = createFileRoute("/dashboard/")({
   ] }), component: Dashboard,
 });
 
-const CORES = ["#228B22", "#FF0000", "#000080", "#FFFFFF", "#174F17", "#8080BC", "#FF8080", "#80C480"];
+const CORES = [
+  "#1a73e8", // Google Blue
+  "#ea4335", // Google Red
+  "#f9ab00", // Google Yellow
+  "#34a853", // Google Green
+  "#a142f4", // Google Purple
+  "#24c1e0", // Google Cyan
+  "#fa7b17", // Google Orange
+  "#f439a0", // Google Pink
+];
 const VISOES = [
   { id: "problemas", label: "Chamados recorrentes", color: "blue" },
   { id: "setores", label: "Chamados por setores", color: "red" },
@@ -108,7 +117,18 @@ function Dashboard() {
       </div>
     </section>
 
-     <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">{[["Total de chamados", total, "border-g-blue"], ["Em atendimento", ativos, "border-g-red"], ["Resolvidos", resolvidos, "border-g-green"]].map(([label, count, border]) => <div key={String(label)} className={`rounded-xl border-l-4 ${border} bg-card p-5 shadow-sm`}><p className="text-sm text-muted-foreground">{label}</p><p className="mt-1 text-3xl font-bold">{count}</p></div>)}</div>
+     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          ["Total de chamados", total, "border-g-blue", "text-g-blue"],
+          ["Em atendimento", ativos, "border-g-yellow", "text-g-yellow"],
+          ["Resolvidos", resolvidos, "border-g-green", "text-g-green"],
+        ].map(([label, count, border, color]) => (
+          <div key={String(label)} className={`rounded-xl border-l-4 ${border} bg-card p-5 shadow-sm`}>
+            <p className="text-sm text-muted-foreground">{label}</p>
+            <p className={`mt-1 text-3xl font-bold ${color}`}>{count}</p>
+          </div>
+        ))}
+      </div>
 
      <nav aria-label="Gráficos do dashboard" className="no-print grid grid-cols-2 gap-2 md:grid-cols-5">{VISOES.map((v) => <Button key={v.id} variant={`google-${v.color}` as "google-blue" | "google-red" | "google-yellow" | "google-green"} aria-current={visao === v.id ? "page" : undefined} className={`h-auto min-h-12 whitespace-normal py-2 text-center ${visao === v.id ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : "opacity-85"}`} onClick={() => setVisao(v.id)}>{v.label}</Button>)}</nav>
     <section className="min-w-0 border-t-2 border-border pt-5" aria-live="polite">
@@ -120,8 +140,8 @@ function Dashboard() {
 
 function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: (name: string, i: number) => string }) {
   if (!dados.length) return <p className="py-24 text-center text-muted-foreground">Nenhum chamado encontrado neste recorte.</p>;
-   const chart = tipo === "pizza" ? <PieChart><Pie data={dados} dataKey="value" nameKey="name" innerRadius="38%" outerRadius="76%" paddingAngle={3} isAnimationActive animationDuration={650}>{dados.map((d, i) => <Cell key={d.name} fill={cor(d.name, i)} stroke="var(--foreground)" strokeWidth={i === 3 ? 1 : 0} />)}</Pie><Tooltip formatter={(value) => [`${value} chamados`, "Total"]} /></PieChart>
-     : tipo === "barras" ? <BarChart data={dados} layout="vertical" margin={{ left: 20, right: 20 }}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis type="number" allowDecimals={false} /><YAxis dataKey="name" type="category" width={150} tick={{ fill: "var(--foreground)", fontSize: 11 }} /><Tooltip /><Bar dataKey="value" name="Chamados" isAnimationActive animationDuration={650} radius={[0, 4, 4, 0]}>{dados.map((d, i) => <Cell key={d.name} fill={cor(d.name, i)} stroke={i === 3 ? "var(--foreground)" : "none"} />)}</Bar></BarChart>
+   const chart = tipo === "pizza" ? <PieChart><Pie data={dados} dataKey="value" nameKey="name" innerRadius="38%" outerRadius="76%" paddingAngle={3} isAnimationActive animationDuration={650}>{dados.map((d, i) => <Cell key={d.name} fill={cor(d.name, i)} stroke="var(--card)" strokeWidth={2} />)}</Pie><Tooltip formatter={(value) => [`${value} chamados`, "Total"]} /></PieChart>
+     : tipo === "barras" ? <BarChart data={dados} layout="vertical" margin={{ left: 20, right: 20 }}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis type="number" allowDecimals={false} /><YAxis dataKey="name" type="category" width={150} tick={{ fill: "var(--foreground)", fontSize: 11 }} /><Tooltip /><Bar dataKey="value" name="Chamados" isAnimationActive animationDuration={650} radius={[0, 4, 4, 0]}>{dados.map((d, i) => <Cell key={d.name} fill={cor(d.name, i)} />)}</Bar></BarChart>
      : <AreaChart data={dados} margin={{ left: 0, right: 20, top: 20 }}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="name" tick={{ fill: "var(--foreground)", fontSize: 11 }} interval={0} /><YAxis allowDecimals={false} /><Tooltip /><Area type="monotone" dataKey="value" name="Chamados" stroke="var(--g-blue)" fill="var(--g-blue)" fillOpacity={0.24} strokeWidth={3} isAnimationActive animationDuration={650} /></AreaChart>;
    return <div className="chart-enter grid items-center gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(230px,1fr)]"><div className="h-[390px] min-w-0"><ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer></div><div className="max-h-[370px] overflow-y-auto">{dados.map((d, i) => <div key={d.name} className="flex items-center gap-3 border-b border-border py-3 text-sm"><span className="size-3 shrink-0 rounded-sm border border-foreground/40" style={{ backgroundColor: cor(d.name, i) }} /><span className="min-w-0 flex-1 font-medium">{d.name}</span><strong>{d.value}</strong></div>)}</div></div>;
 }

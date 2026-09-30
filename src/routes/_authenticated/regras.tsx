@@ -93,12 +93,11 @@ function Regras() {
                         },
                       })
                     }
-                    className="rounded-full border-2 px-3 py-1 text-sm font-semibold"
-                    style={{
-                      borderColor: "var(--g-blue)",
-                      backgroundColor: ativo ? "var(--g-blue)" : "transparent",
-                      color: ativo ? "#fff" : undefined,
-                    }}
+                    className={`rounded-full border-2 px-3 py-1 text-sm font-semibold transition-all ${
+                      ativo
+                        ? "border-g-blue bg-g-blue text-white dark:text-zinc-950"
+                        : "border-g-blue/40 text-muted-foreground hover:border-g-blue"
+                    }`}
                   >
                     {d}
                   </button>

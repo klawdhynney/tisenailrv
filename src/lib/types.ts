@@ -93,25 +93,25 @@ export const MESES_DISPONIVEIS: { key: string; label: string; ano: number; mes: 
 ];
 
 export const CORES_PRIORIDADE: Record<Prioridade, { bg: string; text: string }> = {
-  Crítica: { bg: "#FF0000", text: "#FFFFFF" },
-  Alta: { bg: "#FFFF00", text: "#1F1F1F" },
-  Média: { bg: "#00B050", text: "#FFFFFF" },
-  Baixa: { bg: "#00B0F0", text: "#1F1F1F" },
+  Crítica: { bg: "#EA4335", text: "#FFFFFF" },
+  Alta: { bg: "#FBBC04", text: "#202124" },
+  Média: { bg: "#1A73E8", text: "#FFFFFF" },
+  Baixa: { bg: "#34A853", text: "#FFFFFF" },
 };
 
 export const CORES_STATUS: Record<Status, { bg: string; text: string }> = {
-  Aberto: { bg: "#D9D9D9", text: "#1F1F1F" },
-  "Em andamento": { bg: "#008000", text: "#FFFFFF" },
-  Aguardando: { bg: "#FFFF00", text: "#1F1F1F" },
-  Resolvido: { bg: "#00B050", text: "#FFFFFF" },
-  Cancelado: { bg: "#7F7F7F", text: "#FFFFFF" },
+  Aberto: { bg: "#E8EAED", text: "#3C4043" },
+  "Em andamento": { bg: "#1A73E8", text: "#FFFFFF" },
+  Aguardando: { bg: "#FBBC04", text: "#202124" },
+  Resolvido: { bg: "#34A853", text: "#FFFFFF" },
+  Cancelado: { bg: "#80868B", text: "#FFFFFF" },
 };
 
 export const CORES_SLA: Record<string, { bg: string; text: string }> = {
-  "No prazo": { bg: "#00B050", text: "#FFFFFF" },
-  Estourado: { bg: "#FF0000", text: "#FFFFFF" },
-  Cancelado: { bg: "#7F7F7F", text: "#FFFFFF" },
-  "—": { bg: "#D9D9D9", text: "#1F1F1F" },
+  "No prazo": { bg: "#34A853", text: "#FFFFFF" },
+  Estourado: { bg: "#EA4335", text: "#FFFFFF" },
+  Cancelado: { bg: "#80868B", text: "#FFFFFF" },
+  "—": { bg: "#E8EAED", text: "#3C4043" },
 };
 
 export const REGRAS_PADRAO: Regras = {

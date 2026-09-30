@@ -27,16 +27,16 @@ const prioridadeEstilos: Record<Ticket["prioridade"], { active: string; inactive
     inactive: "border-2 border-g-red/40 text-g-red bg-g-red/10 hover:bg-g-red/20",
   },
   Alta: {
-    active: "bg-g-blue text-white font-bold shadow-md ring-2 ring-g-blue ring-offset-2 ring-offset-background",
-    inactive: "border-2 border-g-blue/40 text-g-blue dark:text-white bg-g-blue/10 hover:bg-g-blue/20",
+    active: "bg-g-yellow text-zinc-950 font-bold shadow-md ring-2 ring-g-yellow ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-g-yellow/40 text-g-yellow bg-g-yellow/10 hover:bg-g-yellow/20",
   },
   Média: {
-    active: "bg-g-green text-white font-bold shadow-md ring-2 ring-g-green ring-offset-2 ring-offset-background",
-    inactive: "border-2 border-g-green/40 text-g-green bg-g-green/10 hover:bg-g-green/20",
+    active: "bg-g-blue text-white font-bold shadow-md ring-2 ring-g-blue ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-g-blue/40 text-g-blue bg-g-blue/10 hover:bg-g-blue/20",
   },
   Baixa: {
-    active: "bg-g-blue text-white font-bold shadow-md ring-2 ring-g-blue ring-offset-2 ring-offset-background",
-    inactive: "border-2 border-g-blue/40 text-g-blue dark:text-white bg-g-blue/10 hover:bg-g-blue/20",
+    active: "bg-g-green text-white font-bold shadow-md ring-2 ring-g-green ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-g-green/40 text-g-green bg-g-green/10 hover:bg-g-green/20",
   },
 };
 

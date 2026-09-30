@@ -16,10 +16,14 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        "google-blue": "border border-g-blue bg-g-blue text-white shadow-[0_5px_13px_-5px_var(--g-blue)] hover:brightness-95",
-        "google-red": "border border-g-red bg-g-red text-white shadow-[0_5px_13px_-5px_var(--g-red)] hover:brightness-95",
-        "google-yellow": "border border-g-blue bg-g-blue text-white shadow-[0_5px_13px_-5px_var(--g-blue)] hover:brightness-95",
-        "google-green": "border border-g-green bg-g-green text-white shadow-[0_5px_13px_-5px_var(--g-green)] hover:brightness-95",
+        "google-blue":
+          "border border-g-blue bg-g-blue text-white shadow-sm hover:brightness-105 active:scale-[0.98] transition-all dark:text-zinc-950 dark:font-semibold",
+        "google-red":
+          "border border-g-red bg-g-red text-white shadow-sm hover:brightness-105 active:scale-[0.98] transition-all dark:text-zinc-950 dark:font-semibold",
+        "google-yellow":
+          "border border-g-yellow bg-g-yellow text-zinc-950 font-semibold shadow-sm hover:brightness-105 active:scale-[0.98] transition-all dark:text-zinc-950",
+        "google-green":
+          "border border-g-green bg-g-green text-white shadow-sm hover:brightness-105 active:scale-[0.98] transition-all dark:text-zinc-950 dark:font-semibold",
       },
       size: {
         default: "h-9 px-4 py-2",

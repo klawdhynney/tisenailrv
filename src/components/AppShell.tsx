@@ -58,13 +58,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     ));
 
   const botaoConta = session ? (
-    <Button variant="outline" onClick={() => sair()}>
-      <LogOut className="h-4 w-4 text-[var(--g-red)]" /> Sair
+    <Button variant="outline" onClick={() => sair()} className="hover:border-g-red hover:text-g-red">
+      <LogOut className="h-4 w-4 text-g-red" /> Sair
     </Button>
   ) : (
-    <Button asChild variant="google-yellow"><Link to="/auth">
-      <LogIn className="h-4 w-4 text-[var(--g-yellow)]" /> Entrar
-    </Link></Button>
+    <Button asChild variant="google-yellow">
+      <Link to="/auth">
+        <LogIn className="h-4 w-4" /> Entrar
+      </Link>
+    </Button>
   );
 
   const seletorTema = (mobile: boolean) => (
