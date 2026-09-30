@@ -116,39 +116,6 @@ function TicketEditor({
       </div>
     </div>
 
-    {/* Painel de ações rápidas de atendimento */}
-    <div className="rounded-2xl border-2 border-g-blue/30 bg-card p-5 shadow-sm space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-g-blue">Ações de atendimento</span>
-          <h2 className="text-lg font-bold">Gestão rápida do chamado</h2>
-        </div>
-        <span className="text-sm font-semibold text-g-green">Responsável: Claudinei Lima</span>
-      </div>
-
-      <div className="border-t border-border/70 pt-3">
-        <p className="mb-2.5 text-xs font-bold text-muted-foreground">Alterar prioridade (clique para aplicar):</p>
-        <div className="flex flex-wrap gap-2.5">
-          {PRIORIDADES.map((p) => {
-            const isAtiva = draft.prioridade === p;
-            const estilo = prioridadeEstilos[p];
-            return (
-              <Button
-                key={p}
-                type="button"
-                size="sm"
-                className={`rounded-xl transition-all ${isAtiva ? estilo.active : estilo.inactive}`}
-                onClick={() => alterarPrioridade(p)}
-              >
-                {isAtiva && <span className="mr-1">✓</span>}
-                Prioridade {p}
-              </Button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-
     <div className="grid gap-5 sm:grid-cols-2">
       <label className="grid gap-2 text-sm font-medium">Solicitante<Input value={draft.solicitante} onChange={e => field("solicitante", e.target.value)} /></label>
       <label className="grid gap-2 text-sm font-medium">E-mail do solicitante<Input value={ticket.solicitanteEmail || "Não informado na planilha original"} readOnly /></label>
@@ -176,6 +143,15 @@ function TicketEditor({
     <label className="grid gap-2 text-sm font-medium">Descrição<TextoAssistido value={draft.descricao} onChange={value => field("descricao", value)} /></label>
     <label className="grid gap-2 text-sm font-medium">Procedimento / atendimento<TextoAssistido value={draft.procedimento ?? ""} onChange={value => field("procedimento", value || null)} /></label>
     <p className="text-sm text-muted-foreground">Fechamento: {formatarData(ticket.fechadoEm, ticket.horario)}</p>
+    <div className="rounded-2xl border-2 border-g-blue/30 bg-card p-5 shadow-sm space-y-4">
+      <p className="text-sm font-semibold text-g-green">Responsável: Claudinei Lima</p>
+      <div className="border-t border-border/70 pt-3">
+        <p className="mb-2.5 text-sm font-semibold">Prioridade do chamado</p>
+        <div className="flex flex-wrap gap-2.5">
+          {PRIORIDADES.map(p => <Button key={p} type="button" size="sm" className={`rounded-xl transition-all ${draft.prioridade === p ? prioridadeEstilos[p].active : prioridadeEstilos[p].inactive}`} aria-pressed={draft.prioridade === p} onClick={() => alterarPrioridade(p)}>Prioridade {p}</Button>)}
+        </div>
+      </div>
+    </div>
     <div className="space-y-3 border-t border-border pt-5"><p className="text-sm font-semibold">Status do chamado</p><div className="flex flex-wrap gap-2">{(["Em andamento", "Aguardando", "Resolvido", "Cancelado"] as const).map(s => <Button key={s} type="button" variant={draft.status === s ? s === "Cancelado" ? "google-red" : "google-green" : "outline"} aria-pressed={draft.status === s} onClick={() => field("status", s)}>{s}</Button>)}</div></div>
     <div className="flex justify-end border-t border-border pt-5">
       <ConfirmAction title={`Salvar alterações no chamado #${ticket.id}?`} description="Confira os dados antes de confirmar. As alterações aparecerão no acompanhamento do chamado." confirmLabel="Sim, salvar" onConfirm={save} disabled={!hasChanges || saving}>
