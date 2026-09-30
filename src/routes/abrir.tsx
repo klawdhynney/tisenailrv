@@ -1,11 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Cpu, MapPin, Send } from "lucide-react";
+import { Cpu, MapPin, Send, CheckCircle2, MessageCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
 import { TextoAssistido } from "@/components/TextoAssistido";
@@ -49,6 +48,7 @@ function AbrirChamado() {
   const [form, setForm] = useState(campoVazio);
   const [erros, setErros] = useState<Erros>({});
   const [enviando, setEnviando] = useState(false);
+  const [sucessoId, setSucessoId] = useState<number | null>(null);
 
   const set = (k: keyof typeof campoVazio, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -71,7 +71,7 @@ function AbrirChamado() {
     if (!window.confirm("Deseja realmente enviar este chamado? Confira os dados antes de confirmar.")) return;
     if (enviando) return;
     setEnviando(true);
-    const ok = await addTicket({
+    const ticketId = await addTicket({
       abertoEm: "",
       hora: "",
       solicitante: form.solicitante.trim(),
@@ -88,13 +88,63 @@ function AbrirChamado() {
       procedimento: null,
     }, form.email);
     setEnviando(false);
-    if (!ok) {
+    if (!ticketId) {
       toast.error("Não foi possível registrar o chamado. Tente novamente.");
       return;
     }
     toast.success("Chamado registrado! A equipe de TI já recebeu.");
-    setForm(campoVazio);
-    navigate({ to: "/" });
+    setSucessoId(ticketId);
+  }
+
+  if (sucessoId) {
+    const shareMessage = `Olá, abri o chamado #${sucessoId} sobre "${form.categoria}" no setor "${form.setor}" (${form.local}).`;
+    
+    return (
+      <div className="mx-auto max-w-2xl py-12 px-4 animate-in fade-in zoom-in duration-300">
+        <div className="rounded-3xl border-2 border-g-green/20 bg-card p-8 text-center shadow-xl">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-g-green/10 text-g-green">
+            <CheckCircle2 className="size-12" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Chamado #{sucessoId} enviado!</h1>
+          <p className="text-muted-foreground mb-8">
+            Tudo certo, <strong>{form.solicitante}</strong>. Sua solicitação foi registrada com sucesso.
+            Você receberá atualizações no e-mail informado.
+          </p>
+          
+          <div className="grid gap-4">
+            <div className="rounded-2xl bg-muted/50 p-4 text-left text-sm space-y-2 border border-border">
+              <div className="flex justify-between">
+                <span className="font-medium text-muted-foreground">Protocolo:</span>
+                <span className="font-bold">#{sucessoId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-muted-foreground">Setor:</span>
+                <span>{form.setor}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-muted-foreground">Tipo:</span>
+                <span>{form.categoria}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button asChild size="lg" className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl">
+                <a 
+                  href={`https://wa.me/?text=${encodeURIComponent(shareMessage)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle className="mr-2 size-5" /> Enviar resumo por WhatsApp
+                </a>
+              </Button>
+              <Button variant="outline" size="lg" className="rounded-xl" onClick={() => navigate({ to: "/" })}>
+                <ArrowLeft className="mr-2 size-4" /> Voltar ao início
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
