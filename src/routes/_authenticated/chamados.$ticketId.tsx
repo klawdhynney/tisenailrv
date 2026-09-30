@@ -23,20 +23,20 @@ export const Route = createFileRoute("/_authenticated/chamados/$ticketId")({
 
 const prioridadeEstilos: Record<Ticket["prioridade"], { active: string; inactive: string }> = {
   Crítica: {
-    active: "bg-red-600 hover:bg-red-700 text-white font-bold shadow-md ring-2 ring-red-600 ring-offset-2 ring-offset-background",
-    inactive: "border-2 border-red-500/40 text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/20",
+    active: "bg-g-red text-white font-bold shadow-md ring-2 ring-g-red ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-g-red/40 text-g-red bg-g-red/10 hover:bg-g-red/20",
   },
   Alta: {
-    active: "bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-md ring-2 ring-amber-500 ring-offset-2 ring-offset-background",
-    inactive: "border-2 border-amber-500/40 text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20",
+    active: "bg-g-blue text-white font-bold shadow-md ring-2 ring-g-blue ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-g-blue/40 text-g-blue dark:text-white bg-g-blue/10 hover:bg-g-blue/20",
   },
   Média: {
-    active: "bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md ring-2 ring-emerald-600 ring-offset-2 ring-offset-background",
-    inactive: "border-2 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20",
+    active: "bg-g-green text-white font-bold shadow-md ring-2 ring-g-green ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-g-green/40 text-g-green bg-g-green/10 hover:bg-g-green/20",
   },
   Baixa: {
-    active: "bg-sky-600 hover:bg-sky-700 text-white font-bold shadow-md ring-2 ring-sky-600 ring-offset-2 ring-offset-background",
-    inactive: "border-2 border-sky-500/40 text-sky-700 dark:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20",
+    active: "bg-g-blue text-white font-bold shadow-md ring-2 ring-g-blue ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-g-blue/40 text-g-blue dark:text-white bg-g-blue/10 hover:bg-g-blue/20",
   },
 };
 
