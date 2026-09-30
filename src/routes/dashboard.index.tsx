@@ -104,14 +104,14 @@ function Dashboard() {
   };
 
   return <div className="space-y-7 dashboard-print">
-    <header className="flex flex-wrap items-start justify-between gap-4"><div className="flex-1 text-center"><p className="text-sm font-bold uppercase text-primary">Indicadores públicos</p><h1 className="mt-1 text-3xl font-bold">Dashboard de chamados</h1><p className="mt-1 text-muted-foreground">Acompanhamento atualizado dos chamados registrados.</p></div>
+    <header className="flex flex-wrap items-start justify-between gap-4"><div className="flex-1 text-center"><p className="text-sm font-extrabold uppercase tracking-wider text-g-blue">Indicadores públicos</p><h1 className="mt-1 text-3xl font-extrabold text-foreground sm:text-4xl">Dashboard de chamados</h1><p className="mt-1 font-medium text-muted-foreground">Acompanhamento atualizado dos chamados registrados.</p></div>
       <div className="no-print flex flex-wrap gap-2">{isGestor && <Button asChild variant="outline"><Link to="/chamados"><Table2 /> Planilha completa</Link></Button>}<Button variant="outline" onClick={() => window.print()}><Printer /> Imprimir / PDF</Button><Button variant="outline" onClick={baixarResumo}><Download /> Baixar dados</Button></div></header>
 
-    <section className="no-print border-y-2 border-g-blue bg-card px-4 py-4 shadow-sm">
-      <p className="mb-3 text-sm font-bold text-g-blue">Filtrar por:</p>
+    <section className="no-print rounded-2xl border-2 border-g-blue bg-card px-5 py-4 shadow-sm">
+      <p className="mb-3 text-sm font-extrabold tracking-wide text-g-blue">Filtrar por:</p>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-3">
-          <label className="grid gap-1 text-xs font-bold">Mês<select aria-label="Mês" className="h-11 min-w-44 rounded-xl border-2 border-g-blue bg-background px-3 text-sm font-normal" value={mes} onChange={(e) => setMes(e.target.value)}>{MESES_DISPONIVEIS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}<option value="todos">Todos os meses</option></select></label>
+          <label className="grid gap-1.5 text-xs font-bold text-foreground">Mês<select aria-label="Mês" className="h-11 min-w-44 rounded-xl border-2 border-g-blue bg-background px-3 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-g-blue" value={mes} onChange={(e) => setMes(e.target.value)}>{MESES_DISPONIVEIS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}<option value="todos">Todos os meses</option></select></label>
         </div>
          <Button asChild className="self-end ml-auto" variant="google-blue"><Link to="/dashboard/acompanhamento"><ClipboardList /> Acompanhar chamado</Link></Button>
       </div>
@@ -124,15 +124,15 @@ function Dashboard() {
           ["Resolvidos", resolvidos, "border-g-green", "text-g-green"],
         ].map(([label, count, border, color]) => (
           <div key={String(label)} className={`rounded-xl border-l-4 ${border} bg-card p-5 shadow-sm`}>
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <p className={`mt-1 text-3xl font-bold ${color}`}>{count}</p>
+            <p className="text-sm font-semibold text-muted-foreground">{label}</p>
+            <p className={`mt-1 text-3xl font-black tracking-tight ${color}`}>{count}</p>
           </div>
         ))}
       </div>
 
-     <nav aria-label="Gráficos do dashboard" className="no-print grid grid-cols-2 gap-2 md:grid-cols-5">{VISOES.map((v) => <Button key={v.id} variant={`google-${v.color}` as "google-blue" | "google-red" | "google-yellow" | "google-green"} aria-current={visao === v.id ? "page" : undefined} className={`h-auto min-h-12 whitespace-normal py-2 text-center ${visao === v.id ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : "opacity-85"}`} onClick={() => setVisao(v.id)}>{v.label}</Button>)}</nav>
+     <nav aria-label="Gráficos do dashboard" className="no-print grid grid-cols-2 gap-2 md:grid-cols-5">{VISOES.map((v) => <Button key={v.id} variant={`google-${v.color}` as "google-blue" | "google-red" | "google-yellow" | "google-green"} aria-current={visao === v.id ? "page" : undefined} className={`h-auto min-h-12 whitespace-normal py-2 text-center text-sm font-bold tracking-tight ${visao === v.id ? "ring-2 ring-white ring-offset-2 ring-offset-background shadow-lg scale-[1.02]" : "opacity-85 hover:opacity-100"}`} onClick={() => setVisao(v.id)}>{v.label}</Button>)}</nav>
     <section className="min-w-0 border-t-2 border-border pt-5" aria-live="polite">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-2xl font-bold">{VISOES.find((v) => v.id === visao)?.label}</h2><p className="text-sm text-muted-foreground">{dados.reduce((n, x) => n + x.value, 0)} chamado(s) representados</p></div><div className="no-print flex gap-2" aria-label="Tipo de gráfico"><Button size="sm" variant={tipoGrafico === "pizza" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("pizza")}><PieChartIcon /> Pizza</Button><Button size="sm" variant={tipoGrafico === "barras" ? "google-red" : "outline"} onClick={() => setTipoGrafico("barras")}><BarChart3 /> Barras</Button><Button size="sm" variant={tipoGrafico === "area" ? "google-green" : "outline"} onClick={() => setTipoGrafico("area")}><ChartArea /> Área</Button></div></div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-2xl font-bold text-foreground">{VISOES.find((v) => v.id === visao)?.label}</h2><p className="text-sm font-medium text-muted-foreground">{dados.reduce((n, x) => n + x.value, 0)} chamado(s) representados</p></div><div className="no-print flex gap-2" aria-label="Tipo de gráfico"><Button size="sm" variant={tipoGrafico === "pizza" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("pizza")}><PieChartIcon /> Pizza</Button><Button size="sm" variant={tipoGrafico === "barras" ? "google-red" : "outline"} onClick={() => setTipoGrafico("barras")}><BarChart3 /> Barras</Button><Button size="sm" variant={tipoGrafico === "area" ? "google-green" : "outline"} onClick={() => setTipoGrafico("area")}><ChartArea /> Área</Button></div></div>
        <Grafico key={`${visao}-${tipoGrafico}`} dados={dados} tipo={tipoGrafico} cor={cor} />
     </section>
   </div>;

@@ -44,7 +44,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const links = (mobile: boolean) =>
     itens.map((item) => (
-      <Button asChild variant={item.variante} key={item.to}>
+      <Button asChild variant={item.variante} key={item.to} className="font-bold">
       <Link
         key={item.to}
         to={item.to}
@@ -58,7 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     ));
 
   const botaoConta = session ? (
-    <Button variant="outline" onClick={() => sair()} className="hover:border-g-red hover:text-g-red">
+    <Button variant="outline" onClick={() => sair()} className="hover:border-g-red hover:text-g-red font-semibold">
       <LogOut className="h-4 w-4 text-g-red" /> Sair
     </Button>
   ) : (
@@ -72,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const seletorTema = (mobile: boolean) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size={mobile ? "default" : "icon"} aria-label="Escolher tema" title="Escolher tema" className={mobile ? "justify-start" : undefined}>
+        <Button variant="outline" size={mobile ? "default" : "icon"} aria-label="Escolher tema" title="Escolher tema" className={mobile ? "justify-start font-semibold" : undefined}>
            {tema === "escuro" ? <Moon className="size-4" /> : <Sun className="size-4" />}
           {mobile && "Tema"}
         </Button>
@@ -93,8 +93,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b-2 border-border bg-card/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
            <Link to="/" className="flex shrink-0 items-center gap-2">
-               <img src={senaiAsset.url} alt="SENAI LRV" width={40} height={40} className="size-10 rounded-xl object-contain shadow-sm" />
-              <span className="text-sm font-bold text-foreground sm:text-base">TI SENAI LRV</span>
+               <img src={senaiAsset.url} alt="SENAI LRV" width={40} height={40} className="size-10 rounded-xl object-contain shadow-sm bg-white p-1" />
+              <span className="text-sm font-extrabold text-foreground sm:text-base">TI SENAI LRV</span>
           </Link>
           <nav className="ml-auto hidden items-center gap-2 lg:flex">
             {links(false)}

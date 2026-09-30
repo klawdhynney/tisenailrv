@@ -12,18 +12,18 @@ const buttonVariants = cva(
         default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+          "border border-border/80 bg-background/50 text-foreground font-semibold shadow-sm hover:bg-accent hover:text-foreground hover:border-foreground/40",
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         "google-blue":
-          "border border-g-blue bg-g-blue text-white shadow-sm hover:brightness-105 active:scale-[0.98] transition-all dark:text-zinc-950 dark:font-semibold",
+          "border border-transparent bg-g-blue text-white font-bold shadow-md hover:brightness-110 active:scale-[0.98] transition-all",
         "google-red":
-          "border border-g-red bg-g-red text-white shadow-sm hover:brightness-105 active:scale-[0.98] transition-all dark:text-zinc-950 dark:font-semibold",
+          "border border-transparent bg-g-red text-white font-bold shadow-md hover:brightness-110 active:scale-[0.98] transition-all",
         "google-yellow":
-          "border border-g-yellow bg-g-yellow text-zinc-950 font-semibold shadow-sm hover:brightness-105 active:scale-[0.98] transition-all dark:text-zinc-950",
+          "border border-transparent bg-g-yellow text-zinc-950 font-extrabold shadow-md hover:brightness-110 active:scale-[0.98] transition-all",
         "google-green":
-          "border border-g-green bg-g-green text-white shadow-sm hover:brightness-105 active:scale-[0.98] transition-all dark:text-zinc-950 dark:font-semibold",
+          "border border-transparent bg-g-green text-white font-bold shadow-md hover:brightness-110 active:scale-[0.98] transition-all",
       },
       size: {
         default: "h-9 px-4 py-2",
