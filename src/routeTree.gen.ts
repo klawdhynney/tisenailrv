@@ -67,9 +67,9 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardAcompanhamentoRoute = DashboardAcompanhamentoRouteImport.update({
-  id: '/acompanhamento',
-  path: '/acompanhamento',
-  getParentRoute: () => DashboardRoute,
+  id: '/dashboard/acompanhamento',
+  path: '/dashboard/acompanhamento',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedChamadosTicketIdRoute =
   AuthenticatedChamadosTicketIdRouteImport.update({
@@ -162,6 +162,7 @@ export interface RootRouteChildren {
   AbrirRoute: typeof AbrirRoute
   AuthRoute: typeof AuthRoute
   MeusChamadosRoute: typeof MeusChamadosRoute
+  DashboardAcompanhamentoRoute: typeof DashboardAcompanhamentoRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
@@ -232,10 +233,10 @@ declare module '@tanstack/react-router' {
     }
     '/dashboard/acompanhamento': {
       id: '/dashboard/acompanhamento'
-      path: '/acompanhamento'
+      path: '/dashboard/acompanhamento'
       fullPath: '/dashboard/acompanhamento'
       preLoaderRoute: typeof DashboardAcompanhamentoRouteImport
-      parentRoute: typeof DashboardRoute
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/chamados/$ticketId': {
       id: '/_authenticated/chamados/$ticketId'
@@ -281,6 +282,7 @@ const rootRouteChildren: RootRouteChildren = {
   AbrirRoute: AbrirRoute,
   AuthRoute: AuthRoute,
   MeusChamadosRoute: MeusChamadosRoute,
+  DashboardAcompanhamentoRoute: DashboardAcompanhamentoRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 export const routeTree = rootRouteImport
