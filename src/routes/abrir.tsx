@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Cpu, MapPin, Send, CheckCircle2, MessageCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +28,6 @@ const campoVazio = {
   email: "",
   contato: "",
   setor: "",
-  local: "",
   categoria: "",
   descricao: "",
 };
@@ -37,7 +36,6 @@ interface Erros {
   solicitante?: string;
   email?: string;
   setor?: string;
-  local?: string;
   categoria?: string;
   descricao?: string;
 }
@@ -49,6 +47,20 @@ function AbrirChamado() {
   const [erros, setErros] = useState<Erros>({});
   const [enviando, setEnviando] = useState(false);
   const [sucessoId, setSucessoId] = useState<number | null>(null);
+  const [lembrar, setLembrar] = useState(false);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("ti-senai-dados") ?? "null");
+      if (saved && typeof saved === "object") {
+        setForm(f => ({ ...f, solicitante: typeof saved.solicitante === "string" ? saved.solicitante : "", email: typeof saved.email === "string" ? saved.email : "", contato: typeof saved.contato === "string" ? saved.contato : "", setor: typeof saved.setor === "string" ? saved.setor : "" }));
+        setLembrar(true);
+      }
+    } catch { localStorage.removeItem("ti-senai-dados"); }
+  }, []);
+  useEffect(() => {
+    if (lembrar) localStorage.setItem("ti-senai-dados", JSON.stringify({ solicitante: form.solicitante, email: form.email, contato: form.contato, setor: form.setor }));
+    else localStorage.removeItem("ti-senai-dados");
+  }, [lembrar, form.solicitante, form.email, form.contato, form.setor]);
 
   const set = (k: keyof typeof campoVazio, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -58,10 +70,10 @@ function AbrirChamado() {
     if (!form.solicitante.trim()) novosErros.solicitante = "Informe seu nome.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) novosErros.email = "Informe um e-mail válido.";
     if (!form.setor) novosErros.setor = "Escolha o setor.";
-    if (form.local.trim().length < 3)
-      novosErros.local = "Obrigatório: informe onde está o problema (sala, andar, bloco, pavilhão...).";
+    const local = form.descricao.match(/^\s*Local:\s*([^\n\r]+)/im)?.[1]?.trim() ?? "";
+    if (local.length < 3 || local.length > 240) novosErros.descricao = "Comece com 'Local: sala, andar ou bloco' (3 a 240 caracteres).";
     if (!form.categoria) novosErros.categoria = "Escolha o tipo de problema.";
-    if (form.descricao.trim().length < 10) novosErros.descricao = "Descreva o problema com pelo menos 10 caracteres.";
+    if (form.descricao.trim().length < 20 || form.descricao.replace(/^\s*Local:[^\n\r]*/im, "").trim().length < 10) novosErros.descricao = "Informe o local e descreva o problema com pelo menos 10 caracteres.";
     setErros(novosErros);
     if (Object.keys(novosErros).length) {
       toast.error("Confira os campos destacados.");
@@ -76,7 +88,7 @@ function AbrirChamado() {
       hora: "",
       solicitante: form.solicitante.trim(),
       setor: form.setor,
-      local: form.local.trim(),
+      local,
       categoria: form.categoria,
       descricao: form.descricao.trim(),
       prioridade: "Média",
@@ -97,7 +109,8 @@ function AbrirChamado() {
   }
 
   if (sucessoId) {
-    const shareMessage = `Olá, abri o chamado #${sucessoId} sobre "${form.categoria}" no setor "${form.setor}" (${form.local}).`;
+    const local = form.descricao.match(/^\s*Local:\s*([^\n\r]+)/im)?.[1]?.trim() ?? "";
+    const shareMessage = `Chamado #${sucessoId}\nRequisitante: ${form.solicitante.trim()}\nLocal: ${local}\nDescrição: ${form.descricao.trim()}`;
     
     return (
       <div className="mx-auto max-w-2xl py-12 px-4 animate-in fade-in zoom-in duration-300">
@@ -108,7 +121,7 @@ function AbrirChamado() {
           <h1 className="text-3xl font-bold tracking-tight mb-2">Chamado #{sucessoId} enviado!</h1>
           <p className="text-muted-foreground mb-8">
             Tudo certo, <strong>{form.solicitante}</strong>. Sua solicitação foi registrada com sucesso.
-            Você receberá atualizações no e-mail informado.
+             Acompanhe o andamento pelo site usando o e-mail informado.
           </p>
           
           <div className="grid gap-4">
@@ -128,9 +141,9 @@ function AbrirChamado() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Button asChild size="lg" className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl">
+               <Button asChild size="lg" variant="google-green" className="flex-1">
                 <a 
-                  href={`https://wa.me/?text=${encodeURIComponent(shareMessage)}`}
+                   href={`https://wa.me/5566996444461?text=${encodeURIComponent(shareMessage)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -141,6 +154,7 @@ function AbrirChamado() {
                 <ArrowLeft className="mr-2 size-4" /> Voltar ao início
               </Button>
             </div>
+             <p className="text-xs text-muted-foreground">A mensagem fica pronta no WhatsApp; confirme o envio no aplicativo.</p>
           </div>
         </div>
       </div>
@@ -160,14 +174,14 @@ function AbrirChamado() {
           <form onSubmit={enviar} className="grid gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <Campo label="Seu nome" obrigatorio erro={erros.solicitante}>
-                <Input value={form.solicitante} onChange={(e) => set("solicitante", e.target.value)} placeholder="Ex.: Maria Heloisa" />
+                 <Input autoComplete="name" value={form.solicitante} onChange={(e) => set("solicitante", e.target.value)} placeholder="Ex.: Maria Heloisa" />
               </Campo>
               <Campo label="E-mail" obrigatorio erro={erros.email}>
-                <Input type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="seu@email.com" />
+                 <Input autoComplete="email" type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="seu@email.com" />
               </Campo>
             </div>
             <Campo label="WhatsApp (opcional)">
-              <Input type="tel" value={form.contato} onChange={(e) => set("contato", e.target.value)} placeholder="Ex.: (65) 99999-9999" />
+               <Input autoComplete="tel" type="tel" value={form.contato} onChange={(e) => set("contato", e.target.value)} placeholder="Ex.: (65) 99999-9999" />
             </Campo>
 
             <div className="grid gap-5 sm:grid-cols-2">
@@ -197,23 +211,12 @@ function AbrirChamado() {
               </Campo>
             </div>
 
-            <Campo
-              label="Local exato do problema (sala, andar, pavilhão, bloco...)"
-              obrigatorio
-              erro={erros.local}
-            >
-              <Input
-                value={form.local}
-                onChange={(e) => set("local", e.target.value)}
-                placeholder="Ex.: Bloco B, 2º andar, sala 204 - Laboratório de Informática"
-              />
+             <Campo label="Descrição do problema e local" obrigatorio erro={erros.descricao}>
+               <p className="mb-2 text-xs text-muted-foreground">Comece com “Local:”, indicando sala, andar ou bloco; depois descreva o problema.</p>
+               <TextoAssistido rows={5} value={form.descricao} onChange={value => set("descricao", value)} placeholder={"Local: Bloco B, sala 204\nProblema: computador não liga"} />
             </Campo>
-
-            <Campo label="Descrição do problema" obrigatorio erro={erros.descricao}>
-              <TextoAssistido rows={4} value={form.descricao} onChange={value => set("descricao", value)} />
-            </Campo>
-
-            <Button type="submit" size="lg" disabled={enviando} className="w-full sm:w-auto">
+             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={lembrar} onChange={e => setLembrar(e.target.checked)} /> Lembrar meus dados neste aparelho (nome, e-mail, WhatsApp e setor)</label>
+             <Button type="submit" variant="google-green" size="lg" disabled={enviando} className="w-full sm:w-auto">
               <Send className="size-4" /> {enviando ? "Enviando…" : "Enviar chamado"}
             </Button>
           </form>
