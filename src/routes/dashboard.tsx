@@ -21,7 +21,7 @@ export const Route = createFileRoute("/dashboard")({
   ] }), component: Dashboard,
 });
 
-const CORES = ["var(--g-green)", "var(--g-red)", "var(--g-blue)", "var(--chart-4)", "var(--chart-5)"];
+const CORES = ["#228B22", "#FF0000", "#000080", "#FFFFFF"];
 const VISOES = [
   { id: "problemas", label: "Chamados recorrentes", color: "blue" },
   { id: "setores", label: "Chamados por setores", color: "red" },
@@ -87,10 +87,11 @@ function Dashboard() {
     }
     return ["No prazo", "Estourado", "Cancelado", "—"].filter(name => counts.has(name)).map(name => ({ name, value: counts.get(name) ?? 0 }));
   }, [progress, mes, prioridade, status, regras, now]);
-  const dados: Item[] = visao === "sla" ? dadosSla : visao === "problemas" && mes === "todos" && prioridade === "Todas" && status === "Todos"
+  const todosDados: Item[] = visao === "sla" ? dadosSla : visao === "problemas" && mes === "todos" && prioridade === "Todas" && status === "Todos"
     ? RECORRENTES.map((item) => ({ ...item }))
     : visao === "problemas" ? categorias : visao === "setores" ? setores : contar(visao === "prioridades" ? "prioridade" : "status");
-  const cor = (_nome: string, i: number) => CORES[i % CORES.length] ?? "var(--g-blue)";
+  const dados: Item[] = todosDados.length <= 4 ? todosDados : [...todosDados.slice(0, 3), { name: "Outros", value: todosDados.slice(3).reduce((n, x) => n + x.value, 0) }];
+  const cor = (_nome: string, i: number) => CORES[i] ?? "#FFFFFF";
   const baixarResumo = () => {
     const conteudo = [["Visão", "Item", "Chamados"], ...dados.map((r) => [visao, r.name, String(r.value)])].map((r) => r.map((v) => `"${v.replace(/"/g, '""')}"`).join(";")).join("\n");
     const url = URL.createObjectURL(new Blob(["\uFEFF" + conteudo], { type: "text/csv;charset=utf-8" }));
@@ -125,8 +126,8 @@ function Dashboard() {
 
 function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: (name: string, i: number) => string }) {
   if (!dados.length) return <p className="py-24 text-center text-muted-foreground">Nenhum chamado encontrado neste recorte.</p>;
-   const chart = tipo === "pizza" ? <PieChart><Pie data={dados} dataKey="value" nameKey="name" innerRadius="38%" outerRadius="76%" paddingAngle={3} isAnimationActive animationDuration={650}>{dados.map((d, i) => <Cell key={d.name} fill={cor(d.name, i)} />)}</Pie><Tooltip formatter={(value) => [`${value} chamados`, "Total"]} /></PieChart>
-     : tipo === "barras" ? <BarChart data={dados} layout="vertical" margin={{ left: 20, right: 20 }}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis type="number" allowDecimals={false} /><YAxis dataKey="name" type="category" width={150} tick={{ fill: "var(--foreground)", fontSize: 11 }} /><Tooltip /><Bar dataKey="value" name="Chamados" isAnimationActive animationDuration={650} radius={[0, 4, 4, 0]}>{dados.map((d, i) => <Cell key={d.name} fill={cor(d.name, i)} />)}</Bar></BarChart>
+   const chart = tipo === "pizza" ? <PieChart><Pie data={dados} dataKey="value" nameKey="name" innerRadius="38%" outerRadius="76%" paddingAngle={3} isAnimationActive animationDuration={650}>{dados.map((d, i) => <Cell key={d.name} fill={cor(d.name, i)} stroke="var(--foreground)" strokeWidth={i === 3 ? 1 : 0} />)}</Pie><Tooltip formatter={(value) => [`${value} chamados`, "Total"]} /></PieChart>
+     : tipo === "barras" ? <BarChart data={dados} layout="vertical" margin={{ left: 20, right: 20 }}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis type="number" allowDecimals={false} /><YAxis dataKey="name" type="category" width={150} tick={{ fill: "var(--foreground)", fontSize: 11 }} /><Tooltip /><Bar dataKey="value" name="Chamados" isAnimationActive animationDuration={650} radius={[0, 4, 4, 0]}>{dados.map((d, i) => <Cell key={d.name} fill={cor(d.name, i)} stroke={i === 3 ? "var(--foreground)" : "none"} />)}</Bar></BarChart>
      : <AreaChart data={dados} margin={{ left: 0, right: 20, top: 20 }}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" /><XAxis dataKey="name" tick={{ fill: "var(--foreground)", fontSize: 11 }} interval={0} /><YAxis allowDecimals={false} /><Tooltip /><Area type="monotone" dataKey="value" name="Chamados" stroke="var(--g-blue)" fill="var(--g-blue)" fillOpacity={0.24} strokeWidth={3} isAnimationActive animationDuration={650} /></AreaChart>;
-   return <div className="chart-enter grid items-center gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(230px,1fr)]"><div className="h-[390px] min-w-0"><ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer></div><div className="max-h-[370px] overflow-y-auto">{dados.map((d, i) => <div key={d.name} className="flex items-center gap-3 border-b border-border py-3 text-sm"><span className="size-3 shrink-0 rounded-sm" style={{ backgroundColor: cor(d.name, i) }} /><span className="min-w-0 flex-1 font-medium">{d.name}</span><strong>{d.value}</strong></div>)}</div></div>;
+   return <div className="chart-enter grid items-center gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(230px,1fr)]"><div className="h-[390px] min-w-0"><ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer></div><div className="max-h-[370px] overflow-y-auto">{dados.map((d, i) => <div key={d.name} className="flex items-center gap-3 border-b border-border py-3 text-sm"><span className="size-3 shrink-0 rounded-sm border border-foreground/40" style={{ backgroundColor: cor(d.name, i) }} /><span className="min-w-0 flex-1 font-medium">{d.name}</span><strong>{d.value}</strong></div>)}</div></div>;
 }
