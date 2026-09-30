@@ -140,19 +140,21 @@ function AbrirChamado() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-4">
-               <Button asChild size="lg" variant="google-green" className="flex-1">
+            <div className="pt-4 space-y-3">
+               <Button asChild size="lg" variant="google-green" className="w-full text-base font-bold shadow-md">
                  <a
                     href={`https://wa.me/5566996444461?text=${encodeURIComponent(shareMessage)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <MessageCircle className="mr-2 size-5" /> Enviar agora
+                  <MessageCircle className="mr-2 size-5" /> Enviar no WhatsApp
                 </a>
               </Button>
-              <Button variant="outline" size="lg" className="rounded-xl" onClick={() => navigate({ to: "/" })}>
-                 <ArrowLeft className="mr-2 size-4" /> Enviar depois
-              </Button>
+              <div className="flex justify-center">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate({ to: "/" })}>
+                  <ArrowLeft className="mr-2 size-4" /> Voltar para o início
+                </Button>
+              </div>
             </div>
              <p className="text-xs text-muted-foreground">A mensagem fica pronta no WhatsApp; confirme o envio no aplicativo.</p>
           </div>
@@ -174,7 +176,7 @@ function AbrirChamado() {
           <form onSubmit={enviar} className="grid gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <Campo label="Seu nome" obrigatorio erro={erros.solicitante}>
-                 <Input autoComplete="name" value={form.solicitante} onChange={(e) => set("solicitante", e.target.value)} placeholder="Ex.: Maria Heloisa" />
+                 <Input autoComplete="name" value={form.solicitante} onChange={(e) => set("solicitante", e.target.value)} placeholder="Digite seu nome completo" />
               </Campo>
               <Campo label="E-mail" obrigatorio erro={erros.email}>
                  <Input autoComplete="email" type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="seu@email.com" />

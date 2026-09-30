@@ -24,6 +24,8 @@ const buttonVariants = cva(
           "border border-transparent bg-g-yellow text-zinc-950 font-extrabold shadow-md hover:brightness-110 active:scale-[0.98] transition-all",
         "google-green":
           "border border-transparent bg-g-green text-white font-bold shadow-md hover:brightness-110 active:scale-[0.98] transition-all",
+        "google-purple":
+          "border border-transparent bg-g-purple text-white font-bold shadow-md hover:brightness-110 active:scale-[0.98] transition-all",
       },
       size: {
         default: "h-9 px-4 py-2",

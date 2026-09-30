@@ -24,6 +24,7 @@
   --color-g-red: var(--g-red);
   --color-g-yellow: var(--g-yellow);
   --color-g-green: var(--g-green);
+  --color-g-purple: var(--g-purple);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -73,6 +74,7 @@
   --g-red: oklch(0.586 0.224 27.3);
   --g-yellow: oklch(0.762 0.168 76.5);
   --g-green: oklch(0.655 0.178 142.5);
+  --g-purple: #a142f4;
 
   --background: oklch(0.985 0.005 240);
   --foreground: oklch(0.20 0.02 260);
@@ -142,6 +144,7 @@
   --g-red: #ef4444;
   --g-yellow: #f59e0b;
   --g-green: #10b981;
+  --g-purple: #a855f7;
 
   --background: oklch(0.15 0.015 255);
   --foreground: #ffffff;

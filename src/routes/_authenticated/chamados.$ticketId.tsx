@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Save, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,21 +42,26 @@ const prioridadeEstilos: Record<Ticket["prioridade"], { active: string; inactive
 
 function TicketDetail() {
   const { ticketId } = Route.useParams();
-  const { tickets, regras, hidratado, updateTicket } = useStore();
+  const { tickets, regras, hidratado, updateTicket, removeTicket, isGestor } = useStore();
   const ticket = tickets.find(t => t.id === Number(ticketId));
   if (!ticket) return <div className="space-y-4"><Button asChild variant="outline"><Link to="/atendimento"><ArrowLeft className="size-4" /> Atendimento</Link></Button><p className="text-muted-foreground">{hidratado ? "Chamado não encontrado." : "Carregando chamado…"}</p></div>;
-  return <TicketEditor key={ticket.id} ticket={ticket} regras={regras} updateTicket={updateTicket} />;
+  return <TicketEditor key={ticket.id} ticket={ticket} regras={regras} updateTicket={updateTicket} removeTicket={removeTicket} isGestor={isGestor} />;
 }
 
 function TicketEditor({
   ticket,
   regras,
   updateTicket,
+  removeTicket,
+  isGestor,
 }: {
   ticket: Ticket;
   regras: ReturnType<typeof useStore>["regras"];
   updateTicket: ReturnType<typeof useStore>["updateTicket"];
+  removeTicket: ReturnType<typeof useStore>["removeTicket"];
+  isGestor: boolean;
 }) {
+  const navigate = useNavigate();
   const [draft, setDraft] = useState<Ticket>(() => ({ ...ticket, responsavel: "Claudinei Lima", status: ticket.status === "Aberto" ? "Em andamento" : ticket.status }));
   const [saving, setSaving] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
@@ -100,6 +105,17 @@ function TicketEditor({
     try { const ok = await updateTicket(ticket.id, patch); toast[ok ? "success" : "error"](ok ? "Chamado salvo." : "Não foi possível salvar o chamado."); }
     finally { setSaving(false); }
   }
+
+  async function excluirChamado() {
+    const ok = await removeTicket(ticket.id);
+    if (ok) {
+      toast.success(`Chamado #${ticket.id} excluído com sucesso.`);
+      navigate({ to: "/atendimento" });
+    } else {
+      toast.error("Não foi possível excluir o chamado.");
+    }
+  }
+
   const hasChanges = editable.some(k => draft[k] !== ticket[k]);
   async function suggestPriority() {
     setSuggesting(true);
@@ -108,7 +124,21 @@ function TicketEditor({
     finally { setSuggesting(false); }
   }
   return <div className="mx-auto max-w-4xl space-y-6">
-    <Button asChild variant="outline"><Link to="/atendimento"><ArrowLeft className="size-4" /> Voltar à planilha</Link></Button>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <Button asChild variant="outline"><Link to="/atendimento"><ArrowLeft className="size-4" /> Voltar à planilha</Link></Button>
+      {isGestor && (
+        <ConfirmAction
+          title={`Excluir chamado #${ticket.id}?`}
+          description="Atenção: esta ação é irreversível. O chamado será removido permanentemente do banco de dados."
+          confirmLabel="Sim, excluir definitivamente"
+          variant="destructive"
+          onConfirm={excluirChamado}
+        >
+          <Trash2 className="size-4" /> Excluir chamado
+        </ConfirmAction>
+      )}
+    </div>
+
     <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5">
        <div className="flex-1 text-center">
         <h1 className="text-3xl font-bold">Chamado #{ticket.id}</h1>
@@ -153,10 +183,23 @@ function TicketEditor({
       </div>
     </div>
     <div className="space-y-3 border-t border-border pt-5"><p className="text-sm font-semibold">Status do chamado</p><div className="flex flex-wrap gap-2">{(["Em andamento", "Aguardando", "Resolvido", "Cancelado"] as const).map(s => <Button key={s} type="button" variant={draft.status === s ? s === "Cancelado" ? "google-red" : "google-green" : "outline"} aria-pressed={draft.status === s} onClick={() => field("status", s)}>{s}</Button>)}</div></div>
-    <div className="flex justify-end border-t border-border pt-5">
-      <ConfirmAction title={`Salvar alterações no chamado #${ticket.id}?`} description="Confira os dados antes de confirmar. As alterações aparecerão no acompanhamento do chamado." confirmLabel="Sim, salvar" onConfirm={save} disabled={!hasChanges || saving}>
-        <Save className="size-4" /> {saving ? "Salvando…" : "Salvar"}
-      </ConfirmAction>
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
+      {isGestor && (
+        <ConfirmAction
+          title={`Excluir chamado #${ticket.id}?`}
+          description="Atenção: esta ação é irreversível. O chamado será removido permanentemente do banco de dados."
+          confirmLabel="Sim, excluir definitivamente"
+          variant="destructive"
+          onConfirm={excluirChamado}
+        >
+          <Trash2 className="size-4" /> Excluir chamado
+        </ConfirmAction>
+      )}
+      <div className="ml-auto">
+        <ConfirmAction title={`Salvar alterações no chamado #${ticket.id}?`} description="Confira os dados antes de confirmar. As alterações aparecerão no acompanhamento do chamado." confirmLabel="Sim, salvar" onConfirm={save} disabled={!hasChanges || saving}>
+          <Save className="size-4" /> {saving ? "Salvando…" : "Salvar"}
+        </ConfirmAction>
+      </div>
     </div>
   </div>;
 }
