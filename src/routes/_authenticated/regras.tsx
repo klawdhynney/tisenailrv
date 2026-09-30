@@ -202,7 +202,7 @@ function Regras() {
       <div className="grid gap-4 lg:grid-cols-3">
         <ListaEditavel titulo="Setores" itens={regras.setores} onChange={(setores) => salvar({ setores })} />
         <ListaEditavel titulo="Tipos de problema" itens={regras.categorias} onChange={(categorias) => salvar({ categorias })} />
-        <ListaEditavel titulo="Equipe de TI" itens={regras.responsaveis} onChange={(responsaveis) => salvar({ responsaveis })} />
+        <Card><CardHeader><CardTitle>Responsável pelo atendimento</CardTitle></CardHeader><CardContent className="font-medium">Claudinei Lima</CardContent></Card>
       </div>
       <section className="grid gap-5 lg:grid-cols-2">
          <Card><CardHeader><CardTitle>Filtros da planilha de atendimento</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-2">{FILTROS_PLANILHA.map(nome => <Button key={nome} type="button" variant={(regras.planilha?.filtros ?? [...FILTROS_PLANILHA]).includes(nome) ? "google-blue" : "outline"} aria-pressed={(regras.planilha?.filtros ?? [...FILTROS_PLANILHA]).includes(nome)} onClick={() => { const atuais = regras.planilha?.filtros ?? [...FILTROS_PLANILHA]; salvar({ planilha: { colunas: regras.planilha?.colunas ?? [...COLUNAS_PLANILHA], filtros: atuais.includes(nome) ? atuais.filter(x => x !== nome) : [...atuais, nome] } }); }}>{nome}</Button>)}</CardContent></Card>

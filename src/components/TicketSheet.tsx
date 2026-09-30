@@ -14,8 +14,8 @@ export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
   const colunas = COLUNAS_PLANILHA.filter(c => configuradas.includes(c) || (c === "Setor" && configuradas.includes("Setor / local")) || (c === "Descrição do problema" && configuradas.includes("Descrição")));
   const filtros = attendance ? ["Mês", "SLA"] : (regras.planilha?.filtros ?? [...FILTROS_PLANILHA]).filter(f => !["Prioridade", "Status", "Responsável"].includes(f));
   const [fila, setFila] = useState<"abertos" | "finalizados">("abertos");
-  const [month, setMonth] = useState("todos"), [status, setStatus] = useState("Todos"), [priority, setPriority] = useState("Todas"), [search, setSearch] = useState("");
-  const [category, setCategory] = useState("Todas"), [sector, setSector] = useState("Todos"), [assignee, setAssignee] = useState("Todos"), [slaFilter, setSlaFilter] = useState("Todos");
+  const [month, setMonth] = useState("todos"), [search, setSearch] = useState("");
+  const [category, setCategory] = useState("Todas"), [sector, setSector] = useState("Todos"), [slaFilter, setSlaFilter] = useState("Todos");
   const [pageSize, setPageSize] = useState(10), [page, setPage] = useState(1);
   const topRef = useRef<HTMLDivElement>(null), bottomRef = useRef<HTMLDivElement>(null), syncing = useRef(false);
   const rows = useMemo(() => tickets.filter(t => (!attendance || (["Resolvido", "Cancelado"].includes(t.status) === (fila === "finalizados"))) && (!filtros.includes("Mês") || month === "todos" || t.abertoEm.startsWith(month)) && (!filtros.includes("Categoria") || category === "Todas" || t.categoria === category) && (!filtros.includes("Setor") || sector === "Todos" || t.setor === sector) && (!filtros.includes("SLA") || slaFilter === "Todos" || calcularSla(t, regras).situacao === slaFilter) && (!filtros.includes("Busca") || !search || [t.id, t.solicitante, t.setor, t.local, t.descricao, t.responsavel].join(" ").toLowerCase().includes(search.toLowerCase())))
@@ -70,7 +70,7 @@ function TicketRow({ ticket: t, colunas, attendance = false }: { ticket: Ticket;
   const cells: Record<string, React.ReactNode> = {
     "Ver chamado": action, "Nº": <strong>#{t.id}</strong>, "Aberto em": formatarData(t.abertoEm, t.hora),
     "Solicitante": t.solicitante, "E-mail": t.solicitanteEmail || "—", "WhatsApp": t.contato || "—",
-     "Setor": <span className="block max-w-52">{t.setor} · {t.local}</span>,
+      "Setor": <span className="block max-w-52">{t.setor}{t.local ? ` · ${t.local}` : ""}</span>,
      "Descrição do problema": <span className="line-clamp-2 max-w-72">{t.descricao}</span>, "Categoria": t.categoria,
     "Prioridade": <PrioridadeChip valor={t.prioridade} />, "Responsável": t.responsavel || "—",
     "Status": <StatusChip valor={t.status} />,

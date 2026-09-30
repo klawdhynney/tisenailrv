@@ -42,29 +42,27 @@ const prioridadeEstilos: Record<Ticket["prioridade"], { active: string; inactive
 
 function TicketDetail() {
   const { ticketId } = Route.useParams();
-  const { tickets, regras, hidratado, updateTicket, session } = useStore();
+  const { tickets, regras, hidratado, updateTicket } = useStore();
   const ticket = tickets.find(t => t.id === Number(ticketId));
   if (!ticket) return <div className="space-y-4"><Button asChild variant="outline"><Link to="/atendimento"><ArrowLeft className="size-4" /> Atendimento</Link></Button><p className="text-muted-foreground">{hidratado ? "Chamado não encontrado." : "Carregando chamado…"}</p></div>;
-  return <TicketEditor key={ticket.id} ticket={ticket} regras={regras} updateTicket={updateTicket} session={session} />;
+  return <TicketEditor key={ticket.id} ticket={ticket} regras={regras} updateTicket={updateTicket} />;
 }
 
 function TicketEditor({
   ticket,
   regras,
   updateTicket,
-  session,
 }: {
   ticket: Ticket;
   regras: ReturnType<typeof useStore>["regras"];
   updateTicket: ReturnType<typeof useStore>["updateTicket"];
-  session: ReturnType<typeof useStore>["session"];
 }) {
-  const [draft, setDraft] = useState<Ticket>(() => ({ ...ticket, responsavel: ticket.responsavel || "Claudinei Lima", status: ticket.status === "Aberto" ? "Em andamento" : ticket.status }));
+  const [draft, setDraft] = useState<Ticket>(() => ({ ...ticket, responsavel: "Claudinei Lima", status: ticket.status === "Aberto" ? "Em andamento" : ticket.status }));
   const [saving, setSaving] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [suggested, setSuggested] = useState<Ticket["prioridade"] | null>(null);
   const autoSuggestedId = useRef<number | null>(null);
-  useEffect(() => setDraft(prev => ({ ...ticket, responsavel: prev.responsavel || ticket.responsavel || "Claudinei Lima", status: prev.status === "Aberto" && ticket.status === "Aberto" ? "Em andamento" : ticket.status })), [ticket]);
+  useEffect(() => setDraft(prev => ({ ...ticket, responsavel: "Claudinei Lima", status: prev.status === "Aberto" && ticket.status === "Aberto" ? "Em andamento" : ticket.status })), [ticket]);
   useEffect(() => {
     if (ticket.status !== "Aberto" || autoSuggestedId.current === ticket.id) return;
     autoSuggestedId.current = ticket.id;
