@@ -102,16 +102,17 @@ function AbrirChamado() {
       <div className="rounded-2xl border-l-4 border-g-green bg-card px-5 py-5 shadow-sm"><div className="flex items-center gap-3"><span className="rounded-xl bg-g-green/15 p-3 text-g-green"><Cpu className="size-7" /></span><h1 className="text-3xl font-bold">Abrir chamado de TI</h1></div>
       <p className="mt-2 text-muted-foreground">Preencha os campos abaixo. Quanto mais claro o local e a descrição, mais rápido o atendimento.</p></div>
       <Card className="mt-6 rounded-2xl border-t-4 border-g-blue shadow-md">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2"><MapPin className="size-5 text-g-blue" /> Dados do chamado</CardTitle>
+          <span className="text-xs text-muted-foreground"><span className="font-bold text-[var(--g-red)]">*</span> Campos obrigatórios</span>
         </CardHeader>
         <CardContent>
           <form onSubmit={enviar} className="grid gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
-              <Campo label="Seu nome *" erro={erros.solicitante}>
+              <Campo label="Seu nome" obrigatorio erro={erros.solicitante}>
                 <Input value={form.solicitante} onChange={(e) => set("solicitante", e.target.value)} placeholder="Ex.: Maria Heloisa" />
               </Campo>
-              <Campo label="E-mail *" erro={erros.email}>
+              <Campo label="E-mail" obrigatorio erro={erros.email}>
                 <Input type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="seu@email.com" />
               </Campo>
             </div>
@@ -120,7 +121,7 @@ function AbrirChamado() {
             </Campo>
 
             <div className="grid gap-5 sm:grid-cols-2">
-              <Campo label="Setor *" erro={erros.setor}>
+              <Campo label="Setor" obrigatorio erro={erros.setor}>
                 <select
                   className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm"
                   value={form.setor}
@@ -132,7 +133,7 @@ function AbrirChamado() {
                   ))}
                 </select>
               </Campo>
-              <Campo label="Tipo de problema *" erro={erros.categoria}>
+              <Campo label="Tipo de problema" obrigatorio erro={erros.categoria}>
                 <select
                   className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm"
                   value={form.categoria}
@@ -147,7 +148,8 @@ function AbrirChamado() {
             </div>
 
             <Campo
-              label="Local exato do problema * (sala, andar, pavilhão, bloco...)"
+              label="Local exato do problema (sala, andar, pavilhão, bloco...)"
+              obrigatorio
               erro={erros.local}
             >
               <Input
@@ -157,7 +159,7 @@ function AbrirChamado() {
               />
             </Campo>
 
-            <Campo label="Descrição do problema *" erro={erros.descricao}>
+            <Campo label="Descrição do problema" obrigatorio erro={erros.descricao}>
               <TextoAssistido rows={4} value={form.descricao} onChange={value => set("descricao", value)} />
             </Campo>
 
@@ -171,10 +173,27 @@ function AbrirChamado() {
   );
 }
 
-function Campo({ label, erro, children }: { label: string; erro?: string | undefined; children: React.ReactNode }) {
+function Campo({
+  label,
+  obrigatorio = false,
+  erro,
+  children,
+}: {
+  label: string;
+  obrigatorio?: boolean;
+  erro?: string | undefined;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <Label className="mb-2 block">{label}</Label>
+      <Label className="mb-2 flex items-center gap-1 text-sm font-medium">
+        <span>{label}</span>
+        {obrigatorio && (
+          <span className="font-bold text-[var(--g-red)] text-sm select-none" title="Campo obrigatório">
+            *
+          </span>
+        )}
+      </Label>
       {children}
       {erro && <p className="mt-1 text-xs font-medium text-[var(--g-red)]">{erro}</p>}
     </div>

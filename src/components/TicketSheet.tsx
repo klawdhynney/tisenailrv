@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, Search } from "lucide-react";
+import { Eye, Headset, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PrioridadeChip, SlaChip, StatusChip } from "@/components/Chips";
@@ -46,16 +46,23 @@ export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
     <div ref={topRef} className="overflow-x-auto" onScroll={() => sync("top")} aria-label="Rolagem horizontal superior"><div className="h-px" /></div>
     <div ref={bottomRef} className="overflow-x-auto rounded-xl border border-border" onScroll={() => sync("bottom")}>
        <table className="w-full min-w-[1850px] border-separate border-spacing-0 text-sm"><thead><tr className="border-b-2 border-g-blue bg-muted text-left text-foreground">{colunas.map(h => <th key={h} className="whitespace-nowrap px-3 py-3 font-semibold">{h}</th>)}</tr></thead>
-         <tbody>{visible.map(t => <TicketRow key={t.id} ticket={t} colunas={colunas} />)}{!visible.length && <tr><td colSpan={Math.max(1, colunas.length)} className="px-4 py-12 text-center text-muted-foreground">{hidratado ? "Nenhum chamado encontrado." : "Carregando chamados…"}</td></tr>}</tbody></table>
+         <tbody>{visible.map(t => <TicketRow key={t.id} ticket={t} colunas={colunas} attendance={attendance} />)}{!visible.length && <tr><td colSpan={Math.max(1, colunas.length)} className="px-4 py-12 text-center text-muted-foreground">{hidratado ? "Nenhum chamado encontrado." : "Carregando chamados…"}</td></tr>}</tbody></table>
     </div>
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm"><span className="text-muted-foreground">{rows.length} chamado(s) · página {Math.min(page, pages)} de {pages}</span><div className="flex gap-2"><Button type="button" variant="outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Anterior</Button><Button type="button" variant="outline" disabled={page >= pages} onClick={() => setPage(p => p + 1)}>Próxima</Button></div></div>
   </section>;
 }
 
-function TicketRow({ ticket: t, colunas }: { ticket: Ticket; colunas: string[] }) {
+function TicketRow({ ticket: t, colunas, attendance = false }: { ticket: Ticket; colunas: string[]; attendance?: boolean }) {
   const { regras } = useStore();
   const sla = calcularSla(t, regras);
-  const action = <Button asChild size="sm" variant="google-blue"><Link to="/chamados/$ticketId" params={{ ticketId: String(t.id) }}><Eye className="size-4" /> Ver chamado</Link></Button>;
+  const action = (
+    <Button asChild size="sm" variant={attendance ? "google-green" : "google-blue"}>
+      <Link to="/chamados/$ticketId" params={{ ticketId: String(t.id) }}>
+        {attendance ? <Headset className="size-4" /> : <Eye className="size-4" />}
+        {attendance ? "Atender" : "Ver chamado"}
+      </Link>
+    </Button>
+  );
   const cells: Record<string, React.ReactNode> = {
     "Ver chamado": action, "Nº": <strong>#{t.id}</strong>, "Aberto em": formatarData(t.abertoEm, t.hora),
     "Solicitante": t.solicitante, "E-mail": t.solicitanteEmail || "—", "WhatsApp": t.contato || "—",
