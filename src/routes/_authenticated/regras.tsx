@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { useStore } from "@/lib/store-context";
-import { COLUNAS_PLANILHA, FILTROS_PLANILHA, PRIORIDADES, REGRAS_PADRAO, STATUS_LIST, type Periodo, type Status } from "@/lib/types";
+import { COLUNAS_PLANILHA, FILTROS_PLANILHA, PRIORIDADES, REGRAS_PADRAO, type Periodo } from "@/lib/types";
 import { CORES_PRIORIDADE } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/regras")({
@@ -37,7 +37,7 @@ function Regras() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+         <div className="flex-1 text-center">
           <h1 className="text-3xl font-bold tracking-tight">Regras e prioridades</h1>
           <p className="mt-1 text-muted-foreground">As alterações entram em vigor depois de salvar.</p>
         </div>
@@ -106,34 +106,9 @@ function Regras() {
               })}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Fora desses dias e horários o SLA fica pausado automaticamente (sábados, domingos e madrugadas não contam).
+              Fora desses dias e horários o SLA não acumula tempo útil (sábados, domingos e madrugadas não contam).
             </p>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle>Status que pausam o SLA</CardTitle></CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          {STATUS_LIST.map((s) => {
-            const ativo = regras.statusQuePausam.includes(s);
-            return (
-              <button
-                key={s}
-                onClick={() =>
-                  salvar({
-                    statusQuePausam: ativo
-                      ? regras.statusQuePausam.filter((x) => x !== s)
-                      : ([...regras.statusQuePausam, s] as Status[]),
-                  })
-                }
-                className="rounded-full border-2 px-3 py-1 text-sm font-semibold"
-                style={{ borderColor: "var(--g-yellow)", backgroundColor: ativo ? "var(--g-yellow)" : "transparent" }}
-              >
-                {s}
-              </button>
-            );
-          })}
         </CardContent>
       </Card>
 
@@ -202,7 +177,7 @@ function Regras() {
       <div className="grid gap-4 lg:grid-cols-3">
         <ListaEditavel titulo="Setores" itens={regras.setores} onChange={(setores) => salvar({ setores })} />
         <ListaEditavel titulo="Tipos de problema" itens={regras.categorias} onChange={(categorias) => salvar({ categorias })} />
-        <ListaEditavel titulo="Equipe de TI" itens={regras.responsaveis} onChange={(responsaveis) => salvar({ responsaveis })} />
+        <Card><CardHeader><CardTitle>Responsável pelo atendimento</CardTitle></CardHeader><CardContent className="font-medium">Claudinei Lima</CardContent></Card>
       </div>
       <section className="grid gap-5 lg:grid-cols-2">
          <Card><CardHeader><CardTitle>Filtros da planilha de atendimento</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-2">{FILTROS_PLANILHA.map(nome => <Button key={nome} type="button" variant={(regras.planilha?.filtros ?? [...FILTROS_PLANILHA]).includes(nome) ? "google-blue" : "outline"} aria-pressed={(regras.planilha?.filtros ?? [...FILTROS_PLANILHA]).includes(nome)} onClick={() => { const atuais = regras.planilha?.filtros ?? [...FILTROS_PLANILHA]; salvar({ planilha: { colunas: regras.planilha?.colunas ?? [...COLUNAS_PLANILHA], filtros: atuais.includes(nome) ? atuais.filter(x => x !== nome) : [...atuais, nome] } }); }}>{nome}</Button>)}</CardContent></Card>

@@ -123,7 +123,7 @@ export function segundosUteis(a: Date, b: Date, regras: Regras): number {
 }
 
 export interface SlaInfo {
-  situacao: "No prazo" | "Estourado" | "Pausado" | "Cancelado" | "—";
+  situacao: "No prazo" | "Estourado" | "Cancelado" | "—";
   prazo: Date | null;
   restanteMin: number | null;
   pausadoPor: string | null;
@@ -141,7 +141,7 @@ export function calcularSla(t: Ticket, regras: Regras, agora = new Date()): SlaI
   const prazo = addHorasUteis(inicio, horas, regras);
 
   if (regras.statusQuePausam.includes(t.status))
-    return { situacao: "Pausado", prazo, restanteMin: null, pausadoPor: `Status: ${t.status}`, percentual: 0 };
+    return { situacao: agora > prazo ? "Estourado" : "No prazo", prazo, restanteMin: null, pausadoPor: `Status: ${t.status}`, percentual: 0 };
 
   const ref = t.fechadoEm ? toDate(t.fechadoEm, t.horario) : agora;
   const encerrado = t.status === "Resolvido" && !!t.fechadoEm;
@@ -150,7 +150,7 @@ export function calcularSla(t: Ticket, regras: Regras, agora = new Date()): SlaI
     const mp = motivoPausa(agora, regras);
     if (mp) {
       const restante = minutosUteis(agora, prazo, regras);
-      return { situacao: "Pausado", prazo, restanteMin: restante, pausadoPor: mp, percentual: 0 };
+      return { situacao: agora > prazo ? "Estourado" : "No prazo", prazo, restanteMin: restante, pausadoPor: mp, percentual: 0 };
     }
   }
 

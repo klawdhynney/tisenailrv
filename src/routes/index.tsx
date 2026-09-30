@@ -26,11 +26,11 @@ function Inicio() {
       <div className="absolute inset-0 -z-10 bg-card/80" />
       <div className="grid min-h-[330px] gap-7 px-5 py-6 sm:px-9 lg:grid-cols-[minmax(180px,0.46fr)_minmax(0,1fr)_minmax(220px,0.65fr)] lg:items-center">
          <img src={senaiAsset.url} alt="SENAI Lucas do Rio Verde" className="mx-auto block h-44 w-auto max-w-full rounded-2xl object-contain sm:h-60 lg:h-[300px]" />
-        <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
+         <div className="flex flex-col items-center text-center">
           <p className="inline-flex items-center gap-2 rounded-full bg-card/90 px-3 py-1 text-xs font-bold uppercase text-primary shadow-sm"><Activity className="size-4" /> Atendimento de TI · SENAI LRV</p>
            <h1 className="mt-5 max-w-xl text-4xl font-bold leading-tight text-foreground sm:text-5xl">TI SENAI LRV</h1>
-          <p className="mt-3 max-w-md text-base font-medium leading-relaxed text-foreground">Sua central para registrar problemas de tecnologia e acompanhar o atendimento da unidade.</p>
-          <div className="mt-5 flex flex-wrap justify-center gap-3 sm:justify-start"><Button asChild size="lg" variant="google-green"><Link to="/abrir">Abrir chamado <ArrowRight /></Link></Button><Button asChild size="lg" variant="google-blue"><Link to="/dashboard" hash="acompanhamento">Acompanhar chamado <ClipboardList /></Link></Button></div>
+           <p className="mt-3 max-w-xl text-base font-medium leading-relaxed text-foreground">Bem-vindo à Central de Chamados de TI! Para agilizar seu atendimento, seja claro e objetivo ao descrever o problema e informe o local exato onde ele está acontecendo. Essas informações ajudam a identificar a situação e agilizar o atendimento.</p>
+           <div className="mt-5 flex flex-wrap justify-center gap-3"><Button asChild size="lg" variant="google-green"><Link to="/abrir">Abrir chamado <ArrowRight /></Link></Button><Button asChild size="lg" variant="google-blue"><Link to="/dashboard/acompanhamento">Acompanhar chamado <ClipboardList /></Link></Button></div>
         </div>
         <div className="grid gap-3 text-center sm:text-left">
           {[["Chamados registrados", total, "border-g-blue", "text-g-blue"], ["Em atendimento", andamento, "border-g-yellow", "text-g-yellow"], ["Resolvidos", resolvidos, "border-g-green", "text-g-green"]].map(([label, count, border, color]) => <div key={String(label)} className={`rounded-xl border-l-4 ${border} bg-card/90 px-5 py-4 shadow-sm`}><strong className={`block text-3xl ${color}`}>{count}</strong><span className="text-sm text-muted-foreground">{label}</span></div>)}

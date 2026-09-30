@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Palette, Check } from "lucide-react";
+import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Check } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -17,10 +17,9 @@ const navGestor = [
   { to: "/regras", label: "Regras", icon: Settings2, variante: "google-blue" },
 ] as const;
 
-type Tema = "claro" | "pastel" | "escuro";
+type Tema = "claro" | "escuro";
 const temas = [
   { valor: "claro", nome: "Claro", icon: Sun },
-  { valor: "pastel", nome: "Claro pastel", icon: Palette },
   { valor: "escuro", nome: "Escuro", icon: Moon },
 ] as const;
 
@@ -29,14 +28,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [tema, setTema] = useState<Tema>("claro");
   useEffect(() => {
     const salvo = localStorage.getItem("tema-ti");
-    const inicial: Tema = salvo === "escuro" || salvo === "pastel" ? salvo : "claro";
+    const inicial: Tema = salvo === "escuro" ? salvo : "claro";
     document.documentElement.classList.toggle("dark", inicial === "escuro");
-    document.documentElement.classList.toggle("pastel", inicial === "pastel");
+    document.documentElement.classList.remove("pastel");
     setTema(inicial);
   }, []);
   const escolherTema = (novo: Tema) => {
     document.documentElement.classList.toggle("dark", novo === "escuro");
-    document.documentElement.classList.toggle("pastel", novo === "pastel");
+    document.documentElement.classList.remove("pastel");
     localStorage.setItem("tema-ti", novo);
     setTema(novo);
   };
@@ -72,7 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size={mobile ? "default" : "icon"} aria-label="Escolher tema" title="Escolher tema" className={mobile ? "justify-start" : undefined}>
-          {tema === "escuro" ? <Moon className="size-4" /> : tema === "pastel" ? <Palette className="size-4" /> : <Sun className="size-4" />}
+           {tema === "escuro" ? <Moon className="size-4" /> : <Sun className="size-4" />}
           {mobile && "Tema"}
         </Button>
       </DropdownMenuTrigger>
@@ -92,7 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b-2 border-border bg-card/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
            <Link to="/" className="flex shrink-0 items-center gap-2">
-              <img src={senaiAsset.url} alt="SENAI LRV" width={40} height={40} className="size-10 rounded-xl object-contain shadow-sm" />
+               <img src={senaiAsset.url} alt="SENAI LRV" width={40} height={40} className="size-10 rounded-xl object-contain shadow-sm" />
               <span className="text-sm font-bold text-foreground sm:text-base">TI SENAI LRV</span>
           </Link>
           <nav className="ml-auto hidden items-center gap-2 lg:flex">

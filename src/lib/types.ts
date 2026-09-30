@@ -4,7 +4,6 @@ export type Status =
   | "Aberto"
   | "Em andamento"
   | "Aguardando"
-  | "Pausado"
   | "Resolvido"
   | "Cancelado";
 
@@ -13,7 +12,6 @@ export const STATUS_LIST: Status[] = [
   "Aberto",
   "Em andamento",
   "Aguardando",
-  "Pausado",
   "Resolvido",
   "Cancelado",
 ];
@@ -68,7 +66,7 @@ export interface Regras {
   planilha?: { filtros: string[]; colunas: string[] };
 }
 
-export const FILTROS_PLANILHA = ["Mês", "Prioridade", "Status", "Busca", "Por página", "Categoria", "Setor", "Responsável", "SLA"] as const;
+export const FILTROS_PLANILHA = ["Mês", "Busca", "Por página", "Categoria", "Setor", "SLA"] as const;
 export const COLUNAS_PLANILHA = ["Ver chamado", "Nº", "Aberto em", "Solicitante", "Setor", "Descrição do problema", "Prioridade", "Status", "SLA", "Prazo", "Responsável", "Procedimento", "Fechado em", "E-mail", "WhatsApp", "Categoria"] as const;
 
 export const MESES = [
@@ -105,7 +103,6 @@ export const CORES_STATUS: Record<Status, { bg: string; text: string }> = {
   Aberto: { bg: "#D9D9D9", text: "#1F1F1F" },
   "Em andamento": { bg: "#008000", text: "#FFFFFF" },
   Aguardando: { bg: "#FFFF00", text: "#1F1F1F" },
-  Pausado: { bg: "#FFC000", text: "#1F1F1F" },
   Resolvido: { bg: "#00B050", text: "#FFFFFF" },
   Cancelado: { bg: "#7F7F7F", text: "#FFFFFF" },
 };
@@ -113,7 +110,6 @@ export const CORES_STATUS: Record<Status, { bg: string; text: string }> = {
 export const CORES_SLA: Record<string, { bg: string; text: string }> = {
   "No prazo": { bg: "#00B050", text: "#FFFFFF" },
   Estourado: { bg: "#FF0000", text: "#FFFFFF" },
-  Pausado: { bg: "#FFFF00", text: "#1F1F1F" },
   Cancelado: { bg: "#7F7F7F", text: "#FFFFFF" },
   "—": { bg: "#D9D9D9", text: "#1F1F1F" },
 };
@@ -121,7 +117,7 @@ export const CORES_SLA: Record<string, { bg: string; text: string }> = {
 export const REGRAS_PADRAO: Regras = {
   prazos: { Crítica: 2, Alta: 8, Média: 72, Baixa: 168 },
   expediente: { inicio: "08:00", fim: "18:00", dias: [1, 2, 3, 4, 5] },
-  statusQuePausam: ["Pausado", "Aguardando"],
+  statusQuePausam: ["Aguardando"],
   feriados: [
     { id: "f1", data: "2026-10-12", nome: "Nossa Senhora Aparecida" },
     { id: "f2", data: "2026-11-02", nome: "Finados" },
@@ -160,13 +156,6 @@ export const REGRAS_PADRAO: Regras = {
     "Acesso / Senha",
     "Outros",
   ],
-  responsaveis: [
-    "Claudinei Lima",
-    "Hyrum Smith",
-    "Ronaldo Ferreira",
-    "Alecsandro Oliveira",
-    "Petterson Camargo",
-    "Wagner Barbosa",
-  ],
+  responsaveis: ["Claudinei Lima"],
   planilha: { filtros: [...FILTROS_PLANILHA], colunas: [...COLUNAS_PLANILHA] },
 };

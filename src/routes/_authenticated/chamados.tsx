@@ -54,7 +54,7 @@ function Planilha() {
 
   const dadosExportacao = () => ticketsParaLinhas(tickets);
   return <div className="space-y-6">
-    <header className="flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-3xl font-bold">Planilha de chamados</h1><p className="mt-1 text-muted-foreground">Atenda cada chamado em sua página e confirme antes de salvar.</p></div>
+     <header className="flex flex-wrap items-end justify-between gap-4"><div className="flex-1 text-center"><h1 className="text-3xl font-bold">Planilha de chamados</h1><p className="mt-1 text-muted-foreground">Atenda cada chamado em sua página e confirme antes de salvar.</p></div>
       <div className="no-print flex flex-wrap gap-2">
         <input ref={arquivoRef} type="file" accept=".xlsx,.xls" className="hidden" aria-label="Arquivo Excel" onChange={e => importar(e.target.files?.[0])} />
         <Button variant="outline" disabled={importando} onClick={() => arquivoRef.current?.click()}><Upload className="size-4" /> {importando ? "Importando…" : "Importar Excel"}</Button>

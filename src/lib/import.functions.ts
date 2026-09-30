@@ -7,7 +7,7 @@ const linha = z.object({
   hora: z.string().regex(/^\d\d:\d\d$/), solicitante: z.string().min(1), setor: z.string().min(1),
   local: z.string(), descricao: z.string().min(1), categoria: z.string(),
   prioridade: z.enum(["Crítica", "Alta", "Média", "Baixa"]),
-  status: z.enum(["Aberto", "Em andamento", "Aguardando", "Pausado", "Resolvido", "Cancelado"]),
+  status: z.enum(["Aberto", "Em andamento", "Aguardando", "Resolvido", "Cancelado"]),
   responsavel: z.string().nullable().optional(), fechadoEm: z.string().nullable().optional(),
   horario: z.string().nullable().optional(), procedimento: z.string().nullable().optional(),
   slaReiniciadoEm: z.string().nullable().optional(),
