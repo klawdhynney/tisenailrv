@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, CheckCircle2, Save, Sparkles, UserCheck } from "lucide-react";
+import { ArrowLeft, Save, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { TextoAssistido } from "@/components/TextoAssistido";
 import { useStore } from "@/lib/store-context";
-import { PRIORIDADES, STATUS_LIST, type Ticket } from "@/lib/types";
+import { PRIORIDADES, type Ticket } from "@/lib/types";
 import { calcularSla, formatarData, formatarDataHora } from "@/lib/sla";
 import { sugerirPrioridade } from "@/lib/sugerir-prioridade.functions";
 
@@ -59,12 +59,12 @@ function TicketEditor({
   updateTicket: ReturnType<typeof useStore>["updateTicket"];
   session: ReturnType<typeof useStore>["session"];
 }) {
-  const [draft, setDraft] = useState(ticket);
+  const [draft, setDraft] = useState<Ticket>(() => ({ ...ticket, responsavel: ticket.responsavel || "Claudinei Lima", status: ticket.status === "Aberto" ? "Em andamento" : ticket.status }));
   const [saving, setSaving] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [suggested, setSuggested] = useState<Ticket["prioridade"] | null>(null);
   const autoSuggestedId = useRef<number | null>(null);
-  useEffect(() => setDraft(ticket), [ticket]);
+  useEffect(() => setDraft(prev => ({ ...ticket, responsavel: prev.responsavel || ticket.responsavel || "Claudinei Lima", status: prev.status === "Aberto" && ticket.status === "Aberto" ? "Em andamento" : ticket.status })), [ticket]);
   useEffect(() => {
     if (ticket.status !== "Aberto" || autoSuggestedId.current === ticket.id) return;
     autoSuggestedId.current = ticket.id;
@@ -73,21 +73,6 @@ function TicketEditor({
   const sla = calcularSla(ticket, regras);
   const field = <K extends keyof Ticket>(key: K, value: Ticket[K]) => setDraft(prev => ({ ...prev, [key]: value }));
   const editable = ["solicitante", "setor", "local", "descricao", "categoria", "prioridade", "responsavel", "status", "procedimento", "contato"] as const;
-
-  const usuarioAtual =
-    (session?.user?.user_metadata?.["full_name"] as string | undefined) ||
-    session?.user?.email?.split("@")[0] ||
-    regras.responsaveis[0] ||
-    "Atendente";
-
-  function assumirChamado() {
-    setDraft(prev => ({
-      ...prev,
-      responsavel: usuarioAtual,
-      status: prev.status === "Aberto" ? "Em andamento" : prev.status,
-    }));
-    toast.success(`Você assumiu o chamado #${ticket.id}! Salve as alterações para confirmar.`);
-  }
 
   function alterarPrioridade(novaPrioridade: Ticket["prioridade"]) {
     field("prioridade", novaPrioridade);
@@ -100,7 +85,7 @@ function TicketEditor({
       if (draft[key] !== ticket[key]) Object.assign(patch, { [key]: draft[key] });
     }
     if (!Object.keys(patch).length) return;
-    if (draft.solicitante.trim().length < 2 || draft.setor.trim().length < 2 || draft.local.trim().length < 3 || draft.descricao.trim().length < 10) { toast.error("Confira nome, setor, local e descrição."); return; }
+    if (draft.solicitante.trim().length < 2 || draft.setor.trim().length < 2 || draft.descricao.trim().length < 10) { toast.error("Confira nome, setor e descrição."); return; }
     if (["Resolvido", "Cancelado"].includes(draft.status) && !["Resolvido", "Cancelado"].includes(ticket.status)) {
       const now = new Date(); patch.fechadoEm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`; patch.horario = now.toTimeString().slice(0, 5);
     } else if (!["Resolvido", "Cancelado"].includes(draft.status) && ["Resolvido", "Cancelado"].includes(ticket.status)) {
@@ -133,17 +118,7 @@ function TicketEditor({
           <span className="text-xs font-bold uppercase tracking-wider text-g-blue">Ações de atendimento</span>
           <h2 className="text-lg font-bold">Gestão rápida do chamado</h2>
         </div>
-        <div className="flex items-center gap-2">
-          {draft.responsavel === usuarioAtual ? (
-            <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-3 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="size-4" /> Assumido por você ({usuarioAtual})
-            </span>
-          ) : (
-            <Button type="button" variant="google-green" size="default" onClick={assumirChamado} className="font-semibold shadow-sm">
-              <UserCheck className="size-4" /> Assumir chamado
-            </Button>
-          )}
-        </div>
+        <span className="text-sm font-semibold text-g-green">Responsável: Claudinei Lima</span>
       </div>
 
       <div className="border-t border-border/70 pt-3">
@@ -177,27 +152,7 @@ function TicketEditor({
       <label className="grid gap-2 text-sm font-medium">Local exato<Input value={draft.local} onChange={e => field("local", e.target.value)} /></label>
       <label className="grid gap-2 text-sm font-medium">Categoria<select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.categoria ?? ""} onChange={e => field("categoria", e.target.value)}>{regras.categorias.map(c => <option key={c}>{c}</option>)}</select></label>
       
-      <div className="grid gap-2">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium">Responsável</label>
-          {draft.responsavel !== usuarioAtual && (
-            <button type="button" onClick={assumirChamado} className="text-xs font-semibold text-g-green hover:underline inline-flex items-center gap-1">
-              <UserCheck className="size-3.5" /> Assumir este chamado
-            </button>
-          )}
-        </div>
-        <select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.responsavel ?? ""} onChange={e => field("responsavel", e.target.value || null)}>
-          <option value="">Não atribuído</option>
-          {regras.responsaveis.map(r => <option key={r}>{r}</option>)}
-        </select>
-      </div>
-
-      <div className="space-y-2">
-        <label className="grid gap-2 text-sm font-medium">Prioridade
-          <select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.prioridade} onChange={e => field("prioridade", e.target.value as Ticket["prioridade"])}>
-            {PRIORIDADES.map(p => <option key={p}>{p}</option>)}
-          </select>
-        </label>
+       <div className="space-y-2">
         <Button type="button" size="sm" variant="outline" disabled={suggesting} onClick={suggestPriority}>
           <Sparkles className="size-4" /> {suggesting ? "Analisando…" : "Sugerir prioridade com IA"}
         </Button>
@@ -212,15 +167,11 @@ function TicketEditor({
         <p className="text-xs text-muted-foreground">Chamados abertos recebem uma sugestão automática ao serem visualizados. A prioridade só muda após você aplicar e salvar.</p>
       </div>
 
-      <label className="grid gap-2 text-sm font-medium">Status
-        <select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.status} onChange={e => field("status", e.target.value as Ticket["status"])}>
-          {STATUS_LIST.map(s => <option key={s}>{s}</option>)}
-        </select>
-      </label>
     </div>
     <label className="grid gap-2 text-sm font-medium">Descrição<TextoAssistido value={draft.descricao} onChange={value => field("descricao", value)} /></label>
     <label className="grid gap-2 text-sm font-medium">Procedimento / atendimento<TextoAssistido value={draft.procedimento ?? ""} onChange={value => field("procedimento", value || null)} /></label>
     <p className="text-sm text-muted-foreground">Fechamento: {formatarData(ticket.fechadoEm, ticket.horario)}</p>
+    <div className="space-y-3 border-t border-border pt-5"><p className="text-sm font-semibold">Status do chamado</p><div className="flex flex-wrap gap-2">{(["Em andamento", "Aguardando", "Resolvido", "Cancelado"] as const).map(s => <Button key={s} type="button" variant={draft.status === s ? s === "Cancelado" ? "google-red" : "google-green" : "outline"} aria-pressed={draft.status === s} onClick={() => field("status", s)}>{s}</Button>)}</div></div>
     <div className="flex justify-end border-t border-border pt-5">
       <ConfirmAction title={`Salvar alterações no chamado #${ticket.id}?`} description="Confira os dados antes de confirmar. As alterações aparecerão no acompanhamento do chamado." confirmLabel="Sim, salvar" onConfirm={save} disabled={!hasChanges || saving}>
         <Save className="size-4" /> {saving ? "Salvando…" : "Salvar"}
