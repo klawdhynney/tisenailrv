@@ -1,10 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, Headset, Search, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { Eye, Headset, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ConfirmAction } from "@/components/ConfirmAction";
 import { PrioridadeChip, SlaChip, StatusChip } from "@/components/Chips";
 import { useStore } from "@/lib/store-context";
 import { calcularSla, formatarData, formatarDataHora, segundosUteis } from "@/lib/sla";
@@ -54,7 +52,7 @@ export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
 }
 
 function TicketRow({ ticket: t, colunas, attendance = false }: { ticket: Ticket; colunas: string[]; attendance?: boolean }) {
-  const { regras, isGestor, removeTicket } = useStore();
+  const { regras } = useStore();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { if (!attendance) return; const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, [attendance]);
   const sla = calcularSla(t, regras, now);
@@ -62,29 +60,12 @@ function TicketRow({ ticket: t, colunas, attendance = false }: { ticket: Ticket;
   const restanteSeg = sla.prazo ? atrasado ? segundosUteis(sla.prazo, now, regras) : segundosUteis(now, sla.prazo, regras) : null;
   const relogio = restanteSeg === null ? "—" : `${atrasado ? "−" : ""}${String(Math.floor(restanteSeg / 3600)).padStart(2, "0")}:${String(Math.floor((restanteSeg % 3600) / 60)).padStart(2, "0")}:${String(restanteSeg % 60).padStart(2, "0")}`;
   const action = (
-    <div className="flex items-center gap-1.5">
-      <Button asChild size="sm" variant={attendance ? "google-green" : "google-blue"}>
-        <Link to="/chamados/$ticketId" params={{ ticketId: String(t.id) }}>
-          {attendance ? <Headset className="size-4" /> : <Eye className="size-4" />}
-          {attendance ? "Atender" : "Ver chamado"}
-        </Link>
-      </Button>
-      {isGestor && (
-        <ConfirmAction
-          title={`Excluir chamado #${t.id}?`}
-          description={`Deseja excluir permanentemente o chamado #${t.id} de ${t.solicitante}? Esta ação não pode ser desfeita.`}
-          confirmLabel="Sim, excluir"
-          variant="destructive"
-          onConfirm={async () => {
-            const ok = await removeTicket(t.id);
-            if (ok) toast.success(`Chamado #${t.id} excluído com sucesso.`);
-            else toast.error("Não foi possível excluir o chamado.");
-          }}
-        >
-          <Trash2 className="size-3.5" />
-        </ConfirmAction>
-      )}
-    </div>
+    <Button asChild size="sm" variant={attendance ? "google-green" : "google-blue"}>
+      <Link to="/chamados/$ticketId" params={{ ticketId: String(t.id) }}>
+        {attendance ? <Headset className="size-4" /> : <Eye className="size-4" />}
+        {attendance ? "Atender" : "Ver chamado"}
+      </Link>
+    </Button>
   );
   const cells: Record<string, React.ReactNode> = {
     "Ver chamado": action, "Nº": <strong>#{t.id}</strong>, "Aberto em": formatarData(t.abertoEm, t.hora),

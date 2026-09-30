@@ -124,20 +124,7 @@ function TicketEditor({
     finally { setSuggesting(false); }
   }
   return <div className="mx-auto max-w-4xl space-y-6">
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <Button asChild variant="outline"><Link to="/atendimento"><ArrowLeft className="size-4" /> Voltar à planilha</Link></Button>
-      {isGestor && (
-        <ConfirmAction
-          title={`Excluir chamado #${ticket.id}?`}
-          description="Atenção: esta ação é irreversível. O chamado será removido permanentemente do banco de dados."
-          confirmLabel="Sim, excluir definitivamente"
-          variant="destructive"
-          onConfirm={excluirChamado}
-        >
-          <Trash2 className="size-4" /> Excluir chamado
-        </ConfirmAction>
-      )}
-    </div>
+    <Button asChild variant="outline"><Link to="/atendimento"><ArrowLeft className="size-4" /> Voltar à planilha</Link></Button>
 
     <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5">
        <div className="flex-1 text-center">

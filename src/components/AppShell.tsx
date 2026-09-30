@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useStore } from "@/lib/store-context";
-import senaiAsset from "@/assets/senai-lrv.png.asset.json";
+import senaiIcone from "@/assets/senai-icone.png";
 
 const navPublico = [
   { to: "/", label: "Início", icon: Home, variante: "google-blue" },
@@ -92,8 +92,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b-2 border-border bg-card/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
-           <Link to="/" className="flex shrink-0 items-center gap-2 group">
-               <img src={senaiAsset.url} alt="SENAI LRV" width={40} height={40} className="size-10 rounded-xl object-contain shadow-sm bg-white p-1 scale-105 transition-transform duration-200" />
+           <Link to="/" className="flex shrink-0 items-center gap-2.5 group">
+               <img src={senaiIcone} alt="SENAI LRV" width={38} height={38} className="size-9.5 rounded-full object-cover shadow-sm scale-105 transition-transform duration-200" />
               <span className="text-sm font-extrabold text-foreground sm:text-base">TI SENAI LRV</span>
           </Link>
           <nav className="ml-auto hidden items-center gap-2 lg:flex">
