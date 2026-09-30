@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PrioridadeChip, SlaChip, StatusChip } from "@/components/Chips";
 import { useStore } from "@/lib/store-context";
-import { calcularSla, formatarData, formatarDataHora } from "@/lib/sla";
+import { calcularSla, formatarData, formatarDataHora, segundosUteis } from "@/lib/sla";
 import { COLUNAS_PLANILHA, FILTROS_PLANILHA, MESES_DISPONIVEIS, PRIORIDADES, STATUS_LIST, type Ticket } from "@/lib/types";
 
 export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
@@ -57,8 +57,9 @@ function TicketRow({ ticket: t, colunas, attendance = false }: { ticket: Ticket;
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { if (!attendance) return; const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, [attendance]);
   const sla = calcularSla(t, regras, now);
-  const restanteSeg = sla.restanteMin === null ? null : sla.restanteMin >= 0 ? Math.max(0, sla.restanteMin * 60 - now.getSeconds()) : Math.abs(sla.restanteMin) * 60 + now.getSeconds();
-  const relogio = restanteSeg === null ? "—" : `${sla.restanteMin !== null && sla.restanteMin < 0 ? "−" : ""}${String(Math.floor(restanteSeg / 3600)).padStart(2, "0")}:${String(Math.floor((restanteSeg % 3600) / 60)).padStart(2, "0")}:${String(restanteSeg % 60).padStart(2, "0")}`;
+  const atrasado = Boolean(sla.prazo && now > sla.prazo);
+  const restanteSeg = sla.prazo ? atrasado ? segundosUteis(sla.prazo, now, regras) : segundosUteis(now, sla.prazo, regras) : null;
+  const relogio = restanteSeg === null ? "—" : `${atrasado ? "−" : ""}${String(Math.floor(restanteSeg / 3600)).padStart(2, "0")}:${String(Math.floor((restanteSeg % 3600) / 60)).padStart(2, "0")}:${String(restanteSeg % 60).padStart(2, "0")}`;
   const action = (
     <Button asChild size="sm" variant={attendance ? "google-green" : "google-blue"}>
       <Link to="/chamados/$ticketId" params={{ ticketId: String(t.id) }}>

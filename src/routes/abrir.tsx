@@ -48,6 +48,7 @@ function AbrirChamado() {
   const [enviando, setEnviando] = useState(false);
   const [sucessoId, setSucessoId] = useState<number | null>(null);
   const [lembrar, setLembrar] = useState(false);
+  const [preferenciaCarregada, setPreferenciaCarregada] = useState(false);
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("ti-senai-dados") ?? "null");
@@ -56,11 +57,13 @@ function AbrirChamado() {
         setLembrar(true);
       }
     } catch { localStorage.removeItem("ti-senai-dados"); }
+    setPreferenciaCarregada(true);
   }, []);
   useEffect(() => {
+    if (!preferenciaCarregada) return;
     if (lembrar) localStorage.setItem("ti-senai-dados", JSON.stringify({ solicitante: form.solicitante, email: form.email, contato: form.contato, setor: form.setor }));
     else localStorage.removeItem("ti-senai-dados");
-  }, [lembrar, form.solicitante, form.email, form.contato, form.setor]);
+  }, [preferenciaCarregada, lembrar, form.solicitante, form.email, form.contato, form.setor]);
 
   const set = (k: keyof typeof campoVazio, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -100,7 +103,7 @@ function AbrirChamado() {
       procedimento: null,
     }, form.email);
     setEnviando(false);
-    if (!ticketId) {
+    if (ticketId === null) {
       toast.error("Não foi possível registrar o chamado. Tente novamente.");
       return;
     }
