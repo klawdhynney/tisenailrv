@@ -90,12 +90,11 @@ function Dashboard() {
       if (mes !== "todos" && !t.aberto_em.startsWith(mes)) continue;
       if (prioridade !== "Todas" && t.prioridade !== prioridade) continue;
       if (status !== "Todos" && t.status !== status) continue;
-      if (foco && !linhas.some(r => r.mes === t.aberto_em.slice(0, 7) && r.prioridade === t.prioridade && r.status === t.status)) continue;
       const situacao = calcularSla({ abertoEm: t.aberto_em, hora: t.hora, prioridade: t.prioridade as Ticket["prioridade"], status: t.status as Ticket["status"], fechadoEm: t.fechado_em, horario: t.horario, slaReiniciadoEm: t.sla_reiniciado_em } as Ticket, regras, now).situacao;
       counts.set(situacao, (counts.get(situacao) ?? 0) + 1);
     }
     return ["No prazo", "Estourado", "Pausado", "Cancelado", "—"].filter(name => counts.has(name)).map(name => ({ name, value: counts.get(name) ?? 0 }));
-  }, [progress, mes, prioridade, status, foco, linhas, regras, now]);
+  }, [progress, mes, prioridade, status, regras, now]);
   const dados: Item[] = visao === "sla" ? dadosSla : visao === "problemas" && mes === "todos" && prioridade === "Todas" && status === "Todos" && !foco
     ? RECORRENTES.map((item) => ({ ...item }))
     : visao === "problemas" ? categorias : visao === "setores" ? setores : contar(visao === "prioridades" ? "prioridade" : "status");
