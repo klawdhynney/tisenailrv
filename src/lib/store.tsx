@@ -137,17 +137,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [isGestor, authPronto]);
 
   const addTicket = useCallback(async (t: Omit<Ticket, "id">, email: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    const payload = {
-      ...toRow(t),
-      // Public submissions are timestamped at the database, not by the visitor's device.
-      aberto_em: undefined, hora: undefined,
-      criado_por: user?.id ?? null,
-       solicitante_email: email.trim().toLowerCase(),
-    };
-    const { error } = await supabase.from("tickets").insert(payload as never);
-    if (error) console.error("Falha ao registrar chamado", error.message);
-    return !error;
+    // O recibo é devolvido pela própria abertura: anon não tem permissão de leitura na tabela.
+    const { data, error } = await supabase.rpc("open_public_ticket_with_receipt", {
+      p_solicitante: t.solicitante.trim(), p_email: email.trim().toLowerCase(),
+      p_contato: t.contato ?? "", p_setor: t.setor, p_local: t.local,
+      p_categoria: t.categoria ?? "", p_descricao: t.descricao,
+    });
+    if (error) { console.error("Falha ao registrar chamado", error.message); return null; }
+    return data;
   }, []);
 
    const updateTicket = useCallback(async (id: number, patch: Partial<Ticket>) => {

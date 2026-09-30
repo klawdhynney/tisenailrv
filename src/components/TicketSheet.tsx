@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PrioridadeChip, SlaChip, StatusChip } from "@/components/Chips";
 import { useStore } from "@/lib/store-context";
-import { calcularSla, formatarData, formatarDataHora } from "@/lib/sla";
+import { calcularSla, formatarData, formatarDataHora, segundosUteis } from "@/lib/sla";
 import { COLUNAS_PLANILHA, FILTROS_PLANILHA, MESES_DISPONIVEIS, PRIORIDADES, STATUS_LIST, type Ticket } from "@/lib/types";
 
 export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
   const { tickets, regras, hidratado } = useStore();
   const configuradas = regras.planilha?.colunas ?? [...COLUNAS_PLANILHA];
   const colunas = COLUNAS_PLANILHA.filter(c => configuradas.includes(c) || (c === "Setor" && configuradas.includes("Setor / local")) || (c === "Descrição do problema" && configuradas.includes("Descrição")));
-  const filtros = regras.planilha?.filtros ?? [...FILTROS_PLANILHA];
+  const filtros = attendance ? ["Mês", "Prioridade", "Status", "SLA"] : regras.planilha?.filtros ?? [...FILTROS_PLANILHA];
   const [month, setMonth] = useState("todos"), [status, setStatus] = useState("Todos"), [priority, setPriority] = useState("Todas"), [search, setSearch] = useState("");
   const [category, setCategory] = useState("Todas"), [sector, setSector] = useState("Todos"), [assignee, setAssignee] = useState("Todos"), [slaFilter, setSlaFilter] = useState("Todos");
   const [pageSize, setPageSize] = useState(10), [page, setPage] = useState(1);
@@ -54,7 +54,12 @@ export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
 
 function TicketRow({ ticket: t, colunas, attendance = false }: { ticket: Ticket; colunas: string[]; attendance?: boolean }) {
   const { regras } = useStore();
-  const sla = calcularSla(t, regras);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { if (!attendance) return; const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, [attendance]);
+  const sla = calcularSla(t, regras, now);
+  const atrasado = Boolean(sla.prazo && now > sla.prazo);
+  const restanteSeg = sla.prazo ? atrasado ? segundosUteis(sla.prazo, now, regras) : segundosUteis(now, sla.prazo, regras) : null;
+  const relogio = restanteSeg === null ? "—" : `${atrasado ? "−" : ""}${String(Math.floor(restanteSeg / 3600)).padStart(2, "0")}:${String(Math.floor((restanteSeg % 3600) / 60)).padStart(2, "0")}:${String(restanteSeg % 60).padStart(2, "0")}`;
   const action = (
     <Button asChild size="sm" variant={attendance ? "google-green" : "google-blue"}>
       <Link to="/chamados/$ticketId" params={{ ticketId: String(t.id) }}>
@@ -71,7 +76,7 @@ function TicketRow({ ticket: t, colunas, attendance = false }: { ticket: Ticket;
     "Prioridade": <PrioridadeChip valor={t.prioridade} />, "Responsável": t.responsavel || "—",
     "Status": <StatusChip valor={t.status} />,
     "Procedimento": <span className="line-clamp-2 max-w-72">{t.procedimento || "—"}</span>,
-    "Fechado em": formatarData(t.fechadoEm, t.horario), "Prazo": formatarDataHora(sla.prazo), "SLA": <SlaChip valor={sla.situacao} />,
+    "Fechado em": formatarData(t.fechadoEm, t.horario), "Prazo": formatarDataHora(sla.prazo), "SLA": <span className="flex flex-col gap-1"><SlaChip valor={sla.situacao} />{attendance && !["Resolvido", "Cancelado"].includes(t.status) && <span className="font-mono text-xs tabular-nums" title="Tempo útil restante conforme o expediente">{sla.situacao === "Pausado" ? "Relógio pausado" : relogio}</span>}</span>,
   };
   return <tr className="align-top even:bg-muted/40">{colunas.map(c => <td key={c} className="whitespace-nowrap border-b border-border px-3 py-3">{cells[c]}</td>)}</tr>;
 }

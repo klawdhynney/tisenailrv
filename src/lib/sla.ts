@@ -98,6 +98,30 @@ export function minutosUteis(a: Date, b: Date, regras: Regras): number {
   return Math.round(total);
 }
 
+/** Segundos úteis precisos para um relógio que não avança fora do expediente. */
+export function segundosUteis(a: Date, b: Date, regras: Regras): number {
+  if (b <= a) return 0;
+  const ini = parseHM(regras.expediente.inicio);
+  const fim = parseHM(regras.expediente.fim);
+  let total = 0;
+  const cur = new Date(a);
+  let guard = 0;
+  while (cur < b && guard++ < 5000) {
+    if (isDiaUtil(cur, regras)) {
+      const diaIni = new Date(cur);
+      diaIni.setHours(0, ini, 0, 0);
+      const diaFim = new Date(cur);
+      diaFim.setHours(0, fim, 0, 0);
+      const s = cur > diaIni ? cur : diaIni;
+      const e = b < diaFim ? b : diaFim;
+      if (e > s) total += (e.getTime() - s.getTime()) / 1000;
+    }
+    cur.setDate(cur.getDate() + 1);
+    cur.setHours(0, 0, 0, 0);
+  }
+  return Math.floor(total);
+}
+
 export interface SlaInfo {
   situacao: "No prazo" | "Estourado" | "Pausado" | "Cancelado" | "—";
   prazo: Date | null;

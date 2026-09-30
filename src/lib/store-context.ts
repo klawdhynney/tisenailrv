@@ -11,7 +11,7 @@ export interface StoreValue {
   session: Session | null;
   isGestor: boolean;
   authPronto: boolean;
-  addTicket: (t: Omit<Ticket, "id">, email: string) => Promise<boolean>;
+  addTicket: (t: Omit<Ticket, "id">, email: string) => Promise<number | null>;
   updateTicket: (id: number, patch: Partial<Ticket>) => Promise<boolean>;
   removeTicket: (id: number) => Promise<boolean>;
   setRegras: (r: Regras) => Promise<boolean>;

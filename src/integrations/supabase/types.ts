@@ -164,6 +164,18 @@ export type Database = {
         Returns: boolean
       }
       is_named_manager: { Args: never; Returns: boolean }
+      open_public_ticket_with_receipt: {
+        Args: {
+          p_categoria: string
+          p_contato: string
+          p_descricao: string
+          p_email: string
+          p_local: string
+          p_setor: string
+          p_solicitante: string
+        }
+        Returns: number
+      }
       public_ticket_progress: {
         Args: never
         Returns: {

@@ -27,6 +27,7 @@ const VISOES = [
   { id: "setores", label: "Chamados por setores", color: "red" },
   { id: "prioridades", label: "Prioridades dos chamados", color: "yellow" },
   { id: "status", label: "Status dos chamados", color: "green" },
+  { id: "sla", label: "SLA dos chamados", color: "blue" },
 ] as const;
 const RECORRENTES = [
   { name: "WhatsApp / Comunicação", value: 14 },
@@ -83,10 +84,21 @@ function Dashboard() {
     return [...mapa].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   };
   const categorias = contar("categoria"), setores = contar("setor");
-  const dados: Item[] = visao === "problemas" && mes === "todos" && prioridade === "Todas" && status === "Todos" && !foco
+  const dadosSla = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const t of progress) {
+      if (mes !== "todos" && !t.aberto_em.startsWith(mes)) continue;
+      if (prioridade !== "Todas" && t.prioridade !== prioridade) continue;
+      if (status !== "Todos" && t.status !== status) continue;
+      const situacao = calcularSla({ abertoEm: t.aberto_em, hora: t.hora, prioridade: t.prioridade as Ticket["prioridade"], status: t.status as Ticket["status"], fechadoEm: t.fechado_em, horario: t.horario, slaReiniciadoEm: t.sla_reiniciado_em } as Ticket, regras, now).situacao;
+      counts.set(situacao, (counts.get(situacao) ?? 0) + 1);
+    }
+    return ["No prazo", "Estourado", "Pausado", "Cancelado", "—"].filter(name => counts.has(name)).map(name => ({ name, value: counts.get(name) ?? 0 }));
+  }, [progress, mes, prioridade, status, regras, now]);
+  const dados: Item[] = visao === "sla" ? dadosSla : visao === "problemas" && mes === "todos" && prioridade === "Todas" && status === "Todos" && !foco
     ? RECORRENTES.map((item) => ({ ...item }))
     : visao === "problemas" ? categorias : visao === "setores" ? setores : contar(visao === "prioridades" ? "prioridade" : "status");
-  const cor = (nome: string, i: number) => visao === "prioridades" ? CORES_PRIORIDADE[nome as Prioridade]?.bg ?? CORES[i % CORES.length] ?? "var(--g-blue)" : visao === "status" ? CORES_STATUS[nome as Status]?.bg ?? CORES[i % CORES.length] ?? "var(--g-blue)" : CORES[i % CORES.length] ?? "var(--g-blue)";
+  const cor = (nome: string, i: number) => visao === "sla" ? ({ "No prazo": "var(--g-green)", Estourado: "var(--g-red)", Pausado: "var(--g-yellow)", Cancelado: "var(--muted-foreground)" }[nome] ?? "var(--g-blue)") : visao === "prioridades" ? CORES_PRIORIDADE[nome as Prioridade]?.bg ?? CORES[i % CORES.length] ?? "var(--g-blue)" : visao === "status" ? CORES_STATUS[nome as Status]?.bg ?? CORES[i % CORES.length] ?? "var(--g-blue)" : CORES[i % CORES.length] ?? "var(--g-blue)";
   const clicar = (nome: string) => visao === "problemas" && !RECORRENTES.some((item) => item.name === nome) ? setFoco({ tipo: "categoria", nome }) : visao === "setores" ? setFoco({ tipo: "setor", nome }) : undefined;
   const baixarResumo = () => {
     const conteudo = [["Visão", "Item", "Chamados"], ...dados.map((r) => [visao, r.name, String(r.value)])].map((r) => r.map((v) => `"${v.replace(/"/g, '""')}"`).join(";")).join("\n");
@@ -113,7 +125,7 @@ function Dashboard() {
 
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[["Total de chamados", total, "border-g-blue"], ["Em atendimento", ativos, "border-g-yellow"], ["Pausados", pausados, "border-g-red"], ["Resolvidos", resolvidos, "border-g-green"]].map(([label, count, border]) => <div key={String(label)} className={`rounded-xl border-l-4 ${border} bg-card p-5 shadow-sm`}><p className="text-sm text-muted-foreground">{label}</p><p className="mt-1 text-3xl font-bold">{count}</p></div>)}</div>
 
-    <nav aria-label="Gráficos do dashboard" className="no-print grid grid-cols-2 gap-2 md:grid-cols-4">{VISOES.map((v) => <Button key={v.id} variant={`google-${v.color}` as "google-blue" | "google-red" | "google-yellow" | "google-green"} aria-current={visao === v.id ? "page" : undefined} className={`h-auto min-h-12 whitespace-normal py-2 text-center ${visao === v.id ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : "opacity-85"}`} onClick={() => { setVisao(v.id); setFoco(null); }}>{v.label}</Button>)}</nav>
+     <nav aria-label="Gráficos do dashboard" className="no-print grid grid-cols-2 gap-2 md:grid-cols-5">{VISOES.map((v) => <Button key={v.id} variant={`google-${v.color}` as "google-blue" | "google-red" | "google-yellow" | "google-green"} aria-current={visao === v.id ? "page" : undefined} className={`h-auto min-h-12 whitespace-normal py-2 text-center ${visao === v.id ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : "opacity-85"}`} onClick={() => { setVisao(v.id); setFoco(null); }}>{v.label}</Button>)}</nav>
     <section className="min-w-0 border-t-2 border-border pt-5" aria-live="polite">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-2xl font-bold">{VISOES.find((v) => v.id === visao)?.label}</h2><p className="text-sm text-muted-foreground">{dados.reduce((n, x) => n + x.value, 0)} chamado(s) representados</p></div><div className="no-print flex gap-2" aria-label="Tipo de gráfico"><Button size="sm" variant={tipoGrafico === "pizza" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("pizza")}><PieChartIcon /> Pizza</Button><Button size="sm" variant={tipoGrafico === "barras" ? "google-red" : "outline"} onClick={() => setTipoGrafico("barras")}><BarChart3 /> Barras</Button><Button size="sm" variant={tipoGrafico === "area" ? "google-green" : "outline"} onClick={() => setTipoGrafico("area")}><ChartArea /> Área</Button></div></div>
       <Grafico dados={dados} tipo={tipoGrafico} cor={cor} aoClicar={clicar} />
