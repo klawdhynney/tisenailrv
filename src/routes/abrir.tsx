@@ -70,13 +70,15 @@ function AbrirChamado() {
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
     const novosErros: Erros = {};
-    if (!form.solicitante.trim()) novosErros.solicitante = "Informe seu nome.";
+    if (form.solicitante.trim().length < 2 || form.solicitante.trim().length > 120) novosErros.solicitante = "Informe seu nome (2 a 120 caracteres).";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) novosErros.email = "Informe um e-mail válido.";
-    if (!form.setor) novosErros.setor = "Escolha o setor.";
+    if (!form.setor || form.setor.trim().length < 2 || form.setor.length > 120) novosErros.setor = "Escolha o setor.";
     const local = form.descricao.match(/^\s*Local:\s*([^\n\r]+)/im)?.[1]?.trim() ?? "";
     if (local.length < 3 || local.length > 240) novosErros.descricao = "Comece com 'Local: sala, andar ou bloco' (3 a 240 caracteres).";
-    if (!form.categoria) novosErros.categoria = "Escolha o tipo de problema.";
+    if (!form.categoria || form.categoria.length < 2 || form.categoria.length > 120) novosErros.categoria = "Escolha o tipo de problema.";
     if (form.descricao.trim().length < 20 || form.descricao.replace(/^\s*Local:[^\n\r]*/im, "").trim().length < 10) novosErros.descricao = "Informe o local e descreva o problema com pelo menos 10 caracteres.";
+    if (form.descricao.trim().length > 3000) novosErros.descricao = "Limite de 3000 caracteres na descrição.";
+    if (form.contato.length > 40) { toast.error("O WhatsApp deve ter até 40 caracteres."); return; }
     setErros(novosErros);
     if (Object.keys(novosErros).length) {
       toast.error("Confira os campos destacados.");
