@@ -93,7 +93,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
            <Link to="/" className="flex shrink-0 items-center gap-2">
               <img src={senaiAsset.url} alt="SENAI LRV" width={40} height={40} className="size-10 rounded-xl object-contain shadow-sm" />
-             <span className="text-sm font-bold text-foreground sm:text-base">TI Senai LRV</span>
+              <span className="text-sm font-bold text-foreground sm:text-base">TI SENAI LRV</span>
           </Link>
           <nav className="ml-auto hidden items-center gap-2 lg:flex">
             {links(false)}
@@ -118,7 +118,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
       <main className="mx-auto max-w-7xl px-4 py-8">{children}</main>
       <footer className="mt-12 border-t border-border py-6 text-center text-xs text-muted-foreground">
-          TI Senai LRV
+           © 2026 TI SENAI LRV • Todos os direitos reservados • Criado por Claudinei Lima
       </footer>
     </div>
   );

@@ -7,9 +7,9 @@ import senaiAsset from "@/assets/senai-lrv.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
-    { title: "TI Senai LRV | Início" },
+     { title: "TI SENAI LRV | Início" },
     { name: "description", content: "Abra chamados de TI e acompanhe os indicadores públicos do Senai LRV." },
-    { property: "og:title", content: "TI Senai LRV" },
+     { property: "og:title", content: "TI SENAI LRV" },
     { property: "og:description", content: "Abra chamados e acompanhe os indicadores públicos de atendimento." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
   ] }), component: Inicio,
@@ -28,7 +28,7 @@ function Inicio() {
          <img src={senaiAsset.url} alt="SENAI Lucas do Rio Verde" className="mx-auto block h-44 w-auto max-w-full rounded-2xl object-contain sm:h-60 lg:h-[300px]" />
         <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
           <p className="inline-flex items-center gap-2 rounded-full bg-card/90 px-3 py-1 text-xs font-bold uppercase text-primary shadow-sm"><Activity className="size-4" /> Atendimento de TI · SENAI LRV</p>
-          <h1 className="mt-5 max-w-xl text-4xl font-bold leading-tight text-foreground sm:text-5xl">TI Senai LRV</h1>
+           <h1 className="mt-5 max-w-xl text-4xl font-bold leading-tight text-foreground sm:text-5xl">TI SENAI LRV</h1>
           <p className="mt-3 max-w-md text-base font-medium leading-relaxed text-foreground">Sua central para registrar problemas de tecnologia e acompanhar o atendimento da unidade.</p>
           <div className="mt-5 flex flex-wrap justify-center gap-3 sm:justify-start"><Button asChild size="lg" variant="google-green"><Link to="/abrir">Abrir chamado <ArrowRight /></Link></Button><Button asChild size="lg" variant="google-blue"><Link to="/dashboard" hash="acompanhamento">Acompanhar chamado <ClipboardList /></Link></Button></div>
         </div>
