@@ -62,7 +62,14 @@ function TicketEditor({
   const [suggesting, setSuggesting] = useState(false);
   const [suggested, setSuggested] = useState<Ticket["prioridade"] | null>(null);
   const autoSuggestedId = useRef<number | null>(null);
+  const autoAssignedId = useRef<number | null>(null);
   useEffect(() => setDraft(prev => ({ ...ticket, responsavel: "Claudinei Lima", status: prev.status === "Aberto" && ticket.status === "Aberto" ? "Em andamento" : ticket.status })), [ticket]);
+  useEffect(() => {
+    if (autoAssignedId.current === ticket.id || ["Resolvido", "Cancelado"].includes(ticket.status)) return;
+    autoAssignedId.current = ticket.id;
+    if (ticket.responsavel === "Claudinei Lima" && ticket.status !== "Aberto") return;
+    void updateTicket(ticket.id, { responsavel: "Claudinei Lima", ...(ticket.status === "Aberto" ? { status: "Em andamento" as const } : {}) });
+  }, [ticket.id, ticket.responsavel, ticket.status, updateTicket]);
   useEffect(() => {
     if (ticket.status !== "Aberto" || autoSuggestedId.current === ticket.id) return;
     autoSuggestedId.current = ticket.id;
