@@ -3,7 +3,12 @@ import { useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { BarChart3, ChartArea, ClipboardList, Download, PieChartIcon, Printer, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { calcularSla } from "@/lib/sla";
 import { useStore } from "@/lib/store-context";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+import type { Ticket } from "@/lib/types";
+import { useEffect } from "react";
 import { MESES_DISPONIVEIS, PRIORIDADES, STATUS_LIST } from "@/lib/types";
 
 export const Route = createFileRoute("/dashboard")({
@@ -36,7 +41,26 @@ type TipoGrafico = "pizza" | "barras" | "area";
 type Item = { name: string; value: number };
 
 function Dashboard() {
-  const { publicStats, isGestor } = useStore();
+  const { publicStats, isGestor, regras } = useStore();
+  const [progress, setProgress] = useState<Database["public"]["Functions"]["public_ticket_sla_progress"]["Returns"]>([]);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { const timer = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(timer); }, []);
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      const all: typeof progress = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await supabase.rpc("public_ticket_sla_progress").range(offset, offset + 999);
+        if (error) { console.error("Falha ao carregar SLA público", error.message); return; }
+        all.push(...(data ?? []));
+        if (!data || data.length < 1000) break;
+      }
+      if (mounted) setProgress(all);
+    };
+    void load();
+    const channel = supabase.channel("public-sla-refresh").on("postgres_changes", { event: "*", schema: "public", table: "ticket_public_stats" }, () => void load()).subscribe();
+    return () => { mounted = false; void supabase.removeChannel(channel); };
+  }, []);
   const [mes, setMes] = useState("todos");
   const [prioridade, setPrioridade] = useState("Todas");
   const [status, setStatus] = useState("Todos");
@@ -52,7 +76,17 @@ function Dashboard() {
     return [...mapa].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   };
   const categorias = contar("categoria"), setores = contar("setor");
-  const dadosSla: Item[] = [];
+  const dadosSla = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const t of progress) {
+      if (mes !== "todos" && !t.aberto_em.startsWith(mes)) continue;
+      if (prioridade !== "Todas" && t.prioridade !== prioridade) continue;
+      if (status !== "Todos" && t.status !== status) continue;
+      const situacao = calcularSla({ abertoEm: t.aberto_em, hora: t.hora, prioridade: t.prioridade as Ticket["prioridade"], status: t.status as Ticket["status"], fechadoEm: t.fechado_em, horario: t.horario, slaReiniciadoEm: t.sla_reiniciado_em } as Ticket, regras, now).situacao;
+      counts.set(situacao, (counts.get(situacao) ?? 0) + 1);
+    }
+    return ["No prazo", "Estourado", "Cancelado", "—"].filter(name => counts.has(name)).map(name => ({ name, value: counts.get(name) ?? 0 }));
+  }, [progress, mes, prioridade, status, regras, now]);
   const dados: Item[] = visao === "sla" ? dadosSla : visao === "problemas" && mes === "todos" && prioridade === "Todas" && status === "Todos"
     ? RECORRENTES.map((item) => ({ ...item }))
     : visao === "problemas" ? categorias : visao === "setores" ? setores : contar(visao === "prioridades" ? "prioridade" : "status");
