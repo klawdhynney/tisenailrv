@@ -26,7 +26,6 @@ export const Route = createFileRoute("/abrir")({
 const campoVazio = {
   solicitante: "",
   email: "",
-  contato: "",
   setor: "",
   categoria: "",
   descricao: "",
@@ -53,7 +52,7 @@ function AbrirChamado() {
     try {
       const saved = JSON.parse(localStorage.getItem("ti-senai-dados") ?? "null");
       if (saved && typeof saved === "object") {
-        setForm(f => ({ ...f, solicitante: typeof saved.solicitante === "string" ? saved.solicitante : "", email: typeof saved.email === "string" ? saved.email : "", contato: typeof saved.contato === "string" ? saved.contato : "", setor: typeof saved.setor === "string" ? saved.setor : "" }));
+        setForm(f => ({ ...f, solicitante: typeof saved.solicitante === "string" ? saved.solicitante : "", email: typeof saved.email === "string" ? saved.email : "", setor: typeof saved.setor === "string" ? saved.setor : "" }));
         setLembrar(true);
       }
     } catch { localStorage.removeItem("ti-senai-dados"); }
@@ -61,9 +60,9 @@ function AbrirChamado() {
   }, []);
   useEffect(() => {
     if (!preferenciaCarregada) return;
-    if (lembrar) localStorage.setItem("ti-senai-dados", JSON.stringify({ solicitante: form.solicitante, email: form.email, contato: form.contato, setor: form.setor }));
+    if (lembrar) localStorage.setItem("ti-senai-dados", JSON.stringify({ solicitante: form.solicitante, email: form.email, setor: form.setor }));
     else localStorage.removeItem("ti-senai-dados");
-  }, [preferenciaCarregada, lembrar, form.solicitante, form.email, form.contato, form.setor]);
+  }, [preferenciaCarregada, lembrar, form.solicitante, form.email, form.setor]);
 
   const set = (k: keyof typeof campoVazio, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -73,12 +72,9 @@ function AbrirChamado() {
     if (form.solicitante.trim().length < 2 || form.solicitante.trim().length > 120) novosErros.solicitante = "Informe seu nome (2 a 120 caracteres).";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) novosErros.email = "Informe um e-mail válido.";
     if (!form.setor || form.setor.trim().length < 2 || form.setor.length > 120) novosErros.setor = "Escolha o setor.";
-    const local = form.descricao.match(/^\s*Local:\s*([^\n\r]+)/im)?.[1]?.trim() ?? "";
-    if (local.length < 3 || local.length > 240) novosErros.descricao = "Comece com 'Local: sala, andar ou bloco' (3 a 240 caracteres).";
     if (!form.categoria || form.categoria.length < 2 || form.categoria.length > 120) novosErros.categoria = "Escolha o tipo de problema.";
-    if (form.descricao.trim().length < 20 || form.descricao.replace(/^\s*Local:[^\n\r]*/im, "").trim().length < 10) novosErros.descricao = "Informe o local e descreva o problema com pelo menos 10 caracteres.";
+    if (form.descricao.trim().length < 10) novosErros.descricao = "Descreva o problema com pelo menos 10 caracteres.";
     if (form.descricao.trim().length > 3000) novosErros.descricao = "Limite de 3000 caracteres na descrição.";
-    if (form.contato.length > 40) { toast.error("O WhatsApp deve ter até 40 caracteres."); return; }
     setErros(novosErros);
     if (Object.keys(novosErros).length) {
       toast.error("Confira os campos destacados.");
@@ -93,13 +89,13 @@ function AbrirChamado() {
       hora: "",
       solicitante: form.solicitante.trim(),
       setor: form.setor,
-      local,
+      local: "",
       categoria: form.categoria,
       descricao: form.descricao.trim(),
       prioridade: "Média",
       responsavel: null,
       status: "Aberto",
-      contato: form.contato.trim() || null,
+      contato: null,
       fechadoEm: null,
       horario: null,
       procedimento: null,
@@ -114,9 +110,7 @@ function AbrirChamado() {
   }
 
   if (sucessoId) {
-    const local = form.descricao.match(/^\s*Local:\s*([^\n\r]+)/im)?.[1]?.trim() ?? "";
-    const descricao = form.descricao.replace(/^\s*Local:[^\n\r]*[\n\r]*/im, "").replace(/^\s*Problema:\s*/i, "").trim();
-    const shareMessage = `Chamado #${sucessoId}\nRequisitante: ${form.solicitante.trim()}\nLocal: ${local}\nDescrição: ${descricao}`;
+    const shareMessage = `Chamado #${sucessoId}\nRequisitante: ${form.solicitante.trim()}\nDescrição e local: ${form.descricao.trim()}`;
     
     return (
       <div className="mx-auto max-w-2xl py-12 px-4 animate-in fade-in zoom-in duration-300">
@@ -148,16 +142,16 @@ function AbrirChamado() {
 
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
                <Button asChild size="lg" variant="google-green" className="flex-1">
-                <a 
-                   href={`https://wa.me/5566996444461?text=${encodeURIComponent(shareMessage)}`}
+                 <a
+                    href={`https://wa.me/5566996444461?text=${encodeURIComponent(shareMessage)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <MessageCircle className="mr-2 size-5" /> Enviar resumo por WhatsApp
+                  <MessageCircle className="mr-2 size-5" /> Enviar agora
                 </a>
               </Button>
               <Button variant="outline" size="lg" className="rounded-xl" onClick={() => navigate({ to: "/" })}>
-                <ArrowLeft className="mr-2 size-4" /> Voltar ao início
+                 <ArrowLeft className="mr-2 size-4" /> Enviar depois
               </Button>
             </div>
              <p className="text-xs text-muted-foreground">A mensagem fica pronta no WhatsApp; confirme o envio no aplicativo.</p>
@@ -169,8 +163,8 @@ function AbrirChamado() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="rounded-2xl border-l-4 border-g-green bg-card px-5 py-5 shadow-sm"><div className="flex items-center gap-3"><span className="rounded-xl bg-g-green/15 p-3 text-g-green"><Cpu className="size-7" /></span><h1 className="text-3xl font-bold">Abrir chamado de TI</h1></div>
-      <p className="mt-2 text-muted-foreground">Preencha os campos abaixo. Quanto mais claro o local e a descrição, mais rápido o atendimento.</p></div>
+       <div className="rounded-2xl border-l-4 border-g-green bg-card px-5 py-5 text-center shadow-sm"><div className="flex items-center justify-center gap-3"><span className="rounded-xl bg-g-green/15 p-3 text-g-green"><Cpu className="size-7" /></span><h1 className="text-3xl font-bold">Abrir chamado de TI</h1></div>
+       <p className="mt-2 text-muted-foreground">Preencha os campos abaixo com as informações do problema. Informe o local e descreva a situação com clareza para agilizar o atendimento.</p></div>
       <Card className="mt-6 rounded-2xl border-t-4 border-g-blue shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2"><MapPin className="size-5 text-g-blue" /> Dados do chamado</CardTitle>
@@ -186,9 +180,6 @@ function AbrirChamado() {
                  <Input autoComplete="email" type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="seu@email.com" />
               </Campo>
             </div>
-            <Campo label="WhatsApp (opcional)">
-               <Input autoComplete="tel" type="tel" value={form.contato} onChange={(e) => set("contato", e.target.value)} placeholder="Ex.: (65) 99999-9999" />
-            </Campo>
 
             <div className="grid gap-5 sm:grid-cols-2">
               <Campo label="Setor" obrigatorio erro={erros.setor}>
@@ -218,10 +209,9 @@ function AbrirChamado() {
             </div>
 
              <Campo label="Descrição do problema e local" obrigatorio erro={erros.descricao}>
-               <p className="mb-2 text-xs text-muted-foreground">Comece com “Local:”, indicando sala, andar ou bloco; depois descreva o problema.</p>
-               <TextoAssistido rows={5} value={form.descricao} onChange={value => set("descricao", value)} placeholder={"Local: Bloco B, sala 204\nProblema: computador não liga"} />
+               <TextoAssistido rows={5} value={form.descricao} onChange={value => set("descricao", value)} placeholder="Ex.: Computador sem internet na sala 1" />
             </Campo>
-             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={lembrar} onChange={e => setLembrar(e.target.checked)} /> Lembrar meus dados neste aparelho (nome, e-mail, WhatsApp e setor)</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={lembrar} onChange={e => setLembrar(e.target.checked)} /> Lembrar meus dados neste aparelho (nome, e-mail e setor)</label>
              <Button type="submit" variant="google-green" size="lg" disabled={enviando} className="w-full sm:w-auto">
               <Send className="size-4" /> {enviando ? "Enviando…" : "Enviar chamado"}
             </Button>
