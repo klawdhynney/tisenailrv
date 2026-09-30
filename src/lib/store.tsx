@@ -145,9 +145,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       criado_por: user?.id ?? null,
        solicitante_email: email.trim().toLowerCase(),
     };
-    const { error } = await supabase.from("tickets").insert(payload as never);
-    if (error) console.error("Falha ao registrar chamado", error.message);
-    return !error;
+    const { data, error } = await supabase.from("tickets").insert(payload as never).select("id").single();
+    if (error) { console.error("Falha ao registrar chamado", error.message); return null; }
+    return data.id;
   }, []);
 
    const updateTicket = useCallback(async (id: number, patch: Partial<Ticket>) => {
