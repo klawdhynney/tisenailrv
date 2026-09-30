@@ -21,7 +21,7 @@ export const Route = createFileRoute("/dashboard")({
   ] }), component: Dashboard,
 });
 
-const CORES = ["#228B22", "#FF0000", "#000080", "#FFFFFF"];
+const CORES = ["#228B22", "#FF0000", "#000080", "#FFFFFF", "#174F17", "#8080BC", "#FF8080", "#80C480"];
 const VISOES = [
   { id: "problemas", label: "Chamados recorrentes", color: "blue" },
   { id: "setores", label: "Chamados por setores", color: "red" },
@@ -86,7 +86,7 @@ function Dashboard() {
   const todosDados: Item[] = visao === "sla" ? dadosSla : visao === "problemas" && mes === "todos"
     ? RECORRENTES.map((item) => ({ ...item }))
     : visao === "problemas" ? categorias : visao === "setores" ? setores : contar(visao === "prioridades" ? "prioridade" : "status");
-  const dados: Item[] = todosDados.length <= 4 ? todosDados : [...todosDados.slice(0, 3), { name: "Outros", value: todosDados.slice(3).reduce((n, x) => n + x.value, 0) }];
+  const dados: Item[] = todosDados.length <= CORES.length ? todosDados : [...todosDados.slice(0, CORES.length - 1), { name: "Outros", value: todosDados.slice(CORES.length - 1).reduce((n, x) => n + x.value, 0) }];
   const cor = (_nome: string, i: number) => CORES[i] ?? "#FFFFFF";
   const baixarResumo = () => {
     const conteudo = [["Visão", "Item", "Chamados"], ...dados.map((r) => [visao, r.name, String(r.value)])].map((r) => r.map((v) => `"${v.replace(/"/g, '""')}"`).join(";")).join("\n");
