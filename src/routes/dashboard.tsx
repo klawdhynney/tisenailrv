@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { Ticket } from "@/lib/types";
 import { useEffect } from "react";
-import { MESES_DISPONIVEIS, PRIORIDADES, STATUS_LIST } from "@/lib/types";
+import { MESES_DISPONIVEIS } from "@/lib/types";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [
@@ -62,11 +62,9 @@ function Dashboard() {
     return () => { mounted = false; void supabase.removeChannel(channel); };
   }, []);
   const [mes, setMes] = useState("todos");
-  const [prioridade, setPrioridade] = useState("Todas");
-  const [status, setStatus] = useState("Todos");
   const [visao, setVisao] = useState<Visao>("problemas");
   const [tipoGrafico, setTipoGrafico] = useState<TipoGrafico>("pizza");
-  const linhas = useMemo(() => publicStats.filter((r) => (mes === "todos" || r.mes === mes) && (prioridade === "Todas" || r.prioridade === prioridade) && (status === "Todos" || r.status === status)), [publicStats, mes, prioridade, status]);
+  const linhas = useMemo(() => publicStats.filter((r) => mes === "todos" || r.mes === mes), [publicStats, mes]);
   const total = linhas.reduce((n, r) => n + r.total, 0);
   const resolvidos = linhas.filter((r) => r.status === "Resolvido").reduce((n, r) => n + r.total, 0);
   const ativos = linhas.filter((r) => !["Resolvido", "Cancelado"].includes(r.status)).reduce((n, r) => n + r.total, 0);
@@ -80,14 +78,12 @@ function Dashboard() {
     const counts = new Map<string, number>();
     for (const t of progress) {
       if (mes !== "todos" && !t.aberto_em.startsWith(mes)) continue;
-      if (prioridade !== "Todas" && t.prioridade !== prioridade) continue;
-      if (status !== "Todos" && t.status !== status) continue;
       const situacao = calcularSla({ abertoEm: t.aberto_em, hora: t.hora, prioridade: t.prioridade as Ticket["prioridade"], status: t.status as Ticket["status"], fechadoEm: t.fechado_em, horario: t.horario, slaReiniciadoEm: t.sla_reiniciado_em } as Ticket, regras, now).situacao;
       counts.set(situacao, (counts.get(situacao) ?? 0) + 1);
     }
     return ["No prazo", "Estourado", "Cancelado", "—"].filter(name => counts.has(name)).map(name => ({ name, value: counts.get(name) ?? 0 }));
-  }, [progress, mes, prioridade, status, regras, now]);
-  const todosDados: Item[] = visao === "sla" ? dadosSla : visao === "problemas" && mes === "todos" && prioridade === "Todas" && status === "Todos"
+  }, [progress, mes, regras, now]);
+  const todosDados: Item[] = visao === "sla" ? dadosSla : visao === "problemas" && mes === "todos"
     ? RECORRENTES.map((item) => ({ ...item }))
     : visao === "problemas" ? categorias : visao === "setores" ? setores : contar(visao === "prioridades" ? "prioridade" : "status");
   const dados: Item[] = todosDados.length <= 4 ? todosDados : [...todosDados.slice(0, 3), { name: "Outros", value: todosDados.slice(3).reduce((n, x) => n + x.value, 0) }];
@@ -107,8 +103,6 @@ function Dashboard() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-3">
           <label className="grid gap-1 text-xs font-bold">Mês<select aria-label="Mês" className="h-11 min-w-44 rounded-xl border-2 border-g-blue bg-background px-3 text-sm font-normal" value={mes} onChange={(e) => setMes(e.target.value)}>{MESES_DISPONIVEIS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}<option value="todos">Todos os meses</option></select></label>
-          <label className="grid gap-1 text-xs font-bold">Prioridade<select aria-label="Prioridade" className="h-11 min-w-40 rounded-xl border-2 border-g-red bg-background px-3 text-sm font-normal" value={prioridade} onChange={(e) => setPrioridade(e.target.value)}><option>Todas</option>{PRIORIDADES.map((p) => <option key={p}>{p}</option>)}</select></label>
-          <label className="grid gap-1 text-xs font-bold">Status<select aria-label="Status" className="h-11 min-w-40 rounded-xl border-2 border-g-green bg-background px-3 text-sm font-normal" value={status} onChange={(e) => setStatus(e.target.value)}><option>Todos</option>{STATUS_LIST.map((s) => <option key={s}>{s}</option>)}</select></label>
         </div>
          <Button asChild className="self-end ml-auto" variant="google-blue"><Link to="/dashboard/acompanhamento"><ClipboardList /> Acompanhar chamado</Link></Button>
       </div>

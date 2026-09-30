@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { useStore } from "@/lib/store-context";
-import { COLUNAS_PLANILHA, FILTROS_PLANILHA, PRIORIDADES, REGRAS_PADRAO, STATUS_LIST, type Periodo, type Status } from "@/lib/types";
+import { COLUNAS_PLANILHA, FILTROS_PLANILHA, PRIORIDADES, REGRAS_PADRAO, type Periodo } from "@/lib/types";
 import { CORES_PRIORIDADE } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/regras")({
@@ -106,34 +106,9 @@ function Regras() {
               })}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Fora desses dias e horários o SLA fica pausado automaticamente (sábados, domingos e madrugadas não contam).
+              Fora desses dias e horários o SLA não acumula tempo útil (sábados, domingos e madrugadas não contam).
             </p>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle>Status que pausam o SLA</CardTitle></CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          {STATUS_LIST.map((s) => {
-            const ativo = regras.statusQuePausam.includes(s);
-            return (
-              <button
-                key={s}
-                onClick={() =>
-                  salvar({
-                    statusQuePausam: ativo
-                      ? regras.statusQuePausam.filter((x) => x !== s)
-                      : ([...regras.statusQuePausam, s] as Status[]),
-                  })
-                }
-                className="rounded-full border-2 px-3 py-1 text-sm font-semibold"
-                style={{ borderColor: "var(--g-yellow)", backgroundColor: ativo ? "var(--g-yellow)" : "transparent" }}
-              >
-                {s}
-              </button>
-            );
-          })}
         </CardContent>
       </Card>
 
