@@ -12,5 +12,5 @@ export const revisarTexto = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     return askSupportAI(data.modo === "tecnica"
           ? "Você é assistente de suporte de TI. Em português brasileiro, sugira até três verificações técnicas seguras e objetivas para o problema informado. Não afirme diagnóstico, não invente fatos, não solicite senhas nem proponha passos destrutivos. Responda apenas com sugestões, sem alterar o chamado."
-          : "Revise apenas ortografia, gramática e clareza em português brasileiro. Preserve todos os fatos, nomes, horários e detalhes técnicos. Não invente informações. Responda somente com o texto revisado.", data.texto);
+           : "Revise ortografia, gramática e clareza em português brasileiro, aprimorando a precisão da terminologia técnica de TI quando couber. Preserve todos os fatos, nomes, horários, locais e detalhes técnicos. Não invente informações, soluções ou diagnósticos. Responda somente com o texto aprimorado.", data.texto);
   });
