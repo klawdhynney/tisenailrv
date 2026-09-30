@@ -37,7 +37,7 @@ function AuthPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md border-t-4 border-primary bg-card p-8">
+    <div className="mx-auto max-w-md border-t-4 border-primary bg-card p-8 text-center">
       <h1 className="text-2xl font-bold">Entrar</h1>
       <p className="mt-2 text-sm text-muted-foreground">Entre com a conta Google ou Microsoft do e-mail informado no chamado.</p>
       {session && authPronto && !isGestor && <div className="mt-4 space-y-3"><p className="text-sm">Conectado como {session.user.email}</p><Button asChild className="w-full"><a href="/meus-chamados">Ver meus chamados</a></Button><Button variant="outline" className="w-full" onClick={() => sair()}>Sair desta conta</Button></div>}
