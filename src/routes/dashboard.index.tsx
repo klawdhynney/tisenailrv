@@ -11,7 +11,7 @@ import type { Ticket } from "@/lib/types";
 import { useEffect } from "react";
 import { MESES_DISPONIVEIS } from "@/lib/types";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/dashboard/")({
   head: () => ({ meta: [
     { title: "Dashboard público | TI Senai LRV" },
     { name: "description", content: "Gráficos interativos e indicadores públicos dos chamados de TI Senai LRV." },
