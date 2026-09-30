@@ -10,11 +10,11 @@
  * The @theme inline block maps CSS custom properties to Tailwind utility
  * classes (e.g. --color-primary -> bg-primary, text-primary).
  *
- * The :root and .dark blocks define the actual color values using oklch.
+ * The :root, .pastel and .dark blocks define the actual color values using oklch.
  * All colors MUST use oklch format.
  *
  * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
+ * 1. Add the variable to :root (light value), .pastel and .dark (dark value)
  * 2. Register it in @theme inline as --color-<name>: var(--<name>)
  */
 
@@ -104,6 +104,43 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+}
+
+.pastel {
+  color-scheme: light;
+  --pastel-rose: oklch(0.965 0.026 8);
+  --pastel-sky: oklch(0.964 0.028 233);
+  --pastel-mint: oklch(0.968 0.028 162);
+  --background: oklch(0.975 0.012 215);
+  --foreground: oklch(0.26 0.035 253);
+  --card: oklch(0.997 0.009 32);
+  --card-foreground: oklch(0.26 0.035 253);
+  --popover: oklch(0.997 0.009 32);
+  --popover-foreground: oklch(0.26 0.035 253);
+  --primary: oklch(0.56 0.15 255);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.92 0.035 165);
+  --secondary-foreground: oklch(0.25 0.045 165);
+  --muted: oklch(0.95 0.022 231);
+  --muted-foreground: oklch(0.42 0.035 252);
+  --accent: oklch(0.95 0.035 24);
+  --accent-foreground: oklch(0.32 0.05 20);
+  --border: oklch(0.87 0.035 226);
+  --input: oklch(0.87 0.035 226);
+  --ring: oklch(0.65 0.12 255);
+  --sidebar: oklch(0.97 0.023 161);
+  --sidebar-foreground: oklch(0.26 0.035 253);
+  --sidebar-primary: oklch(0.56 0.15 255);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.94 0.034 24);
+  --sidebar-accent-foreground: oklch(0.32 0.05 20);
+  --sidebar-border: oklch(0.87 0.035 226);
+  --sidebar-ring: oklch(0.65 0.12 255);
+}
+
+.pastel body {
+  background-image: linear-gradient(125deg, var(--pastel-rose), var(--pastel-sky) 48%, var(--pastel-mint));
+  background-attachment: fixed;
 }
 
 .dark {

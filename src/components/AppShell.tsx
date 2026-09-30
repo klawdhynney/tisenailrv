@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun } from "lucide-react";
+import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Palette, Check } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useStore } from "@/lib/store-context";
 import senaiAsset from "@/assets/senai-lrv.png.asset.json";
 
@@ -16,20 +17,28 @@ const navGestor = [
   { to: "/regras", label: "Regras", icon: Settings2, variante: "google-blue" },
 ] as const;
 
+type Tema = "claro" | "pastel" | "escuro";
+const temas = [
+  { valor: "claro", nome: "Claro", icon: Sun },
+  { valor: "pastel", nome: "Claro pastel", icon: Palette },
+  { valor: "escuro", nome: "Escuro", icon: Moon },
+] as const;
+
 export function AppShell({ children }: { children: ReactNode }) {
   const [aberto, setAberto] = useState(false);
-  const [escuro, setEscuro] = useState(false);
+  const [tema, setTema] = useState<Tema>("claro");
   useEffect(() => {
-    const salvo = localStorage.getItem("tema-ti") === "escuro";
-    document.documentElement.classList.toggle("dark", salvo);
-    setEscuro(salvo);
+    const salvo = localStorage.getItem("tema-ti");
+    const inicial: Tema = salvo === "escuro" || salvo === "pastel" ? salvo : "claro";
+    document.documentElement.classList.toggle("dark", inicial === "escuro");
+    document.documentElement.classList.toggle("pastel", inicial === "pastel");
+    setTema(inicial);
   }, []);
-  useEffect(() => { document.documentElement.classList.toggle("dark", escuro); }, [escuro]);
-  const alternarTema = () => {
-    const novo = !document.documentElement.classList.contains("dark");
-    document.documentElement.classList.toggle("dark", novo);
-    localStorage.setItem("tema-ti", novo ? "escuro" : "claro");
-    setEscuro(novo);
+  const escolherTema = (novo: Tema) => {
+    document.documentElement.classList.toggle("dark", novo === "escuro");
+    document.documentElement.classList.toggle("pastel", novo === "pastel");
+    localStorage.setItem("tema-ti", novo);
+    setTema(novo);
   };
   const { isGestor, session, sair } = useStore();
   const itens = [...navPublico, ...(isGestor ? navGestor : [])];
@@ -59,6 +68,25 @@ export function AppShell({ children }: { children: ReactNode }) {
     </Link></Button>
   );
 
+  const seletorTema = (mobile: boolean) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size={mobile ? "default" : "icon"} aria-label="Escolher tema" title="Escolher tema" className={mobile ? "justify-start" : undefined}>
+          {tema === "escuro" ? <Moon className="size-4" /> : tema === "pastel" ? <Palette className="size-4" /> : <Sun className="size-4" />}
+          {mobile && "Tema"}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-44">
+        {temas.map(({ valor, nome, icon: Icon }) => (
+          <DropdownMenuItem key={valor} onSelect={() => escolherTema(valor)}>
+            <Icon className="size-4" /> {nome}
+            {tema === valor && <Check className="ml-auto size-4" aria-label="Selecionado" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b-2 border-border bg-card/90 backdrop-blur">
@@ -70,7 +98,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="ml-auto hidden items-center gap-2 lg:flex">
             {links(false)}
             {botaoConta}
-              <Button variant="outline" size="icon" aria-label={escuro ? "Usar tema claro" : "Usar tema escuro"} title={escuro ? "Tema claro" : "Tema escuro"} onClick={alternarTema}>{escuro ? <Sun className="size-4" /> : <Moon className="size-4" />}</Button>
+              {seletorTema(false)}
           </nav>
            <Button variant="outline" size="icon" className="ml-auto lg:hidden"
             onClick={() => setAberto((v) => !v)}
@@ -84,7 +112,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="flex flex-col gap-2 border-t border-border bg-card p-3 lg:hidden">
             {links(true)}
             {botaoConta}
-              <Button variant="outline" onClick={alternarTema}>{escuro ? <Sun className="size-4" /> : <Moon className="size-4" />}{escuro ? "Tema claro" : "Tema escuro"}</Button>
+              {seletorTema(true)}
           </nav>
         )}
       </header>
