@@ -115,7 +115,8 @@ function AbrirChamado() {
 
   if (sucessoId) {
     const local = form.descricao.match(/^\s*Local:\s*([^\n\r]+)/im)?.[1]?.trim() ?? "";
-    const shareMessage = `Chamado #${sucessoId}\nRequisitante: ${form.solicitante.trim()}\nLocal: ${local}\nDescrição: ${form.descricao.trim()}`;
+    const descricao = form.descricao.replace(/^\s*Local:[^\n\r]*[\n\r]*/im, "").replace(/^\s*Problema:\s*/i, "").trim();
+    const shareMessage = `Chamado #${sucessoId}\nRequisitante: ${form.solicitante.trim()}\nLocal: ${local}\nDescrição: ${descricao}`;
     
     return (
       <div className="mx-auto max-w-2xl py-12 px-4 animate-in fade-in zoom-in duration-300">

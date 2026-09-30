@@ -47,8 +47,8 @@ Avisos no Teams e Outlook permanecem adiados para outro upgrade.
 
 ## Ajustes de 30/09
 
-- [ ] Gráfico de SLA com contagens dinâmicas no dashboard; título em maiúsculas e copyright no rodapé.
-- [ ] Atendimento com filtros mês/prioridade/status/SLA e relógio de tempo útil restante.
-- [ ] Abertura com local na descrição, botão verde, lembrança opcional dos dados, sugestões de palavras e resumo do chamado para WhatsApp após registro.
-- [ ] Unificar revisão técnica na ação de aprimorar texto; entrada somente Google/Microsoft.
-- [ ] Aplicar imagem SENAI enviada como favicon e validar telas e fluxos.
+- [x] Gráfico de SLA com contagens dinâmicas no dashboard; título em maiúsculas e copyright no rodapé.
+- [x] Atendimento com filtros mês/prioridade/status/SLA e relógio de tempo útil restante.
+- [x] Abertura com local na descrição, botão verde, lembrança opcional dos dados, sugestões de palavras e resumo do chamado para WhatsApp após registro.
+- [x] Unificar revisão técnica na ação de aprimorar texto; entrada somente Google/Microsoft.
+- [x] Aplicar imagem SENAI enviada como favicon e validar telas e fluxos.
