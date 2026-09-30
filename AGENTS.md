@@ -17,4 +17,5 @@ Chamados públicos podem ser abertos sem login, mas exigem e-mail válido e entr
 A planilha completa é exclusiva do gestor; no painel público a planilha de acompanhamento expõe apenas campos sem identificação pessoal, pois descrições, nomes e contatos podem conter dados privados.
 O atendimento e a planilha do gestor compartilham `TicketSheet`, e alterações são salvas em uma página individual somente após confirmação; regras usam rascunho e confirmação antes de gravar para evitar edições acidentais.
 As exportações de dashboard e planilha são geradas no navegador; dados detalhados só entram nos arquivos após a autorização do gestor, evitando criar cópias públicas no servidor.
-O contexto e o hook `useStore` ficam em módulo separado do `StoreProvider`, e utilitários de chamados ficam em `types.ts`, para atualizações da interface não substituírem o contexto em uso e deixarem a página em branco.
+`useStore`/contexto ficam separados do `StoreProvider`, e utilitários em `types.ts`, para evitar tela em branco após atualizações.
+Temas `claro`, `pastel`, `escuro` usam `tema-ti` e classes exclusivas `.pastel`/`.dark` na raiz, para preservar a preferência e a paleta Google.
