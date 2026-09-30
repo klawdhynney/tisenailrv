@@ -44,3 +44,11 @@ Avisos no Teams e Outlook permanecem adiados para outro upgrade.
 - [x] Mostrar prazo e situação do SLA no acompanhamento público sem expor dados pessoais.
 - [x] Ativar correção ortográfica pt-BR e revisão opcional de texto e sugestões técnicas por IA para todos os usuários.
 - [x] Reorganizar colunas do atendimento, colocar Salvar ao final, abrir acompanhamento pelo botão dos filtros e oferecer sugestão de prioridade ao gestor baseada no histórico agregado de resolvidos (aplicação manual com confirmação ao salvar).
+
+## Ajustes de 30/09
+
+- [ ] Gráfico de SLA com contagens dinâmicas no dashboard; título em maiúsculas e copyright no rodapé.
+- [ ] Atendimento com filtros mês/prioridade/status/SLA e relógio de tempo útil restante.
+- [ ] Abertura com local na descrição, botão verde, lembrança opcional dos dados, sugestões de palavras e resumo do chamado para WhatsApp após registro.
+- [ ] Unificar revisão técnica na ação de aprimorar texto; entrada somente Google/Microsoft.
+- [ ] Aplicar imagem SENAI enviada como favicon e validar telas e fluxos.
