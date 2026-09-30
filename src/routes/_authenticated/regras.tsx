@@ -37,7 +37,7 @@ function Regras() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+         <div className="flex-1 text-center">
           <h1 className="text-3xl font-bold tracking-tight">Regras e prioridades</h1>
           <p className="mt-1 text-muted-foreground">As alterações entram em vigor depois de salvar.</p>
         </div>

@@ -95,7 +95,7 @@ function Dashboard() {
   };
 
   return <div className="space-y-7 dashboard-print">
-    <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm font-bold uppercase text-primary">Indicadores públicos</p><h1 className="mt-1 text-3xl font-bold">Dashboard de chamados</h1><p className="mt-1 text-muted-foreground">Acompanhamento atualizado dos chamados registrados.</p></div>
+    <header className="flex flex-wrap items-start justify-between gap-4"><div className="flex-1 text-center"><p className="text-sm font-bold uppercase text-primary">Indicadores públicos</p><h1 className="mt-1 text-3xl font-bold">Dashboard de chamados</h1><p className="mt-1 text-muted-foreground">Acompanhamento atualizado dos chamados registrados.</p></div>
       <div className="no-print flex flex-wrap gap-2">{isGestor && <Button asChild variant="outline"><Link to="/chamados"><Table2 /> Planilha completa</Link></Button>}<Button variant="outline" onClick={() => window.print()}><Printer /> Imprimir / PDF</Button><Button variant="outline" onClick={baixarResumo}><Download /> Baixar dados</Button></div></header>
 
     <section className="no-print border-y-2 border-g-blue bg-card px-4 py-4 shadow-sm">

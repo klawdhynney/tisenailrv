@@ -110,7 +110,7 @@ function TicketEditor({
   return <div className="mx-auto max-w-4xl space-y-6">
     <Button asChild variant="outline"><Link to="/atendimento"><ArrowLeft className="size-4" /> Voltar à planilha</Link></Button>
     <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5">
-      <div>
+       <div className="flex-1 text-center">
         <h1 className="text-3xl font-bold">Chamado #{ticket.id}</h1>
         <p className="mt-1 text-muted-foreground">Aberto em {formatarData(ticket.abertoEm, ticket.hora)} · Prazo: {formatarDataHora(sla.prazo)} · {sla.situacao}</p>
       </div>
