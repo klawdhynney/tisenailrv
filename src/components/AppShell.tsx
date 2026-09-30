@@ -1,10 +1,11 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Check } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useStore } from "@/lib/store-context";
 import senaiIcone from "@/assets/senai-icone.png";
+import senaiCapa from "@/assets/senai-capa.png";
 
 const navPublico = [
   { to: "/", label: "Início", icon: Home, variante: "google-blue" },
@@ -40,6 +41,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     setTema(novo);
   };
   const { isGestor, session, sair } = useStore();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isPublicPage =
+    !pathname.startsWith("/atendimento") &&
+    !pathname.startsWith("/chamados") &&
+    !pathname.startsWith("/regras");
   const itens = [...navPublico, ...(isGestor ? navGestor : [])];
 
   const links = (mobile: boolean) =>
@@ -117,7 +123,26 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         )}
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-8">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
+        {isPublicPage && (
+          <div className="mb-7 flex justify-center">
+            <Link
+              to="/"
+              className="group block w-full max-w-5xl overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:scale-[1.01] hover:border-g-blue/60 hover:shadow-lg active:scale-[0.99]"
+              title="Voltar para a página inicial"
+            >
+              <img
+                src={senaiCapa}
+                alt="SENAI Lucas do Rio Verde"
+                width={1200}
+                height={400}
+                className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
+              />
+            </Link>
+          </div>
+        )}
+        {children}
+      </main>
       <footer className="mt-12 border-t border-border py-6 text-center text-xs text-muted-foreground">
            © 2026 TI SENAI LRV • Todos os direitos reservados • Criado por Claudinei Lima
       </footer>

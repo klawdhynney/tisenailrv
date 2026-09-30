@@ -4,7 +4,6 @@ import { ArrowRight, BarChart3, FilePlus2, LogIn, Activity, ClipboardList, Setti
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
 import labImage from "@/assets/technology-lab.jpg";
-import senaiAsset from "@/assets/senai-lrv.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
@@ -51,16 +50,15 @@ function Inicio() {
     <section className="relative isolate overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <img src={labImage} alt="Ambiente de tecnologia e atendimento de TI" width={1536} height={768} className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-25 dark:opacity-15" />
       <div className="absolute inset-0 -z-10 bg-card/80" />
-      <div className="grid min-h-[330px] gap-7 px-5 py-6 sm:px-9 lg:grid-cols-[minmax(180px,0.46fr)_minmax(0,1fr)_minmax(220px,0.65fr)] lg:items-center">
-         <img src={senaiAsset.url} alt="SENAI Lucas do Rio Verde" className="mx-auto block h-44 w-auto max-w-full rounded-2xl object-contain sm:h-60 lg:h-[300px] scale-105 transition-transform duration-300" />
-         <div className="flex flex-col items-center text-center">
+      <div className="grid min-h-[260px] gap-7 px-5 py-6 sm:px-9 lg:grid-cols-[minmax(0,1.2fr)_minmax(240px,0.55fr)] lg:items-center">
+        <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
           <p className="inline-flex items-center gap-2 rounded-full bg-card/90 px-3 py-1 text-xs font-bold uppercase text-primary shadow-sm"><Activity className="size-4" /> Atendimento de TI · SENAI LRV</p>
-           <h1 className="mt-5 max-w-xl text-4xl font-bold leading-tight text-foreground sm:text-5xl">TI SENAI LRV</h1>
-           <p className="mt-3 max-w-xl text-base font-medium leading-relaxed text-foreground">Bem-vindo à Central de Chamados de TI! Para agilizar seu atendimento, seja claro e objetivo ao descrever o problema e informe o local exato onde ele está acontecendo. Essas informações ajudam a identificar a situação e agilizar o atendimento.</p>
-           <div className="mt-5 flex flex-wrap justify-center gap-3">
-             <Button asChild size="lg" variant="google-green"><Link to="/abrir">Abrir chamado <ArrowRight /></Link></Button>
-             <Button asChild size="lg" variant="google-blue"><Link to="/dashboard/acompanhamento">Acompanhar chamado <ClipboardList /></Link></Button>
-           </div>
+          <h1 className="mt-4 max-w-xl text-3xl font-extrabold leading-tight text-foreground sm:text-4xl">Central de Chamados de TI</h1>
+          <p className="mt-3 max-w-xl text-base font-medium leading-relaxed text-foreground">Bem-vindo à Central de Chamados de TI! Para agilizar seu atendimento, seja claro e objetivo ao descrever o problema e informe o local exato onde ele está acontecendo. Essas informações ajudam a identificar a situação e agilizar o atendimento.</p>
+          <div className="mt-5 flex flex-wrap justify-center gap-3 lg:justify-start">
+            <Button asChild size="lg" variant="google-green"><Link to="/abrir">Abrir chamado <ArrowRight /></Link></Button>
+            <Button asChild size="lg" variant="google-blue"><Link to="/dashboard/acompanhamento">Acompanhar chamado <ClipboardList /></Link></Button>
+          </div>
         </div>
         <div className="grid gap-3 text-center sm:text-left">
           {[["Chamados registrados", total, "border-g-blue", "text-g-blue"], ["Em atendimento", andamento, "border-g-yellow", "text-g-yellow"], ["Resolvidos", resolvidos, "border-g-green", "text-g-green"]].map(([label, count, border, color]) => <div key={String(label)} className={`rounded-xl border-l-4 ${border} bg-card/90 px-5 py-4 shadow-sm`}><strong className={`block text-3xl ${color}`}>{count}</strong><span className="text-sm text-muted-foreground">{label}</span></div>)}
