@@ -64,7 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b-2 border-border bg-card/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
            <Link to="/" className="flex shrink-0 items-center gap-2">
-              <img src={senaiAsset.url} alt="SENAI LRV" width={40} height={40} className="size-10 rounded-full border border-border bg-card object-contain p-1 shadow-sm" />
+              <img src={senaiAsset.url} alt="SENAI LRV" width={40} height={40} className="size-10 rounded-xl object-contain shadow-sm" />
              <span className="text-sm font-bold text-foreground sm:text-base">TI Senai LRV</span>
           </Link>
           <nav className="ml-auto hidden items-center gap-2 lg:flex">

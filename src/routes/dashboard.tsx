@@ -100,12 +100,14 @@ function Dashboard() {
 
     <section className="no-print border-y-2 border-g-blue bg-card px-4 py-4 shadow-sm">
       <p className="mb-3 text-sm font-bold text-g-blue">Filtrar por:</p>
-      <div className="flex flex-wrap gap-3">
-        <label className="grid gap-1 text-xs font-bold">Mês<select aria-label="Mês" className="h-11 min-w-44 rounded-xl border-2 border-g-blue bg-background px-3 text-sm font-normal" value={mes} onChange={(e) => setMes(e.target.value)}>{MESES_DISPONIVEIS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}<option value="todos">Todos os meses</option></select></label>
-        <label className="grid gap-1 text-xs font-bold">Prioridade<select aria-label="Prioridade" className="h-11 min-w-40 rounded-xl border-2 border-g-red bg-background px-3 text-sm font-normal" value={prioridade} onChange={(e) => setPrioridade(e.target.value)}><option>Todas</option>{PRIORIDADES.map((p) => <option key={p}>{p}</option>)}</select></label>
-        <label className="grid gap-1 text-xs font-bold">Status<select aria-label="Status" className="h-11 min-w-40 rounded-xl border-2 border-g-green bg-background px-3 text-sm font-normal" value={status} onChange={(e) => setStatus(e.target.value)}><option>Todos</option>{STATUS_LIST.map((s) => <option key={s}>{s}</option>)}</select></label>
-        {foco && <Button className="self-end" variant="google-yellow" onClick={() => setFoco(null)}>Limpar: {foco.nome} ×</Button>}
-         <Button className="self-end" variant="google-blue" aria-expanded={showProgress} aria-controls="acompanhamento" onClick={() => { setShowProgress(v => !v); if (!showProgress) window.setTimeout(() => document.getElementById("acompanhamento")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }}><ClipboardList /> Acompanhar chamados</Button>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="grid gap-1 text-xs font-bold">Mês<select aria-label="Mês" className="h-11 min-w-44 rounded-xl border-2 border-g-blue bg-background px-3 text-sm font-normal" value={mes} onChange={(e) => setMes(e.target.value)}>{MESES_DISPONIVEIS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}<option value="todos">Todos os meses</option></select></label>
+          <label className="grid gap-1 text-xs font-bold">Prioridade<select aria-label="Prioridade" className="h-11 min-w-40 rounded-xl border-2 border-g-red bg-background px-3 text-sm font-normal" value={prioridade} onChange={(e) => setPrioridade(e.target.value)}><option>Todas</option>{PRIORIDADES.map((p) => <option key={p}>{p}</option>)}</select></label>
+          <label className="grid gap-1 text-xs font-bold">Status<select aria-label="Status" className="h-11 min-w-40 rounded-xl border-2 border-g-green bg-background px-3 text-sm font-normal" value={status} onChange={(e) => setStatus(e.target.value)}><option>Todos</option>{STATUS_LIST.map((s) => <option key={s}>{s}</option>)}</select></label>
+          {foco && <Button className="self-end" variant="google-yellow" onClick={() => setFoco(null)}>Limpar: {foco.nome} ×</Button>}
+        </div>
+        <Button className="self-end ml-auto" variant="google-blue" aria-expanded={showProgress} aria-controls="acompanhamento" onClick={() => { setShowProgress(v => !v); if (!showProgress) window.setTimeout(() => document.getElementById("acompanhamento")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }}><ClipboardList /> Acompanhar chamado</Button>
       </div>
     </section>
 
