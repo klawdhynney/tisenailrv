@@ -487,7 +487,7 @@ function TicketEditor({
             title={`Excluir chamado #${ticket.id}?`}
             description="Atenção: esta ação é irreversível. O chamado será removido permanentemente do banco de dados."
             confirmLabel="Sim, excluir definitivamente"
-            variant="destructive"
+            variant="google-red"
             onConfirm={excluirChamado}
           >
             <Trash2 className="size-4" /> Excluir chamado
@@ -508,6 +508,7 @@ function TicketEditor({
             title={`Salvar alterações no chamado #${ticket.id}?`}
             description="Confira os dados antes de confirmar. As alterações aparecerão imediatamente na planilha e no acompanhamento."
             confirmLabel="Sim, salvar chamado"
+            variant="google-green"
             onConfirm={save}
             disabled={!hasChanges || saving}
           >

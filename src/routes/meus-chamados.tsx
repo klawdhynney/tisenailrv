@@ -384,11 +384,7 @@ function MeusChamados() {
               <span>Conectado como</span>
               <strong className="font-semibold text-foreground">{activeEmail}</strong>
             </p>
-          ) : (
-            <p className="mt-1 text-sm text-muted-foreground">
-              Acompanhe o andamento de todos os seus chamados de suporte técnico.
-            </p>
-          )}
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

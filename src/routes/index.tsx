@@ -90,25 +90,15 @@ function Inicio() {
         <div className="h-2 bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
       </section>
 
-      {/* Seção com botões grandes de serviços */}
+      {/* Seção com botões de serviços */}
       <section>
-        <div className="mb-4 text-center sm:text-left">
-          <h2 className="text-xl sm:text-2xl font-extrabold text-foreground">Serviços Rápidos de TI</h2>
-          <p className="text-sm text-muted-foreground">
-            Selecione uma das opções abaixo para solicitar atendimento ou acompanhar seus chamados.
-          </p>
-        </div>
-
         <div className="grid gap-5 md:grid-cols-2">
           <div className="group flex flex-col justify-between rounded-2xl border-t-4 border-g-green bg-card p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
             <div>
               <div className="flex size-14 items-center justify-center rounded-2xl bg-g-green/15 text-g-green">
                 <FilePlus2 className="size-7" />
               </div>
-              <h3 className="mt-4 text-xl font-bold text-foreground">Abrir Chamado</h3>
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                Precisa de suporte? Registre seu problema com setor e descrição detalhada para nossa equipe técnica solucionar.
-              </p>
+              <h2 className="mt-4 text-xl font-bold text-foreground">Abrir Chamado</h2>
             </div>
             <div className="mt-6 pt-2">
               <Button asChild size="lg" variant="google-green" className="w-full text-base font-bold shadow-md">
@@ -124,10 +114,7 @@ function Inicio() {
               <div className="flex size-14 items-center justify-center rounded-2xl bg-g-blue/15 text-g-blue">
                 <ClipboardList className="size-7" />
               </div>
-              <h3 className="mt-4 text-xl font-bold text-foreground">Acompanhar Chamados</h3>
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                Verifique o status, responsável e tempo de atendimento (SLA) em tempo real dos chamados abertos.
-              </p>
+              <h2 className="mt-4 text-xl font-bold text-foreground">Acompanhar Chamados</h2>
             </div>
             <div className="mt-6 pt-2">
               <Button asChild size="lg" variant="google-blue" className="w-full text-base font-bold shadow-md">

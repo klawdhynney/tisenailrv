@@ -42,7 +42,6 @@ interface FormValues {
   descricao: string;
 }
 
-  const [metodoAbertura, setMetodoAbertura] = useState<"email" | "whatsapp">("email");
   const [form, setForm] = useState<FormValues>({
     solicitante: "",
     email: "",
@@ -63,22 +62,18 @@ interface FormValues {
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("ti-senai-dados") ?? "null");
+      const salvoWpp = localStorage.getItem("tisenai_user_whatsapp_display") || localStorage.getItem("tisenai_user_whatsapp") || "";
       if (saved && typeof saved === "object") {
         setForm((f) => ({
           ...f,
           solicitante: typeof saved.solicitante === "string" ? saved.solicitante : "",
-          email: typeof saved.email === "string" ? saved.email : "",
           setor: typeof saved.setor === "string" ? saved.setor : "",
-          contato: typeof saved.contato === "string" ? saved.contato : "",
+          contato: typeof saved.contato === "string" ? saved.contato : salvoWpp,
           local: typeof saved.local === "string" ? saved.local : "",
         }));
-        if (saved.metodoAbertura === "whatsapp" || (!saved.email && saved.contato)) {
-          setMetodoAbertura("whatsapp");
-        }
         setLembrar(true);
-      } else {
-        const salvoWpp = localStorage.getItem("tisenai_user_whatsapp");
-        if (salvoWpp) setMetodoAbertura("whatsapp");
+      } else if (salvoWpp) {
+        setForm((f) => ({ ...f, contato: salvoWpp }));
       }
     } catch {
       localStorage.removeItem("ti-senai-dados");
@@ -92,9 +87,7 @@ interface FormValues {
       localStorage.setItem(
         "ti-senai-dados",
         JSON.stringify({
-          metodoAbertura,
           solicitante: form.solicitante,
-          email: form.email,
           setor: form.setor,
           contato: form.contato,
           local: form.local,
@@ -103,7 +96,7 @@ interface FormValues {
     } else {
       localStorage.removeItem("ti-senai-dados");
     }
-  }, [preferenciaCarregada, lembrar, metodoAbertura, form.solicitante, form.email, form.setor, form.contato, form.local]);
+  }, [preferenciaCarregada, lembrar, form.solicitante, form.setor, form.contato, form.local]);
 
   const set = (k: string, v: string) => {
     if (k in form) {
@@ -124,19 +117,9 @@ interface FormValues {
       }
     }
 
-    if (metodoAbertura === "whatsapp") {
-      const digits = (form.contato || "").replace(/\D/g, "");
-      if (digits.length < 10) {
-        novosErros.contato = "Informe seu WhatsApp com DDD (ex: 65 99999-9999).";
-      }
-      if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-        novosErros.email = "Informe um e-mail válido ou deixe em branco.";
-      }
-    } else {
-      const val = (form.email || "").trim();
-      if (!val || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
-        novosErros.email = "Informe um e-mail válido para identificação.";
-      }
+    const digits = (form.contato || "").replace(/\D/g, "");
+    if (digits.length < 10) {
+      novosErros.contato = "Informe seu WhatsApp com DDD (ex: 65 99999-9999).";
     }
 
     if (isCampoAtivo("setor")) {
@@ -197,10 +180,7 @@ interface FormValues {
 
     const descricaoFinal = [form.descricao ? form.descricao.trim() : "", customData].filter(Boolean).join("\n\n");
     const digitsContato = (form.contato || "").replace(/\D/g, "");
-    const emailCalculado =
-      metodoAbertura === "whatsapp" && !form.email.trim()
-        ? `${digitsContato || "contato"}@whatsapp.senailrv.local`
-        : (form.email ? form.email.trim() : "solicitante@senaimt.ind.br");
+    const emailCalculado = `${digitsContato || "contato"}@whatsapp.senailrv.local`;
 
     const ticketId = await addTicket(
       {
@@ -271,9 +251,8 @@ interface FormValues {
             <CheckCircle2 className="size-12" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">Chamado #{sucessoId} enviado!</h1>
-          <p className="text-muted-foreground mb-8">
-            Tudo certo, <strong>{form.solicitante || "Solicitante"}</strong>. Sua solicitação foi registrada com sucesso.
-            Acompanhe o andamento pelo site usando o e-mail informado.
+          <p className="text-muted-foreground mb-6">
+            Sua solicitação foi registrada com sucesso.
           </p>
 
           <div className="grid gap-4">
@@ -312,7 +291,6 @@ interface FormValues {
                 </Button>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">A mensagem fica pronta no WhatsApp; confirme o envio no aplicativo.</p>
           </div>
         </div>
       </div>
@@ -328,7 +306,6 @@ interface FormValues {
           <span className="rounded-xl bg-g-green/15 p-3 text-g-green"><Cpu className="size-7" /></span>
           <h1 className="text-3xl font-bold">Abrir chamado de TI</h1>
         </div>
-        <p className="mt-2 text-muted-foreground">Preencha os campos abaixo com a informação do local e descrição do problema.</p>
       </div>
       <Card className="mt-6 rounded-2xl border-t-4 border-g-blue shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -337,45 +314,6 @@ interface FormValues {
         </CardHeader>
         <CardContent>
           <form onSubmit={enviar} className="grid gap-5">
-            {/* Opção para o usuário escolher como deseja abrir a solicitação */}
-            <div className="rounded-2xl border-2 border-border/80 bg-muted/30 p-4 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-1">
-                <span className="text-xs font-black uppercase tracking-wider text-g-blue">
-                  Como prefere abrir e acompanhar sua solicitação?
-                </span>
-                <span className="text-[11px] font-semibold text-muted-foreground">Identificação para login</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setMetodoAbertura("email")}
-                  className={`flex items-center justify-center gap-2.5 rounded-xl py-3 px-4 text-xs font-extrabold transition-all border-2 cursor-pointer ${
-                    metodoAbertura === "email"
-                      ? "bg-g-blue text-white shadow-md border-g-blue ring-2 ring-g-blue/30 scale-[1.01]"
-                      : "bg-card text-muted-foreground hover:bg-muted/80 border-border"
-                  }`}
-                >
-                  <Mail className="size-4" /> Usar E-mail
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMetodoAbertura("whatsapp")}
-                  className={`flex items-center justify-center gap-2.5 rounded-xl py-3 px-4 text-xs font-extrabold transition-all border-2 cursor-pointer ${
-                    metodoAbertura === "whatsapp"
-                      ? "bg-[#25D366] text-white shadow-md border-[#25D366] ring-2 ring-[#25D366]/30 scale-[1.01]"
-                      : "bg-card text-muted-foreground hover:bg-muted/80 border-border"
-                  }`}
-                >
-                  <MessageCircle className="size-4" /> Usar número do WhatsApp
-                </button>
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                {metodoAbertura === "whatsapp"
-                  ? "✓ O chamado será vinculado ao seu número de WhatsApp para consulta e login rápido."
-                  : "✓ O chamado será vinculado ao seu e-mail institucional para consulta e acompanhamento."}
-              </p>
-            </div>
-
             <div className="grid gap-5 sm:grid-cols-2">
               {isCampoAtivo("solicitante") && (
                 <Campo label={getCampoLabel("solicitante", "Seu nome")} obrigatorio={isCampoObrigatorio("solicitante")} erro={erros.solicitante}>
@@ -383,27 +321,14 @@ interface FormValues {
                 </Campo>
               )}
 
-              {metodoAbertura === "whatsapp" ? (
-                <Campo label="Número do WhatsApp (Identificação)" obrigatorio={true} erro={erros.contato}>
-                  <Input
-                    value={form.contato}
-                    onChange={(e) => set("contato", e.target.value)}
-                    placeholder="(65) 99999-9999"
-                    className="font-medium"
-                  />
-                </Campo>
-              ) : (
-                <Campo label={getCampoLabel("email", "E-mail (Identificação)")} obrigatorio={true} erro={erros.email}>
-                  <Input
-                    autoComplete="email"
-                    type="email"
-                    required
-                    value={form.email}
-                    onChange={(e) => set("email", e.target.value)}
-                    placeholder="seu@email.com"
-                  />
-                </Campo>
-              )}
+              <Campo label="Número do WhatsApp (Identificação)" obrigatorio={true} erro={erros.contato}>
+                <Input
+                  value={form.contato}
+                  onChange={(e) => set("contato", e.target.value)}
+                  placeholder="(65) 99999-9999"
+                  className="font-medium"
+                />
+              </Campo>
             </div>
 
             {(isCampoAtivo("setor") || isCampoAtivo("categoria")) && (
@@ -439,33 +364,11 @@ interface FormValues {
               </div>
             )}
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              {isCampoAtivo("local") && (
-                <Campo label={getCampoLabel("local", "Local exato / Sala")} obrigatorio={isCampoObrigatorio("local")} erro={erros.local}>
-                  <Input value={form.local} onChange={(e) => set("local", e.target.value)} placeholder="Ex.: Bloco A, Sala 3, Mesa 02" />
-                </Campo>
-              )}
-
-              {metodoAbertura === "whatsapp" ? (
-                <Campo label="E-mail adicional (Opcional)" obrigatorio={false} erro={erros.email}>
-                  <Input
-                    autoComplete="email"
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => set("email", e.target.value)}
-                    placeholder="seu@email.com (opcional)"
-                  />
-                </Campo>
-              ) : (
-                <Campo label="WhatsApp / Telefone (Opcional)" obrigatorio={false} erro={erros.contato}>
-                  <Input
-                    value={form.contato}
-                    onChange={(e) => set("contato", e.target.value)}
-                    placeholder="(65) 99999-9999 (opcional)"
-                  />
-                </Campo>
-              )}
-            </div>
+            {isCampoAtivo("local") && (
+              <Campo label={getCampoLabel("local", "Local exato / Sala")} obrigatorio={isCampoObrigatorio("local")} erro={erros.local}>
+                <Input value={form.local} onChange={(e) => set("local", e.target.value)} placeholder="Ex.: Bloco A, Sala 3, Mesa 02" />
+              </Campo>
+            )}
 
             {customFields.length > 0 && (
               <div className="grid gap-5 sm:grid-cols-2">
@@ -484,7 +387,7 @@ interface FormValues {
             )}
 
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} /> Lembrar meus dados neste aparelho (nome, e-mail e setor)
+              <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} /> Lembrar meus dados neste aparelho (nome, WhatsApp e setor)
             </label>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -519,7 +422,6 @@ interface FormValues {
               </div>
               <div>
                 <h2 className="text-xl font-bold tracking-tight text-foreground">Confirmar abertura de chamado</h2>
-                <p className="text-xs text-muted-foreground">Verifique os dados antes do envio</p>
               </div>
             </div>
 
@@ -529,8 +431,8 @@ interface FormValues {
                 <span className="font-semibold text-foreground">{form.solicitante || "Não informado"}</span>
               </div>
               <div className="flex justify-between border-b border-border/40 pb-1.5">
-                <span className="text-muted-foreground">E-mail:</span>
-                <span className="font-semibold text-foreground">{form.email || "Não informado"}</span>
+                <span className="text-muted-foreground">WhatsApp:</span>
+                <span className="font-semibold text-foreground">{form.contato || "Não informado"}</span>
               </div>
               <div className="flex justify-between border-b border-border/40 pb-1.5">
                 <span className="text-muted-foreground">Setor:</span>
@@ -565,7 +467,7 @@ interface FormValues {
               </Button>
               <Button
                 type="button"
-                variant="google-blue"
+                variant="google-green"
                 className="flex-1 sm:flex-none font-semibold shadow-xs gap-2"
                 onClick={confirmarEnvioFinal}
               >

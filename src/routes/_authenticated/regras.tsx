@@ -47,16 +47,16 @@ import { CORES_PRIORIDADE } from "@/lib/types";
 export const Route = createFileRoute("/_authenticated/regras")({
   head: () => ({
     meta: [
-      { title: "Regras e prioridades | TI Senai LRV" },
+      { title: "Painel de Ajustes | TI Senai LRV" },
       {
         name: "description",
         content:
           "Configure prazos por prioridade, horário de atendimento por dia da semana, feriados, férias, pausas automáticas do SLA e campos do sistema.",
       },
-      { property: "og:title", content: "Regras e Prioridades do SLA" },
+      { property: "og:title", content: "Painel de Ajustes" },
       {
         property: "og:description",
-        content: "O gestor edita aqui os prazos e as pausas; o dashboard recalcula tudo na hora.",
+        content: "Painel de ajustes de prazos, horários, prioridades e parâmetros do sistema.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -198,28 +198,26 @@ function Regras() {
   return (
     <div className="space-y-7 pb-12">
       {/* Cabeçalho */}
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
         <div className="flex-1 text-center md:text-left">
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-g-blue via-indigo-600 to-g-green bg-clip-text text-transparent">
-            Regras e prioridades
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+            Painel de Ajustes
           </h1>
-          <p className="mt-1 text-muted-foreground">
-            Personalize horários por dia da semana, ordem dos filtros, campos e exportações. As alterações entram em vigor após salvar.
-          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setDraft(REGRAS_PADRAO)}>
             <RotateCcw className="mr-2 h-4 w-4" /> Restaurar padrão
           </Button>
           <ConfirmAction
-            title="Salvar alterações nas regras?"
-            description="Os prazos, os horários e as configurações do sistema serão atualizados após sua confirmação."
-            confirmLabel="Sim, salvar regras"
+            title="Salvar alterações no painel de ajustes?"
+            description="Os prazos, horários e configurações serão salvos imediatamente."
+            confirmLabel="Sim, salvar alterações"
+            variant="google-green"
             disabled={!alterado}
             onConfirm={async () => {
               const ok = await setRegras(regras);
               toast[ok ? "success" : "error"](
-                ok ? "Regras salvas com sucesso." : "Não foi possível salvar as regras.",
+                ok ? "Ajustes salvos com sucesso." : "Não foi possível salvar os ajustes.",
               );
             }}
           >

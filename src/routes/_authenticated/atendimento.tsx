@@ -33,9 +33,6 @@ function Atendimento() {
             </span>
             Atendimento de Chamados
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Fila de chamados para triagem, atendimento e resolução pela equipe de TI.
-          </p>
         </div>
         <div className="no-print flex flex-wrap items-center gap-2">
           <Button

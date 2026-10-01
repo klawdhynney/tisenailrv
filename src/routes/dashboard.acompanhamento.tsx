@@ -39,7 +39,7 @@ function Acompanhamento() {
   }, []);
   const pages = Math.max(1, Math.ceil(progress.length / size));
   return <section className="space-y-5">
-    <header className="text-center"><h1 className="text-3xl font-bold">Acompanhamento dos chamados</h1><p className="mt-2 text-muted-foreground">Consulte o número, o andamento e o prazo. Dados pessoais aparecem somente na sua conta.</p></header>
+    <header className="text-center"><h1 className="text-3xl font-bold">Acompanhamento dos chamados</h1></header>
     <div className="flex flex-wrap items-end justify-between gap-3"><Button asChild variant="outline"><Link to="/dashboard">Voltar ao dashboard</Link></Button><label className="grid gap-1 text-sm font-medium">Por página<select aria-label="Chamados públicos por página" className="h-10 rounded-xl border border-input bg-background px-3" value={size} onChange={e => { setSize(Number(e.target.value)); setPage(1); }}>{[10, 30, 50, 100].map(n => <option key={n}>{n}</option>)}</select></label></div>
     <div className="overflow-x-auto rounded-xl border-2 border-g-blue/30 bg-card shadow-md">
       <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left text-sm">
@@ -58,7 +58,7 @@ function Acompanhamento() {
             return (
               <tr key={t.id} className="border-b border-border/80 transition-colors hover:bg-blue-50/70 dark:hover:bg-blue-950/30 even:bg-muted/30">
                 <td className="px-3.5 py-3.5">
-                  <Button asChild size="sm" variant="outline">
+                  <Button asChild size="sm" variant="google-blue">
                     <Link to="/meus-chamados">
                       <Eye className="size-4" /> Ver chamado
                     </Link>

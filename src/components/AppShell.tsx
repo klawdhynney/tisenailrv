@@ -14,7 +14,7 @@ const navPublico = [
 
 const navGestor = [
   { to: "/atendimento", label: "Atendimento", icon: Headset, variante: "google-green" },
-  { to: "/regras", label: "Regras", icon: Settings2, variante: "google-blue" },
+  { to: "/regras", label: "Painel de Ajustes", icon: Settings2, variante: "google-blue" },
 ] as const;
 
 type Tema = "claro" | "escuro";

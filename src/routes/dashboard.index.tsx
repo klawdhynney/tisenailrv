@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Area, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Activity, BarChart3, Calendar, ClipboardList, FileSpreadsheet, FileText, LineChart as LineChartIcon, PieChartIcon, Printer, RotateCcw, Sparkles, Table2 } from "lucide-react";
+import { Activity, BarChart3, Calendar, ChevronDown, ChevronUp, ClipboardList, FileSpreadsheet, FileText, LineChart as LineChartIcon, PieChartIcon, Printer, RotateCcw, Sparkles, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { calcularSla } from "@/lib/sla";
 import { useStore } from "@/lib/store-context";
@@ -140,7 +140,6 @@ function Dashboard() {
       <div className="flex-1 text-center">
         <p className="text-sm font-extrabold uppercase tracking-wider text-g-blue">Indicadores públicos</p>
         <h1 className="mt-1 text-3xl font-extrabold text-foreground sm:text-4xl">Dashboard de chamados</h1>
-        <p className="mt-1 font-medium text-muted-foreground">Acompanhamento atualizado dos chamados registrados.</p>
       </div>
       {isGestor && (
         <div className="no-print flex flex-wrap items-center gap-2">
@@ -200,14 +199,13 @@ function Dashboard() {
         ))}
       </div>
 
-      {/* Gráfico Principal: Série Histórica Dinâmica com UI Tech, Neon Glow e Filtros Acoplados */}
+      {/* Gráfico Principal: Série Histórica Dinâmica com Accordion Expansível */}
       <GraficoSerieHistoricaTech stats={publicStats} />
 
       {/* Seção Categórica e Distribuição */}
       <div className="border-t-2 border-border/80 pt-6">
         <div className="mb-4">
-          <p className="text-xs font-extrabold uppercase tracking-wider text-g-blue">Análise Categórica</p>
-          <h2 className="text-xl font-bold text-foreground">Distribuição & Recortes Específicos</h2>
+          <h2 className="text-xl font-bold text-foreground">Análise Categórica</h2>
         </div>
 
         <nav aria-label="Gráficos do dashboard" className="no-print grid grid-cols-2 gap-2 md:grid-cols-5">
@@ -227,12 +225,11 @@ function Dashboard() {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-2xl font-bold text-foreground">{VISOES.find((v) => v.id === visao)?.label}</h2>
-              <p className="text-sm font-medium text-muted-foreground">{dados.reduce((n, x) => n + x.value, 0)} chamado(s) representados</p>
             </div>
             <div className="no-print flex flex-wrap gap-2" aria-label="Tipo de gráfico">
               <Button size="sm" variant={tipoGrafico === "pizza" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("pizza")}><PieChartIcon className="size-4" /> Pizza</Button>
-              <Button size="sm" variant={tipoGrafico === "barras" ? "google-red" : "outline"} onClick={() => setTipoGrafico("barras")}><BarChart3 className="size-4" /> Barras</Button>
-              <Button size="sm" variant={tipoGrafico === "linhas" ? "google-yellow" : "outline"} onClick={() => setTipoGrafico("linhas")}><LineChartIcon className="size-4" /> Linhas</Button>
+              <Button size="sm" variant={tipoGrafico === "barras" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("barras")}><BarChart3 className="size-4" /> Barras</Button>
+              <Button size="sm" variant={tipoGrafico === "linhas" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("linhas")}><LineChartIcon className="size-4" /> Linhas</Button>
             </div>
           </div>
           <Grafico key={`${visao}-${tipoGrafico}`} dados={dados} tipo={tipoGrafico} cor={cor} />
@@ -271,6 +268,7 @@ type SeriePonto = {
 };
 
 function GraficoSerieHistoricaTech({ stats }: { stats: Database["public"]["Tables"]["ticket_public_stats"]["Row"][] }) {
+  const [aberto, setAberto] = useState(false);
   const mesesCompletos = useMemo(() => {
     const mapa = new Map<string, SeriePonto>();
     for (const m of MESES_DISPONIVEIS) {
@@ -369,7 +367,7 @@ function GraficoSerieHistoricaTech({ stats }: { stats: Database["public"]["Table
 
   const toggleSerie = (chave: keyof typeof visivel) => {
     const ativas = Object.values(visivel).filter(Boolean).length;
-    if (visivel[chave] && ativas <= 1) return; // Mantém ao menos 1 ativa
+    if (visivel[chave] && ativas <= 1) return;
     setVisivel((prev) => ({ ...prev, [chave]: !prev[chave] }));
   };
 
@@ -384,9 +382,9 @@ function GraficoSerieHistoricaTech({ stats }: { stats: Database["public"]["Table
   const mediaMensal = mesesFiltrados.length > 0 ? Math.round(totalPeriodo / mesesFiltrados.length) : 0;
 
   const seriesConfig = [
-    { key: "Total" as const, cor: "#00e5ff", gradiente: "url(#cyber-area-cyan)", label: "Total de Chamados" },
-    { key: "Resolvidos" as const, cor: "#10b981", gradiente: "url(#cyber-area-emerald)", label: "Resolvidos" },
-    { key: "Em atendimento" as const, cor: "#f59e0b", gradiente: "url(#cyber-area-amber)", label: "Em Atendimento" },
+    { key: "Total" as const, cor: "#1a73e8", label: "Total de Chamados" },
+    { key: "Resolvidos" as const, cor: "#34a853", label: "Resolvidos" },
+    { key: "Em atendimento" as const, cor: "#f9ab00", label: "Em Atendimento" },
   ];
 
   const TechTooltip = ({ active, payload, label }: any) => {
@@ -395,151 +393,131 @@ function GraficoSerieHistoricaTech({ stats }: { stats: Database["public"]["Table
     const taxa = ponto?.taxaResolucao ?? 0;
 
     return (
-      <div className="rounded-2xl border-2 border-cyan-500/50 bg-slate-950/95 p-4 shadow-[0_0_25px_rgba(0,229,255,0.3)] backdrop-blur-xl text-slate-100 min-w-56 animate-in fade-in zoom-in-95 pointer-events-none">
-        <div className="flex items-center justify-between border-b border-cyan-500/30 pb-2 mb-2.5">
-          <div className="flex items-center gap-1.5 text-cyan-400 font-extrabold text-sm">
-            <Calendar className="size-4 text-cyan-400" />
+      <div className="rounded-xl border-2 border-g-blue/40 bg-card/95 p-3.5 shadow-xl backdrop-blur-md text-foreground min-w-52 animate-in fade-in zoom-in-95 pointer-events-none">
+        <div className="flex items-center justify-between border-b border-border/80 pb-2 mb-2">
+          <div className="flex items-center gap-1.5 text-g-blue font-extrabold text-sm">
+            <Calendar className="size-4 text-g-blue" />
             <span>{label}</span>
           </div>
-          <span className="rounded-md bg-cyan-950/80 px-2 py-0.5 text-[10px] font-mono font-bold text-cyan-300 border border-cyan-500/40">
-            HUD Telemetria
-          </span>
         </div>
         <div className="space-y-1.5 text-xs">
           {payload.map((p: any) => (
             <div key={p.dataKey} className="flex items-center justify-between gap-3">
-              <span className="flex items-center gap-1.5 font-semibold text-slate-300">
-                <span className="size-2.5 rounded-full shadow-[0_0_6px_currentColor]" style={{ backgroundColor: p.stroke || p.color, color: p.stroke || p.color }} />
+              <span className="flex items-center gap-1.5 font-semibold text-muted-foreground">
+                <span className="size-2.5 rounded-full" style={{ backgroundColor: p.stroke || p.color }} />
                 {p.name}:
               </span>
-              <span className="font-mono font-black text-white text-sm">{p.value}</span>
+              <span className="font-mono font-bold text-foreground text-sm">{p.value}</span>
             </div>
           ))}
         </div>
-        <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-[11px]">
-          <span className="text-slate-400 font-medium">Eficácia de Resolução:</span>
-          <span className={`font-mono font-extrabold ${taxa >= 70 ? "text-emerald-400" : taxa >= 40 ? "text-amber-400" : "text-rose-400"}`}>
+        <div className="mt-2.5 pt-2 border-t border-border flex items-center justify-between text-xs">
+          <span className="text-muted-foreground font-medium">Taxa de Resolução:</span>
+          <span className={`font-mono font-extrabold ${taxa >= 70 ? "text-g-green" : taxa >= 40 ? "text-g-yellow" : "text-g-red"}`}>
             {taxa}%
           </span>
-        </div>
-        <div className="mt-1 h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-500"
-            style={{ width: `${taxa}%` }}
-          />
         </div>
       </div>
     );
   };
 
   return (
-    <section className="relative rounded-2xl border-2 border-cyan-500/30 bg-card/90 p-5 shadow-xl backdrop-blur-md overflow-hidden transition-all">
-      {/* Luzes neon sutis de fundo */}
-      <div className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
-
-      {/* Barra de controle e cabeçalho acoplados ao gráfico */}
-      <div className="mb-4 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-500 ring-2 ring-cyan-500/30 shadow-[0_0_15px_rgba(0,229,255,0.25)]">
-              <Activity className="size-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold tracking-tight text-foreground">Série Histórica de Chamados</h2>
-                <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-bold text-cyan-600 dark:text-cyan-400">
-                  <Sparkles className="size-3" /> Telemetria HUD
-                </span>
-              </div>
-              <p className="text-xs font-medium text-muted-foreground">
-                Evolução temporal, fluxo de resolução e tendências com navegação dinâmica.
-              </p>
-            </div>
+    <section className="rounded-xl border-2 border-g-blue/60 bg-card shadow-sm transition-all overflow-hidden">
+      {/* Cabeçalho do Accordion (Abrir / Recolher) */}
+      <div
+        role="button"
+        tabIndex={0}
+        className="flex flex-wrap items-center justify-between gap-3 p-4 cursor-pointer select-none transition-colors hover:bg-muted/30"
+        onClick={() => setAberto(!aberto)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setAberto(!aberto);
+          }
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-g-blue/10 text-g-blue">
+            <Activity className="size-5" />
           </div>
-
-          {/* Botões de seleção de período (Presets acoplados) */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground mr-1 hidden sm:inline">Período:</span>
-            <Button
-              size="sm"
-              variant={presetAtivo === "todos" ? "google-blue" : "outline"}
-              className={presetAtivo === "todos" ? "shadow-[0_0_12px_rgba(26,115,232,0.4)]" : ""}
-              onClick={() => aplicarPreset("todos")}
-            >
-              Todos ({mesesCompletos.length}M)
-            </Button>
-            {mesesCompletos.length >= 3 && (
-              <Button
-                size="sm"
-                variant={presetAtivo === "3m" ? "google-blue" : "outline"}
-                className={presetAtivo === "3m" ? "shadow-[0_0_12px_rgba(26,115,232,0.4)]" : ""}
-                onClick={() => aplicarPreset("3m")}
-              >
-                Últimos 3M
-              </Button>
-            )}
-            {mesesCompletos.length >= 6 && (
-              <Button
-                size="sm"
-                variant={presetAtivo === "6m" ? "google-blue" : "outline"}
-                className={presetAtivo === "6m" ? "shadow-[0_0_12px_rgba(26,115,232,0.4)]" : ""}
-                onClick={() => aplicarPreset("6m")}
-              >
-                Últimos 6M
-              </Button>
-            )}
-            {presetAtivo !== "todos" && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-muted-foreground hover:text-foreground"
-                onClick={() => aplicarPreset("todos")}
-                title="Restaurar visualização completa"
-              >
-                <RotateCcw className="size-3.5 mr-1" /> Redefinir
-              </Button>
-            )}
-          </div>
+          <h2 className="text-xl font-bold tracking-tight text-foreground">
+            Série Histórica de Chamados
+          </h2>
         </div>
 
-        {/* Linha do Tempo Dinâmica & Controles de Início/Fim Acoplados */}
-        <div className="rounded-xl border border-cyan-500/25 bg-muted/30 p-3 shadow-xs">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            {/* Chips de navegação mês a mês */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-              <span className="text-xs font-bold text-muted-foreground flex items-center gap-1 shrink-0 mr-1">
-                <Calendar className="size-3.5 text-cyan-500" /> Linha do Tempo:
-              </span>
-              {mesesCompletos.map((m, idx) => {
-                const estaNoRange = idx >= indiceInicio && idx <= indiceFim;
-                return (
-                  <button
-                    key={m.mes}
-                    type="button"
-                    onClick={() => focarMes(idx)}
-                    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                      estaNoRange
-                        ? "bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/60 shadow-[0_0_8px_rgba(0,229,255,0.25)] font-bold"
-                        : "bg-background/80 text-muted-foreground hover:text-foreground border border-border/70 hover:border-cyan-500/40"
-                    }`}
-                    title={`Clique para focar ou alternar ${m.label}`}
-                  >
-                    <span>{m.labelCurto}</span>
-                    <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${estaNoRange ? "bg-cyan-600 dark:bg-cyan-500 text-white" : "bg-muted text-muted-foreground"}`}>
-                      {m.Total}
-                    </span>
-                  </button>
-                );
-              })}
+        <Button
+          size="sm"
+          variant="google-blue"
+          onClick={(e) => {
+            e.stopPropagation();
+            setAberto(!aberto);
+          }}
+        >
+          {aberto ? (
+            <>
+              <ChevronUp className="size-4 mr-1.5" />
+              Recolher painel
+            </>
+          ) : (
+            <>
+              <ChevronDown className="size-4 mr-1.5" />
+              Clicar para abrir
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Conteúdo Expansível do Gráfico */}
+      {aberto && (
+        <div className="border-t-2 border-g-blue/20 p-5 space-y-4 animate-in fade-in duration-200">
+          {/* Controles de Período e Faixa */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mr-1 hidden sm:inline">Período:</span>
+              <Button
+                size="sm"
+                variant={presetAtivo === "todos" ? "google-blue" : "outline"}
+                onClick={() => aplicarPreset("todos")}
+              >
+                Todos ({mesesCompletos.length}M)
+              </Button>
+              {mesesCompletos.length >= 3 && (
+                <Button
+                  size="sm"
+                  variant={presetAtivo === "3m" ? "google-blue" : "outline"}
+                  onClick={() => aplicarPreset("3m")}
+                >
+                  Últimos 3M
+                </Button>
+              )}
+              {mesesCompletos.length >= 6 && (
+                <Button
+                  size="sm"
+                  variant={presetAtivo === "6m" ? "google-blue" : "outline"}
+                  onClick={() => aplicarPreset("6m")}
+                >
+                  Últimos 6M
+                </Button>
+              )}
+              {presetAtivo !== "todos" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => aplicarPreset("todos")}
+                  title="Restaurar visualização completa"
+                >
+                  <RotateCcw className="size-3.5 mr-1" /> Redefinir
+                </Button>
+              )}
             </div>
 
-            {/* Controles de faixa (De / Até) */}
-            <div className="flex items-center gap-2 shrink-0 self-end md:self-auto text-xs">
+            {/* Controles de De / Até */}
+            <div className="flex items-center gap-2 text-xs">
               <div className="flex items-center gap-1.5">
                 <span className="text-muted-foreground font-semibold">De:</span>
                 <select
-                  className="h-8 rounded-lg border border-cyan-500/40 bg-background px-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="h-8 rounded-lg border border-border bg-background px-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-g-blue"
                   value={indiceInicio}
                   onChange={(e) => alterarInicio(Number(e.target.value))}
                   aria-label="Mês inicial"
@@ -554,7 +532,7 @@ function GraficoSerieHistoricaTech({ stats }: { stats: Database["public"]["Table
               <div className="flex items-center gap-1.5">
                 <span className="text-muted-foreground font-semibold">Até:</span>
                 <select
-                  className="h-8 rounded-lg border border-cyan-500/40 bg-background px-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="h-8 rounded-lg border border-border bg-background px-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-g-blue"
                   value={indiceFim}
                   onChange={(e) => alterarFim(Number(e.target.value))}
                   aria-label="Mês final"
@@ -568,199 +546,183 @@ function GraficoSerieHistoricaTech({ stats }: { stats: Database["public"]["Table
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Layout Principal do Gráfico Tech com Legendas e Telemetria no lado Direito */}
-      <div className="chart-enter flex flex-col xl:flex-row items-stretch justify-center gap-6 w-full pt-1">
-        <div className="h-[360px] w-full flex-1 min-w-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={mesesFiltrados} margin={{ left: 10, right: 30, top: 15, bottom: 10 }}>
-              <defs>
-                {/* Filtro Neon Glow Cyan */}
-                <filter id="neon-glow-cyan" x="-30%" y="-30%" width="160%" height="160%">
-                  <feGaussianBlur stdDeviation="3" result="blur1" />
-                  <feGaussianBlur stdDeviation="6" result="blur2" />
-                  <feMerge>
-                    <feMergeNode in="blur2" />
-                    <feMergeNode in="blur1" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-                {/* Filtro Neon Glow Emerald */}
-                <filter id="neon-glow-emerald" x="-30%" y="-30%" width="160%" height="160%">
-                  <feGaussianBlur stdDeviation="3" result="blur1" />
-                  <feGaussianBlur stdDeviation="6" result="blur2" />
-                  <feMerge>
-                    <feMergeNode in="blur2" />
-                    <feMergeNode in="blur1" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-                {/* Filtro Neon Glow Amber */}
-                <filter id="neon-glow-amber" x="-30%" y="-30%" width="160%" height="160%">
-                  <feGaussianBlur stdDeviation="3" result="blur1" />
-                  <feGaussianBlur stdDeviation="6" result="blur2" />
-                  <feMerge>
-                    <feMergeNode in="blur2" />
-                    <feMergeNode in="blur1" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-                {/* Gradientes holográficos para preenchimento volumétrico */}
-                <linearGradient id="cyber-area-cyan" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#00e5ff" stopOpacity={0.24} />
-                  <stop offset="95%" stopColor="#00e5ff" stopOpacity={0.0} />
-                </linearGradient>
-                <linearGradient id="cyber-area-emerald" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
-                </linearGradient>
-                <linearGradient id="cyber-area-amber" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.18} />
-                  <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
-
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
-              <XAxis dataKey="labelCurto" tick={{ fill: "var(--foreground)", fontSize: 11, fontWeight: 700 }} />
-              <YAxis allowDecimals={false} tick={{ fill: "var(--foreground)", fontSize: 11 }} />
-              <Tooltip content={<TechTooltip />} />
-
-              {/* Áreas volumétricas sutis sob as linhas */}
-              {visivel.Total && (
-                <Area type="monotone" dataKey="Total" fill="url(#cyber-area-cyan)" stroke="none" isAnimationActive />
-              )}
-              {visivel.Resolvidos && (
-                <Area type="monotone" dataKey="Resolvidos" fill="url(#cyber-area-emerald)" stroke="none" isAnimationActive />
-              )}
-              {visivel["Em atendimento"] && (
-                <Area type="monotone" dataKey="Em atendimento" fill="url(#cyber-area-amber)" stroke="none" isAnimationActive />
-              )}
-
-              {/* Linhas principais com efeito neon glow e alta interatividade */}
-              {visivel.Total && (
-                <Line
-                  type="monotone"
-                  dataKey="Total"
-                  name="Total de Chamados"
-                  stroke="#00e5ff"
-                  strokeWidth={3.5}
-                  filter="url(#neon-glow-cyan)"
-                  dot={{ r: 5, fill: "#00e5ff", stroke: "#0b1329", strokeWidth: 2 }}
-                  activeDot={{ r: 8, stroke: "#00e5ff", strokeWidth: 3, fill: "#ffffff" }}
-                  isAnimationActive
-                  animationDuration={650}
-                />
-              )}
-              {visivel.Resolvidos && (
-                <Line
-                  type="monotone"
-                  dataKey="Resolvidos"
-                  name="Resolvidos"
-                  stroke="#10b981"
-                  strokeWidth={3}
-                  filter="url(#neon-glow-emerald)"
-                  dot={{ r: 4.5, fill: "#10b981", stroke: "#0b1329", strokeWidth: 2 }}
-                  activeDot={{ r: 7.5, stroke: "#10b981", strokeWidth: 3, fill: "#ffffff" }}
-                  isAnimationActive
-                  animationDuration={650}
-                />
-              )}
-              {visivel["Em atendimento"] && (
-                <Line
-                  type="monotone"
-                  dataKey="Em atendimento"
-                  name="Em Atendimento"
-                  stroke="#f59e0b"
-                  strokeWidth={3}
-                  filter="url(#neon-glow-amber)"
-                  dot={{ r: 4.5, fill: "#f59e0b", stroke: "#0b1329", strokeWidth: 2 }}
-                  activeDot={{ r: 7.5, stroke: "#f59e0b", strokeWidth: 3, fill: "#ffffff" }}
-                  isAnimationActive
-                  animationDuration={650}
-                />
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Legendas posicionadas no lado direito (com toggles interativos e telemetria) */}
-        <aside
-          aria-label="Legendas e Telemetria da Série Histórica"
-          className="w-full xl:w-80 rounded-2xl border-2 border-cyan-500/30 bg-card/95 p-4 shadow-sm backdrop-blur-md flex flex-col justify-between space-y-4 shrink-0"
-        >
-          <div>
-            <div className="flex items-center justify-between border-b border-border/80 pb-2.5 mb-3">
-              <div className="flex items-center gap-2">
-                <span className="size-2 rounded-full bg-cyan-400 animate-ping" />
-                <span className="text-xs font-black uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
-                  Séries & Filtros
-                </span>
-              </div>
-              <span className="text-[11px] font-mono font-bold text-muted-foreground">
-                {totalPeriodo} chamados
+          {/* Linha do tempo de meses */}
+          <div className="rounded-xl border border-border/80 bg-muted/20 p-2.5">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+              <span className="text-xs font-bold text-muted-foreground flex items-center gap-1 shrink-0 mr-1">
+                <Calendar className="size-3.5 text-g-blue" /> Meses:
               </span>
-            </div>
-
-            <p className="text-[11px] text-muted-foreground mb-2">Clique para ativar ou ocultar métricas:</p>
-
-            <div className="space-y-2">
-              {seriesConfig.map((s) => {
-                const ativa = visivel[s.key];
-                const soma = mesesFiltrados.reduce((sum, m) => sum + (m[s.key] || 0), 0);
+              {mesesCompletos.map((m, idx) => {
+                const estaNoRange = idx >= indiceInicio && idx <= indiceFim;
                 return (
                   <button
-                    key={s.key}
+                    key={m.mes}
                     type="button"
-                    onClick={() => toggleSerie(s.key)}
-                    className={`w-full flex items-center justify-between gap-2.5 rounded-xl p-2.5 transition-all text-xs border text-left cursor-pointer ${
-                      ativa
-                        ? "border-cyan-500/50 bg-cyan-500/10 shadow-[0_0_10px_rgba(0,229,255,0.1)] font-bold text-foreground"
-                        : "border-border/50 bg-muted/40 opacity-55 hover:opacity-85 text-muted-foreground"
+                    onClick={() => focarMes(idx)}
+                    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                      estaNoRange
+                        ? "bg-g-blue/15 text-g-blue border border-g-blue font-bold shadow-xs"
+                        : "bg-background/80 text-muted-foreground hover:text-foreground border border-border/70 hover:border-g-blue/40"
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span
-                        className="size-3 rounded-full shrink-0 shadow-sm"
-                        style={{
-                          backgroundColor: s.cor,
-                          boxShadow: ativa ? `0 0 8px ${s.cor}` : "none",
-                        }}
-                      />
-                      <span className="truncate">{s.label}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-extrabold text-foreground">{soma}</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${ativa ? "bg-cyan-500/20 text-cyan-600 dark:text-cyan-300" : "bg-muted text-muted-foreground"}`}>
-                        {ativa ? "ON" : "OFF"}
-                      </span>
-                    </div>
+                    <span>{m.labelCurto}</span>
+                    <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${estaNoRange ? "bg-g-blue text-white" : "bg-muted text-muted-foreground"}`}>
+                      {m.Total}
+                    </span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Telemetria do Período */}
-          <div className="rounded-xl border border-cyan-500/20 bg-muted/40 p-3 space-y-2 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-muted-foreground">Taxa de Resolução</span>
-              <span className="font-mono font-black text-emerald-600 dark:text-emerald-400">{taxaResolucaoGeral}%</span>
+          {/* Gráfico e Métricas */}
+          <div className="chart-enter flex flex-col xl:flex-row items-stretch justify-center gap-6 w-full pt-1">
+            <div className="h-[360px] w-full flex-1 min-w-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={mesesFiltrados} margin={{ left: 10, right: 30, top: 15, bottom: 10 }}>
+                  <defs>
+                    <linearGradient id="g-area-blue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#1a73e8" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#1a73e8" stopOpacity={0.0} />
+                    </linearGradient>
+                    <linearGradient id="g-area-green" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#34a853" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#34a853" stopOpacity={0.0} />
+                    </linearGradient>
+                    <linearGradient id="g-area-yellow" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f9ab00" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#f9ab00" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
+                  <XAxis dataKey="labelCurto" tick={{ fill: "var(--foreground)", fontSize: 11, fontWeight: 700 }} />
+                  <YAxis allowDecimals={false} tick={{ fill: "var(--foreground)", fontSize: 11 }} />
+                  <Tooltip content={<TechTooltip />} />
+
+                  {visivel.Total && (
+                    <Area type="monotone" dataKey="Total" fill="url(#g-area-blue)" stroke="none" isAnimationActive />
+                  )}
+                  {visivel.Resolvidos && (
+                    <Area type="monotone" dataKey="Resolvidos" fill="url(#g-area-green)" stroke="none" isAnimationActive />
+                  )}
+                  {visivel["Em atendimento"] && (
+                    <Area type="monotone" dataKey="Em atendimento" fill="url(#g-area-yellow)" stroke="none" isAnimationActive />
+                  )}
+
+                  {visivel.Total && (
+                    <Line
+                      type="monotone"
+                      dataKey="Total"
+                      name="Total de Chamados"
+                      stroke="#1a73e8"
+                      strokeWidth={3}
+                      dot={{ r: 5, fill: "#1a73e8", stroke: "#ffffff", strokeWidth: 2 }}
+                      activeDot={{ r: 8, stroke: "#1a73e8", strokeWidth: 3, fill: "#ffffff" }}
+                      isAnimationActive
+                      animationDuration={650}
+                    />
+                  )}
+                  {visivel.Resolvidos && (
+                    <Line
+                      type="monotone"
+                      dataKey="Resolvidos"
+                      name="Resolvidos"
+                      stroke="#34a853"
+                      strokeWidth={3}
+                      dot={{ r: 4.5, fill: "#34a853", stroke: "#ffffff", strokeWidth: 2 }}
+                      activeDot={{ r: 7.5, stroke: "#34a853", strokeWidth: 3, fill: "#ffffff" }}
+                      isAnimationActive
+                      animationDuration={650}
+                    />
+                  )}
+                  {visivel["Em atendimento"] && (
+                    <Line
+                      type="monotone"
+                      dataKey="Em atendimento"
+                      name="Em Atendimento"
+                      stroke="#f9ab00"
+                      strokeWidth={3}
+                      dot={{ r: 4.5, fill: "#f9ab00", stroke: "#ffffff", strokeWidth: 2 }}
+                      activeDot={{ r: 7.5, stroke: "#f9ab00", strokeWidth: 3, fill: "#ffffff" }}
+                      isAnimationActive
+                      animationDuration={650}
+                    />
+                  )}
+                </ComposedChart>
+              </ResponsiveContainer>
             </div>
-            <div className="h-2 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-cyan-400 to-emerald-500 transition-all duration-500"
-                style={{ width: `${taxaResolucaoGeral}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
-              <span>Média mensal:</span>
-              <span className="font-mono font-bold text-foreground">{mediaMensal} chamados/mês</span>
-            </div>
+
+            {/* Painel lateral de séries e telemetria */}
+            <aside
+              aria-label="Métricas da Série Histórica"
+              className="w-full xl:w-80 rounded-xl border-2 border-border/80 bg-card p-4 shadow-sm flex flex-col justify-between space-y-4 shrink-0"
+            >
+              <div>
+                <div className="flex items-center justify-between border-b border-border/80 pb-2 mb-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-g-blue">
+                    Séries
+                  </span>
+                  <span className="text-xs font-mono font-bold text-muted-foreground">
+                    {totalPeriodo} chamados
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  {seriesConfig.map((s) => {
+                    const ativa = visivel[s.key];
+                    const soma = mesesFiltrados.reduce((sum, m) => sum + (m[s.key] || 0), 0);
+                    return (
+                      <button
+                        key={s.key}
+                        type="button"
+                        onClick={() => toggleSerie(s.key)}
+                        className={`w-full flex items-center justify-between gap-2.5 rounded-xl p-2.5 transition-all text-xs border text-left cursor-pointer ${
+                          ativa
+                            ? "border-g-blue/50 bg-g-blue/10 font-bold text-foreground shadow-xs"
+                            : "border-border/50 bg-muted/40 opacity-55 hover:opacity-85 text-muted-foreground"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span
+                            className="size-3 rounded-full shrink-0 shadow-xs"
+                            style={{ backgroundColor: s.cor }}
+                          />
+                          <span className="truncate">{s.label}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-extrabold text-foreground">{soma}</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${ativa ? "bg-g-blue text-white" : "bg-muted text-muted-foreground"}`}>
+                            {ativa ? "ON" : "OFF"}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border/70 bg-muted/40 p-3 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-muted-foreground">Taxa de Resolução</span>
+                  <span className="font-mono font-black text-g-green">{taxaResolucaoGeral}%</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full bg-g-green transition-all duration-500"
+                    style={{ width: `${taxaResolucaoGeral}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
+                  <span>Média mensal:</span>
+                  <span className="font-mono font-bold text-foreground">{mediaMensal} chamados/mês</span>
+                </div>
+              </div>
+            </aside>
           </div>
-        </aside>
-      </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -858,11 +820,8 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
         aria-label="Legendas do gráfico"
         className="w-full xl:w-72 max-h-[390px] overflow-y-auto rounded-2xl border-2 border-border/80 bg-card/90 p-4 shadow-sm backdrop-blur-xs flex flex-col space-y-2 shrink-0"
       >
-        <div className="flex items-center justify-between border-b border-border/70 pb-2 px-1">
-          <span className="text-xs font-black uppercase tracking-wider text-g-blue">
-            Legendas (Direita)
-          </span>
-          <span className="text-[11px] font-bold text-muted-foreground">
+        <div className="flex items-center justify-end border-b border-border/70 pb-2 px-1">
+          <span className="text-xs font-mono font-bold text-muted-foreground">
             {dados.reduce((s, x) => s + x.value, 0)} chamados
           </span>
         </div>
