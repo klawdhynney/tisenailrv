@@ -96,7 +96,7 @@ export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
               value={slaFilter}
               onChange={(e) => setSlaFilter(e.target.value)}
             >
-              {["Todos", "No prazo", "Estourado", "Cancelado"].map((s) => (
+              {["Todos", "No prazo", "Estourado", "Cancelado", "Aguardando"].map((s) => (
                 <option key={s}>{s}</option>
               ))}
             </select>

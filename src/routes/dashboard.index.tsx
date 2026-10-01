@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { BarChart3, ChartArea, CircleDot, ClipboardList, FileSpreadsheet, PieChartIcon, Printer, Table2 } from "lucide-react";
+import { BarChart3, ChartArea, CircleDot, ClipboardList, FileSpreadsheet, FileText, PieChartIcon, Printer, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { calcularSla } from "@/lib/sla";
 import { useStore } from "@/lib/store-context";
@@ -118,6 +118,22 @@ function Dashboard() {
     await exportarXlsx(linhas, `dashboard-${visao}-${mes}`);
   };
 
+  const baixarDashboardCompleto = async () => {
+    const { exportarDashboardCompletoPdf } = await import("@/lib/exportar");
+    const labelMes = mes === "todos" ? "Todos os meses" : (MESES_DISPONIVEIS.find(m => m.key === mes)?.label ?? mes);
+    await exportarDashboardCompletoPdf({
+      mesLabel: labelMes,
+      total,
+      andamento: ativos,
+      resolvidos,
+      recorrentes: RECORRENTES.map(r => ({ ...r })),
+      setores,
+      prioridades: contar("prioridade"),
+      status: contar("status"),
+      sla: dadosSla,
+    }, `Dashboard_Completo_${mes}`);
+  };
+
   return <div className="space-y-7 dashboard-print">
     <header className="flex flex-wrap items-start justify-between gap-4">
       <div className="flex-1 text-center">
@@ -126,15 +142,18 @@ function Dashboard() {
         <p className="mt-1 font-medium text-muted-foreground">Acompanhamento atualizado dos chamados registrados.</p>
       </div>
       {isGestor && (
-        <div className="no-print flex flex-wrap gap-2">
+        <div className="no-print flex flex-wrap items-center gap-2">
           <Button asChild variant="outline">
-            <Link to="/chamados"><Table2 /> Planilha completa</Link>
+            <Link to="/chamados"><Table2 className="size-4" /> Planilha completa</Link>
           </Button>
           <Button variant="outline" onClick={() => window.print()}>
-            <Printer /> Imprimir / PDF
+            <Printer className="size-4" /> Imprimir
           </Button>
           <Button variant="outline" onClick={baixarResumo}>
             <FileSpreadsheet className="size-4" /> Baixar Excel
+          </Button>
+          <Button variant="outline" onClick={baixarDashboardCompleto}>
+            <FileText className="size-4" /> Dashboard completo (PDF)
           </Button>
         </div>
       )}
@@ -305,6 +324,31 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
   if (!dados.length) return <p className="py-24 text-center text-muted-foreground">Nenhum chamado encontrado neste recorte.</p>;
   const totalVal = dados.reduce((sum, d) => sum + d.value, 0);
 
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (!active || !payload || !payload.length) return null;
+    const item = payload[0];
+    const name = item.payload?.name || item.name || "";
+    const val = Number(item.payload?.value ?? item.value ?? 0);
+    const corItem = item.payload?.fill || item.color || "#1a73e8";
+    const pct = totalVal > 0 ? ((val / totalVal) * 100).toFixed(1) : "0";
+
+    return (
+      <div className="rounded-xl border-2 border-border/80 bg-card/95 px-4 py-3 shadow-xl backdrop-blur-md transition-all animate-in fade-in zoom-in-95 pointer-events-none">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="size-3.5 rounded-full shadow-xs" style={{ backgroundColor: corItem }} />
+          <span className="font-bold text-sm text-foreground">{name}</span>
+        </div>
+        <div className="flex items-baseline gap-2 pt-1 border-t border-border/60">
+          <span className="text-2xl font-black" style={{ color: corItem }}>{val}</span>
+          <span className="text-xs font-semibold text-muted-foreground">chamados</span>
+          <span className="ml-auto rounded-md px-2 py-0.5 text-xs font-bold text-white shadow-xs" style={{ backgroundColor: corItem }}>
+            {pct}%
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   const chart =
     tipo === "pizza" ? (
       <PieChart>
@@ -313,68 +357,37 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
           dataKey="value"
           nameKey="name"
           innerRadius="38%"
-          outerRadius="76%"
+          outerRadius="78%"
           paddingAngle={3}
           isAnimationActive
           animationDuration={650}
-          label={({ percent }) => (percent && percent >= 0.05 ? `${(percent * 100).toFixed(0)}%` : "")}
-          labelLine={false}
         >
           {dados.map((d, i) => <Cell key={d.name} fill={cor(d.name, i)} stroke="var(--card)" strokeWidth={2} />)}
         </Pie>
-        <Tooltip
-          formatter={(value) => {
-            const v = Number(value) || 0;
-            const pct = totalVal > 0 ? ((v / totalVal) * 100).toFixed(1) : "0";
-            return [`${v} chamados (${pct}%)`, "Total"];
-          }}
-        />
+        <Tooltip content={<CustomTooltip />} />
       </PieChart>
     ) : tipo === "barras" ? (
-      <BarChart data={dados} layout="vertical" margin={{ left: 20, right: 35 }}>
+      <BarChart data={dados} layout="vertical" margin={{ left: 20, right: 30 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
         <XAxis type="number" allowDecimals={false} />
-        <YAxis dataKey="name" type="category" width={150} tick={{ fill: "var(--foreground)", fontSize: 11 }} />
-        <Tooltip
-          formatter={(value) => {
-            const v = Number(value) || 0;
-            const pct = totalVal > 0 ? ((v / totalVal) * 100).toFixed(1) : "0";
-            return [`${v} chamados (${pct}%)`, "Chamados"];
-          }}
-        />
+        <YAxis dataKey="name" type="category" width={160} tick={{ fill: "var(--foreground)", fontSize: 11 }} />
+        <Tooltip content={<CustomTooltip />} />
         <Bar
           dataKey="value"
           name="Chamados"
           isAnimationActive
           animationDuration={650}
           radius={[0, 4, 4, 0]}
-          label={{
-            position: "right",
-            formatter: (val: any) => {
-              const v = Number(val) || 0;
-              const pct = totalVal > 0 ? ((v / totalVal) * 100).toFixed(0) : "0";
-              return `${v} (${pct}%)`;
-            },
-            fill: "var(--foreground)",
-            fontSize: 11,
-            fontWeight: "bold",
-          }}
         >
           {dados.map((d, i) => <Cell key={d.name} fill={cor(d.name, i)} />)}
         </Bar>
       </BarChart>
     ) : tipo === "area" ? (
-      <AreaChart data={dados} margin={{ left: 0, right: 20, top: 20 }}>
+      <AreaChart data={dados} margin={{ left: 10, right: 20, top: 20 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
         <XAxis dataKey="name" tick={{ fill: "var(--foreground)", fontSize: 11 }} interval={0} />
         <YAxis allowDecimals={false} />
-        <Tooltip
-          formatter={(value) => {
-            const v = Number(value) || 0;
-            const pct = totalVal > 0 ? ((v / totalVal) * 100).toFixed(1) : "0";
-            return [`${v} chamados (${pct}%)`, "Chamados"];
-          }}
-        />
+        <Tooltip content={<CustomTooltip />} />
         <Area type="monotone" dataKey="value" name="Chamados" stroke="var(--g-blue)" fill="var(--g-blue)" fillOpacity={0.24} strokeWidth={3} isAnimationActive animationDuration={650} />
       </AreaChart>
     ) : (
@@ -382,20 +395,9 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
     );
 
   return (
-    <div className="chart-enter grid items-center gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(230px,1fr)]">
-      <div className="h-[390px] min-w-0">{tipo === "bolhas" ? chart : <ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer>}</div>
-      <div className="max-h-[370px] overflow-y-auto pr-1">
-        {dados.map((d, i) => {
-          const pct = totalVal > 0 ? ((d.value / totalVal) * 100).toFixed(1) : "0";
-          return (
-            <div key={d.name} className="flex items-center gap-3 border-b border-border py-2.5 text-sm">
-              <span className="size-3.5 shrink-0 rounded-sm shadow-xs" style={{ backgroundColor: cor(d.name, i) }} />
-              <span className="min-w-0 flex-1 font-medium">{d.name}</span>
-              <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-bold text-muted-foreground">{pct}%</span>
-              <strong className="min-w-8 text-right font-mono text-sm">{d.value}</strong>
-            </div>
-          );
-        })}
+    <div className="chart-enter flex flex-col items-center justify-center w-full py-2">
+      <div className="h-[400px] w-full max-w-3xl">
+        {tipo === "bolhas" ? chart : <ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer>}
       </div>
     </div>
   );

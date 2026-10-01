@@ -32,7 +32,17 @@ function AbrirChamado() {
   const isCampoObrigatorio = (id: string) => campos.find((c) => c.id === id)?.obrigatorio ?? false;
   const getCampoLabel = (id: string, fallback: string) => campos.find((c) => c.id === id)?.label ?? fallback;
 
-  const [form, setForm] = useState<Record<string, string>>({
+interface FormValues {
+  solicitante: string;
+  email: string;
+  setor: string;
+  categoria: string;
+  local: string;
+  contato: string;
+  descricao: string;
+}
+
+  const [form, setForm] = useState<FormValues>({
     solicitante: "",
     email: "",
     setor: "",
@@ -41,6 +51,7 @@ function AbrirChamado() {
     contato: "",
     descricao: "",
   });
+  const [customForm, setCustomForm] = useState<Record<string, string>>({});
   const [erros, setErros] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
   const [confirmandoEnvio, setConfirmandoEnvio] = useState(false);
@@ -86,7 +97,13 @@ function AbrirChamado() {
     }
   }, [preferenciaCarregada, lembrar, form.solicitante, form.email, form.setor, form.contato, form.local]);
 
-  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: string, v: string) => {
+    if (k in form) {
+      setForm((f) => ({ ...f, [k]: v }));
+    } else {
+      setCustomForm((cf) => ({ ...cf, [k]: v }));
+    }
+  };
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -145,7 +162,7 @@ function AbrirChamado() {
 
     // Custom fields
     for (const c of campos.filter((c) => !["solicitante", "email", "setor", "categoria", "local", "contato", "descricao"].includes(c.id))) {
-      if (c.ativo && c.obrigatorio && !(form[c.id] || "").trim()) {
+      if (c.ativo && c.obrigatorio && !(customForm[c.id] || "").trim()) {
         novosErros[c.id] = `Preencha ${c.label}.`;
       }
     }
@@ -165,8 +182,8 @@ function AbrirChamado() {
     setConfirmandoEnvio(false);
 
     const customData = campos
-      .filter((c) => !["solicitante", "email", "setor", "categoria", "local", "contato", "descricao"].includes(c.id) && c.ativo && form[c.id])
-      .map((c) => `[${c.label}: ${form[c.id].trim()}]`)
+      .filter((c) => !["solicitante", "email", "setor", "categoria", "local", "contato", "descricao"].includes(c.id) && c.ativo && customForm[c.id])
+      .map((c) => `[${c.label}: ${(customForm[c.id] ?? "").trim()}]`)
       .join("\n");
 
     const descricaoFinal = [form.descricao ? form.descricao.trim() : "", customData].filter(Boolean).join("\n\n");
@@ -198,6 +215,30 @@ function AbrirChamado() {
     }
     toast.success("Chamado registrado! A equipe de TI já recebeu.");
     setSucessoId(ticketId);
+
+    try {
+      const emailFinal = (form.email ? form.email.trim() : "solicitante@senaimt.ind.br").toLowerCase();
+      localStorage.setItem("tisenai_user_email", emailFinal);
+      const existentes = JSON.parse(localStorage.getItem("tisenai_meus_tickets") || "[]");
+      const novos = [
+        {
+          id: ticketId,
+          aberto_em: new Date().toISOString().split("T")[0],
+          email: emailFinal,
+          solicitante: form.solicitante?.trim() || "Solicitante",
+          setor: form.setor || "Geral",
+          local: form.local || "",
+          descricao: descricaoFinal,
+          status: "Aberto",
+          prioridade: "Média",
+          procedimento: null,
+        },
+        ...existentes.filter((t: any) => t.id !== ticketId),
+      ];
+      localStorage.setItem("tisenai_meus_tickets", JSON.stringify(novos));
+    } catch {
+      // ignore
+    }
   }
 
   if (sucessoId) {
@@ -343,7 +384,7 @@ function AbrirChamado() {
               <div className="grid gap-5 sm:grid-cols-2">
                 {customFields.map((c) => (
                   <Campo key={c.id} label={c.label} obrigatorio={c.obrigatorio} erro={erros[c.id]}>
-                    <Input value={form[c.id] ?? ""} onChange={(e) => set(c.id, e.target.value)} placeholder={`Informe ${c.label.toLowerCase()}`} />
+                    <Input value={customForm[c.id] ?? ""} onChange={(e) => set(c.id, e.target.value)} placeholder={`Informe ${c.label.toLowerCase()}`} />
                   </Campo>
                 ))}
               </div>
@@ -381,67 +422,67 @@ function AbrirChamado() {
         </CardContent>
       </Card>
 
-      {/* Caixa modal de confirmação centralizada, colorida e destacada */}
+      {/* Caixa modal de confirmação minimalista, elegante e centralizada */}
       {confirmandoEnvio && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-3xl border-4 border-g-blue bg-card p-6 sm:p-8 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200 ring-4 ring-g-blue/20">
-            <div className="text-center space-y-2">
-              <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-g-blue/20 to-g-green/20 text-g-blue shadow-inner border border-g-blue/30">
-                <SendHorizontal className="size-7 text-g-blue" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-2xl border border-border/80 bg-background/95 p-6 sm:p-7 shadow-xl space-y-5 animate-in zoom-in-95 duration-200 backdrop-blur-sm">
+            <div className="flex items-center gap-3 border-b border-border/60 pb-4">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-g-blue/10 text-g-blue">
+                <SendHorizontal className="size-5 text-g-blue" />
               </div>
-              <h2 className="text-2xl font-black text-foreground">Confirmar abertura de chamado?</h2>
-              <p className="text-sm text-muted-foreground">Confira os dados abaixo antes de registrar seu chamado:</p>
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-foreground">Confirmar abertura de chamado</h2>
+                <p className="text-xs text-muted-foreground">Verifique os dados antes do envio</p>
+              </div>
             </div>
 
-            <div className="rounded-2xl border-2 border-g-blue/30 bg-muted/40 p-4 text-sm space-y-2.5">
-              <div className="flex justify-between border-b border-border/60 pb-1.5">
+            <div className="rounded-xl border border-border/70 bg-muted/30 p-4 text-xs sm:text-sm space-y-2.5">
+              <div className="flex justify-between border-b border-border/40 pb-1.5">
                 <span className="text-muted-foreground">Solicitante:</span>
-                <span className="font-bold text-foreground">{form.solicitante || "Não informado"}</span>
+                <span className="font-semibold text-foreground">{form.solicitante || "Não informado"}</span>
               </div>
-              <div className="flex justify-between border-b border-border/60 pb-1.5">
+              <div className="flex justify-between border-b border-border/40 pb-1.5">
                 <span className="text-muted-foreground">E-mail:</span>
                 <span className="font-semibold text-foreground">{form.email || "Não informado"}</span>
               </div>
-              <div className="flex justify-between border-b border-border/60 pb-1.5">
+              <div className="flex justify-between border-b border-border/40 pb-1.5">
                 <span className="text-muted-foreground">Setor:</span>
                 <span className="font-semibold text-foreground">{form.setor || "Geral"}</span>
               </div>
-              <div className="flex justify-between border-b border-border/60 pb-1.5">
+              <div className="flex justify-between border-b border-border/40 pb-1.5">
                 <span className="text-muted-foreground">Tipo de problema:</span>
                 <span className="font-semibold text-g-blue">{form.categoria || "Geral"}</span>
               </div>
               {form.local && (
-                <div className="flex justify-between border-b border-border/60 pb-1.5">
+                <div className="flex justify-between border-b border-border/40 pb-1.5">
                   <span className="text-muted-foreground">Local / Sala:</span>
                   <span className="font-semibold text-foreground">{form.local}</span>
                 </div>
               )}
-              <div>
+              <div className="pt-1">
                 <span className="text-muted-foreground block mb-1">Descrição:</span>
-                <p className="rounded-lg bg-background p-2.5 text-xs text-foreground/90 border border-border line-clamp-3">
+                <p className="rounded-lg bg-background/80 p-2.5 text-xs text-foreground/90 border border-border/60 line-clamp-3">
                   {form.descricao}
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1">
               <Button
                 type="button"
                 variant="outline"
-                size="lg"
                 className="flex-1 sm:flex-none"
                 onClick={() => setConfirmandoEnvio(false)}
               >
-                Cancelar
+                Voltar
               </Button>
               <Button
                 type="button"
-                variant="google-green"
-                size="lg"
-                className="flex-1 sm:flex-none font-bold shadow-md gap-2"
+                variant="google-blue"
+                className="flex-1 sm:flex-none font-semibold shadow-xs gap-2"
                 onClick={confirmarEnvioFinal}
               >
-                <SendHorizontal className="size-4" /> Sim, confirmar e enviar
+                <SendHorizontal className="size-4" /> Confirmar e registrar
               </Button>
             </div>
           </div>

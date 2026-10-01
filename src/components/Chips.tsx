@@ -1,9 +1,10 @@
 import { CORES_PRIORIDADE, CORES_SLA, CORES_STATUS, type Prioridade, type Status } from "@/lib/types";
+import { useStore } from "@/lib/store-context";
 
 function Chip({ cor, children }: { cor: { bg: string; text: string }; children: React.ReactNode }) {
   return (
     <span
-      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap"
+      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap shadow-xs"
       style={{ backgroundColor: cor.bg, color: cor.text }}
     >
       {children}
@@ -11,16 +12,31 @@ function Chip({ cor, children }: { cor: { bg: string; text: string }; children: 
   );
 }
 
-const NEUTRO = { bg: "#D9D9D9", text: "#1F1F1F" };
+const NEUTRO = { bg: "#5F6368", text: "#FFFFFF" };
 
-export function PrioridadeChip({ valor }: { valor: Prioridade }) {
-  return <Chip cor={CORES_PRIORIDADE[valor] ?? NEUTRO}>{valor}</Chip>;
+export function PrioridadeChip({ valor }: { valor: Prioridade | string }) {
+  const store = useStore();
+  const param = store?.regras?.parametrosPrioridade?.find(
+    (p) => p.nome.toLowerCase() === String(valor).toLowerCase(),
+  );
+  const cor = param ? { bg: param.bg, text: param.text } : CORES_PRIORIDADE[valor] ?? NEUTRO;
+  return <Chip cor={cor}>{valor}</Chip>;
 }
 
-export function StatusChip({ valor }: { valor: Status }) {
-  return <Chip cor={CORES_STATUS[valor] ?? NEUTRO}>{valor}</Chip>;
+export function StatusChip({ valor }: { valor: Status | string }) {
+  const store = useStore();
+  const param = store?.regras?.parametrosStatus?.find(
+    (s) => s.nome.toLowerCase() === String(valor).toLowerCase(),
+  );
+  const cor = param ? { bg: param.bg, text: param.text } : CORES_STATUS[valor] ?? NEUTRO;
+  return <Chip cor={cor}>{valor}</Chip>;
 }
 
 export function SlaChip({ valor }: { valor: string }) {
-  return <Chip cor={CORES_SLA[valor] ?? NEUTRO}>{valor}</Chip>;
+  const store = useStore();
+  const param = store?.regras?.parametrosSla?.find(
+    (s) => s.nome.toLowerCase() === String(valor).toLowerCase(),
+  );
+  const cor = param ? { bg: param.bg, text: param.text } : CORES_SLA[valor] ?? NEUTRO;
+  return <Chip cor={cor}>{valor}</Chip>;
 }

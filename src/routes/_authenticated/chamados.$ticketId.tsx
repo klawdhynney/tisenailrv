@@ -22,22 +22,53 @@ export const Route = createFileRoute("/_authenticated/chamados/$ticketId")({
   ] }), component: TicketDetail,
 });
 
-const prioridadeEstilos: Record<Ticket["prioridade"], { active: string; inactive: string }> = {
+const prioridadeEstilos: Record<string, { active: string; inactive: string }> = {
+  Crítico: {
+    active: "bg-[#EA4335] text-white font-bold shadow-md ring-2 ring-[#EA4335] ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-[#EA4335]/40 text-[#EA4335] bg-[#EA4335]/10 hover:bg-[#EA4335]/20",
+  },
   Crítica: {
-    active: "bg-g-red text-white font-bold shadow-md ring-2 ring-g-red ring-offset-2 ring-offset-background",
-    inactive: "border-2 border-g-red/40 text-g-red bg-g-red/10 hover:bg-g-red/20",
+    active: "bg-[#EA4335] text-white font-bold shadow-md ring-2 ring-[#EA4335] ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-[#EA4335]/40 text-[#EA4335] bg-[#EA4335]/10 hover:bg-[#EA4335]/20",
   },
   Alta: {
-    active: "bg-g-yellow text-zinc-950 font-bold shadow-md ring-2 ring-g-yellow ring-offset-2 ring-offset-background",
-    inactive: "border-2 border-g-yellow/40 text-g-yellow bg-g-yellow/10 hover:bg-g-yellow/20",
+    active: "bg-[#FBBC04] text-zinc-950 font-bold shadow-md ring-2 ring-[#FBBC04] ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-[#FBBC04]/40 text-amber-700 dark:text-amber-400 bg-[#FBBC04]/10 hover:bg-[#FBBC04]/20",
   },
   Média: {
-    active: "bg-g-blue text-white font-bold shadow-md ring-2 ring-g-blue ring-offset-2 ring-offset-background",
-    inactive: "border-2 border-g-blue/40 text-g-blue bg-g-blue/10 hover:bg-g-blue/20",
+    active: "bg-[#34A853] text-white font-bold shadow-md ring-2 ring-[#34A853] ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-[#34A853]/40 text-[#34A853] bg-[#34A853]/10 hover:bg-[#34A853]/20",
   },
   Baixa: {
-    active: "bg-g-green text-white font-bold shadow-md ring-2 ring-g-green ring-offset-2 ring-offset-background",
-    inactive: "border-2 border-g-green/40 text-g-green bg-g-green/10 hover:bg-g-green/20",
+    active: "bg-[#1A73E8] text-white font-bold shadow-md ring-2 ring-[#1A73E8] ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-[#1A73E8]/40 text-[#1A73E8] bg-[#1A73E8]/10 hover:bg-[#1A73E8]/20",
+  },
+};
+
+const statusEstilos: Record<string, { active: string; inactive: string }> = {
+  "Em atendimento": {
+    active: "bg-[#34A853] text-white font-bold shadow-md ring-2 ring-[#34A853] ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-[#34A853]/40 text-[#34A853] bg-[#34A853]/10 hover:bg-[#34A853]/20",
+  },
+  "Em andamento": {
+    active: "bg-[#34A853] text-white font-bold shadow-md ring-2 ring-[#34A853] ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-[#34A853]/40 text-[#34A853] bg-[#34A853]/10 hover:bg-[#34A853]/20",
+  },
+  Aguardando: {
+    active: "bg-[#FA7B17] text-white font-bold shadow-md ring-2 ring-[#FA7B17] ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-[#FA7B17]/40 text-[#FA7B17] bg-[#FA7B17]/10 hover:bg-[#FA7B17]/20",
+  },
+  Cancelado: {
+    active: "bg-[#5F6368] text-white font-bold shadow-md ring-2 ring-[#5F6368] ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-[#5F6368]/40 text-[#5F6368] bg-[#5F6368]/10 hover:bg-[#5F6368]/20",
+  },
+  Aberto: {
+    active: "bg-[#1A73E8] text-white font-bold shadow-md ring-2 ring-[#1A73E8] ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-[#1A73E8]/40 text-[#1A73E8] bg-[#1A73E8]/10 hover:bg-[#1A73E8]/20",
+  },
+  Resolvido: {
+    active: "bg-[#0D652D] text-white font-bold shadow-md ring-2 ring-[#0D652D] ring-offset-2 ring-offset-background",
+    inactive: "border-2 border-[#0D652D]/40 text-[#0D652D] bg-[#0D652D]/10 hover:bg-[#0D652D]/20",
   },
 };
 
@@ -150,175 +181,349 @@ function TicketEditor({
     }
   }
 
-  return <div className="mx-auto max-w-4xl space-y-6">
-    <Button asChild variant="outline"><Link to="/atendimento"><ArrowLeft className="size-4" /> Voltar à planilha</Link></Button>
+  const LISTA_PRIORIDADES = ["Crítico", "Alta", "Média", "Baixa"] as const;
+  const LISTA_STATUS = ["Em atendimento", "Aguardando", "Cancelado", "Aberto", "Resolvido"] as const;
 
-    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5">
-       <div className="flex-1 text-center">
-        <h1 className="text-3xl font-bold">Chamado #{ticket.id}</h1>
-        <p className="mt-1 text-muted-foreground">Aberto em {formatarData(ticket.abertoEm, ticket.hora)} · Prazo: {formatarDataHora(sla.prazo)} · {sla.situacao}</p>
-      </div>
-    </div>
-
-    <div className="grid gap-5 sm:grid-cols-2">
-      <label className="grid gap-2 text-sm font-medium">Solicitante<Input value={draft.solicitante} onChange={e => field("solicitante", e.target.value)} /></label>
-      <label className="grid gap-2 text-sm font-medium">E-mail do solicitante<Input value={ticket.solicitanteEmail || "Não informado na planilha original"} readOnly /></label>
-      <label className="grid gap-2 text-sm font-medium">WhatsApp<Input value={draft.contato ?? ""} onChange={e => field("contato", e.target.value)} /></label>
-      <label className="grid gap-2 text-sm font-medium">Setor<Input value={draft.setor} onChange={e => field("setor", e.target.value)} /></label>
-      <label className="grid gap-2 text-sm font-medium">Local exato<Input value={draft.local} onChange={e => field("local", e.target.value)} /></label>
-      <label className="grid gap-2 text-sm font-medium">Categoria<select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.categoria ?? ""} onChange={e => field("categoria", e.target.value)}>{regras.categorias.map(c => <option key={c}>{c}</option>)}</select></label>
-      
-       <div className="space-y-2">
-        <Button
-          type="button"
-          size="sm"
-          disabled={suggesting}
-          onClick={suggestPriority}
-          className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-sm hover:shadow-md transition-all border-0"
-        >
-          <Sparkles className="size-4 animate-pulse" /> {suggesting ? "Analisando prioridade…" : "Sugerir prioridade com IA"}
+  return (
+    <div className="mx-auto max-w-4xl space-y-6">
+      {/* Botão de retorno e cabeçalho principal */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button asChild variant="outline">
+          <Link to="/atendimento">
+            <ArrowLeft className="size-4" /> Voltar à planilha de atendimento
+          </Link>
         </Button>
-        {suggested && (
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            Sugestão: <strong>{suggested}</strong>
-            <Button size="sm" type="button" variant="google-green" onClick={() => { field("prioridade", suggested); setSuggested(null); }}>
-              Aplicar no rascunho
-            </Button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-muted-foreground uppercase">Status atual:</span>
+          <span
+            className="rounded-full px-3 py-0.5 text-xs font-bold text-white shadow-xs"
+            style={{
+              backgroundColor:
+                draft.status === "Resolvido"
+                  ? "#0D652D"
+                  : draft.status === "Aguardando"
+                    ? "#FA7B17"
+                    : draft.status === "Cancelado"
+                      ? "#5F6368"
+                      : draft.status === "Aberto"
+                        ? "#1A73E8"
+                        : "#34A853",
+            }}
+          >
+            {draft.status === "Em andamento" ? "Em atendimento" : draft.status}
+          </span>
+        </div>
+      </div>
+
+      {/* Header com destaque */}
+      <div className="rounded-2xl border-2 border-g-blue/40 bg-card p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span className="rounded-md bg-g-blue/15 px-2.5 py-1 text-xs font-black uppercase text-g-blue tracking-wider">
+              Chamado de Suporte TI
+            </span>
+            <h1 className="mt-2 text-3xl font-black text-foreground">Chamado #{ticket.id}</h1>
+            <p className="mt-1 text-sm font-medium text-muted-foreground">
+              Aberto em {formatarData(ticket.abertoEm, ticket.hora)} · Prazo: {formatarDataHora(sla.prazo)} · SLA: {sla.situacao}
+            </p>
           </div>
-        )}
-        <p className="text-xs text-muted-foreground">Chamados abertos recebem uma sugestão automática ao serem visualizados. A prioridade só muda após você aplicar e salvar.</p>
-      </div>
-
-    </div>
-    <label className="grid gap-2 text-sm font-medium">Descrição<TextoAssistido value={draft.descricao} onChange={value => field("descricao", value)} /></label>
-    
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-medium">Procedimento / atendimento</span>
-        <Button
-          type="button"
-          size="sm"
-          disabled={gerandoRespostas || draft.descricao.trim().length < 5}
-          onClick={gerarRespostasTecnicas}
-          className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-sm hover:shadow-md transition-all border-0 text-xs px-3 py-1.5"
-        >
-          <Sparkles className="size-3.5 animate-pulse" />
-          {gerandoRespostas ? "Sugerindo resposta com IA…" : "Sugerir resposta com IA"}
-        </Button>
-      </div>
-
-      {respostasTecnicas && (
-        <div className="rounded-2xl border-2 border-g-blue/30 bg-card p-4 text-sm shadow-md space-y-4 animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-border pb-2">
+          <div className="flex flex-col items-end gap-1.5">
             <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-g-blue" />
-              <span className="font-bold text-foreground">
-                Sugestões técnicas e descritivas para o procedimento:
+              <span className="text-xs text-muted-foreground">Prioridade:</span>
+              <span
+                className="rounded-full px-3 py-0.5 text-xs font-bold text-white shadow-xs"
+                style={{
+                  backgroundColor:
+                    draft.prioridade === "Crítica"
+                      ? "#EA4335"
+                      : draft.prioridade === "Alta"
+                        ? "#FBBC04"
+                        : draft.prioridade === "Média"
+                          ? "#34A853"
+                          : "#1A73E8",
+                  color: draft.prioridade === "Alta" ? "#202124" : "#FFFFFF",
+                }}
+              >
+                {draft.prioridade}
               </span>
             </div>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setRespostasTecnicas(null)}>
-              Fechar
-            </Button>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* Opção 1 */}
-            <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-muted/40 p-4 transition-all hover:border-g-blue">
-              <div>
-                <div className="mb-2">
-                  <span className="rounded-full bg-g-blue/15 px-2.5 py-0.5 text-xs font-bold text-g-blue">
-                    Opção 1 · Procedimento Passo a Passo
-                  </span>
-                </div>
-                <p className="whitespace-pre-wrap text-sm text-foreground/90">{respostasTecnicas.opcao1}</p>
-              </div>
-              <div className="mt-4 pt-2 border-t border-border/50">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="google-blue"
-                  className="w-full gap-1.5"
-                  onClick={() => {
-                    field("procedimento", respostasTecnicas.opcao1);
-                    setRespostasTecnicas(null);
-                    toast.success("Opção 1 aplicada no procedimento!");
-                  }}
-                >
-                  <Check className="size-3.5" /> Aplicar no procedimento
-                </Button>
-              </div>
-            </div>
-
-            {/* Opção 2 */}
-            <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-muted/40 p-4 transition-all hover:border-g-green">
-              <div>
-                <div className="mb-2">
-                  <span className="rounded-full bg-g-green/15 px-2.5 py-0.5 text-xs font-bold text-g-green">
-                    Opção 2 · Parecer Técnico & Boas Práticas
-                  </span>
-                </div>
-                <p className="whitespace-pre-wrap text-sm text-foreground/90">{respostasTecnicas.opcao2}</p>
-              </div>
-              <div className="mt-4 pt-2 border-t border-border/50">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="google-green"
-                  className="w-full gap-1.5"
-                  onClick={() => {
-                    field("procedimento", respostasTecnicas.opcao2);
-                    setRespostasTecnicas(null);
-                    toast.success("Opção 2 aplicada no procedimento!");
-                  }}
-                >
-                  <Check className="size-3.5" /> Aplicar no procedimento
-                </Button>
-              </div>
-            </div>
+            <p className="text-xs font-semibold text-g-green">Responsável: Claudinei Lima</p>
           </div>
         </div>
-      )}
+      </div>
 
-      <TextoAssistido value={draft.procedimento ?? ""} onChange={value => field("procedimento", value || null)} />
-    </div>
-    <p className="text-sm text-muted-foreground">Fechamento: {formatarData(ticket.fechadoEm, ticket.horario)}</p>
-    <div className="rounded-2xl border-2 border-g-blue/30 bg-card p-5 shadow-sm space-y-4">
-      <p className="text-sm font-semibold text-g-green">Responsável: Claudinei Lima</p>
-      <div className="border-t border-border/70 pt-3">
-        <p className="mb-2.5 text-sm font-semibold">Prioridade do chamado</p>
-        <div className="flex flex-wrap gap-2.5">
-          {PRIORIDADES.map(p => <Button key={p} type="button" size="sm" className={`rounded-xl transition-all ${draft.prioridade === p ? prioridadeEstilos[p].active : prioridadeEstilos[p].inactive}`} aria-pressed={draft.prioridade === p} onClick={() => alterarPrioridade(p)}>Prioridade {p}</Button>)}
+      {/* 1. Card: Dados do Solicitante */}
+      <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs space-y-4">
+        <h2 className="text-sm font-bold text-g-blue uppercase tracking-wider">
+          1. Dados do Solicitante e Categoria
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="grid gap-1.5 text-xs font-bold text-foreground">
+            Solicitante
+            <Input
+              className="h-10 text-sm font-medium"
+              value={draft.solicitante}
+              onChange={(e) => field("solicitante", e.target.value)}
+            />
+          </label>
+          <label className="grid gap-1.5 text-xs font-bold text-foreground">
+            E-mail do solicitante
+            <Input
+              className="h-10 text-sm bg-muted/40 font-medium"
+              value={ticket.solicitanteEmail || "Não informado na abertura"}
+              readOnly
+            />
+          </label>
+          <label className="grid gap-1.5 text-xs font-bold text-foreground">
+            Setor
+            <Input
+              className="h-10 text-sm font-medium"
+              value={draft.setor}
+              onChange={(e) => field("setor", e.target.value)}
+            />
+          </label>
+          <label className="grid gap-1.5 text-xs font-bold text-foreground">
+            Categoria do problema
+            <select
+              className="h-10 rounded-xl border border-input bg-background px-3 text-sm font-medium"
+              value={draft.categoria ?? ""}
+              onChange={(e) => field("categoria", e.target.value)}
+            >
+              {regras.categorias.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+
+      {/* 2. Card: Descrição com IA */}
+      <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
+            2. Descrição do Problema
+          </h2>
+          <Button
+            type="button"
+            size="sm"
+            disabled={suggesting}
+            onClick={suggestPriority}
+            className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-xs hover:shadow-md transition-all border-0 text-xs px-3 py-1.5"
+          >
+            <Sparkles className="size-3.5 animate-pulse" /> {suggesting ? "Analisando prioridade…" : "Aprimorar texto com IA"}
+          </Button>
+        </div>
+        <TextoAssistido value={draft.descricao} onChange={(value) => field("descricao", value)} />
+      </div>
+
+      {/* 3. Card: Procedimento Técnico */}
+      <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-g-green dark:text-green-400 uppercase tracking-wider">
+            3. Procedimento / Atendimento Técnico
+          </h2>
+          <Button
+            type="button"
+            size="sm"
+            disabled={gerandoRespostas || draft.descricao.trim().length < 5}
+            onClick={gerarRespostasTecnicas}
+            className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-xs hover:shadow-md transition-all border-0 text-xs px-3 py-1.5"
+          >
+            <Sparkles className="size-3.5 animate-pulse" />
+            {gerandoRespostas ? "Sugerindo resposta com IA…" : "Sugerir resposta com IA"}
+          </Button>
+        </div>
+
+        {respostasTecnicas && (
+          <div className="rounded-2xl border-2 border-g-blue/30 bg-muted/20 p-4 text-sm shadow-md space-y-4 animate-in fade-in">
+            <div className="flex items-center justify-between border-b border-border pb-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4 text-g-blue" />
+                <span className="font-bold text-foreground">
+                  Sugestões técnicas e descritivas para o procedimento:
+                </span>
+              </div>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setRespostasTecnicas(null)}>
+                Fechar
+              </Button>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Opção 1 */}
+              <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-card p-4 transition-all hover:border-g-blue">
+                <div>
+                  <div className="mb-2">
+                    <span className="rounded-full bg-g-blue/15 px-2.5 py-0.5 text-xs font-bold text-g-blue">
+                      Opção 1 · Procedimento Passo a Passo
+                    </span>
+                  </div>
+                  <p className="whitespace-pre-wrap text-sm text-foreground/90">{respostasTecnicas.opcao1}</p>
+                </div>
+                <div className="mt-4 pt-2 border-t border-border/50">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="google-blue"
+                    className="w-full gap-1.5"
+                    onClick={() => {
+                      field("procedimento", respostasTecnicas.opcao1);
+                      setRespostasTecnicas(null);
+                      toast.success("Opção 1 aplicada no procedimento!");
+                    }}
+                  >
+                    <Check className="size-3.5" /> Aplicar no procedimento
+                  </Button>
+                </div>
+              </div>
+
+              {/* Opção 2 */}
+              <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-card p-4 transition-all hover:border-g-green">
+                <div>
+                  <div className="mb-2">
+                    <span className="rounded-full bg-g-green/15 px-2.5 py-0.5 text-xs font-bold text-g-green">
+                      Opção 2 · Parecer Técnico & Boas Práticas
+                    </span>
+                  </div>
+                  <p className="whitespace-pre-wrap text-sm text-foreground/90">{respostasTecnicas.opcao2}</p>
+                </div>
+                <div className="mt-4 pt-2 border-t border-border/50">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="google-green"
+                    className="w-full gap-1.5"
+                    onClick={() => {
+                      field("procedimento", respostasTecnicas.opcao2);
+                      setRespostasTecnicas(null);
+                      toast.success("Opção 2 aplicada no procedimento!");
+                    }}
+                  >
+                    <Check className="size-3.5" /> Aplicar no procedimento
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <TextoAssistido
+          value={draft.procedimento ?? ""}
+          onChange={(value) => field("procedimento", value || null)}
+        />
+        {ticket.fechadoEm && (
+          <p className="text-xs text-muted-foreground pt-1">
+            Fechamento registrado em: {formatarData(ticket.fechadoEm, ticket.horario)}
+          </p>
+        )}
+      </div>
+
+      {/* 4. Card: Classificação e Status com Cores Estritas */}
+      <div className="rounded-2xl border-2 border-g-blue/30 bg-card p-5 shadow-sm space-y-5">
+        {/* Prioridades na ordem estrita: Crítico (Vermelho), Alta (Amarelo), Média (Verde) e Baixa (Azul) */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-bold text-foreground">
+              Prioridade do Chamado (Ordem: Crítico, Alta, Média, Baixa)
+            </h2>
+            {suggested && (
+              <Button
+                size="sm"
+                type="button"
+                variant="google-green"
+                className="h-7 text-xs"
+                onClick={() => {
+                  field("prioridade", suggested);
+                  setSuggested(null);
+                }}
+              >
+                Aplicar sugestão da IA: {suggested}
+              </Button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            {LISTA_PRIORIDADES.map((p) => {
+              const ativo = draft.prioridade === p || (p === "Crítico" && draft.prioridade === "Crítica");
+              return (
+                <Button
+                  key={p}
+                  type="button"
+                  size="sm"
+                  className={`rounded-xl transition-all ${
+                    ativo ? prioridadeEstilos[p]?.active : prioridadeEstilos[p]?.inactive
+                  }`}
+                  aria-pressed={ativo}
+                  onClick={() => alterarPrioridade(p === "Crítico" ? "Crítica" : p)}
+                >
+                  Prioridade {p}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Status na ordem estrita: Em atendimento (Verde), Aguardando (Laranja), Cancelado (Grafite), Aberto (Azul) e Resolvido (Verde escuro) */}
+        <div className="border-t border-border/80 pt-4">
+          <h2 className="mb-2 text-sm font-bold text-foreground">
+            Status do Chamado (Ordem: Em atendimento, Aguardando, Cancelado, Aberto, Resolvido)
+          </h2>
+          <div className="flex flex-wrap gap-2.5">
+            {LISTA_STATUS.map((s) => {
+              const ativo =
+                draft.status === s || (s === "Em atendimento" && draft.status === "Em andamento");
+              return (
+                <Button
+                  key={s}
+                  type="button"
+                  size="sm"
+                  className={`rounded-xl transition-all ${
+                    ativo ? statusEstilos[s]?.active : statusEstilos[s]?.inactive
+                  }`}
+                  aria-pressed={ativo}
+                  onClick={() => field("status", s === "Em atendimento" ? "Em andamento" : s)}
+                >
+                  {s}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Barra inferior de ações padronizada */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
+        {isGestor && (
+          <ConfirmAction
+            title={`Excluir chamado #${ticket.id}?`}
+            description="Atenção: esta ação é irreversível. O chamado será removido permanentemente do banco de dados."
+            confirmLabel="Sim, excluir definitivamente"
+            variant="destructive"
+            onConfirm={excluirChamado}
+          >
+            <Trash2 className="size-4" /> Excluir chamado
+          </ConfirmAction>
+        )}
+        <div className="ml-auto flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              if (hasChanges && !window.confirm("Deseja descartar as alterações e voltar?")) return;
+              navigate({ to: "/atendimento" });
+            }}
+          >
+            Cancelar
+          </Button>
+          <ConfirmAction
+            title={`Salvar alterações no chamado #${ticket.id}?`}
+            description="Confira os dados antes de confirmar. As alterações aparecerão imediatamente na planilha e no acompanhamento."
+            confirmLabel="Sim, salvar chamado"
+            onConfirm={save}
+            disabled={!hasChanges || saving}
+          >
+            <Save className="size-4" /> {saving ? "Salvando…" : "Salvar alterações"}
+          </ConfirmAction>
         </div>
       </div>
     </div>
-    <div className="space-y-3 border-t border-border pt-5"><p className="text-sm font-semibold">Status do chamado</p><div className="flex flex-wrap gap-2">{(["Em andamento", "Aguardando", "Resolvido", "Cancelado"] as const).map(s => <Button key={s} type="button" variant={draft.status === s ? s === "Cancelado" ? "google-red" : "google-green" : "outline"} aria-pressed={draft.status === s} onClick={() => field("status", s)}>{s}</Button>)}</div></div>
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
-      {isGestor && (
-        <ConfirmAction
-          title={`Excluir chamado #${ticket.id}?`}
-          description="Atenção: esta ação é irreversível. O chamado será removido permanentemente do banco de dados."
-          confirmLabel="Sim, excluir definitivamente"
-          variant="destructive"
-          onConfirm={excluirChamado}
-        >
-          <Trash2 className="size-4" /> Excluir chamado
-        </ConfirmAction>
-      )}
-      <div className="ml-auto flex items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            if (hasChanges && !window.confirm("Deseja descartar as alterações e voltar?")) return;
-            navigate({ to: "/atendimento" });
-          }}
-        >
-          Cancelar
-        </Button>
-        <ConfirmAction title={`Salvar alterações no chamado #${ticket.id}?`} description="Confira os dados antes de confirmar. As alterações aparecerão no acompanhamento do chamado." confirmLabel="Sim, salvar" onConfirm={save} disabled={!hasChanges || saving}>
-          <Save className="size-4" /> {saving ? "Salvando…" : "Salvar"}
-        </ConfirmAction>
-      </div>
-    </div>
-  </div>;
+  );
 }

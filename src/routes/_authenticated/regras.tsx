@@ -17,6 +17,8 @@ import {
   Tag,
   Trash2,
   UserCheck,
+  Palette,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,9 +32,13 @@ import {
   CAMPOS_EXPORTACAO,
   COLUNAS_PLANILHA,
   FILTROS_PLANILHA,
+  PARAMETROS_PRIORIDADE_PADRAO,
+  PARAMETROS_SLA_PADRAO,
+  PARAMETROS_STATUS_PADRAO,
   PRIORIDADES,
   REGRAS_PADRAO,
   type CampoAbertura,
+  type ParametroCor,
   type Periodo,
   type Prioridade,
 } from "@/lib/types";
@@ -126,7 +132,9 @@ function Regras() {
     if (novoIndex < 0 || novoIndex >= filtrosOrdenados.length) return;
     const lista = [...filtrosOrdenados];
     const [item] = lista.splice(index, 1);
-    lista.splice(novoIndex, 0, item);
+    if (item) {
+      lista.splice(novoIndex, 0, item);
+    }
     // Preserva se estava ativo
     const novaAtivos = lista.filter((f) => filtrosAtivos.includes(f));
     salvar({
@@ -171,6 +179,21 @@ function Regras() {
 
   // Responsáveis editáveis
   const responsaveis = regras.responsaveis ?? ["Claudinei Lima"];
+
+  // Parâmetros de Prioridade, Status e SLA
+  const parametrosPrioridade: ParametroCor[] =
+    regras.parametrosPrioridade ?? PARAMETROS_PRIORIDADE_PADRAO;
+  const parametrosStatus: ParametroCor[] =
+    regras.parametrosStatus ?? PARAMETROS_STATUS_PADRAO;
+  const parametrosSla: ParametroCor[] =
+    regras.parametrosSla ?? PARAMETROS_SLA_PADRAO;
+
+  const salvarParametrosPrioridade = (novos: ParametroCor[]) =>
+    salvar({ parametrosPrioridade: novos });
+  const salvarParametrosStatus = (novos: ParametroCor[]) =>
+    salvar({ parametrosStatus: novos });
+  const salvarParametrosSla = (novos: ParametroCor[]) =>
+    salvar({ parametrosSla: novos });
 
   return (
     <div className="space-y-7 pb-12">
@@ -220,8 +243,8 @@ function Regras() {
                 <div
                   className="mb-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold"
                   style={{
-                    backgroundColor: CORES_PRIORIDADE[p].bg,
-                    color: CORES_PRIORIDADE[p].text,
+                    backgroundColor: CORES_PRIORIDADE[p]?.bg ?? "#34A853",
+                    color: CORES_PRIORIDADE[p]?.text ?? "#FFFFFF",
                   }}
                 >
                   {p}
@@ -932,7 +955,201 @@ function Regras() {
           </div>
         </CardContent>
       </Card>
+
+      {/* 9. Parâmetros e Cores do Sistema (Prioridade, Status e SLA) */}
+      <div className="space-y-4 pt-2">
+        <div className="flex flex-col gap-1 border-t border-border/80 pt-6">
+          <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Palette className="h-5 w-5 text-g-blue" />
+            Parâmetros e Cores do Sistema (Prioridade, Status e SLA)
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Configure as cores e os nomes dos parâmetros. A ordem padrão do sistema e as cores institucionais estão pré-configuradas e podem ser customizadas ou expandidas com novos parâmetros.
+          </p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          <EditorParametrosCores
+            titulo="Prioridades dos chamados"
+            descricao="Ordem padrão: Crítico (Vermelho), Alta (Amarelo), Média (Verde) e Baixa (Azul)"
+            corTitulo="text-g-red dark:text-red-400"
+            icone={<Tag className="h-4 w-4" />}
+            itens={parametrosPrioridade}
+            onChange={salvarParametrosPrioridade}
+            tipoLabel="prioridade"
+            corPadraoBg="#1A73E8"
+            corPadraoText="#FFFFFF"
+          />
+
+          <EditorParametrosCores
+            titulo="Status dos chamados"
+            descricao="Ordem padrão: Em atendimento (Verde), Aguardando (Laranja), Cancelado (Grafite), Aberto (Azul) e Resolvido (Verde escuro)"
+            corTitulo="text-g-blue dark:text-blue-400"
+            icone={<Clock className="h-4 w-4" />}
+            itens={parametrosStatus}
+            onChange={salvarParametrosStatus}
+            tipoLabel="status"
+            corPadraoBg="#34A853"
+            corPadraoText="#FFFFFF"
+          />
+
+          <EditorParametrosCores
+            titulo="SLA dos chamados"
+            descricao="Ordem padrão: No prazo (Verde), Estourado (Vermelho), Cancelado (Grafite) e Aguardando (Laranja)"
+            corTitulo="text-g-green dark:text-green-400"
+            icone={<CheckCircle2 className="h-4 w-4" />}
+            itens={parametrosSla}
+            onChange={salvarParametrosSla}
+            tipoLabel="SLA"
+            corPadraoBg="#34A853"
+            corPadraoText="#FFFFFF"
+          />
+        </div>
+      </div>
     </div>
+  );
+}
+
+function EditorParametrosCores({
+  titulo,
+  descricao,
+  corTitulo,
+  icone,
+  itens,
+  onChange,
+  tipoLabel,
+  corPadraoBg = "#1A73E8",
+  corPadraoText = "#FFFFFF",
+}: {
+  titulo: string;
+  descricao: string;
+  corTitulo: string;
+  icone: React.ReactNode;
+  itens: ParametroCor[];
+  onChange: (novos: ParametroCor[]) => void;
+  tipoLabel: string;
+  corPadraoBg?: string;
+  corPadraoText?: string;
+}) {
+  const adicionarNovo = () => {
+    const novoNome = prompt(`Nome do novo parâmetro de ${tipoLabel}:`);
+    if (!novoNome?.trim()) return;
+    const novoItem: ParametroCor = {
+      id: novoNome.trim(),
+      nome: novoNome.trim(),
+      bg: corPadraoBg,
+      text: corPadraoText,
+    };
+    onChange([...itens, novoItem]);
+    toast.success(`Parâmetro "${novoNome}" adicionado.`);
+  };
+
+  const atualizarItem = (index: number, patch: Partial<ParametroCor>) => {
+    const novos = itens.map((item, i) => (i === index ? { ...item, ...patch } : item));
+    onChange(novos);
+  };
+
+  const removerItem = (index: number) => {
+    const novos = itens.filter((_, i) => i !== index);
+    onChange(novos);
+  };
+
+  return (
+    <Card className="shadow-sm border border-border/80">
+      <CardHeader className="pb-3">
+        <CardTitle className={`flex items-center gap-2 text-base font-semibold ${corTitulo}`}>
+          {icone}
+          {titulo}
+        </CardTitle>
+        <p className="text-xs text-muted-foreground leading-relaxed">{descricao}</p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-2.5">
+          {itens.map((param, i) => (
+            <div
+              key={param.id || i}
+              className="flex flex-col gap-2 rounded-xl border border-border/70 bg-card p-3 shadow-2xs hover:border-border transition-colors"
+            >
+              <div className="flex items-center justify-between gap-2">
+                {/* Preview Chip */}
+                <div
+                  className="inline-flex items-center justify-center rounded-full px-3 py-0.5 text-xs font-semibold shadow-2xs shrink-0"
+                  style={{ backgroundColor: param.bg, color: param.text }}
+                >
+                  {param.nome || "Exemplo"}
+                </div>
+
+                {/* Remover */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                  onClick={() => removerItem(i)}
+                  title="Remover parâmetro"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
+              {/* Nome */}
+              <div className="w-full">
+                <Input
+                  className="h-8 text-xs font-medium"
+                  value={param.nome}
+                  placeholder="Nome do parâmetro"
+                  onChange={(e) =>
+                    atualizarItem(i, { nome: e.target.value, id: param.id || e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                {/* Cor de Fundo */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-muted-foreground font-medium shrink-0">Fundo:</span>
+                  <input
+                    type="color"
+                    className="h-7 w-7 cursor-pointer rounded border border-border p-0.5 bg-transparent shrink-0"
+                    value={param.bg.startsWith("#") ? param.bg : "#1A73E8"}
+                    onChange={(e) => atualizarItem(i, { bg: e.target.value })}
+                    title="Escolher cor de fundo"
+                  />
+                  <Input
+                    className="h-7 w-full text-[11px] font-mono px-1.5"
+                    value={param.bg}
+                    onChange={(e) => atualizarItem(i, { bg: e.target.value })}
+                  />
+                </div>
+
+                {/* Cor do Texto */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-muted-foreground font-medium shrink-0">Texto:</span>
+                  <input
+                    type="color"
+                    className="h-7 w-7 cursor-pointer rounded border border-border p-0.5 bg-transparent shrink-0"
+                    value={param.text.startsWith("#") ? param.text : "#FFFFFF"}
+                    onChange={(e) => atualizarItem(i, { text: e.target.value })}
+                    title="Escolher cor do texto"
+                  />
+                  <Input
+                    className="h-7 w-full text-[11px] font-mono px-1.5"
+                    value={param.text}
+                    onChange={(e) => atualizarItem(i, { text: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="pt-2">
+          <Button type="button" variant="outline" size="sm" className="w-full text-xs" onClick={adicionarNovo}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> Adicionar mais {tipoLabel}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -982,3 +1199,4 @@ function ListaEditavel({
     </Card>
   );
 }
+

@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Headset } from "lucide-react";
+import { FileSpreadsheet, FileText, Headset, Printer } from "lucide-react";
 import { TicketSheet } from "@/components/TicketSheet";
+import { Button } from "@/components/ui/button";
+import { useStore } from "@/lib/store-context";
+import { exportarPdf, exportarXlsx, ticketsParaLinhas } from "@/lib/exportar";
 
 export const Route = createFileRoute("/_authenticated/atendimento")({
   head: () => ({
@@ -17,8 +20,42 @@ export const Route = createFileRoute("/_authenticated/atendimento")({
 });
 
 function Atendimento() {
-  return <div className="space-y-6">
-    <div className="rounded-2xl border-l-4 border-g-blue bg-card px-5 py-5 text-center shadow-sm"><div className="flex items-center justify-center gap-3"><span className="rounded-xl bg-g-blue/15 p-3 text-g-blue"><Headset className="size-7" /></span><h1 className="text-3xl font-bold">Atendimento</h1></div><p className="mt-2 text-muted-foreground">Selecione “Atender” para iniciar o atendimento e salvar alterações.</p></div>
-    <TicketSheet attendance />
-  </div>;
+  const { tickets, regras } = useStore();
+  const dadosExportacao = () => ticketsParaLinhas(tickets, regras.planilha?.exportacao);
+
+  return (
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
+            <span className="rounded-xl bg-g-blue/15 p-2 text-g-blue">
+              <Headset className="size-7" />
+            </span>
+            Atendimento de Chamados
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Fila de chamados para triagem, atendimento e resolução pela equipe de TI.
+          </p>
+        </div>
+        <div className="no-print flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => exportarXlsx(dadosExportacao(), "Planilha_Atendimento_TI")}
+          >
+            <FileSpreadsheet className="size-4" /> Baixar Excel
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => exportarPdf(dadosExportacao(), "Planilha_Atendimento_TI", "Planilha de Atendimento de Chamados")}
+          >
+            <FileText className="size-4" /> Baixar PDF
+          </Button>
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="size-4" /> Imprimir
+          </Button>
+        </div>
+      </header>
+      <TicketSheet attendance />
+    </div>
+  );
 }

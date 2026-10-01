@@ -105,8 +105,11 @@ export interface Regras {
   setores: string[];
   categorias: string[];
   responsaveis: string[];
-  planilha?: { filtros: string[]; colunas: string[]; exportacao?: string[] };
-  camposAbertura?: CampoAbertura[];
+  planilha?: { filtros: string[]; colunas: string[]; exportacao?: string[] | undefined };
+  camposAbertura?: CampoAbertura[] | undefined;
+  parametrosPrioridade?: ParametroCor[] | undefined;
+  parametrosStatus?: ParametroCor[] | undefined;
+  parametrosSla?: ParametroCor[] | undefined;
 }
 
 export const FILTROS_PLANILHA = ["Mês", "Busca", "Por página", "Categoria", "Setor", "SLA"] as const;
@@ -135,25 +138,58 @@ export const MESES_DISPONIVEIS: { key: string; label: string; ano: number; mes: 
   { key: "2026-12", label: "Dezembro/2026", ano: 2026, mes: 12 },
 ];
 
-export const CORES_PRIORIDADE: Record<Prioridade, { bg: string; text: string }> = {
+export interface ParametroCor {
+  id: string;
+  nome: string;
+  bg: string;
+  text: string;
+}
+
+export const PARAMETROS_PRIORIDADE_PADRAO: ParametroCor[] = [
+  { id: "p1", nome: "Crítico", bg: "#EA4335", text: "#FFFFFF" }, // Vermelho
+  { id: "p2", nome: "Alta", bg: "#FBBC04", text: "#202124" },    // Amarelo
+  { id: "p3", nome: "Média", bg: "#34A853", text: "#FFFFFF" },   // Verde
+  { id: "p4", nome: "Baixa", bg: "#1A73E8", text: "#FFFFFF" },   // Azul
+];
+
+export const PARAMETROS_STATUS_PADRAO: ParametroCor[] = [
+  { id: "s1", nome: "Em atendimento", bg: "#34A853", text: "#FFFFFF" }, // Verde
+  { id: "s2", nome: "Aguardando", bg: "#FA7B17", text: "#FFFFFF" },     // Laranja
+  { id: "s3", nome: "Cancelado", bg: "#5F6368", text: "#FFFFFF" },      // Grafite
+  { id: "s4", nome: "Aberto", bg: "#1A73E8", text: "#FFFFFF" },         // Azul
+  { id: "s5", nome: "Resolvido", bg: "#0D652D", text: "#FFFFFF" },      // Verde escuro
+];
+
+export const PARAMETROS_SLA_PADRAO: ParametroCor[] = [
+  { id: "sla1", nome: "No prazo", bg: "#34A853", text: "#FFFFFF" },   // Verde
+  { id: "sla2", nome: "Estourado", bg: "#EA4335", text: "#FFFFFF" },  // Vermelho
+  { id: "sla3", nome: "Cancelado", bg: "#5F6368", text: "#FFFFFF" },  // Grafite
+  { id: "sla4", nome: "Aguardando", bg: "#FA7B17", text: "#FFFFFF" }, // Laranja
+  { id: "sla5", nome: "—", bg: "#E8EAED", text: "#3C4043" },
+];
+
+export const CORES_PRIORIDADE: Record<string, { bg: string; text: string }> = {
+  Crítico: { bg: "#EA4335", text: "#FFFFFF" },
   Crítica: { bg: "#EA4335", text: "#FFFFFF" },
   Alta: { bg: "#FBBC04", text: "#202124" },
-  Média: { bg: "#1A73E8", text: "#FFFFFF" },
-  Baixa: { bg: "#34A853", text: "#FFFFFF" },
+  Média: { bg: "#34A853", text: "#FFFFFF" },
+  Baixa: { bg: "#1A73E8", text: "#FFFFFF" },
 };
 
-export const CORES_STATUS: Record<Status, { bg: string; text: string }> = {
-  Aberto: { bg: "#E8EAED", text: "#3C4043" },
-  "Em andamento": { bg: "#1A73E8", text: "#FFFFFF" },
-  Aguardando: { bg: "#FBBC04", text: "#202124" },
-  Resolvido: { bg: "#34A853", text: "#FFFFFF" },
-  Cancelado: { bg: "#80868B", text: "#FFFFFF" },
+export const CORES_STATUS: Record<string, { bg: string; text: string }> = {
+  "Em atendimento": { bg: "#34A853", text: "#FFFFFF" },
+  "Em andamento": { bg: "#34A853", text: "#FFFFFF" },
+  Aguardando: { bg: "#FA7B17", text: "#FFFFFF" },
+  Cancelado: { bg: "#5F6368", text: "#FFFFFF" },
+  Aberto: { bg: "#1A73E8", text: "#FFFFFF" },
+  Resolvido: { bg: "#0D652D", text: "#FFFFFF" },
 };
 
 export const CORES_SLA: Record<string, { bg: string; text: string }> = {
   "No prazo": { bg: "#34A853", text: "#FFFFFF" },
   Estourado: { bg: "#EA4335", text: "#FFFFFF" },
-  Cancelado: { bg: "#80868B", text: "#FFFFFF" },
+  Cancelado: { bg: "#5F6368", text: "#FFFFFF" },
+  Aguardando: { bg: "#FA7B17", text: "#FFFFFF" },
   "—": { bg: "#E8EAED", text: "#3C4043" },
 };
 
@@ -206,4 +242,7 @@ export const REGRAS_PADRAO: Regras = {
     exportacao: CAMPOS_EXPORTACAO.map((c) => c.id),
   },
   camposAbertura: [...CAMPOS_ABERTURA_PADRAO],
+  parametrosPrioridade: [...PARAMETROS_PRIORIDADE_PADRAO],
+  parametrosStatus: [...PARAMETROS_STATUS_PADRAO],
+  parametrosSla: [...PARAMETROS_SLA_PADRAO],
 };
