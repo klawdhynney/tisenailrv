@@ -125,7 +125,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="mb-6 sm:mb-8 flex justify-center">
             <Link
               to="/"
-              className="group block w-full max-w-xl sm:max-w-2xl overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:scale-[1.015] hover:border-g-blue/60 hover:shadow-lg active:scale-[0.99]"
+              className={`group block w-full overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:scale-[1.012] hover:border-g-blue/60 hover:shadow-lg active:scale-[0.99] ${
+                pathname === "/abrir" ? "max-w-3xl" : "max-w-5xl"
+              }`}
               title="Voltar para a página inicial"
             >
               <img
@@ -133,7 +135,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 alt="SENAI Lucas do Rio Verde"
                 width={1024}
                 height={384}
-                className="aspect-[1024/384] h-auto w-full object-contain transition-transform duration-500 group-hover:scale-[1.02]"
+                className="aspect-[1024/384] h-auto w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
               />
             </Link>
           </div>
