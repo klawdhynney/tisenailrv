@@ -20,3 +20,4 @@ As exportações de dashboard e planilha são geradas no navegador; dados detalh
 `useStore`/contexto ficam separados do `StoreProvider`, e utilitários em `types.ts`, para evitar tela em branco após atualizações.
 Temas `claro`, `pastel`, `escuro` usam `tema-ti` e classes exclusivas `.pastel`/`.dark` na raiz, para preservar a preferência e a paleta Google.
 O WhatsApp só abre resumo preenchido depois do registro; dados pessoais lembrados ficam apenas no navegador com consentimento, sem guardar descrições.
+Sempre que o usuário solicitar qualquer alteração, após validar o build (`bun run build`), faça o commit e o envio (`git push origin main`) para manter o repositório do GitHub e Lovable sincronizados automaticamente.

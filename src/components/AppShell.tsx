@@ -42,10 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
   const { isGestor, session, sair } = useStore();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isPublicPage =
-    !pathname.startsWith("/atendimento") &&
-    !pathname.startsWith("/chamados") &&
-    !pathname.startsWith("/regras");
+  const showBanner = pathname === "/" || pathname === "/abrir";
   const itens = [...navPublico, ...(isGestor ? navGestor : [])];
 
   const links = (mobile: boolean) =>
@@ -124,19 +121,19 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
-        {isPublicPage && (
-          <div className="mb-7 flex justify-center">
+        {showBanner && (
+          <div className="mb-6 sm:mb-8 flex justify-center">
             <Link
               to="/"
-              className="group block w-full max-w-5xl overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:scale-[1.01] hover:border-g-blue/60 hover:shadow-lg active:scale-[0.99]"
+              className="group block w-full max-w-xl sm:max-w-2xl overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:scale-[1.015] hover:border-g-blue/60 hover:shadow-lg active:scale-[0.99]"
               title="Voltar para a página inicial"
             >
               <img
                 src={senaiCapa}
                 alt="SENAI Lucas do Rio Verde"
-                width={1200}
-                height={400}
-                className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
+                width={1024}
+                height={384}
+                className="aspect-[1024/384] h-auto w-full object-contain transition-transform duration-500 group-hover:scale-[1.02]"
               />
             </Link>
           </div>
