@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { Download, FileCode2, FileSpreadsheet, FileText, Plus, Printer, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Download, FileCode2, FileSpreadsheet, FileText, Plus, Printer, SlidersHorizontal, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { lerPlanilha } from "@/lib/importarExcel";
 import { importarChamados } from "@/lib/import.functions";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { TicketSheet } from "@/components/TicketSheet";
 import { useStore } from "@/lib/store-context";
 import { exportarCsv, exportarPdf, exportarXlsx, exportarXml, ticketsParaLinhas } from "@/lib/exportar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CAMPOS_EXPORTACAO } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/chamados")({
   head: () => ({
@@ -30,9 +32,17 @@ function Chamados() {
 }
 
 function Planilha() {
-  const { tickets } = useStore();
+  const { tickets, regras } = useStore();
   const arquivoRef = useRef<HTMLInputElement>(null);
   const [importando, setImportando] = useState(false);
+  const [camposExportacao, setCamposExportacao] = useState<string[]>(() => regras.planilha?.exportacao ?? CAMPOS_EXPORTACAO.map((c) => c.id));
+
+  useEffect(() => {
+    if (regras.planilha?.exportacao?.length) {
+      setCamposExportacao(regras.planilha.exportacao);
+    }
+  }, [regras.planilha?.exportacao]);
+
   async function importar(file?: File) {
     if (!file) return;
     setImportando(true);
@@ -52,12 +62,73 @@ function Planilha() {
     finally { setImportando(false); if (arquivoRef.current) arquivoRef.current.value = ""; }
   }
 
-  const dadosExportacao = () => ticketsParaLinhas(tickets);
+  const dadosExportacao = () => ticketsParaLinhas(tickets, camposExportacao);
+  const toggleCampo = (id: string) => {
+    setCamposExportacao((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
   return <div className="space-y-6">
      <header className="flex flex-wrap items-end justify-between gap-4"><div className="flex-1 text-center"><h1 className="text-3xl font-bold">Planilha de chamados</h1><p className="mt-1 text-muted-foreground">Atenda cada chamado em sua página e confirme antes de salvar.</p></div>
       <div className="no-print flex flex-wrap gap-2">
         <input ref={arquivoRef} type="file" accept=".xlsx,.xls" className="hidden" aria-label="Arquivo Excel" onChange={e => importar(e.target.files?.[0])} />
         <Button variant="outline" disabled={importando} onClick={() => arquivoRef.current?.click()}><Upload className="size-4" /> {importando ? "Importando…" : "Importar Excel"}</Button>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="gap-2 border-g-blue/30 text-xs">
+              <SlidersHorizontal className="size-4 text-g-blue" />
+              Dados para exportar ({camposExportacao.length}/{CAMPOS_EXPORTACAO.length})
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-4 space-y-3" align="end">
+            <div className="flex items-center justify-between border-b pb-2">
+              <span className="font-semibold text-sm">Dados da exportação</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="text-xs text-g-blue hover:underline"
+                  onClick={() => setCamposExportacao(CAMPOS_EXPORTACAO.map((c) => c.id))}
+                >
+                  Todos
+                </button>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:underline"
+                  onClick={() => setCamposExportacao([])}
+                >
+                  Limpar
+                </button>
+              </div>
+            </div>
+            <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+              {CAMPOS_EXPORTACAO.map((campo) => {
+                const checked = camposExportacao.includes(campo.id);
+                return (
+                  <label
+                    key={campo.id}
+                    className="flex items-center gap-2 rounded px-2 py-1 text-xs hover:bg-muted cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleCampo(campo.id)}
+                      className="rounded"
+                    />
+                    <span className={checked ? "font-medium text-foreground" : "text-muted-foreground"}>
+                      {campo.label}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Os botões CSV, XLSX, XML e PDF abaixo exportarão somente os dados marcados acima.
+            </p>
+          </PopoverContent>
+        </Popover>
+
         <Button variant="outline" onClick={() => exportarCsv(dadosExportacao(), "Chamados_TI")}><Download className="size-4" /> CSV</Button>
         <Button variant="outline" onClick={() => exportarXlsx(dadosExportacao(), "Chamados_TI")}><FileSpreadsheet className="size-4" /> XLSX</Button>
         <Button variant="outline" onClick={() => exportarXml(dadosExportacao(), "Chamados_TI")}><FileCode2 className="size-4" /> XML</Button>

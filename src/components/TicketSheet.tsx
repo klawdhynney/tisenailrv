@@ -32,16 +32,120 @@ export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
     syncing.current = true; target.scrollLeft = source.scrollLeft;
     requestAnimationFrame(() => { syncing.current = false; });
   }
+
+  const renderFiltro = (f: string) => {
+    switch (f) {
+      case "Mês":
+        return (
+          <label key="Mês" className="grid gap-1 text-sm font-medium">
+            Mês
+            <select
+              aria-label="Mês da planilha"
+              className="h-10 rounded-xl border border-input bg-background px-3"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+            >
+              <option value="todos">Todos</option>
+              {MESES_DISPONIVEIS.map((m) => (
+                <option key={m.key} value={m.key}>{m.label}</option>
+              ))}
+            </select>
+          </label>
+        );
+      case "Categoria":
+        return (
+          <label key="Categoria" className="grid gap-1 text-sm font-medium">
+            Categoria
+            <select
+              aria-label="Categoria da planilha"
+              className="h-10 rounded-xl border border-input bg-background px-3"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option>Todas</option>
+              {[...new Set(tickets.map((t) => t.categoria).filter(Boolean))].map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+        );
+      case "Setor":
+        return (
+          <label key="Setor" className="grid gap-1 text-sm font-medium">
+            Setor
+            <select
+              aria-label="Setor da planilha"
+              className="h-10 rounded-xl border border-input bg-background px-3"
+              value={sector}
+              onChange={(e) => setSector(e.target.value)}
+            >
+              <option>Todos</option>
+              {[...new Set(tickets.map((t) => t.setor))].map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </label>
+        );
+      case "SLA":
+        return (
+          <label key="SLA" className="grid gap-1 text-sm font-medium">
+            SLA
+            <select
+              aria-label="SLA da planilha"
+              className="h-10 rounded-xl border border-input bg-background px-3"
+              value={slaFilter}
+              onChange={(e) => setSlaFilter(e.target.value)}
+            >
+              {["Todos", "No prazo", "Estourado", "Cancelado"].map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </label>
+        );
+      case "Busca":
+        return (
+          <label key="Busca" className="relative min-w-48 flex-1">
+            <span className="sr-only">Buscar chamados</span>
+            <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              placeholder="Buscar chamado"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
+        );
+      case "Por página":
+        return (
+          <label key="Por página" className="grid gap-1 text-sm font-medium">
+            Por página
+            <select
+              aria-label="Chamados por página"
+              className="h-10 rounded-xl border border-input bg-background px-3"
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+            >
+              {[10, 30, 50, 100].map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </label>
+        );
+      default:
+        return null;
+    }
+  };
+
   return <section className="space-y-4">
     <div className="flex flex-wrap items-end gap-3">
-       {filtros.includes("Mês") && <label className="grid gap-1 text-sm font-medium">Mês<select aria-label="Mês da planilha" className="h-10 rounded-xl border border-input bg-background px-3" value={month} onChange={e => setMonth(e.target.value)}><option value="todos">Todos</option>{MESES_DISPONIVEIS.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}</select></label>}
-        {filtros.includes("Categoria") && <label className="grid gap-1 text-sm font-medium">Categoria<select aria-label="Categoria da planilha" className="h-10 rounded-xl border border-input bg-background px-3" value={category} onChange={e => setCategory(e.target.value)}><option>Todas</option>{[...new Set(tickets.map(t => t.categoria).filter(Boolean))].map(c => <option key={c}>{c}</option>)}</select></label>}
-        {filtros.includes("Setor") && <label className="grid gap-1 text-sm font-medium">Setor<select aria-label="Setor da planilha" className="h-10 rounded-xl border border-input bg-background px-3" value={sector} onChange={e => setSector(e.target.value)}><option>Todos</option>{[...new Set(tickets.map(t => t.setor))].map(s => <option key={s}>{s}</option>)}</select></label>}
-         {filtros.includes("SLA") && <label className="grid gap-1 text-sm font-medium">SLA<select aria-label="SLA da planilha" className="h-10 rounded-xl border border-input bg-background px-3" value={slaFilter} onChange={e => setSlaFilter(e.target.value)}>{["Todos", "No prazo", "Estourado", "Cancelado"].map(s => <option key={s}>{s}</option>)}</select></label>}
-       {filtros.includes("Busca") && <label className="relative min-w-48 flex-1"><span className="sr-only">Buscar chamados</span><Search className="absolute left-3 top-3 size-4 text-muted-foreground" /><Input className="pl-9" placeholder="Buscar chamado" value={search} onChange={e => setSearch(e.target.value)} /></label>}
-       {filtros.includes("Por página") && <label className="grid gap-1 text-sm font-medium">Por página<select aria-label="Chamados por página" className="h-10 rounded-xl border border-input bg-background px-3" value={pageSize} onChange={e => setPageSize(Number(e.target.value))}>{[10,30,50,100].map(n => <option key={n} value={n}>{n}</option>)}</select></label>}
-       {attendance && <div className="ml-auto flex flex-wrap gap-2"><Button type="button" variant={fila === "abertos" ? "google-green" : "outline"} aria-pressed={fila === "abertos"} onClick={() => setFila("abertos")}>Chamados abertos</Button><Button type="button" variant={fila === "finalizados" ? "google-blue" : "outline"} aria-pressed={fila === "finalizados"} onClick={() => setFila("finalizados")}>Chamados finalizados</Button></div>}
-     </div>
+      {filtros.map((f) => renderFiltro(f))}
+      {attendance && (
+        <div className="ml-auto flex flex-wrap gap-2">
+          <Button type="button" variant={fila === "abertos" ? "google-green" : "outline"} aria-pressed={fila === "abertos"} onClick={() => setFila("abertos")}>Chamados abertos</Button>
+          <Button type="button" variant={fila === "finalizados" ? "google-blue" : "outline"} aria-pressed={fila === "finalizados"} onClick={() => setFila("finalizados")}>Chamados finalizados</Button>
+        </div>
+      )}
+    </div>
     <div ref={topRef} className="overflow-x-auto" onScroll={() => sync("top")} aria-label="Rolagem horizontal superior"><div className="h-px" /></div>
     <div ref={bottomRef} className="overflow-x-auto rounded-xl border border-border" onScroll={() => sync("bottom")}>
        <table className="w-full min-w-[1850px] border-separate border-spacing-0 text-sm"><thead><tr className="border-b-2 border-g-blue bg-muted text-left text-foreground">{colunas.map(h => <th key={h} className="whitespace-nowrap px-3 py-3 font-semibold">{h}</th>)}</tr></thead>

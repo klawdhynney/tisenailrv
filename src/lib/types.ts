@@ -54,16 +54,59 @@ export interface Feriado {
   nome: string;
 }
 
+export interface CampoAbertura {
+  id: string;
+  label: string;
+  obrigatorio: boolean;
+  ativo: boolean;
+  tipo?: "text" | "email" | "select" | "textarea";
+}
+
+export const CAMPOS_ABERTURA_PADRAO: CampoAbertura[] = [
+  { id: "solicitante", label: "Seu nome", obrigatorio: true, ativo: true, tipo: "text" },
+  { id: "email", label: "E-mail", obrigatorio: true, ativo: true, tipo: "email" },
+  { id: "setor", label: "Setor", obrigatorio: true, ativo: true, tipo: "select" },
+  { id: "categoria", label: "Tipo de problema", obrigatorio: true, ativo: true, tipo: "select" },
+  { id: "local", label: "Local exato / Sala", obrigatorio: false, ativo: true, tipo: "text" },
+  { id: "contato", label: "WhatsApp / Contato", obrigatorio: false, ativo: true, tipo: "text" },
+  { id: "descricao", label: "Descrição do problema e local", obrigatorio: true, ativo: true, tipo: "textarea" },
+];
+
+export const CAMPOS_EXPORTACAO = [
+  { id: "Numero", label: "Nº do chamado" },
+  { id: "Data", label: "Data de abertura" },
+  { id: "Hora", label: "Hora de abertura" },
+  { id: "Solicitante", label: "Solicitante" },
+  { id: "SolicitanteEmail", label: "E-mail do solicitante" },
+  { id: "Setor", label: "Setor" },
+  { id: "Local", label: "Local exato" },
+  { id: "Descricao", label: "Descrição do problema" },
+  { id: "Categoria", label: "Tipo / Categoria" },
+  { id: "Prioridade", label: "Prioridade" },
+  { id: "Responsavel", label: "Responsável" },
+  { id: "Status", label: "Status" },
+  { id: "Fechamento", label: "Fechamento" },
+  { id: "Horario_fechamento", label: "Hora fechamento" },
+  { id: "Procedimento", label: "Procedimento" },
+  { id: "WhatsApp", label: "WhatsApp" },
+] as const;
+
 export interface Regras {
   prazos: Record<Prioridade, number>; // horas úteis
-  expediente: { inicio: string; fim: string; dias: number[] }; // 1=seg ... 5=sex
+  expediente: {
+    inicio: string;
+    fim: string;
+    dias: number[];
+    horariosPorDia?: Record<number, { ativo: boolean; inicio: string; fim: string }>;
+  }; // 1=seg ... 5=sex
   statusQuePausam: Status[];
   feriados: Feriado[];
   periodos: Periodo[];
   setores: string[];
   categorias: string[];
   responsaveis: string[];
-  planilha?: { filtros: string[]; colunas: string[] };
+  planilha?: { filtros: string[]; colunas: string[]; exportacao?: string[] };
+  camposAbertura?: CampoAbertura[];
 }
 
 export const FILTROS_PLANILHA = ["Mês", "Busca", "Por página", "Categoria", "Setor", "SLA"] as const;
@@ -157,5 +200,10 @@ export const REGRAS_PADRAO: Regras = {
     "Outros",
   ],
   responsaveis: ["Claudinei Lima"],
-  planilha: { filtros: [...FILTROS_PLANILHA], colunas: [...COLUNAS_PLANILHA] },
+  planilha: {
+    filtros: [...FILTROS_PLANILHA],
+    colunas: [...COLUNAS_PLANILHA],
+    exportacao: CAMPOS_EXPORTACAO.map((c) => c.id),
+  },
+  camposAbertura: [...CAMPOS_ABERTURA_PADRAO],
 };

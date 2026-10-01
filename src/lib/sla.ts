@@ -17,9 +17,27 @@ function ymd(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+export function getExpedienteDia(d: Date, regras: Regras) {
+  const diaNum = d.getDay();
+  const custom = regras.expediente.horariosPorDia?.[diaNum];
+  if (custom) {
+    return {
+      ativo: Boolean(custom.ativo),
+      ini: parseHM(custom.inicio || regras.expediente.inicio),
+      fim: parseHM(custom.fim || regras.expediente.fim),
+    };
+  }
+  return {
+    ativo: regras.expediente.dias.includes(diaNum),
+    ini: parseHM(regras.expediente.inicio),
+    fim: parseHM(regras.expediente.fim),
+  };
+}
+
 /** Dia é útil? (dia da semana no expediente, não feriado, fora de férias/viagem/atestado) */
 export function isDiaUtil(d: Date, regras: Regras) {
-  if (!regras.expediente.dias.includes(d.getDay())) return false;
+  const exp = getExpedienteDia(d, regras);
+  if (!exp.ativo) return false;
   const key = ymd(d);
   if (regras.feriados.some((f) => f.data === key)) return false;
   if (regras.periodos.some((p) => key >= p.inicio && key <= p.fim)) return false;
@@ -27,7 +45,8 @@ export function isDiaUtil(d: Date, regras: Regras) {
 }
 
 export function motivoPausa(d: Date, regras: Regras): string | null {
-  if (!regras.expediente.dias.includes(d.getDay())) return "Fim de semana";
+  const exp = getExpedienteDia(d, regras);
+  if (!exp.ativo) return "Fora do expediente";
   const key = ymd(d);
   const f = regras.feriados.find((x) => x.data === key);
   if (f) return `Feriado: ${f.nome}`;
@@ -38,19 +57,22 @@ export function motivoPausa(d: Date, regras: Regras): string | null {
 
 /** Soma horas úteis a partir de uma data, respeitando expediente/feriados/férias. */
 export function addHorasUteis(inicio: Date, horas: number, regras: Regras): Date {
-  const ini = parseHM(regras.expediente.inicio);
-  const fim = parseHM(regras.expediente.fim);
-  const jornada = Math.max(1, fim - ini);
   let restante = Math.round(horas * 60);
   const cur = new Date(inicio);
 
   // normaliza para dentro do expediente
   let guard = 0;
   while (guard++ < 5000) {
+    const exp = getExpedienteDia(cur, regras);
+    const ini = exp.ini;
+    const fim = exp.fim;
+    const jornada = Math.max(1, fim - ini);
+
     if (!isDiaUtil(cur, regras)) {
       cur.setDate(cur.getDate() + 1);
       cur.setHours(0, 0, 0, 0);
-      cur.setMinutes(ini);
+      const nextExp = getExpedienteDia(cur, regras);
+      cur.setMinutes(nextExp.ini);
       continue;
     }
     const minutosDia = cur.getHours() * 60 + cur.getMinutes();
@@ -58,7 +80,9 @@ export function addHorasUteis(inicio: Date, horas: number, regras: Regras): Date
       cur.setHours(0, ini, 0, 0);
     } else if (minutosDia >= fim) {
       cur.setDate(cur.getDate() + 1);
-      cur.setHours(0, ini, 0, 0);
+      cur.setHours(0, 0, 0, 0);
+      const nextExp = getExpedienteDia(cur, regras);
+      cur.setMinutes(nextExp.ini);
       continue;
     }
     const disponivel = fim - (cur.getHours() * 60 + cur.getMinutes());
@@ -68,7 +92,9 @@ export function addHorasUteis(inicio: Date, horas: number, regras: Regras): Date
     }
     restante -= disponivel;
     cur.setDate(cur.getDate() + 1);
-    cur.setHours(0, ini, 0, 0);
+    cur.setHours(0, 0, 0, 0);
+    const nextExp = getExpedienteDia(cur, regras);
+    cur.setMinutes(nextExp.ini);
     if (jornada <= 0) break;
   }
   return cur;
@@ -77,17 +103,16 @@ export function addHorasUteis(inicio: Date, horas: number, regras: Regras): Date
 /** Minutos úteis entre duas datas. */
 export function minutosUteis(a: Date, b: Date, regras: Regras): number {
   if (b <= a) return 0;
-  const ini = parseHM(regras.expediente.inicio);
-  const fim = parseHM(regras.expediente.fim);
   let total = 0;
   const cur = new Date(a);
   let guard = 0;
   while (cur < b && guard++ < 5000) {
     if (isDiaUtil(cur, regras)) {
+      const exp = getExpedienteDia(cur, regras);
       const diaIni = new Date(cur);
-      diaIni.setHours(0, ini, 0, 0);
+      diaIni.setHours(0, exp.ini, 0, 0);
       const diaFim = new Date(cur);
-      diaFim.setHours(0, fim, 0, 0);
+      diaFim.setHours(0, exp.fim, 0, 0);
       const s = cur > diaIni ? cur : diaIni;
       const e = b < diaFim ? b : diaFim;
       if (e > s) total += (e.getTime() - s.getTime()) / MIN;
@@ -101,17 +126,16 @@ export function minutosUteis(a: Date, b: Date, regras: Regras): number {
 /** Segundos úteis precisos para um relógio que não avança fora do expediente. */
 export function segundosUteis(a: Date, b: Date, regras: Regras): number {
   if (b <= a) return 0;
-  const ini = parseHM(regras.expediente.inicio);
-  const fim = parseHM(regras.expediente.fim);
   let total = 0;
   const cur = new Date(a);
   let guard = 0;
   while (cur < b && guard++ < 5000) {
     if (isDiaUtil(cur, regras)) {
+      const exp = getExpedienteDia(cur, regras);
       const diaIni = new Date(cur);
-      diaIni.setHours(0, ini, 0, 0);
+      diaIni.setHours(0, exp.ini, 0, 0);
       const diaFim = new Date(cur);
-      diaFim.setHours(0, fim, 0, 0);
+      diaFim.setHours(0, exp.fim, 0, 0);
       const s = cur > diaIni ? cur : diaIni;
       const e = b < diaFim ? b : diaFim;
       if (e > s) total += (e.getTime() - s.getTime()) / 1000;

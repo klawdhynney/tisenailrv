@@ -15,24 +15,39 @@ function escaparXml(valor: string | number) {
   return String(valor).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
 
-export function ticketsParaLinhas(tickets: Ticket[]): LinhaExportacao[] {
-  return tickets.map((t) => ({
-    Numero: t.id,
-    Data: t.abertoEm,
-    Hora: t.hora,
-    Solicitante: t.solicitante,
-    Setor: t.setor,
-    Local: t.local,
-    Descricao: t.descricao,
-    Categoria: t.categoria ?? "",
-    Prioridade: t.prioridade,
-    Responsavel: t.responsavel ?? "",
-    Status: t.status,
-    Fechamento: t.fechadoEm ?? "",
-    Horario_fechamento: t.horario ?? "",
-    Procedimento: t.procedimento ?? "",
-    WhatsApp: t.contato ?? "",
-  }));
+export function ticketsParaLinhas(tickets: Ticket[], camposSelecionados?: string[]): LinhaExportacao[] {
+  return tickets.map((t) => {
+    const linhaCompleta: LinhaExportacao = {
+      Numero: t.id,
+      Data: t.abertoEm,
+      Hora: t.hora,
+      Solicitante: t.solicitante,
+      SolicitanteEmail: t.solicitanteEmail ?? "",
+      Setor: t.setor,
+      Local: t.local,
+      Descricao: t.descricao,
+      Categoria: t.categoria ?? "",
+      Prioridade: t.prioridade,
+      Responsavel: t.responsavel ?? "",
+      Status: t.status,
+      Fechamento: t.fechadoEm ?? "",
+      Horario_fechamento: t.horario ?? "",
+      Procedimento: t.procedimento ?? "",
+      WhatsApp: t.contato ?? "",
+    };
+
+    if (camposSelecionados && camposSelecionados.length > 0) {
+      const filtrada: LinhaExportacao = {};
+      for (const campo of camposSelecionados) {
+        if (campo in linhaCompleta) {
+          filtrada[campo] = linhaCompleta[campo];
+        }
+      }
+      return filtrada;
+    }
+
+    return linhaCompleta;
+  });
 }
 
 export function exportarCsv(linhas: LinhaExportacao[], nome: string) {
