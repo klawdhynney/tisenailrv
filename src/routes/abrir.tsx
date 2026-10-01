@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Cpu, MapPin, Send, CheckCircle2, MessageCircle, ArrowLeft } from "lucide-react";
+import { Cpu, MapPin, CheckCircle2, MessageCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -165,8 +165,13 @@ function AbrirChamado() {
 
   return (
     <div className="mx-auto max-w-3xl">
-       <div className="rounded-2xl border-l-4 border-g-green bg-card px-5 py-5 text-center shadow-sm"><div className="flex items-center justify-center gap-3"><span className="rounded-xl bg-g-green/15 p-3 text-g-green"><Cpu className="size-7" /></span><h1 className="text-3xl font-bold">Abrir chamado de TI</h1></div>
-       <p className="mt-2 text-muted-foreground">Preencha os campos abaixo com as informações do problema. Informe o local e descreva a situação com clareza para agilizar o atendimento.</p></div>
+       <div className="rounded-2xl border-l-4 border-g-green bg-card px-5 py-5 text-center shadow-sm">
+         <div className="flex items-center justify-center gap-3">
+           <span className="rounded-xl bg-g-green/15 p-3 text-g-green"><Cpu className="size-7" /></span>
+           <h1 className="text-3xl font-bold">Abrir chamado de TI</h1>
+         </div>
+         <p className="mt-2 text-muted-foreground">Preencha os campos abaixo com a informação do local e descrição do problema.</p>
+       </div>
       <Card className="mt-6 rounded-2xl border-t-4 border-g-blue shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2"><MapPin className="size-5 text-g-blue" /> Dados do chamado</CardTitle>
@@ -214,13 +219,47 @@ function AbrirChamado() {
                <TextoAssistido rows={5} value={form.descricao} onChange={value => set("descricao", value)} placeholder="Ex.: Computador sem internet na sala 1" />
             </Campo>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={lembrar} onChange={e => setLembrar(e.target.checked)} /> Lembrar meus dados neste aparelho (nome, e-mail e setor)</label>
-             <Button type="submit" variant="google-green" size="lg" disabled={enviando} className="w-full sm:w-auto">
-              <Send className="size-4" /> {enviando ? "Enviando…" : "Enviar chamado"}
+             <Button type="submit" variant="google-green" size="lg" disabled={enviando} className="w-full sm:w-auto font-bold gap-2">
+              <IndioFlechaIcon className="size-5 shrink-0" /> {enviando ? "Enviando…" : "Enviar chamado"}
             </Button>
           </form>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function IndioFlechaIcon({ className = "size-5" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      {/* Penas do cocar */}
+      <path d="M5.5 3c.5 1.5 1.7 2.5 3 2.8" />
+      <path d="M4 5c1 1 2 1.5 3.5 1.5" />
+      {/* Cabeça do índio */}
+      <circle cx="8" cy="8.5" r="2.2" />
+      {/* Corpo inclinado em posição de arqueiro */}
+      <path d="M8 10.7L7.5 17" />
+      {/* Braço puxando a corda */}
+      <path d="M7.5 12.5L4 12" />
+      {/* Braço estendido segurando o arco */}
+      <path d="M8 12L14 11.5" />
+      {/* Arco de caça curvado */}
+      <path d="M14 4.5C18 7.5 18 15.5 14 18.5" />
+      {/* Corda esticada */}
+      <path d="M14 4.5L4 12L14 18.5" strokeWidth="1.5" />
+      {/* Flecha apontada e sendo disparada para a frente */}
+      <path d="M4 12H21" strokeWidth="2.2" />
+      <path d="M18 9L21.5 12L18 15" strokeWidth="2.2" />
+    </svg>
   );
 }
 

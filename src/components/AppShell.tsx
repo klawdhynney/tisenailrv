@@ -1,8 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Check } from "lucide-react";
+import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useStore } from "@/lib/store-context";
 import senaiIcone from "@/assets/senai-icone.png";
 import senaiCapa from "@/assets/senai-capa.png";
@@ -19,10 +18,6 @@ const navGestor = [
 ] as const;
 
 type Tema = "claro" | "escuro";
-const temas = [
-  { valor: "claro", nome: "Claro", icon: Sun },
-  { valor: "escuro", nome: "Escuro", icon: Moon },
-] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [aberto, setAberto] = useState(false);
@@ -72,23 +67,26 @@ export function AppShell({ children }: { children: ReactNode }) {
     </Button>
   );
 
-  const seletorTema = (mobile: boolean) => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size={mobile ? "default" : "icon"} aria-label="Escolher tema" title="Escolher tema" className={mobile ? "justify-start font-semibold" : undefined}>
-           {tema === "escuro" ? <Moon className="size-4" /> : <Sun className="size-4" />}
-          {mobile && "Tema"}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-44">
-        {temas.map(({ valor, nome, icon: Icon }) => (
-          <DropdownMenuItem key={valor} onSelect={() => escolherTema(valor)}>
-            <Icon className="size-4" /> {nome}
-            {tema === valor && <Check className="ml-auto size-4" aria-label="Selecionado" />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+  const alternarTema = () => {
+    const novo: Tema = tema === "escuro" ? "claro" : "escuro";
+    document.documentElement.classList.toggle("dark", novo === "escuro");
+    document.documentElement.classList.remove("pastel");
+    localStorage.setItem("tema-ti", novo);
+    setTema(novo);
+  };
+
+  const botaoAlternarTema = (mobile: boolean) => (
+    <Button
+      variant="outline"
+      size={mobile ? "default" : "icon"}
+      onClick={alternarTema}
+      aria-label={tema === "escuro" ? "Alternar para modo claro" : "Alternar para modo escuro"}
+      title={tema === "escuro" ? "Alternar para modo claro" : "Alternar para modo escuro"}
+      className={mobile ? "justify-start font-semibold gap-2" : "cursor-pointer transition-transform hover:scale-105"}
+    >
+      {tema === "escuro" ? <Sun className="size-4 text-amber-400" /> : <Moon className="size-4 text-slate-700 dark:text-slate-300" />}
+      {mobile && (tema === "escuro" ? "Modo Claro" : "Modo Escuro")}
+    </Button>
   );
 
   return (
@@ -102,7 +100,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="ml-auto hidden items-center gap-2 lg:flex">
             {links(false)}
             {botaoConta}
-              {seletorTema(false)}
+            {botaoAlternarTema(false)}
           </nav>
            <Button variant="outline" size="icon" className="ml-auto lg:hidden"
             onClick={() => setAberto((v) => !v)}
@@ -116,7 +114,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="flex flex-col gap-2 border-t border-border bg-card p-3 lg:hidden">
             {links(true)}
             {botaoConta}
-              {seletorTema(true)}
+            {botaoAlternarTema(true)}
           </nav>
         )}
       </header>
