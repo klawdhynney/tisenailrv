@@ -187,8 +187,27 @@
 @utility chart-enter {
   animation: chart-enter 420ms ease-out both;
 }
+
+@keyframes float-bubble-1 {
+  0%, 100% { transform: translate(0px, 0px); }
+  50% { transform: translate(3px, -7px); }
+}
+@keyframes float-bubble-2 {
+  0%, 100% { transform: translate(0px, 0px); }
+  50% { transform: translate(-5px, 6px); }
+}
+@keyframes float-bubble-3 {
+  0%, 100% { transform: translate(0px, 0px); }
+  50% { transform: translate(6px, 5px); }
+}
+@keyframes float-bubble-4 {
+  0%, 100% { transform: translate(0px, 0px); }
+  50% { transform: translate(-4px, -6px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chart-enter { animation: none; }
+  .floating-bubble { animation: none !important; }
 }
 
 @layer base {

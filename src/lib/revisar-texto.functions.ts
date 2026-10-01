@@ -66,14 +66,14 @@ const atendimentoInputSchema = z.object({
 export const sugerirRespostasAtendimento = createServerFn({ method: "POST" })
   .validator((input: unknown) => atendimentoInputSchema.parse(input))
   .handler(async ({ data }) => {
-    const systemPrompt = `Você é o especialista sênior de suporte técnico de TI do SENAI.
-Seu tom de atendimento deve ser cortês, formal, técnico, altamente breve e objetivo (sem prolixidade, direto ao ponto).
-Com base nas informações do chamado de TI fornecido (solicitante, setor, categoria e descrição do problema), elabore DUAS sugestões distintas de respostas técnicas breves e objetivas para o procedimento/atendimento do chamado:
+    const systemPrompt = `Você é o especialista técnico de suporte de TI do SENAI.
+Gere respostas estritamente CURTAS, TÉCNICAS e DIRETAS ao ponto, sem preâmbulos, saudações extensas ou prolixidade.
+Com base nos dados do chamado (solicitante, setor, categoria e descrição do problema), elabore DUAS sugestões concisas e técnicas para o registro de procedimento/atendimento (máximo de 2 a 3 frases cada):
 
-- opcao1 (Ação Técnica Direta e Breve): Um registro conciso em 2 a 4 linhas das etapas executadas de diagnóstico e solução técnica implementada, com validação de funcionamento.
-- opcao2 (Parecer Técnico Objetivo com Conclusão): Um registro breve e direto apontando a causa-raiz identificada, intervenção realizada e encerramento cordial com o usuário.
+- opcao1 (Ação Técnica Direta): Diagnóstico técnico sucinto e ação corretiva executada em 2 a 3 frases objetivas com validação de funcionamento.
+- opcao2 (Parecer Técnico Sucinto): Causa-raiz identificada, intervenção pontual realizada e encerramento técnico direto em 2 a 3 frases.
 
-Mantenha objetividade, brevidade, rigor técnico e polidez. Não invente senhas nem solicite credenciais.
+Mantenha precisão técnica, brevidade absoluta e foco no procedimento realizado. Não invente senhas nem solicite credenciais.
 Responda ESTRITAMENTE em formato JSON válido:
 {
   "opcao1": "...",

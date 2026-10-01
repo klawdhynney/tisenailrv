@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ArrowRight, CheckCircle2, LogOut, Mail } from "lucide-react";
+import { ArrowRight, CheckCircle2, LogOut, Mail, MessageCircle } from "lucide-react";
 import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
@@ -17,12 +17,12 @@ export const Route = createFileRoute("/auth")({
       {
         name: "description",
         content:
-          "Acesse seus chamados com login simples por e-mail ou autenticação Google / Microsoft.",
+          "Acesse seus chamados com login simples por e-mail, WhatsApp ou autenticação Google / Microsoft.",
       },
       { property: "og:title", content: "Entrar | TI Senai LRV" },
       {
         property: "og:description",
-        content: "Acompanhe seus chamados informando o e-mail cadastrado ou conta corporativa.",
+        content: "Acompanhe seus chamados informando o e-mail cadastrado, WhatsApp ou conta corporativa.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -36,14 +36,30 @@ function AuthPage() {
   const navigate = useNavigate();
   const [carregandoOAuth, setCarregandoOAuth] = useState(false);
   const [carregandoEmail, setCarregandoEmail] = useState(false);
+  const [carregandoWpp, setCarregandoWpp] = useState(false);
+  const [modoAcesso, setModoAcesso] = useState<"email" | "whatsapp">("email");
   const [emailInput, setEmailInput] = useState("");
+  const [whatsappInput, setWhatsappInput] = useState("");
   const [emailSalvo, setEmailSalvo] = useState<string | null>(null);
+  const [whatsappSalvo, setWhatsappSalvo] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const salvo =
+      const salvoEmail =
         localStorage.getItem("tisenai_user_email") || localStorage.getItem("tisenai_email");
-      if (salvo) setEmailSalvo(salvo);
+      if (salvoEmail && !salvoEmail.includes("@whatsapp.senailrv.local")) {
+        setEmailSalvo(salvoEmail);
+      }
+
+      const salvoWpp =
+        localStorage.getItem("tisenai_user_whatsapp_display") ||
+        localStorage.getItem("tisenai_user_whatsapp");
+      if (salvoWpp) {
+        setWhatsappSalvo(salvoWpp);
+        if (!salvoEmail || salvoEmail.includes("@whatsapp.senailrv.local")) {
+          setModoAcesso("whatsapp");
+        }
+      }
     }
   }, []);
 
@@ -54,6 +70,7 @@ function AuthPage() {
   }, [session, authPronto, isGestor, navigate]);
 
   const emailAtivo = session?.user.email ?? emailSalvo;
+  const whatsappAtivo = whatsappSalvo;
 
   async function entrarComOAuth(provider: "microsoft" | "google") {
     setCarregandoOAuth(true);
@@ -79,12 +96,10 @@ function AuthPage() {
     setCarregandoEmail(true);
 
     try {
-      // Salva no armazenamento local para login simples/passwordless imediato
       localStorage.setItem("tisenai_user_email", limpo);
       localStorage.setItem("tisenai_email", limpo);
       setEmailSalvo(limpo);
 
-      // Dispara OTP em segundo plano para integração com Supabase Auth se houver provedor
       try {
         await supabase.auth.signInWithOtp({
           email: limpo,
@@ -93,7 +108,6 @@ function AuthPage() {
           },
         });
       } catch (err) {
-        // Silencioso caso SMTP não esteja habilitado no Supabase
         console.warn("OTP Supabase:", err);
       }
 
@@ -106,9 +120,41 @@ function AuthPage() {
     }
   }
 
+  async function entrarComWhatsapp(e: React.FormEvent) {
+    e.preventDefault();
+    const limpo = whatsappInput.trim();
+    const digits = limpo.replace(/\D/g, "");
+
+    if (digits.length < 10) {
+      toast.error("Informe um número de WhatsApp válido com DDD (ex: 65 99999-9999).");
+      return;
+    }
+
+    setCarregandoWpp(true);
+    try {
+      localStorage.setItem("tisenai_user_whatsapp", digits);
+      localStorage.setItem("tisenai_user_whatsapp_display", limpo);
+      const alias = `${digits}@whatsapp.senailrv.local`;
+      localStorage.setItem("tisenai_user_email", alias);
+      localStorage.setItem("tisenai_email", alias);
+      setWhatsappSalvo(limpo);
+
+      toast.success(`Acesso liberado para o WhatsApp: ${limpo}`);
+      navigate({ to: "/meus-chamados" });
+    } catch (err) {
+      toast.error("Erro ao validar WhatsApp. Tente novamente.");
+    } finally {
+      setCarregandoWpp(false);
+    }
+  }
+
   const desconectar = async () => {
     localStorage.removeItem("tisenai_user_email");
+    localStorage.removeItem("tisenai_email");
+    localStorage.removeItem("tisenai_user_whatsapp");
+    localStorage.removeItem("tisenai_user_whatsapp_display");
     setEmailSalvo(null);
+    setWhatsappSalvo(null);
     await sair();
     toast.success("Desconectado com sucesso.");
   };
@@ -119,22 +165,28 @@ function AuthPage() {
         {/* Cabeçalho */}
         <div className="text-center space-y-2">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-g-blue/10 text-g-blue">
-            <Mail className="size-6 text-g-blue" />
+            {modoAcesso === "whatsapp" ? (
+              <MessageCircle className="size-6 text-[#25D366]" />
+            ) : (
+              <Mail className="size-6 text-g-blue" />
+            )}
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Acesso ao Sistema</h1>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Acompanhe seus chamados de suporte informando o e-mail utilizado na abertura.
+            Acompanhe seus chamados informando o e-mail ou o número de WhatsApp usado na abertura.
           </p>
         </div>
 
         {/* Status de conectado */}
-        {emailAtivo && (
+        {(emailAtivo || whatsappAtivo) && (
           <div className="rounded-xl border border-g-green/30 bg-g-green/10 p-3.5 text-center space-y-2.5">
             <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-g-green dark:text-green-400">
               <CheckCircle2 className="size-4" />
               <span>Conectado como</span>
             </div>
-            <p className="text-xs font-mono font-medium text-foreground truncate">{emailAtivo}</p>
+            <p className="text-xs font-mono font-medium text-foreground truncate">
+              {whatsappAtivo ? `WhatsApp: ${whatsappAtivo}` : emailAtivo}
+            </p>
             <div className="flex flex-col gap-2 pt-1">
               <Button asChild size="sm" variant="google-green" className="w-full font-semibold">
                 <Link to="/meus-chamados">Acessar Meus Chamados</Link>
@@ -151,51 +203,121 @@ function AuthPage() {
                 className="w-full text-xs text-muted-foreground hover:text-foreground"
                 onClick={desconectar}
               >
-                <LogOut className="mr-1.5 size-3.5" /> Sair ou trocar e-mail
+                <LogOut className="mr-1.5 size-3.5" /> Sair ou trocar identificação
               </Button>
             </div>
           </div>
         )}
 
-        {/* Formulário de Login Simples / Passwordless por E-mail */}
-        <form onSubmit={entrarComEmail} className="space-y-4 pt-1">
-          <div className="space-y-1.5">
-            <Label htmlFor="email-acesso" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Acesso por E-mail (Sem Senha)
-            </Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                id="email-acesso"
-                type="email"
-                required
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                placeholder="seu.email@senaimt.ind.br"
-                className="pl-9 h-11 text-sm bg-background"
-                disabled={carregandoEmail}
-              />
-            </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Digite o mesmo e-mail utilizado na abertura do chamado para liberar seu ambiente instantaneamente.
-            </p>
+        {/* Alternador de Método de Entrada: E-mail ou WhatsApp */}
+        <div className="space-y-3">
+          <div className="flex rounded-xl bg-muted p-1 border border-border">
+            <button
+              type="button"
+              onClick={() => setModoAcesso("email")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
+                modoAcesso === "email"
+                  ? "bg-card text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Mail className="size-3.5 text-g-blue" /> Por E-mail
+            </button>
+            <button
+              type="button"
+              onClick={() => setModoAcesso("whatsapp")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
+                modoAcesso === "whatsapp"
+                  ? "bg-card text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <MessageCircle className="size-3.5 text-[#25D366]" /> Por WhatsApp
+            </button>
           </div>
 
-          <Button
-            type="submit"
-            variant="google-blue"
-            className="w-full h-11 font-semibold gap-2 shadow-xs text-sm"
-            disabled={carregandoEmail || !emailInput.trim()}
-          >
-            {carregandoEmail ? (
-              "Validando e acessando..."
-            ) : (
-              <>
-                Acessar meus chamados <ArrowRight className="size-4" />
-              </>
-            )}
-          </Button>
-        </form>
+          {modoAcesso === "email" ? (
+            /* Formulário de Login por E-mail */
+            <form onSubmit={entrarComEmail} className="space-y-4 pt-1">
+              <div className="space-y-1.5">
+                <Label htmlFor="email-acesso" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Acesso por E-mail
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    id="email-acesso"
+                    type="email"
+                    required
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    placeholder="seu.email@senaimt.ind.br"
+                    className="pl-9 h-11 text-sm bg-background"
+                    disabled={carregandoEmail}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Digite o mesmo e-mail informado ao abrir o chamado para liberar seu ambiente.
+                </p>
+              </div>
+
+              <Button
+                type="submit"
+                variant="google-blue"
+                className="w-full h-11 font-semibold gap-2 shadow-xs text-sm"
+                disabled={carregandoEmail || !emailInput.trim()}
+              >
+                {carregandoEmail ? (
+                  "Validando e acessando..."
+                ) : (
+                  <>
+                    Acessar meus chamados <ArrowRight className="size-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+          ) : (
+            /* Formulário de Login por WhatsApp */
+            <form onSubmit={entrarComWhatsapp} className="space-y-4 pt-1">
+              <div className="space-y-1.5">
+                <Label htmlFor="whatsapp-acesso" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Acesso por WhatsApp (Número do Chamado)
+                </Label>
+                <div className="relative">
+                  <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#25D366]" />
+                  <Input
+                    id="whatsapp-acesso"
+                    type="tel"
+                    required
+                    value={whatsappInput}
+                    onChange={(e) => setWhatsappInput(e.target.value)}
+                    placeholder="(65) 99999-9999"
+                    className="pl-9 h-11 text-sm bg-background"
+                    disabled={carregandoWpp}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Digite o mesmo número de WhatsApp utilizado na abertura do chamado.
+                </p>
+              </div>
+
+              <Button
+                type="submit"
+                variant="google-green"
+                className="w-full h-11 font-semibold gap-2 shadow-xs text-sm"
+                disabled={carregandoWpp || !whatsappInput.trim()}
+              >
+                {carregandoWpp ? (
+                  "Consultando chamados..."
+                ) : (
+                  <>
+                    Acessar com WhatsApp <ArrowRight className="size-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+          )}
+        </div>
 
         {/* Separador */}
         <div className="relative">

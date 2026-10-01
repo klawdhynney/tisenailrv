@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Cpu, MapPin, CheckCircle2, MessageCircle, ArrowLeft, SendHorizontal } from "lucide-react";
+import { Cpu, MapPin, CheckCircle2, MessageCircle, ArrowLeft, SendHorizontal, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,7 @@ interface FormValues {
   descricao: string;
 }
 
+  const [metodoAbertura, setMetodoAbertura] = useState<"email" | "whatsapp">("email");
   const [form, setForm] = useState<FormValues>({
     solicitante: "",
     email: "",
@@ -71,7 +72,13 @@ interface FormValues {
           contato: typeof saved.contato === "string" ? saved.contato : "",
           local: typeof saved.local === "string" ? saved.local : "",
         }));
+        if (saved.metodoAbertura === "whatsapp" || (!saved.email && saved.contato)) {
+          setMetodoAbertura("whatsapp");
+        }
         setLembrar(true);
+      } else {
+        const salvoWpp = localStorage.getItem("tisenai_user_whatsapp");
+        if (salvoWpp) setMetodoAbertura("whatsapp");
       }
     } catch {
       localStorage.removeItem("ti-senai-dados");
@@ -85,6 +92,7 @@ interface FormValues {
       localStorage.setItem(
         "ti-senai-dados",
         JSON.stringify({
+          metodoAbertura,
           solicitante: form.solicitante,
           email: form.email,
           setor: form.setor,
@@ -95,7 +103,7 @@ interface FormValues {
     } else {
       localStorage.removeItem("ti-senai-dados");
     }
-  }, [preferenciaCarregada, lembrar, form.solicitante, form.email, form.setor, form.contato, form.local]);
+  }, [preferenciaCarregada, lembrar, metodoAbertura, form.solicitante, form.email, form.setor, form.contato, form.local]);
 
   const set = (k: string, v: string) => {
     if (k in form) {
@@ -116,10 +124,18 @@ interface FormValues {
       }
     }
 
-    if (isCampoAtivo("email")) {
+    if (metodoAbertura === "whatsapp") {
+      const digits = (form.contato || "").replace(/\D/g, "");
+      if (digits.length < 10) {
+        novosErros.contato = "Informe seu WhatsApp com DDD (ex: 65 99999-9999).";
+      }
+      if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+        novosErros.email = "Informe um e-mail válido ou deixe em branco.";
+      }
+    } else {
       const val = (form.email || "").trim();
-      if (isCampoObrigatorio("email") && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
-        novosErros.email = "Informe um e-mail válido.";
+      if (!val || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+        novosErros.email = "Informe um e-mail válido para identificação.";
       }
     }
 
@@ -141,13 +157,6 @@ interface FormValues {
       const val = (form.local || "").trim();
       if (isCampoObrigatorio("local") && !val) {
         novosErros.local = "Informe o local exato / sala.";
-      }
-    }
-
-    if (isCampoAtivo("contato")) {
-      const val = (form.contato || "").trim();
-      if (isCampoObrigatorio("contato") && !val) {
-        novosErros.contato = "Informe o WhatsApp ou telefone.";
       }
     }
 
@@ -187,6 +196,11 @@ interface FormValues {
       .join("\n");
 
     const descricaoFinal = [form.descricao ? form.descricao.trim() : "", customData].filter(Boolean).join("\n\n");
+    const digitsContato = (form.contato || "").replace(/\D/g, "");
+    const emailCalculado =
+      metodoAbertura === "whatsapp" && !form.email.trim()
+        ? `${digitsContato || "contato"}@whatsapp.senailrv.local`
+        : (form.email ? form.email.trim() : "solicitante@senaimt.ind.br");
 
     const ticketId = await addTicket(
       {
@@ -205,7 +219,7 @@ interface FormValues {
         horario: null,
         procedimento: null,
       },
-      form.email ? form.email.trim() : "solicitante@senaimt.ind.br",
+      emailCalculado,
     );
 
     setEnviando(false);
@@ -217,14 +231,20 @@ interface FormValues {
     setSucessoId(ticketId);
 
     try {
-      const emailFinal = (form.email ? form.email.trim() : "solicitante@senaimt.ind.br").toLowerCase();
+      const emailFinal = emailCalculado.toLowerCase();
       localStorage.setItem("tisenai_user_email", emailFinal);
+      localStorage.setItem("tisenai_email", emailFinal);
+      if (digitsContato.length >= 10) {
+        localStorage.setItem("tisenai_user_whatsapp", digitsContato);
+        localStorage.setItem("tisenai_user_whatsapp_display", form.contato.trim());
+      }
       const existentes = JSON.parse(localStorage.getItem("tisenai_meus_tickets") || "[]");
       const novos = [
         {
           id: ticketId,
           aberto_em: new Date().toISOString().split("T")[0],
           email: emailFinal,
+          contato: form.contato ? form.contato.trim() : null,
           solicitante: form.solicitante?.trim() || "Solicitante",
           setor: form.setor || "Geral",
           local: form.local || "",
@@ -317,20 +337,74 @@ interface FormValues {
         </CardHeader>
         <CardContent>
           <form onSubmit={enviar} className="grid gap-5">
-            {(isCampoAtivo("solicitante") || isCampoAtivo("email")) && (
-              <div className="grid gap-5 sm:grid-cols-2">
-                {isCampoAtivo("solicitante") && (
-                  <Campo label={getCampoLabel("solicitante", "Seu nome")} obrigatorio={isCampoObrigatorio("solicitante")} erro={erros.solicitante}>
-                    <Input autoComplete="name" value={form.solicitante} onChange={(e) => set("solicitante", e.target.value)} placeholder="Digite seu nome completo" />
-                  </Campo>
-                )}
-                {isCampoAtivo("email") && (
-                  <Campo label={getCampoLabel("email", "E-mail")} obrigatorio={isCampoObrigatorio("email")} erro={erros.email}>
-                    <Input autoComplete="email" type="email" required={isCampoObrigatorio("email")} value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="seu@email.com" />
-                  </Campo>
-                )}
+            {/* Opção para o usuário escolher como deseja abrir a solicitação */}
+            <div className="rounded-2xl border-2 border-border/80 bg-muted/30 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-1">
+                <span className="text-xs font-black uppercase tracking-wider text-g-blue">
+                  Como prefere abrir e acompanhar sua solicitação?
+                </span>
+                <span className="text-[11px] font-semibold text-muted-foreground">Identificação para login</span>
               </div>
-            )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMetodoAbertura("email")}
+                  className={`flex items-center justify-center gap-2.5 rounded-xl py-3 px-4 text-xs font-extrabold transition-all border-2 cursor-pointer ${
+                    metodoAbertura === "email"
+                      ? "bg-g-blue text-white shadow-md border-g-blue ring-2 ring-g-blue/30 scale-[1.01]"
+                      : "bg-card text-muted-foreground hover:bg-muted/80 border-border"
+                  }`}
+                >
+                  <Mail className="size-4" /> Usar E-mail
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMetodoAbertura("whatsapp")}
+                  className={`flex items-center justify-center gap-2.5 rounded-xl py-3 px-4 text-xs font-extrabold transition-all border-2 cursor-pointer ${
+                    metodoAbertura === "whatsapp"
+                      ? "bg-[#25D366] text-white shadow-md border-[#25D366] ring-2 ring-[#25D366]/30 scale-[1.01]"
+                      : "bg-card text-muted-foreground hover:bg-muted/80 border-border"
+                  }`}
+                >
+                  <MessageCircle className="size-4" /> Usar número do WhatsApp
+                </button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {metodoAbertura === "whatsapp"
+                  ? "✓ O chamado será vinculado ao seu número de WhatsApp para consulta e login rápido."
+                  : "✓ O chamado será vinculado ao seu e-mail institucional para consulta e acompanhamento."}
+              </p>
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              {isCampoAtivo("solicitante") && (
+                <Campo label={getCampoLabel("solicitante", "Seu nome")} obrigatorio={isCampoObrigatorio("solicitante")} erro={erros.solicitante}>
+                  <Input autoComplete="name" value={form.solicitante} onChange={(e) => set("solicitante", e.target.value)} placeholder="Digite seu nome completo" />
+                </Campo>
+              )}
+
+              {metodoAbertura === "whatsapp" ? (
+                <Campo label="Número do WhatsApp (Identificação)" obrigatorio={true} erro={erros.contato}>
+                  <Input
+                    value={form.contato}
+                    onChange={(e) => set("contato", e.target.value)}
+                    placeholder="(65) 99999-9999"
+                    className="font-medium"
+                  />
+                </Campo>
+              ) : (
+                <Campo label={getCampoLabel("email", "E-mail (Identificação)")} obrigatorio={true} erro={erros.email}>
+                  <Input
+                    autoComplete="email"
+                    type="email"
+                    required
+                    value={form.email}
+                    onChange={(e) => set("email", e.target.value)}
+                    placeholder="seu@email.com"
+                  />
+                </Campo>
+              )}
+            </div>
 
             {(isCampoAtivo("setor") || isCampoAtivo("categoria")) && (
               <div className="grid gap-5 sm:grid-cols-2">
@@ -365,20 +439,33 @@ interface FormValues {
               </div>
             )}
 
-            {(isCampoAtivo("local") || isCampoAtivo("contato")) && (
-              <div className="grid gap-5 sm:grid-cols-2">
-                {isCampoAtivo("local") && (
-                  <Campo label={getCampoLabel("local", "Local exato / Sala")} obrigatorio={isCampoObrigatorio("local")} erro={erros.local}>
-                    <Input value={form.local} onChange={(e) => set("local", e.target.value)} placeholder="Ex.: Bloco A, Sala 3, Mesa 02" />
-                  </Campo>
-                )}
-                {isCampoAtivo("contato") && (
-                  <Campo label={getCampoLabel("contato", "WhatsApp / Telefone")} obrigatorio={isCampoObrigatorio("contato")} erro={erros.contato}>
-                    <Input value={form.contato} onChange={(e) => set("contato", e.target.value)} placeholder="(66) 99999-9999" />
-                  </Campo>
-                )}
-              </div>
-            )}
+            <div className="grid gap-5 sm:grid-cols-2">
+              {isCampoAtivo("local") && (
+                <Campo label={getCampoLabel("local", "Local exato / Sala")} obrigatorio={isCampoObrigatorio("local")} erro={erros.local}>
+                  <Input value={form.local} onChange={(e) => set("local", e.target.value)} placeholder="Ex.: Bloco A, Sala 3, Mesa 02" />
+                </Campo>
+              )}
+
+              {metodoAbertura === "whatsapp" ? (
+                <Campo label="E-mail adicional (Opcional)" obrigatorio={false} erro={erros.email}>
+                  <Input
+                    autoComplete="email"
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => set("email", e.target.value)}
+                    placeholder="seu@email.com (opcional)"
+                  />
+                </Campo>
+              ) : (
+                <Campo label="WhatsApp / Telefone (Opcional)" obrigatorio={false} erro={erros.contato}>
+                  <Input
+                    value={form.contato}
+                    onChange={(e) => set("contato", e.target.value)}
+                    placeholder="(65) 99999-9999 (opcional)"
+                  />
+                </Campo>
+              )}
+            </div>
 
             {customFields.length > 0 && (
               <div className="grid gap-5 sm:grid-cols-2">

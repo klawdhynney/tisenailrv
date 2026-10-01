@@ -297,23 +297,14 @@ function TicketEditor({
         </div>
       </div>
 
-      {/* 2. Card: Descrição com IA */}
+      {/* 2. Card: Descrição do Problema */}
       <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
             2. Descrição do Problema
           </h2>
-          <Button
-            type="button"
-            size="sm"
-            disabled={suggesting}
-            onClick={suggestPriority}
-            className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-xs hover:shadow-md transition-all border-0 text-xs px-3 py-1.5"
-          >
-            <Sparkles className="size-3.5 animate-pulse" /> {suggesting ? "Analisando prioridade…" : "Aprimorar texto com IA"}
-          </Button>
         </div>
-        <TextoAssistido value={draft.descricao} onChange={(value) => field("descricao", value)} />
+        <TextoAssistido value={draft.descricao} onChange={(value) => field("descricao", value)} ocultarIa={true} />
       </div>
 
       {/* 3. Card: Procedimento Técnico */}

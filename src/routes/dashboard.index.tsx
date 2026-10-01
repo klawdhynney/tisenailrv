@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { BarChart3, ChartArea, CircleDot, ClipboardList, FileSpreadsheet, FileText, PieChartIcon, Printer, Table2 } from "lucide-react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { BarChart3, ChartArea, CircleDot, ClipboardList, FileSpreadsheet, FileText, LineChart as LineChartIcon, PieChartIcon, Printer, Table2, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { calcularSla } from "@/lib/sla";
 import { useStore } from "@/lib/store-context";
@@ -46,7 +46,7 @@ const RECORRENTES = [
   { name: "Impressoras e toner", value: 7 },
 ] as const;
 type Visao = (typeof VISOES)[number]["id"];
-type TipoGrafico = "pizza" | "barras" | "area" | "bolhas";
+type TipoGrafico = "pizza" | "barras" | "area" | "linhas" | "bolhas";
 type Item = { name: string; value: number };
 
 const mesAtualPadrao = () => {
@@ -222,12 +222,144 @@ function Dashboard() {
           <Button size="sm" variant={tipoGrafico === "pizza" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("pizza")}><PieChartIcon className="size-4" /> Pizza</Button>
           <Button size="sm" variant={tipoGrafico === "barras" ? "google-red" : "outline"} onClick={() => setTipoGrafico("barras")}><BarChart3 className="size-4" /> Barras</Button>
           <Button size="sm" variant={tipoGrafico === "area" ? "google-green" : "outline"} onClick={() => setTipoGrafico("area")}><ChartArea className="size-4" /> Área</Button>
+          <Button size="sm" variant={tipoGrafico === "linhas" ? "google-yellow" : "outline"} onClick={() => setTipoGrafico("linhas")}><LineChartIcon className="size-4" /> Linhas</Button>
           <Button size="sm" variant={tipoGrafico === "bolhas" ? "google-purple" : "outline"} onClick={() => setTipoGrafico("bolhas")}><CircleDot className="size-4" /> Bolhas</Button>
         </div>
       </div>
-       <Grafico key={`${visao}-${tipoGrafico}`} dados={dados} tipo={tipoGrafico} cor={cor} />
+      <Grafico key={`${visao}-${tipoGrafico}`} dados={dados} tipo={tipoGrafico} cor={cor} />
+    </section>
+
+    {/* Gráfico adicional de Linhas: Tendência e Evolução Temporal */}
+    <section className="min-w-0 border-t-2 border-border/80 pt-6 mt-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-g-blue/15 text-g-blue">
+            <TrendingUp className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Evolução dos Chamados (Linhas)</h2>
+            <p className="text-xs font-medium text-muted-foreground">Histórico e tendência comparativa de chamados registrados por período.</p>
+          </div>
+        </div>
+      </div>
+
+      <GraficoLinhasEvolucao stats={publicStats} />
     </section>
   </div>;
+}
+
+function GraficoLinhasEvolucao({ stats }: { stats: Database["public"]["Tables"]["ticket_public_stats"]["Row"][] }) {
+  const dados = useMemo(() => {
+    const mapa = new Map<string, { mes: string; label: string; Total: number; Resolvidos: number; "Em atendimento": number }>();
+    for (const m of MESES_DISPONIVEIS) {
+      mapa.set(m.key, { mes: m.key, label: m.label.replace("/2026", "").trim(), Total: 0, Resolvidos: 0, "Em atendimento": 0 });
+    }
+    for (const r of stats) {
+      if (!mapa.has(r.mes)) {
+        mapa.set(r.mes, { mes: r.mes, label: r.mes, Total: 0, Resolvidos: 0, "Em atendimento": 0 });
+      }
+      const cur = mapa.get(r.mes)!;
+      cur.Total += r.total;
+      if (r.status === "Resolvido") cur.Resolvidos += r.total;
+      else if (!["Resolvido", "Cancelado"].includes(r.status)) cur["Em atendimento"] += r.total;
+    }
+    const lista = [...mapa.values()].filter(d => d.Total > 0);
+    return lista.length > 0 ? lista : [{ mes: "2026-01", label: "Janeiro", Total: 0, Resolvidos: 0, "Em atendimento": 0 }];
+  }, [stats]);
+
+  const series = [
+    { key: "Total", cor: "#1a73e8", label: "Total de Chamados" },
+    { key: "Resolvidos", cor: "#34a853", label: "Resolvidos" },
+    { key: "Em atendimento", cor: "#f9ab00", label: "Em Atendimento" },
+  ] as const;
+
+  const totalGeral = dados.reduce((sum, d) => sum + d.Total, 0);
+
+  return (
+    <div className="chart-enter flex flex-col xl:flex-row items-center justify-center gap-6 w-full py-2">
+      <div className="h-[320px] w-full flex-1 min-w-[280px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={dados} margin={{ left: 10, right: 30, top: 15, bottom: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
+            <XAxis dataKey="label" tick={{ fill: "var(--foreground)", fontSize: 11, fontWeight: 600 }} />
+            <YAxis allowDecimals={false} tick={{ fill: "var(--foreground)", fontSize: 11 }} />
+            <Tooltip
+              content={({ active, payload, label }: any) => {
+                if (!active || !payload?.length) return null;
+                return (
+                  <div className="rounded-xl border-2 border-border/80 bg-card/95 px-4 py-3 shadow-xl backdrop-blur-md text-xs">
+                    <p className="font-extrabold text-foreground mb-2">{label}</p>
+                    <div className="space-y-1">
+                      {payload.map((p: any) => (
+                        <div key={p.dataKey} className="flex items-center justify-between gap-4">
+                          <span className="flex items-center gap-1.5 font-semibold text-muted-foreground">
+                            <span className="size-2.5 rounded-full" style={{ backgroundColor: p.color }} />
+                            {p.name}:
+                          </span>
+                          <span className="font-bold text-foreground font-mono">{p.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }}
+            />
+            {series.map((s) => (
+              <Line
+                key={s.key}
+                type="monotone"
+                dataKey={s.key}
+                name={s.label}
+                stroke={s.cor}
+                strokeWidth={3}
+                dot={{ r: 4.5, fill: s.cor, strokeWidth: 2, stroke: "#ffffff" }}
+                activeDot={{ r: 7, stroke: s.cor, strokeWidth: 2.5, fill: "#ffffff" }}
+                isAnimationActive
+                animationDuration={650}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Legendas posicionadas no lado direito */}
+      <aside
+        aria-label="Legendas do gráfico de linhas"
+        className="w-full xl:w-72 max-h-[320px] rounded-2xl border-2 border-border/80 bg-card/90 p-4 shadow-sm backdrop-blur-xs flex flex-col space-y-2 shrink-0"
+      >
+        <div className="flex items-center justify-between border-b border-border/70 pb-2 px-1">
+          <span className="text-xs font-black uppercase tracking-wider text-g-blue">
+            Legendas (Linhas)
+          </span>
+          <span className="text-[11px] font-bold text-muted-foreground">
+            {totalGeral} registros
+          </span>
+        </div>
+        <div className="space-y-2 pt-1">
+          {series.map((s) => {
+            const somaSerie = dados.reduce((sum, d) => sum + (d[s.key] || 0), 0);
+            return (
+              <div
+                key={s.key}
+                className="flex items-center justify-between gap-2.5 rounded-xl px-2.5 py-2 transition-all hover:bg-muted/70 text-xs"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span
+                    className="size-3 rounded-full shrink-0 shadow-xs ring-1 ring-black/10"
+                    style={{ backgroundColor: s.cor }}
+                  />
+                  <span className="font-bold text-foreground truncate">{s.label}</span>
+                </div>
+                <div className="font-mono font-extrabold text-foreground shrink-0">
+                  {somaSerie}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </aside>
+    </div>
+  );
 }
 
 function GraficoBolhas({ dados, cor }: { dados: Item[]; cor: (name: string, i: number) => string }) {
@@ -267,8 +399,20 @@ function GraficoBolhas({ dados, cor }: { dados: Item[]; cor: (name: string, i: n
           const scale = Math.sqrt(d.value / maxVal);
           const r = Math.max(26, Math.min(54, Math.round(26 + scale * 26)));
           const percent = totalVal > 0 ? Math.round((d.value / totalVal) * 100) : 0;
+          const animId = (i % 4) + 1;
+          const animDur = (4.2 + (i % 3) * 1.3).toFixed(1);
+          const animDelay = (i * 0.35).toFixed(1);
+
           return (
-            <g key={d.name} className="cursor-pointer transition-all duration-300 hover:opacity-95 group" filter="url(#bubble-shadow)">
+            <g
+              key={d.name}
+              className="cursor-pointer transition-all duration-300 hover:opacity-95 group floating-bubble"
+              filter="url(#bubble-shadow)"
+              style={{
+                animation: `float-bubble-${animId} ${animDur}s ease-in-out infinite`,
+                animationDelay: `${animDelay}s`,
+              }}
+            >
               <title>{`${d.name}: ${d.value} chamado(s) (${percent}%)`}</title>
               <circle
                 cx={pos.x}
@@ -368,7 +512,7 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
       </PieChart>
     ) : tipo === "barras" ? (
       <BarChart data={dados} layout="vertical" margin={{ left: 20, right: 30 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
         <XAxis type="number" allowDecimals={false} />
         <YAxis dataKey="name" type="category" width={160} tick={{ fill: "var(--foreground)", fontSize: 11 }} />
         <Tooltip content={<CustomTooltip />} />
@@ -384,21 +528,79 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
       </BarChart>
     ) : tipo === "area" ? (
       <AreaChart data={dados} margin={{ left: 10, right: 20, top: 20 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
         <XAxis dataKey="name" tick={{ fill: "var(--foreground)", fontSize: 11 }} interval={0} />
         <YAxis allowDecimals={false} />
         <Tooltip content={<CustomTooltip />} />
         <Area type="monotone" dataKey="value" name="Chamados" stroke="var(--g-blue)" fill="var(--g-blue)" fillOpacity={0.24} strokeWidth={3} isAnimationActive animationDuration={650} />
       </AreaChart>
+    ) : tipo === "linhas" ? (
+      <LineChart data={dados} margin={{ left: 10, right: 20, top: 20, bottom: 10 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
+        <XAxis dataKey="name" tick={{ fill: "var(--foreground)", fontSize: 11 }} interval={0} />
+        <YAxis allowDecimals={false} tick={{ fill: "var(--foreground)", fontSize: 11 }} />
+        <Tooltip content={<CustomTooltip />} />
+        <Line
+          type="monotone"
+          dataKey="value"
+          name="Chamados"
+          stroke="#1a73e8"
+          strokeWidth={3}
+          dot={{ r: 5, fill: "#1a73e8", strokeWidth: 2, stroke: "#ffffff" }}
+          activeDot={{ r: 8, stroke: "#1a73e8", strokeWidth: 2, fill: "#ffffff" }}
+          isAnimationActive
+          animationDuration={650}
+        />
+      </LineChart>
     ) : (
       <GraficoBolhas dados={dados} cor={cor} />
     );
 
   return (
-    <div className="chart-enter flex flex-col items-center justify-center w-full py-2">
-      <div className="h-[400px] w-full max-w-3xl">
+    <div className="chart-enter flex flex-col xl:flex-row items-center justify-center gap-6 w-full py-2">
+      <div className="h-[390px] w-full flex-1 min-w-[280px]">
         {tipo === "bolhas" ? chart : <ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer>}
       </div>
+
+      {/* Legendas posicionadas no lado direito de todos os gráficos */}
+      <aside
+        aria-label="Legendas do gráfico"
+        className="w-full xl:w-72 max-h-[390px] overflow-y-auto rounded-2xl border-2 border-border/80 bg-card/90 p-4 shadow-sm backdrop-blur-xs flex flex-col space-y-2 shrink-0"
+      >
+        <div className="flex items-center justify-between border-b border-border/70 pb-2 px-1">
+          <span className="text-xs font-black uppercase tracking-wider text-g-blue">
+            Legendas (Direita)
+          </span>
+          <span className="text-[11px] font-bold text-muted-foreground">
+            {dados.reduce((s, x) => s + x.value, 0)} chamados
+          </span>
+        </div>
+        <div className="space-y-1.5 overflow-y-auto pr-1">
+          {dados.map((d, i) => {
+            const pct = totalVal > 0 ? ((d.value / totalVal) * 100).toFixed(1) : "0";
+            return (
+              <div
+                key={d.name}
+                className="flex items-center justify-between gap-2.5 rounded-xl px-2.5 py-1.5 transition-all hover:bg-muted/70 text-xs"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span
+                    className="size-3 rounded-full shrink-0 shadow-xs ring-1 ring-black/10"
+                    style={{ backgroundColor: cor(d.name, i) }}
+                  />
+                  <span className="font-bold text-foreground truncate" title={d.name}>
+                    {d.name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0 font-mono">
+                  <span className="font-extrabold text-foreground">{d.value}</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">({pct}%)</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </aside>
     </div>
   );
 }

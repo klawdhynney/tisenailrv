@@ -36,11 +36,13 @@ export function TextoAssistido({
   onChange,
   rows = 5,
   placeholder,
+  ocultarIa = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   rows?: number;
   placeholder?: string;
+  ocultarIa?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
   const [sugestoes, setSugestoes] = useState<{ versao1: string; versao2: string } | null>(null);
@@ -104,15 +106,17 @@ export function TextoAssistido({
           ))}
         </div>
       )}
-      <Button
-        type="button"
-        size="sm"
-        disabled={loading || value.trim().length < 5}
-        onClick={revisar}
-        className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-md hover:shadow-lg transition-all duration-200 border-0"
-      >
-        <Sparkles className="size-4 animate-pulse" /> {loading ? "Aprimorando texto com IA…" : "Aprimorar texto com IA"}
-      </Button>
+      {!ocultarIa && (
+        <Button
+          type="button"
+          size="sm"
+          disabled={loading || value.trim().length < 5}
+          onClick={revisar}
+          className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-md hover:shadow-lg transition-all duration-200 border-0"
+        >
+          <Sparkles className="size-4 animate-pulse" /> {loading ? "Aprimorando texto com IA…" : "Aprimorar texto com IA"}
+        </Button>
+      )}
 
       {sugestoes && (
         <div className="rounded-2xl border-2 border-g-blue/30 bg-card p-4 text-sm shadow-md space-y-4 animate-in fade-in">
