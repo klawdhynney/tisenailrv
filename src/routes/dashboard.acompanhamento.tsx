@@ -82,6 +82,6 @@ function Acompanhamento() {
         </tbody>
       </table>
     </div>
-    <div className="flex flex-wrap items-center justify-between gap-3"><span className="text-sm text-muted-foreground">{progress.length} chamado(s) · página {page} de {pages}</span><div className="flex gap-2"><Button variant="outline" disabled={page <= 1} onClick={() => setPage(x => x - 1)}>Anterior</Button><Button variant="outline" disabled={page >= pages} onClick={() => setPage(x => x + 1)}>Próxima</Button></div></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><span className="text-sm text-muted-foreground">{progress.length} chamados · página {page} de {pages}</span><div className="flex gap-2"><Button variant="outline" disabled={page <= 1} onClick={() => setPage(x => x - 1)}>Anterior</Button><Button variant="outline" disabled={page >= pages} onClick={() => setPage(x => x + 1)}>Próxima</Button></div></div>
   </section>;
 }

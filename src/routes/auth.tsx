@@ -126,7 +126,7 @@ function AuthPage() {
     const digits = limpo.replace(/\D/g, "");
 
     if (digits.length < 10) {
-      toast.error("Informe um número de WhatsApp válido com DDD (ex: 65 99999-9999).");
+      toast.error("Informe um número de WhatsApp válido com DDD.");
       return;
     }
 
@@ -193,7 +193,7 @@ function AuthPage() {
               </Button>
               {isGestor && (
                 <Button asChild size="sm" variant="google-blue" className="w-full font-semibold">
-                  <Link to="/atendimento">Painel de Atendimento (Gestor)</Link>
+                  <Link to="/atendimento">Painel de Atendimento</Link>
                 </Button>
               )}
               <Button
@@ -291,7 +291,7 @@ function AuthPage() {
                     required
                     value={whatsappInput}
                     onChange={(e) => setWhatsappInput(e.target.value)}
-                    placeholder="(65) 99999-9999"
+                    placeholder="65 99999-9999"
                     className="pl-9 h-11 text-sm bg-background"
                     disabled={carregandoWpp}
                   />

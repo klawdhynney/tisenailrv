@@ -134,6 +134,8 @@ function Dashboard() {
     }, `Dashboard_Completo_${mes}`);
   };
 
+  const [serieAberta, setSerieAberta] = useState(false);
+
   return (
     <div className="space-y-7 dashboard-print">
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -159,7 +161,22 @@ function Dashboard() {
       )}
     </header>
 
-    <section className="no-print rounded-xl border-2 border-g-blue/60 bg-card px-4 py-2.5 shadow-sm">
+    {/* Resumo de Indicadores no Topo */}
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          ["Total de chamados", total, "border-g-blue", "text-g-blue"],
+          ["Em atendimento", ativos, "border-g-yellow", "text-g-yellow"],
+          ["Resolvidos", resolvidos, "border-g-green", "text-g-green"],
+        ].map(([label, count, border, color]) => (
+          <div key={String(label)} className={`rounded-xl border-l-4 ${border} bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}>
+            <p className="text-sm font-semibold text-muted-foreground">{label}</p>
+            <p className={`mt-1 text-3xl font-black tracking-tight ${color}`}>{count}</p>
+          </div>
+        ))}
+      </div>
+
+    {/* Filtros de dados posicionados logo próximos aos gráficos correspondentes */}
+    <section className="no-print rounded-xl border-2 border-g-blue/60 bg-card px-4 py-3 shadow-sm transition-all">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-black uppercase tracking-wider text-g-blue">Filtrar:</span>
@@ -178,29 +195,34 @@ function Dashboard() {
             </select>
           </label>
         </div>
-        <Button asChild size="sm" className="ml-auto" variant="google-blue">
-          <Link to="/dashboard/acompanhamento">
-            <ClipboardList className="size-3.5" /> Acompanhar chamado
-          </Link>
-        </Button>
+
+        <div className="flex flex-wrap items-center gap-2 ml-auto">
+          <Button
+            size="sm"
+            variant={serieAberta ? "google-blue" : "outline"}
+            onClick={() => {
+              setSerieAberta((v) => !v);
+              setTimeout(() => {
+                document.getElementById("secao-serie-historica")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }, 60);
+            }}
+            className="font-bold shadow-xs transition-all hover:scale-[1.02]"
+          >
+            <Activity className="size-4 mr-1.5" />
+            Série histórica por chamados
+          </Button>
+
+          <Button asChild size="sm" variant="google-green" className="font-semibold shadow-xs">
+            <Link to="/dashboard/acompanhamento">
+              <ClipboardList className="size-3.5 mr-1" /> Acompanhar chamados
+            </Link>
+          </Button>
+        </div>
       </div>
     </section>
 
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[
-          ["Total de chamados", total, "border-g-blue", "text-g-blue"],
-          ["Em atendimento", ativos, "border-g-yellow", "text-g-yellow"],
-          ["Resolvidos", resolvidos, "border-g-green", "text-g-green"],
-        ].map(([label, count, border, color]) => (
-          <div key={String(label)} className={`rounded-xl border-l-4 ${border} bg-card p-5 shadow-sm`}>
-            <p className="text-sm font-semibold text-muted-foreground">{label}</p>
-            <p className={`mt-1 text-3xl font-black tracking-tight ${color}`}>{count}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Gráfico Principal: Série Histórica Dinâmica com Accordion Expansível */}
-      <GraficoSerieHistoricaTech stats={publicStats} />
+    {/* Gráfico Principal: Série Histórica Dinâmica com Accordion Expansível */}
+    <GraficoSerieHistoricaTech stats={publicStats} aberto={serieAberta} setAberto={setSerieAberta} />
 
       {/* Seção Categórica e Distribuição */}
       <div className="border-t-2 border-border/80 pt-6">
@@ -267,8 +289,15 @@ type SeriePonto = {
   taxaResolucao: number;
 };
 
-function GraficoSerieHistoricaTech({ stats }: { stats: Database["public"]["Tables"]["ticket_public_stats"]["Row"][] }) {
-  const [aberto, setAberto] = useState(false);
+function GraficoSerieHistoricaTech({
+  stats,
+  aberto,
+  setAberto,
+}: {
+  stats: Database["public"]["Tables"]["ticket_public_stats"]["Row"][];
+  aberto: boolean;
+  setAberto: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
   const mesesCompletos = useMemo(() => {
     const mapa = new Map<string, SeriePonto>();
     for (const m of MESES_DISPONIVEIS) {
@@ -422,7 +451,7 @@ function GraficoSerieHistoricaTech({ stats }: { stats: Database["public"]["Table
   };
 
   return (
-    <section className="rounded-xl border-2 border-g-blue/60 bg-card shadow-sm transition-all overflow-hidden">
+    <section id="secao-serie-historica" className="rounded-xl border-2 border-g-blue/60 bg-card shadow-sm transition-all overflow-hidden scroll-mt-24">
       {/* Cabeçalho do Accordion (Abrir / Recolher) */}
       <div
         role="button"

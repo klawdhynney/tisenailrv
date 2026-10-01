@@ -22,7 +22,7 @@ function AreaGestor() {
         <ShieldAlert className="mx-auto h-10 w-10 text-[var(--g-yellow)]" />
         <h1 className="mt-4 text-xl font-bold">Acesso restrito à equipe de TI</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Sua conta ({session?.user.email}) não tem permissão de gestor. Entre com uma das contas autorizadas.
+          Sua conta não tem permissão de gestor. Entre com uma das contas autorizadas.
         </p>
       </div>
     );

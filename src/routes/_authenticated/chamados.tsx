@@ -85,7 +85,7 @@ function Planilha() {
           <PopoverTrigger asChild>
             <Button variant="outline" className="gap-2 border-g-blue/30 text-xs">
               <SlidersHorizontal className="size-4 text-g-blue" />
-              Dados para exportar ({camposExportacao.length}/{CAMPOS_EXPORTACAO.length})
+              Dados para exportar: {camposExportacao.length}/{CAMPOS_EXPORTACAO.length}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80 p-4 space-y-3" align="end">

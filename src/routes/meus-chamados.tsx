@@ -181,7 +181,7 @@ function AvaliacaoAtendimento({
             type="text"
             value={comentario}
             onChange={(e) => setComentario(e.target.value)}
-            placeholder="Deixe um elogio ou observação sobre o atendimento (opcional)..."
+            placeholder="Deixe um elogio ou observação sobre o atendimento..."
             className="w-full h-9 rounded-xl border border-input bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-g-blue"
           />
           <div className="flex justify-end gap-2">

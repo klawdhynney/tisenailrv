@@ -113,13 +113,13 @@ interface FormValues {
     if (isCampoAtivo("solicitante")) {
       const val = (form.solicitante || "").trim();
       if (isCampoObrigatorio("solicitante") && (val.length < 2 || val.length > 120)) {
-        novosErros.solicitante = "Informe seu nome (2 a 120 caracteres).";
+        novosErros.solicitante = "Informe seu nome completo.";
       }
     }
 
     const digits = (form.contato || "").replace(/\D/g, "");
     if (digits.length < 10) {
-      novosErros.contato = "Informe seu WhatsApp com DDD (ex: 65 99999-9999).";
+      novosErros.contato = "Informe seu WhatsApp com DDD.";
     }
 
     if (isCampoAtivo("setor")) {
@@ -321,11 +321,11 @@ interface FormValues {
                 </Campo>
               )}
 
-              <Campo label="Número do WhatsApp (Identificação)" obrigatorio={true} erro={erros.contato}>
+              <Campo label="Número do WhatsApp" obrigatorio={true} erro={erros.contato}>
                 <Input
                   value={form.contato}
                   onChange={(e) => set("contato", e.target.value)}
-                  placeholder="(65) 99999-9999"
+                  placeholder="65 99999-9999"
                   className="font-medium"
                 />
               </Campo>
@@ -387,7 +387,7 @@ interface FormValues {
             )}
 
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} /> Lembrar meus dados neste aparelho (nome, WhatsApp e setor)
+              <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} /> Lembrar meus dados neste aparelho
             </label>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">

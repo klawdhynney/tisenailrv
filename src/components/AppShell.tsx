@@ -7,14 +7,14 @@ import senaiIcone from "@/assets/senai-icone.png";
 import senaiCapa from "@/assets/senai-capa.png";
 
 const navPublico = [
-  { to: "/", label: "Início", icon: Home, variante: "google-blue" },
-  { to: "/abrir", label: "Abrir Chamado", icon: FilePlus2, variante: "google-green" },
-  { to: "/dashboard", label: "Dashboard", icon: BarChart3, variante: "google-red" },
+  { to: "/", label: "Início", icon: Home },
+  { to: "/abrir", label: "Abrir Chamado", icon: FilePlus2 },
+  { to: "/dashboard", label: "Dashboard", icon: BarChart3 },
 ] as const;
 
 const navGestor = [
-  { to: "/atendimento", label: "Atendimento", icon: Headset, variante: "google-green" },
-  { to: "/regras", label: "Painel de Ajustes", icon: Settings2, variante: "google-blue" },
+  { to: "/atendimento", label: "Atendimento", icon: Headset },
+  { to: "/regras", label: "Painel de Ajustes", icon: Settings2 },
 ] as const;
 
 type Tema = "claro" | "escuro";
@@ -42,27 +42,33 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const links = (mobile: boolean) =>
     itens.map((item) => (
-      <Button asChild variant={item.variante} key={item.to} className="font-bold">
       <Link
         key={item.to}
         to={item.to}
         onClick={() => mobile && setAberto(false)}
         activeOptions={{ exact: item.to === "/" }}
+        className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 cursor-pointer ${
+          mobile ? "w-full" : ""
+        } text-muted-foreground hover:text-foreground hover:bg-muted/60 [&.active]:bg-muted [&.active]:text-foreground [&.active]:font-bold [&.active]:shadow-xs`}
       >
-        <item.icon className="h-4 w-4" />
-        {item.label}
+        <item.icon className="h-4 w-4 shrink-0" />
+        <span>{item.label}</span>
       </Link>
-      </Button>
     ));
 
   const botaoConta = session ? (
-    <Button variant="outline" onClick={() => sair()} className="hover:border-g-red hover:text-g-red font-semibold">
-      <LogOut className="h-4 w-4 text-g-red" /> Sair
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => sair()}
+      className="font-medium text-xs text-muted-foreground hover:text-g-red hover:border-g-red/50 transition-colors"
+    >
+      <LogOut className="h-3.5 w-3.5 mr-1 text-g-red" /> Sair
     </Button>
   ) : (
-    <Button asChild variant="google-yellow">
+    <Button asChild variant="outline" size="sm" className="font-medium text-xs text-muted-foreground hover:text-foreground transition-colors">
       <Link to="/auth">
-        <LogIn className="h-4 w-4" /> Entrar
+        <LogIn className="h-3.5 w-3.5 mr-1" /> Entrar
       </Link>
     </Button>
   );
@@ -77,14 +83,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const botaoAlternarTema = (mobile: boolean) => (
     <Button
-      variant="outline"
+      variant="ghost"
       size={mobile ? "default" : "icon"}
       onClick={alternarTema}
       aria-label={tema === "escuro" ? "Alternar para modo claro" : "Alternar para modo escuro"}
       title={tema === "escuro" ? "Alternar para modo claro" : "Alternar para modo escuro"}
-      className={mobile ? "justify-start font-semibold gap-2" : "cursor-pointer transition-transform hover:scale-105"}
+      className={mobile ? "justify-start font-medium gap-2 text-muted-foreground hover:text-foreground" : "h-8.5 w-8.5 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"}
     >
-      {tema === "escuro" ? <Sun className="size-4 text-amber-400" /> : <Moon className="size-4 text-slate-700 dark:text-slate-300" />}
+      {tema === "escuro" ? <Sun className="size-4 text-amber-400" /> : <Moon className="size-4" />}
       {mobile && (tema === "escuro" ? "Modo Claro" : "Modo Escuro")}
     </Button>
   );
