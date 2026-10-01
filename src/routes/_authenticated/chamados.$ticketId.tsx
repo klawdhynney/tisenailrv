@@ -169,8 +169,14 @@ function TicketEditor({
       <label className="grid gap-2 text-sm font-medium">Categoria<select className="h-10 rounded-xl border border-input bg-background px-3" value={draft.categoria ?? ""} onChange={e => field("categoria", e.target.value)}>{regras.categorias.map(c => <option key={c}>{c}</option>)}</select></label>
       
        <div className="space-y-2">
-        <Button type="button" size="sm" variant="outline" disabled={suggesting} onClick={suggestPriority}>
-          <Sparkles className="size-4" /> {suggesting ? "Analisando…" : "Sugerir prioridade com IA"}
+        <Button
+          type="button"
+          size="sm"
+          disabled={suggesting}
+          onClick={suggestPriority}
+          className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-sm hover:shadow-md transition-all border-0"
+        >
+          <Sparkles className="size-4 animate-pulse" /> {suggesting ? "Analisando prioridade…" : "Sugerir prioridade com IA"}
         </Button>
         {suggested && (
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -192,13 +198,12 @@ function TicketEditor({
         <Button
           type="button"
           size="sm"
-          variant="outline"
           disabled={gerandoRespostas || draft.descricao.trim().length < 5}
           onClick={gerarRespostasTecnicas}
-          className="gap-1.5 text-xs text-g-blue hover:text-g-blue border-g-blue/30"
+          className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-sm hover:shadow-md transition-all border-0 text-xs px-3 py-1.5"
         >
-          <Sparkles className="size-3.5" />
-          {gerandoRespostas ? "Gerando respostas com IA…" : "Sugerir 2 respostas técnicas e descritivas (IA)"}
+          <Sparkles className="size-3.5 animate-pulse" />
+          {gerandoRespostas ? "Sugerindo resposta com IA…" : "Sugerir resposta com IA"}
         </Button>
       </div>
 
@@ -299,7 +304,17 @@ function TicketEditor({
           <Trash2 className="size-4" /> Excluir chamado
         </ConfirmAction>
       )}
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            if (hasChanges && !window.confirm("Deseja descartar as alterações e voltar?")) return;
+            navigate({ to: "/atendimento" });
+          }}
+        >
+          Cancelar
+        </Button>
         <ConfirmAction title={`Salvar alterações no chamado #${ticket.id}?`} description="Confira os dados antes de confirmar. As alterações aparecerão no acompanhamento do chamado." confirmLabel="Sim, salvar" onConfirm={save} disabled={!hasChanges || saving}>
           <Save className="size-4" /> {saving ? "Salvando…" : "Salvar"}
         </ConfirmAction>

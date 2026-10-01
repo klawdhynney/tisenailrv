@@ -147,9 +147,22 @@ export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
       )}
     </div>
     <div ref={topRef} className="overflow-x-auto" onScroll={() => sync("top")} aria-label="Rolagem horizontal superior"><div className="h-px" /></div>
-    <div ref={bottomRef} className="overflow-x-auto rounded-xl border border-border" onScroll={() => sync("bottom")}>
-       <table className="w-full min-w-[1850px] border-separate border-spacing-0 text-sm"><thead><tr className="border-b-2 border-g-blue bg-muted text-left text-foreground">{colunas.map(h => <th key={h} className="whitespace-nowrap px-3 py-3 font-semibold">{h}</th>)}</tr></thead>
-         <tbody>{visible.map(t => <TicketRow key={t.id} ticket={t} colunas={colunas} attendance={attendance} />)}{!visible.length && <tr><td colSpan={Math.max(1, colunas.length)} className="px-4 py-12 text-center text-muted-foreground">{hidratado ? "Nenhum chamado encontrado." : "Carregando chamados…"}</td></tr>}</tbody></table>
+    <div ref={bottomRef} className="overflow-x-auto rounded-xl border-2 border-g-blue/30 bg-card shadow-md" onScroll={() => sync("bottom")}>
+       <table className="w-full min-w-[1850px] border-separate border-spacing-0 text-sm">
+         <thead>
+           <tr className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white font-bold tracking-wide shadow-sm">
+             {colunas.map(h => (
+               <th key={h} className="whitespace-nowrap px-3.5 py-3.5 text-xs font-bold uppercase tracking-wider text-white border-r border-white/10 last:border-r-0">
+                 {h}
+               </th>
+             ))}
+           </tr>
+         </thead>
+         <tbody>
+           {visible.map(t => <TicketRow key={t.id} ticket={t} colunas={colunas} attendance={attendance} />)}
+           {!visible.length && <tr><td colSpan={Math.max(1, colunas.length)} className="px-4 py-12 text-center text-muted-foreground">{hidratado ? "Nenhum chamado encontrado." : "Carregando chamados…"}</td></tr>}
+         </tbody>
+       </table>
     </div>
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm"><span className="text-muted-foreground">{rows.length} chamado(s) · página {Math.min(page, pages)} de {pages}</span><div className="flex gap-2"><Button type="button" variant="outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Anterior</Button><Button type="button" variant="outline" disabled={page >= pages} onClick={() => setPage(p => p + 1)}>Próxima</Button></div></div>
   </section>;
@@ -172,14 +185,22 @@ function TicketRow({ ticket: t, colunas, attendance = false }: { ticket: Ticket;
     </Button>
   );
   const cells: Record<string, React.ReactNode> = {
-    "Ver chamado": action, "Nº": <strong>#{t.id}</strong>, "Aberto em": formatarData(t.abertoEm, t.hora),
-    "Solicitante": t.solicitante, "E-mail": t.solicitanteEmail || "—", "WhatsApp": t.contato || "—",
-      "Setor": <span className="block max-w-52">{t.setor}{t.local ? ` · ${t.local}` : ""}</span>,
-     "Descrição do problema": <span className="line-clamp-2 max-w-72">{t.descricao}</span>, "Categoria": t.categoria,
-    "Prioridade": <PrioridadeChip valor={t.prioridade} />, "Responsável": t.responsavel || "—",
+    "Ver chamado": action,
+    "Nº": <strong className="font-mono font-bold text-g-blue">#{t.id}</strong>,
+    "Aberto em": <span className="font-medium">{formatarData(t.abertoEm, t.hora)}</span>,
+    "Solicitante": <span className="font-semibold text-foreground">{t.solicitante}</span>,
+    "E-mail": t.solicitanteEmail || "—",
+    "WhatsApp": t.contato || "—",
+    "Setor": <span className="block max-w-52 font-medium">{t.setor}{t.local ? ` · ${t.local}` : ""}</span>,
+    "Descrição do problema": <span className="line-clamp-2 max-w-72">{t.descricao}</span>,
+    "Categoria": <span className="rounded-md bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">{t.categoria}</span>,
+    "Prioridade": <PrioridadeChip valor={t.prioridade} />,
+    "Responsável": t.responsavel ? <span className="font-medium text-foreground">{t.responsavel}</span> : "—",
     "Status": <StatusChip valor={t.status} />,
     "Procedimento": <span className="line-clamp-2 max-w-72">{t.procedimento || "—"}</span>,
-     "Fechado em": formatarData(t.fechadoEm, t.horario), "Prazo": formatarDataHora(sla.prazo), "SLA": <span className="flex flex-col gap-1"><SlaChip valor={sla.situacao} />{attendance && !["Resolvido", "Cancelado"].includes(t.status) && <span className="font-mono text-xs tabular-nums" title="Tempo útil restante conforme o expediente">{relogio}</span>}</span>,
+    "Fechado em": formatarData(t.fechadoEm, t.horario),
+    "Prazo": <span className="text-xs font-medium">{formatarDataHora(sla.prazo)}</span>,
+    "SLA": <span className="flex flex-col gap-1"><SlaChip valor={sla.situacao} />{attendance && !["Resolvido", "Cancelado"].includes(t.status) && <span className="font-mono text-xs tabular-nums text-g-blue font-bold" title="Tempo útil restante conforme o expediente">{relogio}</span>}</span>,
   };
-  return <tr className="align-top even:bg-muted/40">{colunas.map(c => <td key={c} className="whitespace-nowrap border-b border-border px-3 py-3">{cells[c]}</td>)}</tr>;
+  return <tr className="align-top border-b border-border transition-colors hover:bg-blue-50/70 dark:hover:bg-blue-950/30 even:bg-muted/30">{colunas.map(c => <td key={c} className="whitespace-nowrap border-b border-border/80 px-3.5 py-3.5">{cells[c]}</td>)}</tr>;
 }

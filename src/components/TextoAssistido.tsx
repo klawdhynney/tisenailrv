@@ -107,11 +107,11 @@ export function TextoAssistido({
       <Button
         type="button"
         size="sm"
-        variant="outline"
         disabled={loading || value.trim().length < 5}
         onClick={revisar}
+        className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-md hover:shadow-lg transition-all duration-200 border-0"
       >
-        <Sparkles className="size-4" /> {loading ? "Gerando 2 versões com IA…" : "Aprimorar texto com IA (2 versões)"}
+        <Sparkles className="size-4 animate-pulse" /> {loading ? "Aprimorando texto com IA…" : "Aprimorar texto com IA"}
       </Button>
 
       {sugestoes && (

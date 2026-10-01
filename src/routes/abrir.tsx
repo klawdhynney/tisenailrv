@@ -43,6 +43,7 @@ function AbrirChamado() {
   });
   const [erros, setErros] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
+  const [confirmandoEnvio, setConfirmandoEnvio] = useState(false);
   const [sucessoId, setSucessoId] = useState<number | null>(null);
   const [lembrar, setLembrar] = useState(false);
   const [preferenciaCarregada, setPreferenciaCarregada] = useState(false);
@@ -155,9 +156,13 @@ function AbrirChamado() {
       return;
     }
 
-    if (!window.confirm("Deseja realmente enviar este chamado? Confira os dados antes de confirmar.")) return;
+    setConfirmandoEnvio(true);
+  }
+
+  async function confirmarEnvioFinal() {
     if (enviando) return;
     setEnviando(true);
+    setConfirmandoEnvio(false);
 
     const customData = campos
       .filter((c) => !["solicitante", "email", "setor", "categoria", "local", "contato", "descricao"].includes(c.id) && c.ativo && form[c.id])
@@ -354,12 +359,94 @@ function AbrirChamado() {
               <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} /> Lembrar meus dados neste aparelho (nome, e-mail e setor)
             </label>
 
-            <Button type="submit" variant="google-green" size="lg" disabled={enviando} className="w-full sm:w-auto font-bold gap-2">
-              <SendHorizontal className="size-5 shrink-0" /> {enviando ? "Enviando…" : "Enviar chamado"}
-            </Button>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Button type="submit" variant="google-green" size="lg" disabled={enviando} className="w-full sm:w-auto font-bold gap-2 shadow-md">
+                <SendHorizontal className="size-5 shrink-0" /> {enviando ? "Enviando…" : "Enviar chamado"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={() => {
+                  const hasContent = Object.values(form).some((v) => (v || "").trim().length > 0);
+                  if (hasContent && !window.confirm("Deseja cancelar o preenchimento e voltar ao início?")) return;
+                  navigate({ to: "/" });
+                }}
+              >
+                Cancelar
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
+
+      {/* Caixa modal de confirmação centralizada, colorida e destacada */}
+      {confirmandoEnvio && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-3xl border-4 border-g-blue bg-card p-6 sm:p-8 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200 ring-4 ring-g-blue/20">
+            <div className="text-center space-y-2">
+              <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-g-blue/20 to-g-green/20 text-g-blue shadow-inner border border-g-blue/30">
+                <SendHorizontal className="size-7 text-g-blue" />
+              </div>
+              <h2 className="text-2xl font-black text-foreground">Confirmar abertura de chamado?</h2>
+              <p className="text-sm text-muted-foreground">Confira os dados abaixo antes de registrar seu chamado:</p>
+            </div>
+
+            <div className="rounded-2xl border-2 border-g-blue/30 bg-muted/40 p-4 text-sm space-y-2.5">
+              <div className="flex justify-between border-b border-border/60 pb-1.5">
+                <span className="text-muted-foreground">Solicitante:</span>
+                <span className="font-bold text-foreground">{form.solicitante || "Não informado"}</span>
+              </div>
+              <div className="flex justify-between border-b border-border/60 pb-1.5">
+                <span className="text-muted-foreground">E-mail:</span>
+                <span className="font-semibold text-foreground">{form.email || "Não informado"}</span>
+              </div>
+              <div className="flex justify-between border-b border-border/60 pb-1.5">
+                <span className="text-muted-foreground">Setor:</span>
+                <span className="font-semibold text-foreground">{form.setor || "Geral"}</span>
+              </div>
+              <div className="flex justify-between border-b border-border/60 pb-1.5">
+                <span className="text-muted-foreground">Tipo de problema:</span>
+                <span className="font-semibold text-g-blue">{form.categoria || "Geral"}</span>
+              </div>
+              {form.local && (
+                <div className="flex justify-between border-b border-border/60 pb-1.5">
+                  <span className="text-muted-foreground">Local / Sala:</span>
+                  <span className="font-semibold text-foreground">{form.local}</span>
+                </div>
+              )}
+              <div>
+                <span className="text-muted-foreground block mb-1">Descrição:</span>
+                <p className="rounded-lg bg-background p-2.5 text-xs text-foreground/90 border border-border line-clamp-3">
+                  {form.descricao}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="flex-1 sm:flex-none"
+                onClick={() => setConfirmandoEnvio(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="google-green"
+                size="lg"
+                className="flex-1 sm:flex-none font-bold shadow-md gap-2"
+                onClick={confirmarEnvioFinal}
+              >
+                <SendHorizontal className="size-4" /> Sim, confirmar e enviar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

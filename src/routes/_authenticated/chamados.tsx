@@ -1,13 +1,13 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Download, FileCode2, FileSpreadsheet, FileText, Plus, Printer, SlidersHorizontal, Upload } from "lucide-react";
+import { FileSpreadsheet, FileText, Plus, Printer, SlidersHorizontal, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { lerPlanilha } from "@/lib/importarExcel";
 import { importarChamados } from "@/lib/import.functions";
 import { Button } from "@/components/ui/button";
 import { TicketSheet } from "@/components/TicketSheet";
 import { useStore } from "@/lib/store-context";
-import { exportarCsv, exportarPdf, exportarXlsx, exportarXml, ticketsParaLinhas } from "@/lib/exportar";
+import { exportarPdf, exportarXlsx, ticketsParaLinhas } from "@/lib/exportar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CAMPOS_EXPORTACAO } from "@/lib/types";
 
@@ -124,14 +124,12 @@ function Planilha() {
               })}
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Os botões CSV, XLSX, XML e PDF abaixo exportarão somente os dados marcados acima.
+              Os botões Excel e PDF abaixo exportarão somente os dados marcados acima.
             </p>
           </PopoverContent>
         </Popover>
 
-        <Button variant="outline" onClick={() => exportarCsv(dadosExportacao(), "Chamados_TI")}><Download className="size-4" /> CSV</Button>
-        <Button variant="outline" onClick={() => exportarXlsx(dadosExportacao(), "Chamados_TI")}><FileSpreadsheet className="size-4" /> XLSX</Button>
-        <Button variant="outline" onClick={() => exportarXml(dadosExportacao(), "Chamados_TI")}><FileCode2 className="size-4" /> XML</Button>
+        <Button variant="outline" onClick={() => exportarXlsx(dadosExportacao(), "Chamados_TI")}><FileSpreadsheet className="size-4" /> Excel</Button>
         <Button variant="outline" onClick={() => exportarPdf(dadosExportacao(), "Chamados_TI", "Planilha de chamados")}><FileText className="size-4" /> PDF</Button>
         <Button variant="outline" onClick={() => window.print()}><Printer className="size-4" /> Imprimir</Button>
         <Button asChild><Link to="/abrir"><Plus className="size-4" /> Novo chamado</Link></Button>
