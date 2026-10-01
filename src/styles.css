@@ -188,26 +188,23 @@
   animation: chart-enter 420ms ease-out both;
 }
 
-@keyframes float-bubble-1 {
-  0%, 100% { transform: translate(0px, 0px); }
-  50% { transform: translate(3px, -7px); }
+@keyframes neon-pulse {
+  0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 5px currentColor); }
+  50% { opacity: 1; filter: drop-shadow(0 0 14px currentColor); }
 }
-@keyframes float-bubble-2 {
-  0%, 100% { transform: translate(0px, 0px); }
-  50% { transform: translate(-5px, 6px); }
+
+.neon-glow-cyan {
+  filter: drop-shadow(0 0 7px rgba(6, 182, 212, 0.75));
 }
-@keyframes float-bubble-3 {
-  0%, 100% { transform: translate(0px, 0px); }
-  50% { transform: translate(6px, 5px); }
+.neon-glow-green {
+  filter: drop-shadow(0 0 7px rgba(16, 185, 129, 0.75));
 }
-@keyframes float-bubble-4 {
-  0%, 100% { transform: translate(0px, 0px); }
-  50% { transform: translate(-4px, -6px); }
+.neon-glow-amber {
+  filter: drop-shadow(0 0 7px rgba(245, 158, 11, 0.75));
 }
 
 @media (prefers-reduced-motion: reduce) {
   .chart-enter { animation: none; }
-  .floating-bubble { animation: none !important; }
 }
 
 @layer base {
