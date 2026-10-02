@@ -21,6 +21,7 @@ import { Route as AuthenticatedChamadosRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRegrasRouteImport } from './routes/_authenticated/regras'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardAcompanhamentoRouteImport } from './routes/dashboard.acompanhamento'
+import { Route as DashboardSerieHistoricaRouteImport } from './routes/dashboard.serie-historica'
 import { Route as AuthenticatedChamadosTicketIdRouteImport } from './routes/_authenticated/chamados.$ticketId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -83,6 +84,11 @@ const DashboardAcompanhamentoRoute = DashboardAcompanhamentoRouteImport.update({
   path: '/acompanhamento',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardSerieHistoricaRoute = DashboardSerieHistoricaRouteImport.update({
+  id: '/serie-historica',
+  path: '/serie-historica',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const AuthenticatedChamadosTicketIdRoute =
   AuthenticatedChamadosTicketIdRouteImport.update({
     id: '/$ticketId',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/chamados': typeof AuthenticatedChamadosRouteWithChildren
   '/regras': typeof AuthenticatedRegrasRoute
   '/dashboard/acompanhamento': typeof DashboardAcompanhamentoRoute
+  '/dashboard/serie-historica': typeof DashboardSerieHistoricaRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
 }
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/chamados': typeof AuthenticatedChamadosRouteWithChildren
   '/regras': typeof AuthenticatedRegrasRoute
   '/dashboard/acompanhamento': typeof DashboardAcompanhamentoRoute
+  '/dashboard/serie-historica': typeof DashboardSerieHistoricaRoute
   '/dashboard': typeof DashboardIndexRoute
   '/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
 }
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/_authenticated/chamados': typeof AuthenticatedChamadosRouteWithChildren
   '/_authenticated/regras': typeof AuthenticatedRegrasRoute
   '/dashboard/acompanhamento': typeof DashboardAcompanhamentoRoute
+  '/dashboard/serie-historica': typeof DashboardSerieHistoricaRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/_authenticated/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
 }
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/chamados'
     | '/regras'
     | '/dashboard/acompanhamento'
+    | '/dashboard/serie-historica'
     | '/dashboard/'
     | '/chamados/$ticketId'
   fileRoutesByTo: FileRoutesByTo
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/chamados'
     | '/regras'
     | '/dashboard/acompanhamento'
+    | '/dashboard/serie-historica'
     | '/dashboard'
     | '/chamados/$ticketId'
   id:
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chamados'
     | '/_authenticated/regras'
     | '/dashboard/acompanhamento'
+    | '/dashboard/serie-historica'
     | '/dashboard/'
     | '/_authenticated/chamados/$ticketId'
   fileRoutesById: FileRoutesById
@@ -274,6 +286,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAcompanhamentoRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/serie-historica': {
+      id: '/dashboard/serie-historica'
+      path: '/serie-historica'
+      fullPath: '/dashboard/serie-historica'
+      preLoaderRoute: typeof DashboardSerieHistoricaRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/_authenticated/chamados/$ticketId': {
       id: '/_authenticated/chamados/$ticketId'
       path: '/$ticketId'
@@ -314,11 +333,13 @@ const AuthenticatedRouteRouteWithChildren =
 
 interface DashboardRouteChildren {
   DashboardAcompanhamentoRoute: typeof DashboardAcompanhamentoRoute
+  DashboardSerieHistoricaRoute: typeof DashboardSerieHistoricaRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAcompanhamentoRoute: DashboardAcompanhamentoRoute,
+  DashboardSerieHistoricaRoute: DashboardSerieHistoricaRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 
