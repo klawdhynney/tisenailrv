@@ -216,10 +216,32 @@ export interface AcompanhamentoConfig {
   itensPorPaginaPadrao: number;
 }
 
+export const COLUNAS_ACOMPANHAMENTO_MAP: Record<string, string[]> = {
+  verChamado: ["verchamado", "ver chamado", "botão 'ver chamado'", "acao", "ações", "ação", "detalhes"],
+  numero: ["numero", "número", "nº", "id", "#", "#id"],
+  abertura: ["abertura", "data de abertura", "data", "criado em", "aberto em"],
+  status: ["status", "situação", "status (chip)"],
+  prioridade: ["prioridade", "prioridade (chip)"],
+  sla: ["sla", "situação do sla"],
+  prazo: ["prazo", "data/hora do prazo", "vencimento", "prazo limite"],
+};
+
+export function isColunaAcompAtiva(colunasVisiveis: string[] | undefined, colId: string): boolean {
+  if (!colunasVisiveis || !Array.isArray(colunasVisiveis) || colunasVisiveis.length === 0) {
+    return true;
+  }
+  const idLower = colId.toLowerCase().trim();
+  const aliases = [idLower, ...(COLUNAS_ACOMPANHAMENTO_MAP[colId] || [])];
+  return colunasVisiveis.some((c) => {
+    const val = String(c).trim().toLowerCase();
+    return aliases.includes(val);
+  });
+}
+
 export const ACOMPANHAMENTO_PADRAO: AcompanhamentoConfig = {
   titulo: "Acompanhamento dos chamados",
   descricao: "Consulte seus chamados e acompanhe o status, prazo, prioridade e andamento do atendimento.",
-  colunasVisiveis: ["Ver chamado", "Nº", "Abertura", "Status", "Prioridade", "SLA", "Prazo"],
+  colunasVisiveis: ["verChamado", "numero", "abertura", "status", "prioridade", "sla", "prazo"],
   itensPorPaginaPadrao: 10,
 };
 
