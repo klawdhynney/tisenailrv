@@ -39,13 +39,18 @@ function Acompanhamento() {
   }, []);
   const pages = Math.max(1, Math.ceil(progress.length / size));
   return <section className="space-y-5">
-    <header className="text-center"><h1 className="text-3xl font-bold">Acompanhamento dos chamados</h1></header>
+    <header className="text-center space-y-1.5">
+      <h1 className="text-3xl font-bold text-foreground">Acompanhamento dos chamados</h1>
+      <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+        Consulte seus chamados e acompanhe o status, prazo, prioridade e andamento do atendimento.
+      </p>
+    </header>
     <div className="flex flex-wrap items-end justify-between gap-3"><Button asChild variant="outline"><Link to="/dashboard">Voltar ao dashboard</Link></Button><label className="grid gap-1 text-sm font-medium">Por página<select aria-label="Chamados públicos por página" className="h-10 rounded-xl border border-input bg-background px-3" value={size} onChange={e => { setSize(Number(e.target.value)); setPage(1); }}>{[10, 30, 50, 100].map(n => <option key={n}>{n}</option>)}</select></label></div>
-    <div className="overflow-x-auto rounded-xl border-2 border-g-blue/30 bg-card shadow-md">
-      <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left text-sm">
+    <div className="w-full max-w-full overflow-x-auto rounded-xl border-2 border-g-blue/30 bg-card shadow-md">
+      <table className="w-full min-w-[760px] border-separate border-spacing-0 text-left text-sm">
         <thead>
           <tr className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white font-bold tracking-wide shadow-sm">
-            {["Ver chamado", "Nº", "Abertura", "Categoria", "Prioridade", "Status", "Fechamento", "Prazo", "SLA"].map((x) => (
+            {["Ver chamado", "Nº", "Abertura", "Status", "Prioridade", "SLA", "Prazo"].map((x) => (
               <th key={x} className="whitespace-nowrap px-3.5 py-3.5 text-xs font-bold uppercase tracking-wider text-white border-r border-white/10 last:border-r-0">
                 {x}
               </th>
@@ -65,17 +70,11 @@ function Acompanhamento() {
                   </Button>
                 </td>
                 <td className="px-3.5 py-3.5 font-mono font-bold text-g-blue">#{t.id}</td>
-                <td className="px-3.5 py-3.5 font-medium">{formatarData(t.aberto_em)}</td>
-                <td className="px-3.5 py-3.5">
-                  <span className="rounded-md bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
-                    {t.categoria}
-                  </span>
-                </td>
-                <td className="px-3.5 py-3.5"><PrioridadeChip valor={t.prioridade as Ticket["prioridade"]} /></td>
+                <td className="px-3.5 py-3.5 font-medium whitespace-nowrap">{formatarData(t.aberto_em)}</td>
                 <td className="px-3.5 py-3.5"><StatusChip valor={t.status as Ticket["status"]} /></td>
-                <td className="px-3.5 py-3.5">{formatarData(t.fechado_em)}</td>
-                <td className="whitespace-nowrap px-3.5 py-3.5 text-xs font-medium text-foreground">{formatarDataHora(sla.prazo)}</td>
+                <td className="px-3.5 py-3.5"><PrioridadeChip valor={t.prioridade as Ticket["prioridade"]} /></td>
                 <td className="px-3.5 py-3.5"><SlaChip valor={sla.situacao} /></td>
+                <td className="whitespace-nowrap px-3.5 py-3.5 text-xs font-medium text-foreground">{formatarDataHora(sla.prazo)}</td>
               </tr>
             );
           })}

@@ -67,9 +67,9 @@ export const CAMPOS_ABERTURA_PADRAO: CampoAbertura[] = [
   { id: "email", label: "E-mail", obrigatorio: true, ativo: true, tipo: "email" },
   { id: "setor", label: "Setor", obrigatorio: true, ativo: true, tipo: "select" },
   { id: "categoria", label: "Tipo de problema", obrigatorio: true, ativo: true, tipo: "select" },
-  { id: "local", label: "Local exato / Sala", obrigatorio: false, ativo: true, tipo: "text" },
+  { id: "local", label: "Local do problema*", obrigatorio: false, ativo: true, tipo: "text" },
   { id: "contato", label: "WhatsApp / Contato", obrigatorio: false, ativo: true, tipo: "text" },
-  { id: "descricao", label: "Descrição do problema e local", obrigatorio: true, ativo: true, tipo: "textarea" },
+  { id: "descricao", label: "Descreva o problema*", obrigatorio: true, ativo: true, tipo: "textarea" },
 ];
 
 export const CAMPOS_EXPORTACAO = [

@@ -50,6 +50,23 @@ type Visao = (typeof VISOES)[number]["id"];
 type TipoGrafico = "pizza" | "barras" | "linhas";
 type Item = { name: string; value: number };
 
+function usePrefersReducedMotion() {
+  const [reducedMotion, setReducedMotion] = useState(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mediaQuery.addEventListener("change", onChange);
+    return () => mediaQuery.removeEventListener("change", onChange);
+  }, []);
+
+  return reducedMotion;
+}
+
 const mesAtualPadrao = () => {
   const d = new Date();
   const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -165,13 +182,16 @@ function Dashboard() {
     {/* Resumo de Indicadores no Topo */}
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          ["Total de chamados", total, "border-g-blue", "text-g-blue"],
-          ["Em atendimento", ativos, "border-g-yellow", "text-g-yellow"],
-          ["Resolvidos", resolvidos, "border-g-green", "text-g-green"],
-        ].map(([label, count, border, color]) => (
-          <div key={String(label)} className={`rounded-xl border-l-4 ${border} bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}>
-            <p className="text-sm font-semibold text-muted-foreground">{label}</p>
-            <p className={`mt-1 text-3xl font-black tracking-tight ${color}`}>{count}</p>
+          { label: "Total de chamados", count: total, border: "border-g-blue", color: "text-g-blue", desc: "Quantidade de chamados registrados." },
+          { label: "Em atendimento", count: ativos, border: "border-g-yellow", color: "text-g-yellow", desc: "Chamados que estão sendo tratados pela equipe de TI." },
+          { label: "Resolvidos", count: resolvidos, border: "border-g-green", color: "text-g-green", desc: "Chamados que já foram concluídos." },
+        ].map((item) => (
+          <div key={item.label} className={`rounded-xl border-l-4 ${item.border} bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between`}>
+            <div>
+              <p className="text-sm font-semibold text-muted-foreground">{item.label}</p>
+              <p className={`mt-1 text-3xl font-black tracking-tight ${item.color}`}>{item.count}</p>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground/80 leading-snug">{item.desc}</p>
           </div>
         ))}
       </div>
@@ -300,6 +320,7 @@ function GraficoSerieHistoricaTech({
   setAberto: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const isMobile = useIsMobile();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const mesesCompletos = useMemo(() => {
     const mapa = new Map<string, SeriePonto>();
     for (const m of MESES_DISPONIVEIS) {
@@ -640,13 +661,34 @@ function GraficoSerieHistoricaTech({
                   <Tooltip content={<TechTooltip />} />
 
                   {visivel.Total && (
-                    <Area type="monotone" dataKey="Total" fill="url(#g-area-blue)" stroke="none" isAnimationActive />
+                    <Area
+                      type="monotone"
+                      dataKey="Total"
+                      fill="url(#g-area-blue)"
+                      stroke="none"
+                      isAnimationActive={!prefersReducedMotion}
+                      animationDuration={prefersReducedMotion ? 0 : 650}
+                    />
                   )}
                   {visivel.Resolvidos && (
-                    <Area type="monotone" dataKey="Resolvidos" fill="url(#g-area-green)" stroke="none" isAnimationActive />
+                    <Area
+                      type="monotone"
+                      dataKey="Resolvidos"
+                      fill="url(#g-area-green)"
+                      stroke="none"
+                      isAnimationActive={!prefersReducedMotion}
+                      animationDuration={prefersReducedMotion ? 0 : 650}
+                    />
                   )}
                   {visivel["Em atendimento"] && (
-                    <Area type="monotone" dataKey="Em atendimento" fill="url(#g-area-yellow)" stroke="none" isAnimationActive />
+                    <Area
+                      type="monotone"
+                      dataKey="Em atendimento"
+                      fill="url(#g-area-yellow)"
+                      stroke="none"
+                      isAnimationActive={!prefersReducedMotion}
+                      animationDuration={prefersReducedMotion ? 0 : 650}
+                    />
                   )}
 
                   {visivel.Total && (
@@ -658,8 +700,8 @@ function GraficoSerieHistoricaTech({
                       strokeWidth={3}
                       dot={{ r: 5, fill: "#1a73e8", stroke: "#ffffff", strokeWidth: 2 }}
                       activeDot={{ r: 8, stroke: "#1a73e8", strokeWidth: 3, fill: "#ffffff" }}
-                      isAnimationActive
-                      animationDuration={650}
+                      isAnimationActive={!prefersReducedMotion}
+                      animationDuration={prefersReducedMotion ? 0 : 650}
                     />
                   )}
                   {visivel.Resolvidos && (
@@ -671,8 +713,8 @@ function GraficoSerieHistoricaTech({
                       strokeWidth={3}
                       dot={{ r: 4.5, fill: "#34a853", stroke: "#ffffff", strokeWidth: 2 }}
                       activeDot={{ r: 7.5, stroke: "#34a853", strokeWidth: 3, fill: "#ffffff" }}
-                      isAnimationActive
-                      animationDuration={650}
+                      isAnimationActive={!prefersReducedMotion}
+                      animationDuration={prefersReducedMotion ? 0 : 650}
                     />
                   )}
                   {visivel["Em atendimento"] && (
@@ -684,8 +726,8 @@ function GraficoSerieHistoricaTech({
                       strokeWidth={3}
                       dot={{ r: 4.5, fill: "#f9ab00", stroke: "#ffffff", strokeWidth: 2 }}
                       activeDot={{ r: 7.5, stroke: "#f9ab00", strokeWidth: 3, fill: "#ffffff" }}
-                      isAnimationActive
-                      animationDuration={650}
+                      isAnimationActive={!prefersReducedMotion}
+                      animationDuration={prefersReducedMotion ? 0 : 650}
                     />
                   )}
                 </ComposedChart>
@@ -767,6 +809,7 @@ function GraficoSerieHistoricaTech({
 
 function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: (name: string, i: number) => string }) {
   const isMobile = useIsMobile();
+  const prefersReducedMotion = usePrefersReducedMotion();
   if (!dados.length) return <p className="py-24 text-center text-muted-foreground">Nenhum chamado encontrado neste recorte.</p>;
   const totalVal = dados.reduce((sum, d) => sum + d.value, 0);
 
@@ -805,8 +848,8 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
           innerRadius={isMobile ? "32%" : "38%"}
           outerRadius={isMobile ? "72%" : "78%"}
           paddingAngle={3}
-          isAnimationActive
-          animationDuration={650}
+          isAnimationActive={!prefersReducedMotion}
+          animationDuration={prefersReducedMotion ? 0 : 650}
         >
           {dados.map((d, i) => <Cell key={d.name} fill={cor(d.name, i)} stroke="var(--card)" strokeWidth={2} />)}
         </Pie>
@@ -839,8 +882,8 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
         <Bar
           dataKey="value"
           name="Chamados"
-          isAnimationActive
-          animationDuration={650}
+          isAnimationActive={!prefersReducedMotion}
+          animationDuration={prefersReducedMotion ? 0 : 650}
           radius={[0, 4, 4, 0]}
         >
           {dados.map((d, i) => <Cell key={d.name} fill={cor(d.name, i)} />)}
@@ -876,8 +919,8 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
           strokeWidth={3}
           dot={{ r: 5, fill: "#1a73e8", strokeWidth: 2, stroke: "#ffffff" }}
           activeDot={{ r: 8, stroke: "#1a73e8", strokeWidth: 2, fill: "#ffffff" }}
-          isAnimationActive
-          animationDuration={650}
+          isAnimationActive={!prefersReducedMotion}
+          animationDuration={prefersReducedMotion ? 0 : 650}
         />
       </LineChart>
     );

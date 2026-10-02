@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
 import senaiIcone from "@/assets/senai-icone.png";
-import senaiCapa from "@/assets/senai-capa.png";
+import senaiHero from "@/assets/senai-hero.png";
 
 const navPublico = [
   { to: "/", label: "Início", icon: Home },
@@ -129,17 +129,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="mb-6 sm:mb-8 flex justify-center">
             <Link
               to="/"
-              className={`group block w-full overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:scale-[1.012] hover:border-g-blue/60 hover:shadow-lg active:scale-[0.99] ${
+              className={`group block w-full overflow-hidden rounded-3xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:scale-[1.01] hover:border-g-blue/60 hover:shadow-md active:scale-[0.99] ${
                 pathname === "/abrir" ? "max-w-3xl" : "max-w-5xl"
               }`}
               title="Voltar para a página inicial"
             >
               <img
-                src={senaiCapa}
-                alt="SENAI Lucas do Rio Verde"
-                width={1024}
-                height={384}
-                className="aspect-[1024/384] h-auto w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
+                src={senaiHero}
+                alt="SENAI Lucas do Rio Verde - Ambiente Tecnológico de Inovação e Educação Profissional"
+                width={2048}
+                height={768}
+                className="aspect-[2048/768] min-h-[140px] sm:min-h-[220px] w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.015]"
               />
             </Link>
           </div>

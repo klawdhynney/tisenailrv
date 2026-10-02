@@ -30,7 +30,11 @@ function AbrirChamado() {
   const campos = regras.camposAbertura ?? CAMPOS_ABERTURA_PADRAO;
   const isCampoAtivo = (id: string) => campos.find((c) => c.id === id)?.ativo ?? true;
   const isCampoObrigatorio = (id: string) => campos.find((c) => c.id === id)?.obrigatorio ?? false;
-  const getCampoLabel = (id: string, fallback: string) => campos.find((c) => c.id === id)?.label ?? fallback;
+  const getCampoLabel = (id: string, fallback: string) => {
+    if (id === "local") return "Local do problema*";
+    if (id === "descricao") return "Descreva o problema*";
+    return campos.find((c) => c.id === id)?.label ?? fallback;
+  };
 
 interface FormValues {
   solicitante: string;
@@ -306,6 +310,9 @@ interface FormValues {
           <span className="rounded-xl bg-g-green/15 p-3 text-g-green"><Cpu className="size-7" /></span>
           <h1 className="text-3xl font-bold">Abrir chamado de TI</h1>
         </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Abra o seu chamado, descreva o problema e informe o local exato para agilizar o atendimento.
+        </p>
       </div>
       <Card className="mt-6 rounded-2xl border-t-4 border-g-blue shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -365,7 +372,7 @@ interface FormValues {
             )}
 
             {isCampoAtivo("local") && (
-              <Campo label={getCampoLabel("local", "Local exato / Sala")} obrigatorio={isCampoObrigatorio("local")} erro={erros.local}>
+              <Campo label={getCampoLabel("local", "Local do problema*")} obrigatorio={isCampoObrigatorio("local")} erro={erros.local}>
                 <Input value={form.local} onChange={(e) => set("local", e.target.value)} placeholder="Ex.: Bloco A, Sala 3, Mesa 02" />
               </Campo>
             )}
@@ -381,7 +388,7 @@ interface FormValues {
             )}
 
             {isCampoAtivo("descricao") && (
-              <Campo label={getCampoLabel("descricao", "Descrição do problema e local")} obrigatorio={isCampoObrigatorio("descricao")} erro={erros.descricao}>
+              <Campo label={getCampoLabel("descricao", "Descreva o problema*")} obrigatorio={isCampoObrigatorio("descricao")} erro={erros.descricao}>
                 <TextoAssistido rows={5} value={form.descricao} onChange={(value) => set("descricao", value)} placeholder="Ex.: Computador sem internet na sala 1" />
               </Campo>
             )}
@@ -503,11 +510,15 @@ function Campo({
   erro?: string | undefined;
   children: React.ReactNode;
 }) {
+  const hasAsterisk = label.endsWith("*");
+  const displayLabel = hasAsterisk ? label.slice(0, -1).trim() : label;
+  const isRequired = obrigatorio || hasAsterisk;
+
   return (
     <div>
       <Label className="mb-2 flex items-center gap-1 text-sm font-medium">
-        <span>{label}</span>
-        {obrigatorio && (
+        <span>{displayLabel}</span>
+        {isRequired && (
           <span className="font-bold text-[var(--g-red)] text-sm select-none" title="Campo obrigatório">
             *
           </span>

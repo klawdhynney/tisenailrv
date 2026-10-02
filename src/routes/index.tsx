@@ -50,40 +50,55 @@ function Inicio() {
 
           {/* Indicadores de desempenho posicionados junto à descrição */}
           <div className="mt-8 w-full grid gap-4 sm:grid-cols-3 text-left">
-            <div className="flex items-center justify-between rounded-2xl border-l-4 border-g-blue bg-card/95 p-5 shadow-sm backdrop-blur-xs">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Total de chamados
-                </span>
-                <strong className="mt-1 block text-3xl font-black text-g-blue">{total}</strong>
+            <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-blue bg-card/95 p-5 shadow-sm backdrop-blur-xs">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Total de chamados
+                  </span>
+                  <strong className="mt-1 block text-3xl font-black text-g-blue">{total}</strong>
+                </div>
+                <div className="flex size-12 items-center justify-center rounded-xl bg-g-blue/10 text-g-blue shrink-0 ml-2">
+                  <ClipboardList className="size-6" />
+                </div>
               </div>
-              <div className="flex size-12 items-center justify-center rounded-xl bg-g-blue/10 text-g-blue">
-                <ClipboardList className="size-6" />
-              </div>
+              <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
+                Quantidade de chamados registrados.
+              </p>
             </div>
 
-            <div className="flex items-center justify-between rounded-2xl border-l-4 border-g-yellow bg-card/95 p-5 shadow-sm backdrop-blur-xs">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Em atendimento
-                </span>
-                <strong className="mt-1 block text-3xl font-black text-g-yellow">{andamento}</strong>
+            <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-yellow bg-card/95 p-5 shadow-sm backdrop-blur-xs">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Em atendimento
+                  </span>
+                  <strong className="mt-1 block text-3xl font-black text-g-yellow">{andamento}</strong>
+                </div>
+                <div className="flex size-12 items-center justify-center rounded-xl bg-g-yellow/10 text-amber-700 dark:text-amber-400 shrink-0 ml-2">
+                  <Activity className="size-6" />
+                </div>
               </div>
-              <div className="flex size-12 items-center justify-center rounded-xl bg-g-yellow/10 text-amber-700 dark:text-amber-400">
-                <Activity className="size-6" />
-              </div>
+              <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
+                Chamados que estão sendo tratados pela equipe de TI.
+              </p>
             </div>
 
-            <div className="flex items-center justify-between rounded-2xl border-l-4 border-g-green bg-card/95 p-5 shadow-sm backdrop-blur-xs">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Resolvidos
-                </span>
-                <strong className="mt-1 block text-3xl font-black text-g-green">{resolvidos}</strong>
+            <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-green bg-card/95 p-5 shadow-sm backdrop-blur-xs">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Resolvidos
+                  </span>
+                  <strong className="mt-1 block text-3xl font-black text-g-green">{resolvidos}</strong>
+                </div>
+                <div className="flex size-12 items-center justify-center rounded-xl bg-g-green/10 text-g-green shrink-0 ml-2">
+                  <CheckCircle2 className="size-6" />
+                </div>
               </div>
-              <div className="flex size-12 items-center justify-center rounded-xl bg-g-green/10 text-g-green">
-                <CheckCircle2 className="size-6" />
-              </div>
+              <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
+                Chamados que já foram concluídos.
+              </p>
             </div>
           </div>
         </div>
