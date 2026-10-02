@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Inicio() {
-  const { publicStats } = useStore();
+  const { publicStats, regras } = useStore();
   const total = publicStats.reduce((n, r) => n + r.total, 0);
   const andamento = publicStats
     .filter((r) => !["Resolvido", "Cancelado"].includes(r.status))
@@ -27,6 +27,14 @@ function Inicio() {
   const resolvidos = publicStats
     .filter((r) => r.status === "Resolvido")
     .reduce((n, r) => n + r.total, 0);
+
+  const badgeTexto = regras.paginaInicial?.badgeTexto || "Atendimento de TI · SENAI LRV";
+  const tituloPrincipal = regras.paginaInicial?.titulo || "Bem-vindo à Central de Chamados de TI!";
+  const subtituloPrincipal = regras.paginaInicial?.subtitulo || "Central oficial de suporte e serviços de Tecnologia da Informação do SENAI Lucas do Rio Verde.";
+
+  const indTotal = regras.indicadores?.total ?? { titulo: "Total de chamados", desc: "Quantidade de chamados registrados.", ativo: true };
+  const indAtend = regras.indicadores?.atendimento ?? { titulo: "Em atendimento", desc: "Chamados que estão sendo tratados pela equipe de TI.", ativo: true };
+  const indResolv = regras.indicadores?.resolvidos ?? { titulo: "Resolvidos", desc: "Chamados que já foram concluídos.", ativo: true };
 
   return (
     <div className="space-y-9">
@@ -42,64 +50,75 @@ function Inicio() {
         <div className="absolute inset-0 -z-10 bg-card/85 backdrop-blur-[1px]" />
         <div className="flex flex-col items-center text-center px-6 py-8 sm:px-10 sm:py-10 max-w-4xl mx-auto">
           <p className="inline-flex items-center gap-2 rounded-full bg-card/90 px-3.5 py-1 text-xs font-bold uppercase text-primary shadow-xs border border-border/60">
-            <Activity className="size-4" /> Atendimento de TI · SENAI LRV
+            <Activity className="size-4" /> {badgeTexto}
           </p>
           <h1 className="mt-4 text-3xl font-extrabold leading-tight text-foreground sm:text-4xl">
-            Bem-vindo à Central de Chamados de TI!
+            {tituloPrincipal}
           </h1>
+          {subtituloPrincipal && (
+            <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
+              {subtituloPrincipal}
+            </p>
+          )}
 
           {/* Indicadores de desempenho posicionados junto à descrição */}
           <div className="mt-8 w-full grid gap-4 sm:grid-cols-3 text-left">
-            <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-blue bg-card/95 p-5 shadow-sm backdrop-blur-xs">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Total de chamados
-                  </span>
-                  <strong className="mt-1 block text-3xl font-black text-g-blue">{total}</strong>
+            {indTotal.ativo && (
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-blue bg-card/95 p-5 shadow-sm backdrop-blur-xs">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      {indTotal.titulo}
+                    </span>
+                    <strong className="mt-1 block text-3xl font-black text-g-blue">{total}</strong>
+                  </div>
+                  <div className="flex size-12 items-center justify-center rounded-xl bg-g-blue/10 text-g-blue shrink-0 ml-2">
+                    <ClipboardList className="size-6" />
+                  </div>
                 </div>
-                <div className="flex size-12 items-center justify-center rounded-xl bg-g-blue/10 text-g-blue shrink-0 ml-2">
-                  <ClipboardList className="size-6" />
-                </div>
+                <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
+                  {indTotal.desc}
+                </p>
               </div>
-              <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
-                Quantidade de chamados registrados.
-              </p>
-            </div>
+            )}
 
-            <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-yellow bg-card/95 p-5 shadow-sm backdrop-blur-xs">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Em atendimento
-                  </span>
-                  <strong className="mt-1 block text-3xl font-black text-g-yellow">{andamento}</strong>
+            {indAtend.ativo && (
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-yellow bg-card/95 p-5 shadow-sm backdrop-blur-xs">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      {indAtend.titulo}
+                    </span>
+                    <strong className="mt-1 block text-3xl font-black text-g-yellow">{andamento}</strong>
+                  </div>
+                  <div className="flex size-12 items-center justify-center rounded-xl bg-g-yellow/10 text-amber-700 dark:text-amber-400 shrink-0 ml-2">
+                    <Activity className="size-6" />
+                  </div>
                 </div>
-                <div className="flex size-12 items-center justify-center rounded-xl bg-g-yellow/10 text-amber-700 dark:text-amber-400 shrink-0 ml-2">
-                  <Activity className="size-6" />
-                </div>
+                <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
+                  {indAtend.desc}
+                </p>
               </div>
-              <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
-                Chamados que estão sendo tratados pela equipe de TI.
-              </p>
-            </div>
+            )}
 
-            <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-green bg-card/95 p-5 shadow-sm backdrop-blur-xs">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Resolvidos
-                  </span>
-                  <strong className="mt-1 block text-3xl font-black text-g-green">{resolvidos}</strong>
+            {indResolv.ativo && (
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-green bg-card/95 p-5 shadow-sm backdrop-blur-xs">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      {indResolv.titulo}
+                    </span>
+                    <strong className="mt-1 block text-3xl font-black text-g-green">{resolvidos}</strong>
+                  </div>
+                  <div className="flex size-12 items-center justify-center rounded-xl bg-g-green/10 text-g-green shrink-0 ml-2">
+                    <CheckCircle2 className="size-6" />
+                  </div>
                 </div>
-                <div className="flex size-12 items-center justify-center rounded-xl bg-g-green/10 text-g-green shrink-0 ml-2">
-                  <CheckCircle2 className="size-6" />
-                </div>
+                <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
+                  {indResolv.desc}
+                </p>
               </div>
-              <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
-                Chamados que já foram concluídos.
-              </p>
-            </div>
+            )}
           </div>
         </div>
         <div className="h-2 bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />

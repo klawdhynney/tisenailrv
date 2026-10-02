@@ -91,6 +91,184 @@ export const CAMPOS_EXPORTACAO = [
   { id: "WhatsApp", label: "WhatsApp" },
 ] as const;
 
+export interface IdentidadeVisualConfig {
+  tituloSite: string;
+  nome?: string;
+  sigla?: string;
+  subtitulo?: string;
+  logoUrl?: string;
+  logoAlt?: string;
+  corPrimaria?: string;
+  temaPadrao: "claro" | "escuro" | "pastel";
+}
+
+export const IDENTIDADE_VISUAL_PADRAO: IdentidadeVisualConfig = {
+  tituloSite: "TI SENAI LRV",
+  nome: "SENAI Lucas do Rio Verde",
+  sigla: "TI SENAI LRV",
+  subtitulo: "Central de Atendimento ao Usuário",
+  logoUrl: "",
+  logoAlt: "SENAI Lucas do Rio Verde",
+  corPrimaria: "#1a73e8",
+  temaPadrao: "claro",
+};
+
+export interface PaginaInicialConfig {
+  badgeTexto: string;
+  titulo: string;
+  subtitulo: string;
+  mostrarBanner: boolean;
+  exibirBanner?: boolean;
+  bannerUrl?: string;
+  bannerAlt?: string;
+}
+
+export const PAGINA_INICIAL_PADRAO: PaginaInicialConfig = {
+  badgeTexto: "Atendimento de TI · SENAI LRV",
+  titulo: "Bem-vindo à Central de Chamados de TI!",
+  subtitulo: "Central oficial de suporte e serviços de Tecnologia da Informação do SENAI Lucas do Rio Verde.",
+  mostrarBanner: true,
+  exibirBanner: true,
+  bannerUrl: "",
+  bannerAlt: "SENAI Lucas do Rio Verde - Ambiente Tecnológico de Inovação e Educação Profissional",
+};
+
+export interface IndicadorItemConfig {
+  titulo: string;
+  desc: string;
+  ativo: boolean;
+}
+
+export interface IndicadoresConfig {
+  mostrar?: boolean;
+  totalLabel?: string;
+  totalDesc?: string;
+  atendimentoLabel?: string;
+  atendimentoDesc?: string;
+  resolvidosLabel?: string;
+  resolvidosDesc?: string;
+  total: IndicadorItemConfig;
+  atendimento: IndicadorItemConfig;
+  resolvidos: IndicadorItemConfig;
+}
+
+export const INDICADORES_PADRAO: IndicadoresConfig = {
+  mostrar: true,
+  totalLabel: "Total de chamados",
+  totalDesc: "Quantidade de chamados registrados.",
+  atendimentoLabel: "Em atendimento",
+  atendimentoDesc: "Chamados que estão sendo tratados pela equipe de TI.",
+  resolvidosLabel: "Resolvidos",
+  resolvidosDesc: "Chamados que já foram concluídos.",
+  total: {
+    titulo: "Total de chamados",
+    desc: "Quantidade de chamados registrados.",
+    ativo: true,
+  },
+  atendimento: {
+    titulo: "Em atendimento",
+    desc: "Chamados que estão sendo tratados pela equipe de TI.",
+    ativo: true,
+  },
+  resolvidos: {
+    titulo: "Resolvidos",
+    desc: "Chamados que já foram concluídos.",
+    ativo: true,
+  },
+};
+
+export interface AbrirChamadoConfig {
+  titulo: string;
+  textoApoio: string;
+  rotuloLocal: string;
+  placeholderLocal: string;
+  rotuloDescricao: string;
+  placeholderDescricao: string;
+  textoBotao: string;
+  textoConsentimento: string;
+  locaisSugeridos?: string[];
+}
+
+export const ABRIR_CHAMADO_PADRAO: AbrirChamadoConfig = {
+  titulo: "Abrir chamado de TI",
+  textoApoio: "Abra o seu chamado, descreva o problema e informe o local exato para agilizar o atendimento.",
+  rotuloLocal: "Local do problema*",
+  placeholderLocal: "Ex.: Bloco A, Sala 3, Mesa 02",
+  rotuloDescricao: "Descreva o problema*",
+  placeholderDescricao: "Ex.: Computador sem internet na sala 1",
+  textoBotao: "Enviar chamado",
+  textoConsentimento: "Ao enviar, você concorda com o uso dos seus dados conforme nossa Política de Privacidade e LGPD.",
+  locaisSugeridos: [
+    "Bloco A - Secretaria",
+    "Bloco A - Coordenação",
+    "Bloco B - Laboratório 1",
+    "Bloco B - Laboratório 2",
+    "Bloco C - Sala dos Professores",
+    "Área Técnica - Oficina",
+    "Gerência / Administrativo",
+  ],
+};
+
+export interface AcompanhamentoConfig {
+  titulo: string;
+  descricao: string;
+  colunasVisiveis: string[];
+  itensPorPaginaPadrao: number;
+}
+
+export const ACOMPANHAMENTO_PADRAO: AcompanhamentoConfig = {
+  titulo: "Acompanhamento dos chamados",
+  descricao: "Consulte seus chamados e acompanhe o status, prazo, prioridade e andamento do atendimento.",
+  colunasVisiveis: ["Ver chamado", "Nº", "Abertura", "Status", "Prioridade", "SLA", "Prazo"],
+  itensPorPaginaPadrao: 10,
+};
+
+export interface DashboardConfig {
+  titulo: string;
+  subtitulo: string;
+  visaoPadrao: string;
+  tipoGraficoPadrao: "pizza" | "barras" | "linhas" | "abc";
+  graficosAtivos: {
+    pizza: boolean;
+    barras: boolean;
+    linhas: boolean;
+    abc: boolean;
+    serieHistorica: boolean;
+  };
+}
+
+export const DASHBOARD_PADRAO: DashboardConfig = {
+  titulo: "Dashboard de chamados",
+  subtitulo: "Indicadores públicos",
+  visaoPadrao: "problemas",
+  tipoGraficoPadrao: "pizza",
+  graficosAtivos: {
+    pizza: true,
+    barras: true,
+    linhas: true,
+    abc: true,
+    serieHistorica: true,
+  },
+};
+
+export interface RodapeConfig {
+  textoDireitos: string;
+  mostrarLgpd: boolean;
+  exibirLinkLgpd?: boolean;
+  rotuloLgpd: string;
+  exibirWhatsapp?: boolean;
+  whatsappSuporte?: string;
+}
+
+export const RODAPE_PADRAO: RodapeConfig = {
+  textoDireitos: "© 2026 TI SENAI LRV • Todos os direitos reservados • Criado por Claudinei Lima",
+  mostrarLgpd: true,
+  exibirLinkLgpd: true,
+  rotuloLgpd: "Privacidade e LGPD",
+  exibirWhatsapp: true,
+  whatsappSuporte: "66 99644-4461",
+};
+
 export interface Regras {
   prazos: Record<Prioridade, number>; // horas úteis
   expediente: {
@@ -111,6 +289,14 @@ export interface Regras {
   parametrosStatus?: ParametroCor[] | undefined;
   parametrosSla?: ParametroCor[] | undefined;
   lgpd?: LgpdConfig | undefined;
+  // Painel Gerenciável
+  identidadeVisual?: IdentidadeVisualConfig | undefined;
+  paginaInicial?: PaginaInicialConfig | undefined;
+  indicadores?: IndicadoresConfig | undefined;
+  abrirChamado?: AbrirChamadoConfig | undefined;
+  acompanhamento?: AcompanhamentoConfig | undefined;
+  dashboard?: DashboardConfig | undefined;
+  rodape?: RodapeConfig | undefined;
 }
 
 export const FILTROS_PLANILHA = ["Mês", "Busca", "Por página", "Categoria", "Setor", "SLA"] as const;
@@ -281,5 +467,12 @@ export const REGRAS_PADRAO: Regras = {
   parametrosStatus: [...PARAMETROS_STATUS_PADRAO],
   parametrosSla: [...PARAMETROS_SLA_PADRAO],
   lgpd: { ...LGPD_PADRAO },
+  identidadeVisual: { ...IDENTIDADE_VISUAL_PADRAO },
+  paginaInicial: { ...PAGINA_INICIAL_PADRAO },
+  indicadores: { ...INDICADORES_PADRAO },
+  abrirChamado: { ...ABRIR_CHAMADO_PADRAO },
+  acompanhamento: { ...ACOMPANHAMENTO_PADRAO },
+  dashboard: { ...DASHBOARD_PADRAO },
+  rodape: { ...RODAPE_PADRAO },
 };
 

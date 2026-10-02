@@ -3,9 +3,48 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { StoreContext } from "./store-context";
-import { REGRAS_PADRAO, type Regras, type Ticket, type Prioridade, type Status } from "./types";
+import {
+  REGRAS_PADRAO,
+  IDENTIDADE_VISUAL_PADRAO,
+  PAGINA_INICIAL_PADRAO,
+  INDICADORES_PADRAO,
+  ABRIR_CHAMADO_PADRAO,
+  ACOMPANHAMENTO_PADRAO,
+  DASHBOARD_PADRAO,
+  RODAPE_PADRAO,
+  LGPD_PADRAO,
+  type Regras,
+  type Ticket,
+  type Prioridade,
+  type Status,
+} from "./types";
 
 type Row = Database["public"]["Tables"]["tickets"]["Row"];
+
+function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
+  return {
+    ...REGRAS_PADRAO,
+    ...regrasSalvas,
+    prazos: { ...REGRAS_PADRAO.prazos, ...(regrasSalvas.prazos || {}) },
+    expediente: { ...REGRAS_PADRAO.expediente, ...(regrasSalvas.expediente || {}) },
+    identidadeVisual: { ...IDENTIDADE_VISUAL_PADRAO, ...(regrasSalvas.identidadeVisual || {}) },
+    paginaInicial: { ...PAGINA_INICIAL_PADRAO, ...(regrasSalvas.paginaInicial || {}) },
+    indicadores: {
+      total: { ...INDICADORES_PADRAO.total, ...(regrasSalvas.indicadores?.total || {}) },
+      atendimento: { ...INDICADORES_PADRAO.atendimento, ...(regrasSalvas.indicadores?.atendimento || {}) },
+      resolvidos: { ...INDICADORES_PADRAO.resolvidos, ...(regrasSalvas.indicadores?.resolvidos || {}) },
+    },
+    abrirChamado: { ...ABRIR_CHAMADO_PADRAO, ...(regrasSalvas.abrirChamado || {}) },
+    acompanhamento: { ...ACOMPANHAMENTO_PADRAO, ...(regrasSalvas.acompanhamento || {}) },
+    dashboard: {
+      ...DASHBOARD_PADRAO,
+      ...(regrasSalvas.dashboard || {}),
+      graficosAtivos: { ...DASHBOARD_PADRAO.graficosAtivos, ...(regrasSalvas.dashboard?.graficosAtivos || {}) },
+    },
+    rodape: { ...RODAPE_PADRAO, ...(regrasSalvas.rodape || {}) },
+    lgpd: { ...LGPD_PADRAO, ...(regrasSalvas.lgpd || {}) },
+  };
+}
 
 function fromRow(r: Row): Ticket {
   return {
@@ -95,7 +134,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const carregar = () =>
       supabase.from("configuracoes").select("regras").eq("id", 1).maybeSingle().then(({ data }) => {
         if (data?.regras && typeof data.regras === "object") {
-          setRegrasState({ ...REGRAS_PADRAO, ...(data.regras as unknown as Partial<Regras>) });
+          setRegrasState(mesclarComPadroes(data.regras as unknown as Partial<Regras>));
+        } else {
+          setRegrasState(mesclarComPadroes({}));
         }
       });
     carregar();
@@ -162,13 +203,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
    const setRegras = useCallback(async (r: Regras) => {
+     const merged = mesclarComPadroes(r);
      const { error } = await supabase
-      .from("configuracoes")
-       .upsert({ id: 1, regras: r as never, updated_at: new Date().toISOString() });
+       .from("configuracoes")
+       .upsert({ id: 1, regras: merged as never, updated_at: new Date().toISOString() });
      if (error) { console.error(error); return false; }
-     setRegrasState(r);
+     setRegrasState(merged);
      return true;
-  }, []);
+   }, []);
 
   const sair = useCallback(async () => {
     await supabase.auth.signOut();

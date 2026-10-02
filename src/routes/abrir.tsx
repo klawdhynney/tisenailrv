@@ -303,15 +303,17 @@ interface FormValues {
 
   const customFields = campos.filter((c) => !["solicitante", "email", "setor", "categoria", "local", "contato", "descricao"].includes(c.id) && c.ativo);
 
+  const configAbrir = regras.abrirChamado;
+
   return (
     <div className="mx-auto max-w-3xl">
       <div className="rounded-2xl border-l-4 border-g-green bg-card px-5 py-5 text-center shadow-sm">
         <div className="flex items-center justify-center gap-3">
           <span className="rounded-xl bg-g-green/15 p-3 text-g-green"><Cpu className="size-7" /></span>
-          <h1 className="text-3xl font-bold">Abrir chamado de TI</h1>
+          <h1 className="text-3xl font-bold">{configAbrir?.titulo || "Abrir chamado de TI"}</h1>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
-          Abra o seu chamado, descreva o problema e informe o local exato para agilizar o atendimento.
+          {configAbrir?.textoApoio || "Abra o seu chamado, descreva o problema e informe o local exato para agilizar o atendimento."}
         </p>
       </div>
       <Card className="mt-6 rounded-2xl border-t-4 border-g-blue shadow-md">
@@ -372,8 +374,8 @@ interface FormValues {
             )}
 
             {isCampoAtivo("local") && (
-              <Campo label={getCampoLabel("local", "Local do problema*")} obrigatorio={isCampoObrigatorio("local")} erro={erros.local}>
-                <Input value={form.local} onChange={(e) => set("local", e.target.value)} placeholder="Ex.: Bloco A, Sala 3, Mesa 02" />
+              <Campo label={getCampoLabel("local", configAbrir?.rotuloLocal || "Local do problema*")} obrigatorio={isCampoObrigatorio("local")} erro={erros.local}>
+                <Input value={form.local} onChange={(e) => set("local", e.target.value)} placeholder={configAbrir?.placeholderLocal || "Ex.: Bloco A, Sala 3, Mesa 02"} />
               </Campo>
             )}
 
@@ -388,8 +390,8 @@ interface FormValues {
             )}
 
             {isCampoAtivo("descricao") && (
-              <Campo label={getCampoLabel("descricao", "Descreva o problema*")} obrigatorio={isCampoObrigatorio("descricao")} erro={erros.descricao}>
-                <TextoAssistido rows={5} value={form.descricao} onChange={(value) => set("descricao", value)} placeholder="Ex.: Computador sem internet na sala 1" />
+              <Campo label={getCampoLabel("descricao", configAbrir?.rotuloDescricao || "Descreva o problema*")} obrigatorio={isCampoObrigatorio("descricao")} erro={erros.descricao}>
+                <TextoAssistido rows={5} value={form.descricao} onChange={(value) => set("descricao", value)} placeholder={configAbrir?.placeholderDescricao || "Ex.: Computador sem internet na sala 1"} />
               </Campo>
             )}
 
@@ -399,7 +401,7 @@ interface FormValues {
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Button type="submit" variant="google-green" size="lg" disabled={enviando} className="w-full sm:w-auto font-bold gap-2 shadow-md">
-                <SendHorizontal className="size-5 shrink-0" /> {enviando ? "Enviando…" : "Enviar chamado"}
+                <SendHorizontal className="size-5 shrink-0" /> {enviando ? "Enviando…" : (configAbrir?.textoBotao || "Enviar chamado")}
               </Button>
               <Button
                 type="button"
@@ -417,7 +419,7 @@ interface FormValues {
             </div>
 
             <p className="text-xs text-muted-foreground pt-1">
-              Ao enviar, você concorda com o uso dos seus dados conforme nossa{" "}
+              {configAbrir?.textoConsentimento || "Ao enviar, você concorda com o uso dos seus dados conforme nossa"}{" "}
               <Link
                 to="/lgpd"
                 className="font-medium text-foreground underline underline-offset-2 hover:text-primary transition-colors"

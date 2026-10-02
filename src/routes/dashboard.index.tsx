@@ -95,8 +95,8 @@ function Dashboard() {
     return () => { mounted = false; void supabase.removeChannel(channel); };
   }, []);
   const [mes, setMes] = useState(mesAtualPadrao);
-  const [visao, setVisao] = useState<Visao>("problemas");
-  const [tipoGrafico, setTipoGrafico] = useState<TipoGrafico>("pizza");
+  const [visao, setVisao] = useState<Visao>(() => (regras.dashboard?.visaoPadrao as Visao) || "problemas");
+  const [tipoGrafico, setTipoGrafico] = useState<TipoGrafico>(() => (regras.dashboard?.tipoGraficoPadrao as TipoGrafico) || "pizza");
   const linhas = useMemo(() => publicStats.filter((r) => mes === "todos" || r.mes === mes), [publicStats, mes]);
   const total = linhas.reduce((n, r) => n + r.total, 0);
   const resolvidos = linhas.filter((r) => r.status === "Resolvido").reduce((n, r) => n + r.total, 0);
@@ -154,12 +154,19 @@ function Dashboard() {
 
   const [serieAberta, setSerieAberta] = useState(true);
 
+  const dashConf = regras.dashboard;
+  const indConf = regras.indicadores;
+
   return (
     <div className="space-y-7 dashboard-print">
       <header className="flex flex-wrap items-start justify-between gap-4">
       <div className="flex-1 text-center">
-        <p className="text-sm font-extrabold uppercase tracking-wider text-g-blue">Indicadores públicos</p>
-        <h1 className="mt-1 text-3xl font-extrabold text-foreground sm:text-4xl">Dashboard de chamados</h1>
+        <p className="text-sm font-extrabold uppercase tracking-wider text-g-blue">
+          {dashConf?.subtitulo || "Indicadores públicos"}
+        </p>
+        <h1 className="mt-1 text-3xl font-extrabold text-foreground sm:text-4xl">
+          {dashConf?.titulo || "Dashboard de chamados"}
+        </h1>
       </div>
       {isGestor && (
         <div className="no-print flex flex-wrap items-center gap-2">
@@ -180,11 +187,12 @@ function Dashboard() {
     </header>
 
     {/* Resumo de Indicadores no Topo */}
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    {(indConf?.mostrar !== false) && (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { label: "Total de chamados", count: total, border: "border-g-blue", color: "text-g-blue", desc: "Quantidade de chamados registrados." },
-          { label: "Em atendimento", count: ativos, border: "border-g-yellow", color: "text-g-yellow", desc: "Chamados que estão sendo tratados pela equipe de TI." },
-          { label: "Resolvidos", count: resolvidos, border: "border-g-green", color: "text-g-green", desc: "Chamados que já foram concluídos." },
+          { label: indConf?.totalLabel || "Total de chamados", count: total, border: "border-g-blue", color: "text-g-blue", desc: indConf?.totalDesc || "Quantidade de chamados registrados." },
+          { label: indConf?.atendimentoLabel || "Em atendimento", count: ativos, border: "border-g-yellow", color: "text-g-yellow", desc: indConf?.atendimentoDesc || "Chamados que estão sendo tratados pela equipe de TI." },
+          { label: indConf?.resolvidosLabel || "Resolvidos", count: resolvidos, border: "border-g-green", color: "text-g-green", desc: indConf?.resolvidosDesc || "Chamados que já foram concluídos." },
         ].map((item) => (
           <div key={item.label} className={`rounded-xl border-l-4 ${item.border} bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between`}>
             <div>
@@ -195,6 +203,7 @@ function Dashboard() {
           </div>
         ))}
       </div>
+    )}
 
     {/* Filtros de dados posicionados logo próximos aos gráficos correspondentes */}
     <section className="no-print rounded-xl border-2 border-g-blue/60 bg-card px-4 py-3 shadow-sm transition-all">
