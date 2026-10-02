@@ -105,7 +105,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b-2 border-border bg-card/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
+        <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 sm:px-6 lg:px-8 py-3">
            <Link to="/" className="flex shrink-0 items-center gap-2.5 group">
                <img src={logoSrc} alt={tituloSite} width={38} height={38} className="size-9.5 rounded-full object-cover shadow-sm scale-105 transition-transform duration-200" />
               <span className="text-sm font-extrabold text-foreground sm:text-base">{tituloSite}</span>
@@ -131,14 +131,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         )}
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
+      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {showBanner && (
-          <div className="mb-6 sm:mb-8 flex justify-center">
+          <div className="mb-6 sm:mb-8 w-full">
             <Link
               to="/"
-              className={`group block w-full overflow-hidden rounded-3xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:scale-[1.01] hover:border-g-blue/60 hover:shadow-md active:scale-[0.99] ${
-                pathname === "/abrir" ? "max-w-3xl" : "max-w-5xl"
-              }`}
+              className="group block w-full overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:scale-[1.008] hover:border-g-blue/60 hover:shadow-md active:scale-[0.995]"
               title="Voltar para a página inicial"
             >
               <img
@@ -146,26 +144,28 @@ export function AppShell({ children }: { children: ReactNode }) {
                 alt={bannerAltText}
                 width={2048}
                 height={768}
-                className="aspect-[2048/768] min-h-[140px] sm:min-h-[220px] w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.015]"
+                className="aspect-[21/9] sm:aspect-[24/8] min-h-[140px] sm:min-h-[200px] max-h-[320px] w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.015]"
               />
             </Link>
           </div>
         )}
         {children}
       </main>
-      <footer className="mt-12 border-t border-border py-6 text-center text-xs text-muted-foreground flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4">
-        <span>{textoRodape}</span>
-        {mostrarLgpd && (
-          <>
-            <span>•</span>
-            <Link
-              to="/lgpd"
-              className="font-medium text-foreground/80 hover:text-primary hover:underline underline-offset-2 transition-colors"
-            >
-              {rotuloLgpd}
-            </Link>
-          </>
-        )}
+      <footer className="mt-12 border-t border-border py-6 text-center text-xs text-muted-foreground">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 sm:px-6 lg:px-8">
+          <span>{textoRodape}</span>
+          {mostrarLgpd && (
+            <>
+              <span>•</span>
+              <Link
+                to="/lgpd"
+                className="font-medium text-foreground/80 hover:text-primary hover:underline underline-offset-2 transition-colors"
+              >
+                {rotuloLgpd}
+              </Link>
+            </>
+          )}
+        </div>
       </footer>
     </div>
   );

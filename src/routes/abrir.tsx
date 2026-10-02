@@ -306,7 +306,7 @@ interface FormValues {
   const configAbrir = regras.abrirChamado;
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="w-full space-y-6">
       <div className="rounded-2xl border-l-4 border-g-green bg-card px-5 py-5 text-center shadow-sm">
         <div className="flex items-center justify-center gap-3">
           <span className="rounded-xl bg-g-green/15 p-3 text-g-green"><Cpu className="size-7" /></span>
@@ -316,7 +316,7 @@ interface FormValues {
           {configAbrir?.textoApoio || "Abra o seu chamado, descreva o problema e informe o local exato para agilizar o atendimento."}
         </p>
       </div>
-      <Card className="mt-6 rounded-2xl border-t-4 border-g-blue shadow-md">
+      <Card className="rounded-2xl border-t-4 border-g-blue shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2"><MapPin className="size-5 text-g-blue" /> Dados do chamado</CardTitle>
           <span className="text-xs text-muted-foreground"><span className="font-bold text-[var(--g-red)]">*</span> Campos obrigatórios</span>
