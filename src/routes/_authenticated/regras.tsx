@@ -59,6 +59,8 @@ import {
   INDICADORES_PADRAO,
   ABRIR_CHAMADO_PADRAO,
   ACOMPANHAMENTO_PADRAO,
+  COLUNAS_ACOMPANHAMENTO_MAP,
+  isColunaAcompAtiva,
   DASHBOARD_PADRAO,
   RODAPE_PADRAO,
   CORES_PRIORIDADE,
@@ -306,8 +308,10 @@ function Regras() {
     "prazo",
   ];
   const toggleColunaAcomp = (col: string) => {
-    const novas = colunasAcomp.includes(col)
-      ? colunasAcomp.filter((x) => x !== col)
+    const ativa = isColunaAcompAtiva(colunasAcomp, col);
+    const aliases = [col.toLowerCase(), ...(COLUNAS_ACOMPANHAMENTO_MAP[col] || [])];
+    const novas = ativa
+      ? colunasAcomp.filter((x) => !aliases.includes(String(x).trim().toLowerCase()))
       : [...colunasAcomp, col];
     salvarAcomp({ colunasVisiveis: novas });
   };
@@ -902,7 +906,7 @@ function Regras() {
                     { id: "sla", label: "Situação do SLA" },
                     { id: "prazo", label: "Data/Hora do Prazo" },
                   ].map((col) => {
-                    const ativa = colunasAcomp.includes(col.id);
+                    const ativa = isColunaAcompAtiva(colunasAcomp, col.id);
                     return (
                       <Button
                         key={col.id}
