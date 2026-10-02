@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Area, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Activity, BarChart3, Calendar, ChevronDown, ChevronUp, ClipboardList, FileSpreadsheet, FileText, LineChart as LineChartIcon, PieChartIcon, Printer, RotateCcw, Sparkles, Table2 } from "lucide-react";
+import { Activity, BarChart3, Calendar, ChevronDown, ChevronUp, ClipboardList, FileSpreadsheet, FileText, LineChart as LineChartIcon, PieChartIcon, Printer, RotateCcw, Sparkles, Table2, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { calcularSla } from "@/lib/sla";
 import { useStore } from "@/lib/store-context";
@@ -47,7 +47,7 @@ const RECORRENTES = [
   { name: "Impressoras e toner", value: 7 },
 ] as const;
 type Visao = (typeof VISOES)[number]["id"];
-type TipoGrafico = "pizza" | "barras" | "linhas";
+type TipoGrafico = "pizza" | "barras" | "linhas" | "abc";
 type Item = { name: string; value: number };
 
 function usePrefersReducedMotion() {
@@ -152,7 +152,7 @@ function Dashboard() {
     }, `Dashboard_Completo_${mes}`);
   };
 
-  const [serieAberta, setSerieAberta] = useState(false);
+  const [serieAberta, setSerieAberta] = useState(true);
 
   return (
     <div className="space-y-7 dashboard-print">
@@ -222,7 +222,7 @@ function Dashboard() {
             size="sm"
             variant={serieAberta ? "google-blue" : "outline"}
             onClick={() => {
-              setSerieAberta((v) => !v);
+              setSerieAberta(true);
               setTimeout(() => {
                 document.getElementById("secao-serie-historica")?.scrollIntoView({ behavior: "smooth", block: "start" });
               }, 60);
@@ -242,42 +242,54 @@ function Dashboard() {
       </div>
     </section>
 
-    {/* Gráfico Principal: Série Histórica Dinâmica com Accordion Expansível */}
-    <GraficoSerieHistoricaTech stats={publicStats} aberto={serieAberta} setAberto={setSerieAberta} />
-
-      {/* Seção Categórica e Distribuição */}
-      <div className="border-t-2 border-border/80 pt-6">
-        <div className="mb-4">
-          <h2 className="text-xl font-bold text-foreground">Análise Categórica</h2>
+    {/* Seção Categórica e Distribuição com Série Histórica integrada */}
+    <div className="border-t-2 border-border/80 pt-6 space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-black text-foreground tracking-tight">Análise Categórica</h2>
+          <p className="text-xs text-muted-foreground">Navegue pelas dimensões dos chamados e acompanhe a série temporal integrada.</p>
         </div>
+      </div>
 
-        <nav aria-label="Gráficos do dashboard" className="no-print grid grid-cols-2 gap-2 md:grid-cols-5">
-          {VISOES.map((v) => (
-            <Button
-              key={v.id}
-              variant={`google-${v.color}` as "google-blue" | "google-red" | "google-yellow" | "google-green" | "google-purple"}
-              aria-current={visao === v.id ? "page" : undefined}
-              className={`h-auto min-h-12 whitespace-normal py-2 text-center text-sm font-bold tracking-tight ${visao === v.id ? "ring-2 ring-white ring-offset-2 ring-offset-background shadow-lg scale-[1.02]" : "opacity-85 hover:opacity-100"}`}
-              onClick={() => setVisao(v.id)}
-            >
-              {v.label}
-            </Button>
-          ))}
-        </nav>
-        <section className="min-w-0 border-t-2 border-border pt-5 mt-4" aria-live="polite">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <nav aria-label="Gráficos do dashboard" className="no-print grid grid-cols-2 gap-2 md:grid-cols-5">
+        {VISOES.map((v) => (
+          <Button
+            key={v.id}
+            variant={`google-${v.color}` as "google-blue" | "google-red" | "google-yellow" | "google-green" | "google-purple"}
+            aria-current={visao === v.id ? "page" : undefined}
+            className={`h-auto min-h-12 whitespace-normal py-2 text-center text-sm font-bold tracking-tight ${visao === v.id ? "ring-2 ring-white ring-offset-2 ring-offset-background shadow-lg scale-[1.02]" : "opacity-85 hover:opacity-100"}`}
+            onClick={() => setVisao(v.id)}
+          >
+            {v.label}
+          </Button>
+        ))}
+      </nav>
+
+      {/* Grade com os gráficos da Análise Categórica: Visão Categórica à esquerda e Série Histórica à direita (por último no celular) */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+        {/* Painel da Visão Categórica / Curva ABC */}
+        <section className="min-w-0 rounded-2xl border-2 border-border/80 bg-card p-4 sm:p-5 shadow-sm space-y-4" aria-live="polite">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-3">
             <div>
-              <h2 className="text-2xl font-bold text-foreground">{VISOES.find((v) => v.id === visao)?.label}</h2>
+              <h3 className="text-xl font-bold text-foreground">{VISOES.find((v) => v.id === visao)?.label}</h3>
+              <p className="text-xs text-muted-foreground">Distribuição e proporção dos registros filtrados.</p>
             </div>
-            <div className="no-print flex flex-wrap gap-2" aria-label="Tipo de gráfico">
-              <Button size="sm" variant={tipoGrafico === "pizza" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("pizza")}><PieChartIcon className="size-4" /> Pizza</Button>
-              <Button size="sm" variant={tipoGrafico === "barras" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("barras")}><BarChart3 className="size-4" /> Barras</Button>
-              <Button size="sm" variant={tipoGrafico === "linhas" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("linhas")}><LineChartIcon className="size-4" /> Linhas</Button>
+            <div className="no-print flex flex-wrap gap-1.5" aria-label="Tipo de gráfico">
+              <Button size="sm" variant={tipoGrafico === "pizza" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("pizza")}><PieChartIcon className="size-3.5 mr-1" /> Pizza</Button>
+              <Button size="sm" variant={tipoGrafico === "barras" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("barras")}><BarChart3 className="size-3.5 mr-1" /> Barras</Button>
+              <Button size="sm" variant={tipoGrafico === "linhas" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("linhas")}><LineChartIcon className="size-3.5 mr-1" /> Linhas</Button>
+              <Button size="sm" variant={tipoGrafico === "abc" ? "google-blue" : "outline"} onClick={() => setTipoGrafico("abc")} title="Curva ABC / Análise de Pareto"><TrendingUp className="size-3.5 mr-1" /> Curva ABC</Button>
             </div>
           </div>
           <Grafico key={`${visao}-${tipoGrafico}`} dados={dados} tipo={tipoGrafico} cor={cor} />
         </section>
+
+        {/* Gráfico da Série Histórica (posicionado no lado direito da grade, ou por último no mobile) */}
+        <div className="min-w-0">
+          <GraficoSerieHistoricaTech stats={publicStats} aberto={serieAberta} setAberto={setSerieAberta} />
+        </div>
       </div>
+    </div>
     </div>
   );
 }
@@ -810,8 +822,53 @@ function GraficoSerieHistoricaTech({
 function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: (name: string, i: number) => string }) {
   const isMobile = useIsMobile();
   const prefersReducedMotion = usePrefersReducedMotion();
-  if (!dados.length) return <p className="py-24 text-center text-muted-foreground">Nenhum chamado encontrado neste recorte.</p>;
+  if (!dados.length) {
+    return (
+      <div className="py-24 text-center space-y-2">
+        <p className="text-base font-semibold text-muted-foreground">Nenhum chamado encontrado neste recorte.</p>
+        <p className="text-xs text-muted-foreground/80">Tente selecionar outro mês ou alterar os filtros acima.</p>
+      </div>
+    );
+  }
   const totalVal = dados.reduce((sum, d) => sum + d.value, 0);
+
+  // Cálculo da Curva ABC (Pareto)
+  const dadosAbc = useMemo(() => {
+    if (!dados.length) return [];
+    const ordenados = [...dados].sort((a, b) => b.value - a.value);
+    const total = ordenados.reduce((sum, d) => sum + d.value, 0);
+    let acumulado = 0;
+
+    return ordenados.map((item, idx) => {
+      acumulado += item.value;
+      const pctAcumulado = total > 0 ? Number(((acumulado / total) * 100).toFixed(1)) : 0;
+      const pctIndividual = total > 0 ? Number(((item.value / total) * 100).toFixed(1)) : 0;
+
+      // Classificação Pareto:
+      // Classe A: até 80% do volume acumulado (ou item inicial de maior volume)
+      // Classe B: entre 80% e 95% do volume acumulado
+      // Classe C: acima de 95% (cauda longa)
+      let classe: "A" | "B" | "C" = "C";
+      let corClasse = "#ea4335"; // Vermelho Google (C)
+
+      if (idx === 0 || pctAcumulado - pctIndividual < 80) {
+        classe = "A";
+        corClasse = "#34a853"; // Verde Google (A)
+      } else if (pctAcumulado - pctIndividual < 95) {
+        classe = "B";
+        corClasse = "#f9ab00"; // Amarelo Google (B)
+      }
+
+      return {
+        ...item,
+        acumulado,
+        pctAcumulado,
+        pctIndividual,
+        classe,
+        corClasse,
+      };
+    });
+  }, [dados]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload || !payload.length) return null;
@@ -833,6 +890,40 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
           <span className="ml-auto rounded-md px-2 py-0.5 text-xs font-bold text-white shadow-xs" style={{ backgroundColor: corItem }}>
             {pct}%
           </span>
+        </div>
+      </div>
+    );
+  };
+
+  const AbcCustomTooltip = ({ active, payload }: any) => {
+    if (!active || !payload || !payload.length) return null;
+    const item = payload[0]?.payload;
+    if (!item) return null;
+
+    return (
+      <div className="rounded-xl border-2 border-border/80 bg-card/95 px-4 py-3 shadow-xl backdrop-blur-md transition-all animate-in fade-in zoom-in-95 pointer-events-none min-w-56 text-foreground">
+        <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-border/60">
+          <span className="font-bold text-sm truncate max-w-44" title={item.name}>{item.name}</span>
+          <span
+            className="rounded px-2 py-0.5 text-[11px] font-extrabold text-white shadow-xs"
+            style={{ backgroundColor: item.corClasse }}
+          >
+            Classe {item.classe}
+          </span>
+        </div>
+        <div className="space-y-1.5 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Quantidade:</span>
+            <span className="font-mono font-bold text-sm">{item.value} chamados</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Proporção individual:</span>
+            <span className="font-mono font-bold">{item.pctIndividual}%</span>
+          </div>
+          <div className="flex items-center justify-between pt-1 border-t border-border/40">
+            <span className="text-muted-foreground font-semibold">% Acumulado:</span>
+            <span className="font-mono font-black text-g-blue">{item.pctAcumulado}%</span>
+          </div>
         </div>
       </div>
     );
@@ -889,6 +980,64 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
           {dados.map((d, i) => <Cell key={d.name} fill={cor(d.name, i)} />)}
         </Bar>
       </BarChart>
+    ) : tipo === "abc" ? (
+      <ComposedChart
+        data={dadosAbc}
+        margin={
+          isMobile
+            ? { left: -15, right: 10, top: 15, bottom: 25 }
+            : { left: 10, right: 20, top: 15, bottom: 20 }
+        }
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
+        <XAxis
+          dataKey="name"
+          tick={{ fill: "var(--foreground)", fontSize: isMobile ? 9 : 11 }}
+          interval={0}
+          tickFormatter={
+            isMobile
+              ? (name: string) => (name.length > 8 ? `${name.slice(0, 7)}…` : name)
+              : (name: string) => (name.length > 15 ? `${name.slice(0, 14)}…` : name)
+          }
+        />
+        <YAxis
+          yAxisId="qtd"
+          allowDecimals={false}
+          tick={{ fill: "var(--foreground)", fontSize: 11 }}
+        />
+        <YAxis
+          yAxisId="pct"
+          orientation="right"
+          domain={[0, 100]}
+          unit="%"
+          tick={{ fill: "var(--foreground)", fontSize: 11 }}
+        />
+        <Tooltip content={<AbcCustomTooltip />} />
+        <Bar
+          yAxisId="qtd"
+          dataKey="value"
+          name="Quantidade"
+          radius={[4, 4, 0, 0]}
+          isAnimationActive={!prefersReducedMotion}
+          animationDuration={prefersReducedMotion ? 0 : 650}
+        >
+          {dadosAbc.map((entry, index) => (
+            <Cell key={`cell-abc-${index}`} fill={entry.corClasse} />
+          ))}
+        </Bar>
+        <Line
+          yAxisId="pct"
+          type="monotone"
+          dataKey="pctAcumulado"
+          name="% Acumulado"
+          stroke="#1a73e8"
+          strokeWidth={3}
+          dot={{ r: 4.5, fill: "#1a73e8", stroke: "#ffffff", strokeWidth: 2 }}
+          activeDot={{ r: 7.5, stroke: "#1a73e8", strokeWidth: 2.5, fill: "#ffffff" }}
+          isAnimationActive={!prefersReducedMotion}
+          animationDuration={prefersReducedMotion ? 0 : 650}
+        />
+      </ComposedChart>
     ) : (
       <LineChart
         data={dados}
@@ -932,41 +1081,105 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
       </div>
 
       {/* Legendas posicionadas no lado direito de todos os gráficos */}
-      <aside
-        aria-label="Legendas do gráfico"
-        className="w-full xl:w-72 max-h-[260px] xl:max-h-[390px] overflow-y-auto rounded-2xl border-2 border-border/80 bg-card/90 p-4 shadow-sm backdrop-blur-xs flex flex-col space-y-2 shrink-0"
-      >
-        <div className="flex items-center justify-end border-b border-border/70 pb-2 px-1">
-          <span className="text-xs font-mono font-bold text-muted-foreground">
-            {dados.reduce((s, x) => s + x.value, 0)} chamados
-          </span>
-        </div>
-        <div className="space-y-1.5 overflow-y-auto pr-1">
-          {dados.map((d, i) => {
-            const pct = totalVal > 0 ? ((d.value / totalVal) * 100).toFixed(1) : "0";
-            return (
+      {tipo === "abc" ? (
+        <aside
+          aria-label="Legendas da Curva ABC (Pareto)"
+          className="w-full xl:w-80 max-h-[360px] xl:max-h-[400px] overflow-y-auto rounded-2xl border-2 border-border/80 bg-card/90 p-4 shadow-sm backdrop-blur-xs flex flex-col space-y-3 shrink-0"
+        >
+          <div className="flex items-center justify-between border-b border-border/70 pb-2 px-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-g-blue">Classificação ABC (Pareto)</span>
+            <span className="text-xs font-mono font-bold text-muted-foreground">{totalVal} total</span>
+          </div>
+
+          <div className="space-y-2 text-xs">
+            <div className="rounded-xl border border-g-green/30 bg-g-green/10 p-2.5 space-y-1">
+              <div className="flex items-center justify-between font-bold text-g-green">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-full bg-g-green" /> Classe A (Até 80%)
+                </span>
+                <span>{dadosAbc.filter(d => d.classe === "A").reduce((s, x) => s + x.value, 0)} ({dadosAbc.filter(d => d.classe === "A").length})</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-tight">Maior impacto e concentração de atendimentos.</p>
+            </div>
+
+            <div className="rounded-xl border border-g-yellow/40 bg-g-yellow/10 p-2.5 space-y-1">
+              <div className="flex items-center justify-between font-bold text-amber-700 dark:text-amber-400">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-full bg-g-yellow" /> Classe B (80% a 95%)
+                </span>
+                <span>{dadosAbc.filter(d => d.classe === "B").reduce((s, x) => s + x.value, 0)} ({dadosAbc.filter(d => d.classe === "B").length})</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-tight">Volume intermediário de demandas.</p>
+            </div>
+
+            <div className="rounded-xl border border-g-red/30 bg-g-red/10 p-2.5 space-y-1">
+              <div className="flex items-center justify-between font-bold text-g-red">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-full bg-g-red" /> Classe C (Acima de 95%)
+                </span>
+                <span>{dadosAbc.filter(d => d.classe === "C").reduce((s, x) => s + x.value, 0)} ({dadosAbc.filter(d => d.classe === "C").length})</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-tight">Cauda longa: problemas pontuais ou menos frequentes.</p>
+            </div>
+          </div>
+
+          <div className="border-t border-border/70 pt-2 space-y-1.5 overflow-y-auto pr-1">
+            {dadosAbc.map((d) => (
               <div
                 key={d.name}
-                className="flex items-center justify-between gap-2.5 rounded-xl px-2.5 py-1.5 transition-all hover:bg-muted/70 text-xs"
+                className="flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-xs hover:bg-muted/70 transition-colors"
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span
-                    className="size-3 rounded-full shrink-0 shadow-xs ring-1 ring-black/10"
-                    style={{ backgroundColor: cor(d.name, i) }}
-                  />
-                  <span className="font-bold text-foreground truncate" title={d.name}>
-                    {d.name}
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold text-white shrink-0" style={{ backgroundColor: d.corClasse }}>
+                    {d.classe}
                   </span>
+                  <span className="font-semibold text-foreground truncate" title={d.name}>{d.name}</span>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0 font-mono">
-                  <span className="font-extrabold text-foreground">{d.value}</span>
-                  <span className="text-[11px] font-medium text-muted-foreground">({pct}%)</span>
+                <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
+                  <span className="font-bold text-foreground">{d.value}</span>
+                  <span className="text-muted-foreground">({d.pctAcumulado}%)</span>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </aside>
+            ))}
+          </div>
+        </aside>
+      ) : (
+        <aside
+          aria-label="Legendas do gráfico"
+          className="w-full xl:w-72 max-h-[260px] xl:max-h-[390px] overflow-y-auto rounded-2xl border-2 border-border/80 bg-card/90 p-4 shadow-sm backdrop-blur-xs flex flex-col space-y-2 shrink-0"
+        >
+          <div className="flex items-center justify-end border-b border-border/70 pb-2 px-1">
+            <span className="text-xs font-mono font-bold text-muted-foreground">
+              {dados.reduce((s, x) => s + x.value, 0)} chamados
+            </span>
+          </div>
+          <div className="space-y-1.5 overflow-y-auto pr-1">
+            {dados.map((d, i) => {
+              const pct = totalVal > 0 ? ((d.value / totalVal) * 100).toFixed(1) : "0";
+              return (
+                <div
+                  key={d.name}
+                  className="flex items-center justify-between gap-2.5 rounded-xl px-2.5 py-1.5 transition-all hover:bg-muted/70 text-xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span
+                      className="size-3 rounded-full shrink-0 shadow-xs ring-1 ring-black/10"
+                      style={{ backgroundColor: cor(d.name, i) }}
+                    />
+                    <span className="font-bold text-foreground truncate" title={d.name}>
+                      {d.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 font-mono">
+                    <span className="font-extrabold text-foreground">{d.value}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">({pct}%)</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </aside>
+      )}
     </div>
   );
 }
