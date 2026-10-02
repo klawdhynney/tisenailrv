@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Cpu, MapPin, CheckCircle2, MessageCircle, ArrowLeft, SendHorizontal, Mail } from "lucide-react";
 import { toast } from "sonner";
@@ -408,6 +408,17 @@ interface FormValues {
                 Cancelar
               </Button>
             </div>
+
+            <p className="text-xs text-muted-foreground pt-1">
+              Ao enviar, você concorda com o uso dos seus dados conforme nossa{" "}
+              <Link
+                to="/lgpd"
+                className="font-medium text-foreground underline underline-offset-2 hover:text-primary transition-colors"
+              >
+                Política de Privacidade e LGPD
+              </Link>
+              .
+            </p>
           </form>
         </CardContent>
       </Card>

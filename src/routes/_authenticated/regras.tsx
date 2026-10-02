@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   ArrowDown,
@@ -21,6 +21,10 @@ import {
   CheckCircle2,
   Database,
   ShieldCheck,
+  ExternalLink,
+  FileText,
+  Lock,
+  Scale,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { useStore } from "@/lib/store-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +41,7 @@ import {
   CAMPOS_EXPORTACAO,
   COLUNAS_PLANILHA,
   FILTROS_PLANILHA,
+  LGPD_PADRAO,
   PARAMETROS_PRIORIDADE_PADRAO,
   PARAMETROS_SLA_PADRAO,
   PARAMETROS_STATUS_PADRAO,
@@ -279,7 +285,7 @@ function Regras() {
 
       {/* Abas de Configuração */}
       <Tabs defaultValue="prazos" className="w-full space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto p-1.5 bg-muted/80 rounded-xl gap-1">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 h-auto p-1.5 bg-muted/80 rounded-xl gap-1">
           <TabsTrigger
             value="prazos"
             className="flex items-center gap-2 py-2.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-xs transition-all"
@@ -314,6 +320,13 @@ function Regras() {
           >
             <Database className="size-4 text-g-green" />
             <span className="font-semibold text-xs md:text-sm">Banco & Limpeza</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="lgpd"
+            className="flex items-center gap-2 py-2.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-xs transition-all"
+          >
+            <ShieldCheck className="size-4 text-g-blue" />
+            <span className="font-semibold text-xs md:text-sm">Privacidade & LGPD</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1171,6 +1184,246 @@ function Regras() {
                 >
                   {limpandoBanco ? "Otimizando..." : "Executar Limpeza e Otimização"}
                 </ConfirmAction>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 6. ABA PRIVACIDADE & LGPD */}
+        <TabsContent value="lgpd" className="space-y-6 focus-visible:outline-none">
+          <Card className="border-t-4 border-g-blue shadow-xs">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-g-blue dark:text-blue-400">
+                  <ShieldCheck className="size-5" />
+                  Textos e Informações da Página de Privacidade e LGPD
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Personalize os textos e seções exibidos na página pública <code className="text-primary font-mono">/lgpd</code>. As alterações passam a valer após salvar.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/lgpd" target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-1.5 size-3.5" /> Ver página pública
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => {
+                    salvar({ lgpd: { ...LGPD_PADRAO } });
+                    toast.info("Textos padrão da LGPD restaurados no rascunho.");
+                  }}
+                >
+                  <RotateCcw className="mr-1.5 size-3.5" /> Restaurar padrão da LGPD
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Título e Linha de atualização */}
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">Título Principal da Página</Label>
+                  <Input
+                    value={regras.lgpd?.titulo ?? LGPD_PADRAO.titulo}
+                    onChange={(e) =>
+                      salvar({
+                        lgpd: { ...LGPD_PADRAO, ...(regras.lgpd ?? {}), titulo: e.target.value },
+                      })
+                    }
+                    placeholder="Ex.: Privacidade e proteção dos seus dados"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">Linha de Atualização</Label>
+                  <Input
+                    value={regras.lgpd?.ultimaAtualizacao ?? LGPD_PADRAO.ultimaAtualizacao}
+                    onChange={(e) =>
+                      salvar({
+                        lgpd: {
+                          ...LGPD_PADRAO,
+                          ...(regras.lgpd ?? {}),
+                          ultimaAtualizacao: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="Ex.: Última atualização: outubro de 2026"
+                  />
+                </div>
+              </div>
+
+              {/* Subtítulo */}
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Subtítulo Explicativo</Label>
+                <Textarea
+                  rows={2}
+                  value={regras.lgpd?.subtitulo ?? LGPD_PADRAO.subtitulo}
+                  onChange={(e) =>
+                    salvar({
+                      lgpd: { ...LGPD_PADRAO, ...(regras.lgpd ?? {}), subtitulo: e.target.value },
+                    })
+                  }
+                  placeholder="Explicação resumida do objetivo da página..."
+                />
+              </div>
+
+              {/* Seções Específicas */}
+              <div className="space-y-4 pt-2">
+                <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                    <UserCheck className="size-4 text-g-blue" /> Seção 1: Quem é o responsável pelos dados
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Identificação do controlador do site e da central de atendimento.
+                  </p>
+                  <Textarea
+                    rows={3}
+                    value={regras.lgpd?.responsavel ?? LGPD_PADRAO.responsavel}
+                    onChange={(e) =>
+                      salvar({
+                        lgpd: {
+                          ...LGPD_PADRAO,
+                          ...(regras.lgpd ?? {}),
+                          responsavel: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                    <FileText className="size-4 text-g-green" /> Seção 2: Quais dados coletamos
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Itens coletados durante o chamado e avisos sobre dados sensíveis.
+                  </p>
+                  <Textarea
+                    rows={5}
+                    value={regras.lgpd?.dadosColetados ?? LGPD_PADRAO.dadosColetados}
+                    onChange={(e) =>
+                      salvar({
+                        lgpd: {
+                          ...LGPD_PADRAO,
+                          ...(regras.lgpd ?? {}),
+                          dadosColetados: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                    <CheckCircle2 className="size-4 text-amber-500" /> Seção 3: Para que usamos seus dados (Finalidade)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Finalidades do tratamento de dados no suporte de TI.
+                  </p>
+                  <Textarea
+                    rows={4}
+                    value={regras.lgpd?.finalidade ?? LGPD_PADRAO.finalidade}
+                    onChange={(e) =>
+                      salvar({
+                        lgpd: {
+                          ...LGPD_PADRAO,
+                          ...(regras.lgpd ?? {}),
+                          finalidade: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                    <ShieldCheck className="size-4 text-purple-500" /> Seção 4: Compartilhamento
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Regras de compartilhamento com terceiros e indicadores gerais.
+                  </p>
+                  <Textarea
+                    rows={3}
+                    value={regras.lgpd?.compartilhamento ?? LGPD_PADRAO.compartilhamento}
+                    onChange={(e) =>
+                      salvar({
+                        lgpd: {
+                          ...LGPD_PADRAO,
+                          ...(regras.lgpd ?? {}),
+                          compartilhamento: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                    <Lock className="size-4 text-g-red" /> Seção 5: Segurança e tempo de guarda
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Medidas de segurança e período de armazenamento dos dados.
+                  </p>
+                  <Textarea
+                    rows={4}
+                    value={regras.lgpd?.seguranca ?? LGPD_PADRAO.seguranca}
+                    onChange={(e) =>
+                      salvar({
+                        lgpd: {
+                          ...LGPD_PADRAO,
+                          ...(regras.lgpd ?? {}),
+                          seguranca: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                    <Scale className="size-4 text-g-blue" /> Seção 6: Seus direitos
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Direitos previstos na LGPD que o titular pode requisitar a qualquer momento.
+                  </p>
+                  <Textarea
+                    rows={6}
+                    value={regras.lgpd?.direitos ?? LGPD_PADRAO.direitos}
+                    onChange={(e) =>
+                      salvar({
+                        lgpd: {
+                          ...LGPD_PADRAO,
+                          ...(regras.lgpd ?? {}),
+                          direitos: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                    <RotateCcw className="size-4 text-muted-foreground" /> Seção 7: Mudanças nesta página
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Aviso sobre eventuais revisões e atualizações futuras do texto.
+                  </p>
+                  <Textarea
+                    rows={3}
+                    value={regras.lgpd?.mudancas ?? LGPD_PADRAO.mudancas}
+                    onChange={(e) =>
+                      salvar({
+                        lgpd: {
+                          ...LGPD_PADRAO,
+                          ...(regras.lgpd ?? {}),
+                          mudancas: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

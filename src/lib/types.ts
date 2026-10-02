@@ -110,6 +110,7 @@ export interface Regras {
   parametrosPrioridade?: ParametroCor[] | undefined;
   parametrosStatus?: ParametroCor[] | undefined;
   parametrosSla?: ParametroCor[] | undefined;
+  lgpd?: LgpdConfig | undefined;
 }
 
 export const FILTROS_PLANILHA = ["Mês", "Busca", "Por página", "Categoria", "Setor", "SLA"] as const;
@@ -245,4 +246,40 @@ export const REGRAS_PADRAO: Regras = {
   parametrosPrioridade: [...PARAMETROS_PRIORIDADE_PADRAO],
   parametrosStatus: [...PARAMETROS_STATUS_PADRAO],
   parametrosSla: [...PARAMETROS_SLA_PADRAO],
+  lgpd: { ...LGPD_PADRAO },
 };
+
+export interface LgpdConfig {
+  titulo: string;
+  subtitulo: string;
+  ultimaAtualizacao: string;
+  responsavel: string;
+  dadosColetados: string;
+  finalidade: string;
+  compartilhamento: string;
+  seguranca: string;
+  direitos: string;
+  mudancas: string;
+}
+
+export const LGPD_PADRAO: LgpdConfig = {
+  titulo: "Privacidade e proteção dos seus dados",
+  subtitulo:
+    "Aqui explicamos, em linguagem simples, quais dados usamos ao atender seu chamado de TI e como a Lei Geral de Proteção de Dados (Lei nº 13.709/2018) protege você.",
+  ultimaAtualizacao: "Última atualização: outubro de 2026",
+  responsavel:
+    "O controlador dos dados é o proprietário do site o Sr. Claudinei Lima. A Central de Chamados de TI usa esses dados somente para prestar o suporte que você solicitou.",
+  dadosColetados:
+    "Coletamos apenas o necessário para atender seu chamado:\n• Nome e contato (e-mail ou telefone) de quem abre o chamado\n• Setor, sala ou local onde o problema ocorre\n• Descrição do problema e anexos enviados voluntariamente\n• Histórico de atendimento: status, respostas e data de cada etapa\n\nNão pedimos dados sensíveis. Evite incluir senhas, documentos pessoais ou informações de saúde na descrição do chamado.",
+  finalidade:
+    "• Registrar, atender e acompanhar seu chamado de TI\n• Entrar em contato para esclarecer ou concluir o atendimento\n• Gerar indicadores gerais de atendimento, sem identificar pessoas\n• Manter a segurança do site.",
+  compartilhamento:
+    "Seus dados ficam acessíveis à equipe de TI responsável pelo atendimento. Só os compartilhamos com terceiros quando for necessário para prestar o suporte, quando a lei exigir ou por ordem de autoridade competente. Os indicadores exibidos na página inicial são números gerais e não identificam ninguém.",
+  seguranca:
+    "Adotamos medidas técnicas e administrativas para proteger seus dados contra acessos não autorizados, perda e alteração. O acesso aos chamados é restrito a quem precisa dele para o atendimento.\n\nGuardamos os dados pelo período legal. Depois disso, eles são eliminados ou anonimizados.",
+  direitos:
+    "Você pode pedir, a qualquer momento e sem custo:\n• Confirmar que tratamos seus dados e acessá-los\n• Corrigir dados incompletos, inexatos ou desatualizados\n• Pedir anonimização, bloqueio ou eliminação de dados desnecessários ou tratados fora da lei\n• Pedir a portabilidade dos dados, conforme regulamentação da ANPD\n• Saber com quais entidades públicas e privadas compartilhamos seus dados\n• Saber que pode não fornecer consentimento e quais as consequências\n• Revogar o consentimento, quando ele for a base do tratamento\n• Pedir a eliminação dos dados tratados com base no consentimento",
+  mudancas:
+    "Podemos atualizar este texto quando o sistema ou a legislação mudarem. A data da última revisão aparece no topo da página.",
+};
+

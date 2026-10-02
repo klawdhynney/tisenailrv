@@ -146,8 +146,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
         {children}
       </main>
-      <footer className="mt-12 border-t border-border py-6 text-center text-xs text-muted-foreground">
-           © 2026 TI SENAI LRV • Todos os direitos reservados • Criado por Claudinei Lima
+      <footer className="mt-12 border-t border-border py-6 text-center text-xs text-muted-foreground flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4">
+        <span>© 2026 TI SENAI LRV • Todos os direitos reservados • Criado por Claudinei Lima</span>
+        <span>•</span>
+        <Link
+          to="/lgpd"
+          className="font-medium text-foreground/80 hover:text-primary hover:underline underline-offset-2 transition-colors"
+        >
+          Privacidade e LGPD
+        </Link>
       </footer>
     </div>
   );

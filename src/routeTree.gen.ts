@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AbrirRouteImport } from './routes/abrir'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as LgpdRouteImport } from './routes/lgpd'
 import { Route as MeusChamadosRouteImport } from './routes/meus-chamados'
 import { Route as AuthenticatedAtendimentoRouteImport } from './routes/_authenticated/atendimento'
 import { Route as AuthenticatedChamadosRouteImport } from './routes/_authenticated/chamados'
@@ -44,6 +45,11 @@ const AuthRoute = AuthRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LgpdRoute = LgpdRouteImport.update({
+  id: '/lgpd',
+  path: '/lgpd',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeusChamadosRoute = MeusChamadosRouteImport.update({
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/abrir': typeof AbrirRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/lgpd': typeof LgpdRoute
   '/meus-chamados': typeof MeusChamadosRoute
   '/atendimento': typeof AuthenticatedAtendimentoRoute
   '/chamados': typeof AuthenticatedChamadosRouteWithChildren
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/abrir': typeof AbrirRoute
   '/auth': typeof AuthRoute
+  '/lgpd': typeof LgpdRoute
   '/meus-chamados': typeof MeusChamadosRoute
   '/atendimento': typeof AuthenticatedAtendimentoRoute
   '/chamados': typeof AuthenticatedChamadosRouteWithChildren
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   '/abrir': typeof AbrirRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/lgpd': typeof LgpdRoute
   '/meus-chamados': typeof MeusChamadosRoute
   '/_authenticated/atendimento': typeof AuthenticatedAtendimentoRoute
   '/_authenticated/chamados': typeof AuthenticatedChamadosRouteWithChildren
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/abrir'
     | '/auth'
     | '/dashboard'
+    | '/lgpd'
     | '/meus-chamados'
     | '/atendimento'
     | '/chamados'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/'
     | '/abrir'
     | '/auth'
+    | '/lgpd'
     | '/meus-chamados'
     | '/atendimento'
     | '/chamados'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/abrir'
     | '/auth'
     | '/dashboard'
+    | '/lgpd'
     | '/meus-chamados'
     | '/_authenticated/atendimento'
     | '/_authenticated/chamados'
@@ -172,6 +184,7 @@ export interface RootRouteChildren {
   AbrirRoute: typeof AbrirRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  LgpdRoute: typeof LgpdRoute
   MeusChamadosRoute: typeof MeusChamadosRoute
 }
 
@@ -210,6 +223,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lgpd': {
+      id: '/lgpd'
+      path: '/lgpd'
+      fullPath: '/lgpd'
+      preLoaderRoute: typeof LgpdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meus-chamados': {
@@ -312,6 +332,7 @@ const rootRouteChildren: RootRouteChildren = {
   AbrirRoute: AbrirRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  LgpdRoute: LgpdRoute,
   MeusChamadosRoute: MeusChamadosRoute,
 }
 export const routeTree = rootRouteImport
