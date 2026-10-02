@@ -10,6 +10,7 @@ import type { Database } from "@/integrations/supabase/types";
 import type { Ticket } from "@/lib/types";
 import { useEffect } from "react";
 import { MESES_DISPONIVEIS } from "@/lib/types";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/dashboard/")({
   head: () => ({ meta: [
@@ -298,6 +299,7 @@ function GraficoSerieHistoricaTech({
   aberto: boolean;
   setAberto: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  const isMobile = useIsMobile();
   const mesesCompletos = useMemo(() => {
     const mapa = new Map<string, SeriePonto>();
     for (const m of MESES_DISPONIVEIS) {
@@ -607,9 +609,16 @@ function GraficoSerieHistoricaTech({
 
           {/* Gráfico e Métricas */}
           <div className="chart-enter flex flex-col xl:flex-row items-stretch justify-center gap-6 w-full pt-1">
-            <div className="h-[360px] w-full flex-1 min-w-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={mesesFiltrados} margin={{ left: 10, right: 30, top: 15, bottom: 10 }}>
+            <div className="h-[320px] sm:h-[360px] w-full min-h-[320px] sm:min-h-[360px] xl:flex-1 min-w-0">
+              <ResponsiveContainer width="100%" height="100%" minHeight={isMobile ? 300 : 360}>
+                <ComposedChart
+                  data={mesesFiltrados}
+                  margin={
+                    isMobile
+                      ? { left: -15, right: 10, top: 15, bottom: 10 }
+                      : { left: 10, right: 30, top: 15, bottom: 10 }
+                  }
+                >
                   <defs>
                     <linearGradient id="g-area-blue" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#1a73e8" stopOpacity={0.25} />
@@ -757,6 +766,7 @@ function GraficoSerieHistoricaTech({
 }
 
 function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: (name: string, i: number) => string }) {
+  const isMobile = useIsMobile();
   if (!dados.length) return <p className="py-24 text-center text-muted-foreground">Nenhum chamado encontrado neste recorte.</p>;
   const totalVal = dados.reduce((sum, d) => sum + d.value, 0);
 
@@ -792,8 +802,8 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
           data={dados}
           dataKey="value"
           nameKey="name"
-          innerRadius="38%"
-          outerRadius="78%"
+          innerRadius={isMobile ? "32%" : "38%"}
+          outerRadius={isMobile ? "72%" : "78%"}
           paddingAngle={3}
           isAnimationActive
           animationDuration={650}
@@ -803,10 +813,28 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
         <Tooltip content={<CustomTooltip />} />
       </PieChart>
     ) : tipo === "barras" ? (
-      <BarChart data={dados} layout="vertical" margin={{ left: 20, right: 30 }}>
+      <BarChart
+        data={dados}
+        layout="vertical"
+        margin={
+          isMobile
+            ? { left: 4, right: 16, top: 5, bottom: 5 }
+            : { left: 20, right: 30 }
+        }
+      >
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
         <XAxis type="number" allowDecimals={false} />
-        <YAxis dataKey="name" type="category" width={160} tick={{ fill: "var(--foreground)", fontSize: 11 }} />
+        <YAxis
+          dataKey="name"
+          type="category"
+          width={isMobile ? 110 : 160}
+          tick={{ fill: "var(--foreground)", fontSize: isMobile ? 10 : 11 }}
+          tickFormatter={
+            isMobile
+              ? (name: string) => (name.length > 15 ? `${name.slice(0, 14)}…` : name)
+              : undefined
+          }
+        />
         <Tooltip content={<CustomTooltip />} />
         <Bar
           dataKey="value"
@@ -819,9 +847,25 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
         </Bar>
       </BarChart>
     ) : (
-      <LineChart data={dados} margin={{ left: 10, right: 20, top: 20, bottom: 10 }}>
+      <LineChart
+        data={dados}
+        margin={
+          isMobile
+            ? { left: 0, right: 12, top: 20, bottom: 10 }
+            : { left: 10, right: 20, top: 20, bottom: 10 }
+        }
+      >
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
-        <XAxis dataKey="name" tick={{ fill: "var(--foreground)", fontSize: 11 }} interval={0} />
+        <XAxis
+          dataKey="name"
+          tick={{ fill: "var(--foreground)", fontSize: isMobile ? 9 : 11 }}
+          interval={0}
+          tickFormatter={
+            isMobile
+              ? (name: string) => (name.length > 9 ? `${name.slice(0, 8)}…` : name)
+              : undefined
+          }
+        />
         <YAxis allowDecimals={false} tick={{ fill: "var(--foreground)", fontSize: 11 }} />
         <Tooltip content={<CustomTooltip />} />
         <Line
@@ -840,14 +884,14 @@ function Grafico({ dados, tipo, cor }: { dados: Item[]; tipo: TipoGrafico; cor: 
 
   return (
     <div className="chart-enter flex flex-col xl:flex-row items-center justify-center gap-6 w-full py-2">
-      <div className="h-[390px] w-full flex-1 min-w-[280px]">
-        <ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer>
+      <div className="h-[340px] sm:h-[390px] w-full min-h-[340px] sm:min-h-[390px] xl:flex-1 min-w-0">
+        <ResponsiveContainer width="100%" height="100%" minHeight={isMobile ? 320 : 390}>{chart}</ResponsiveContainer>
       </div>
 
       {/* Legendas posicionadas no lado direito de todos os gráficos */}
       <aside
         aria-label="Legendas do gráfico"
-        className="w-full xl:w-72 max-h-[390px] overflow-y-auto rounded-2xl border-2 border-border/80 bg-card/90 p-4 shadow-sm backdrop-blur-xs flex flex-col space-y-2 shrink-0"
+        className="w-full xl:w-72 max-h-[260px] xl:max-h-[390px] overflow-y-auto rounded-2xl border-2 border-border/80 bg-card/90 p-4 shadow-sm backdrop-blur-xs flex flex-col space-y-2 shrink-0"
       >
         <div className="flex items-center justify-end border-b border-border/70 pb-2 px-1">
           <span className="text-xs font-mono font-bold text-muted-foreground">
