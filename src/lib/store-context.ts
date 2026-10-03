@@ -10,6 +10,9 @@ export interface StoreValue {
   hidratado: boolean;
   session: Session | null;
   isGestor: boolean;
+  isAdmin: boolean;
+  userRole: import("./types").PapelUsuario;
+  userBlocked: boolean;
   authPronto: boolean;
   addTicket: (t: Omit<Ticket, "id">, email: string) => Promise<number | null>;
   updateTicket: (id: number, patch: Partial<Ticket>) => Promise<boolean>;

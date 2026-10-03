@@ -21,8 +21,10 @@ import { Route as AuthenticatedChamadosRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRegrasRouteImport } from './routes/_authenticated/regras'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardAcompanhamentoRouteImport } from './routes/dashboard.acompanhamento'
+import { Route as DashboardAvaliacoesRouteImport } from './routes/dashboard.avaliacoes'
 import { Route as DashboardSerieHistoricaRouteImport } from './routes/dashboard.serie-historica'
 import { Route as AuthenticatedChamadosTicketIdRouteImport } from './routes/_authenticated/chamados.$ticketId'
+import { Route as AuthenticatedRegrasUsuariosRouteImport } from './routes/_authenticated/regras.usuarios'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -84,6 +86,11 @@ const DashboardAcompanhamentoRoute = DashboardAcompanhamentoRouteImport.update({
   path: '/acompanhamento',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAvaliacoesRoute = DashboardAvaliacoesRouteImport.update({
+  id: '/avaliacoes',
+  path: '/avaliacoes',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardSerieHistoricaRoute = DashboardSerieHistoricaRouteImport.update({
   id: '/serie-historica',
   path: '/serie-historica',
@@ -95,6 +102,12 @@ const AuthenticatedChamadosTicketIdRoute =
     path: '/$ticketId',
     getParentRoute: () => AuthenticatedChamadosRoute,
   } as any)
+const AuthenticatedRegrasUsuariosRoute =
+  AuthenticatedRegrasUsuariosRouteImport.update({
+    id: '/usuarios',
+    path: '/usuarios',
+    getParentRoute: () => AuthenticatedRegrasRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -105,11 +118,13 @@ export interface FileRoutesByFullPath {
   '/meus-chamados': typeof MeusChamadosRoute
   '/atendimento': typeof AuthenticatedAtendimentoRoute
   '/chamados': typeof AuthenticatedChamadosRouteWithChildren
-  '/regras': typeof AuthenticatedRegrasRoute
+  '/regras': typeof AuthenticatedRegrasRouteWithChildren
   '/dashboard/acompanhamento': typeof DashboardAcompanhamentoRoute
+  '/dashboard/avaliacoes': typeof DashboardAvaliacoesRoute
   '/dashboard/serie-historica': typeof DashboardSerieHistoricaRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
+  '/regras/usuarios': typeof AuthenticatedRegrasUsuariosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -119,11 +134,13 @@ export interface FileRoutesByTo {
   '/meus-chamados': typeof MeusChamadosRoute
   '/atendimento': typeof AuthenticatedAtendimentoRoute
   '/chamados': typeof AuthenticatedChamadosRouteWithChildren
-  '/regras': typeof AuthenticatedRegrasRoute
+  '/regras': typeof AuthenticatedRegrasRouteWithChildren
   '/dashboard/acompanhamento': typeof DashboardAcompanhamentoRoute
+  '/dashboard/avaliacoes': typeof DashboardAvaliacoesRoute
   '/dashboard/serie-historica': typeof DashboardSerieHistoricaRoute
   '/dashboard': typeof DashboardIndexRoute
   '/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
+  '/regras/usuarios': typeof AuthenticatedRegrasUsuariosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -136,11 +153,13 @@ export interface FileRoutesById {
   '/meus-chamados': typeof MeusChamadosRoute
   '/_authenticated/atendimento': typeof AuthenticatedAtendimentoRoute
   '/_authenticated/chamados': typeof AuthenticatedChamadosRouteWithChildren
-  '/_authenticated/regras': typeof AuthenticatedRegrasRoute
+  '/_authenticated/regras': typeof AuthenticatedRegrasRouteWithChildren
   '/dashboard/acompanhamento': typeof DashboardAcompanhamentoRoute
+  '/dashboard/avaliacoes': typeof DashboardAvaliacoesRoute
   '/dashboard/serie-historica': typeof DashboardSerieHistoricaRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/_authenticated/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
+  '/_authenticated/regras/usuarios': typeof AuthenticatedRegrasUsuariosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -155,9 +174,11 @@ export interface FileRouteTypes {
     | '/chamados'
     | '/regras'
     | '/dashboard/acompanhamento'
+    | '/dashboard/avaliacoes'
     | '/dashboard/serie-historica'
     | '/dashboard/'
     | '/chamados/$ticketId'
+    | '/regras/usuarios'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -169,9 +190,11 @@ export interface FileRouteTypes {
     | '/chamados'
     | '/regras'
     | '/dashboard/acompanhamento'
+    | '/dashboard/avaliacoes'
     | '/dashboard/serie-historica'
     | '/dashboard'
     | '/chamados/$ticketId'
+    | '/regras/usuarios'
   id:
     | '__root__'
     | '/'
@@ -185,9 +208,11 @@ export interface FileRouteTypes {
     | '/_authenticated/chamados'
     | '/_authenticated/regras'
     | '/dashboard/acompanhamento'
+    | '/dashboard/avaliacoes'
     | '/dashboard/serie-historica'
     | '/dashboard/'
     | '/_authenticated/chamados/$ticketId'
+    | '/_authenticated/regras/usuarios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -286,6 +311,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAcompanhamentoRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/avaliacoes': {
+      id: '/dashboard/avaliacoes'
+      path: '/avaliacoes'
+      fullPath: '/dashboard/avaliacoes'
+      preLoaderRoute: typeof DashboardAvaliacoesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/serie-historica': {
       id: '/dashboard/serie-historica'
       path: '/serie-historica'
@@ -299,6 +331,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/chamados/$ticketId'
       preLoaderRoute: typeof AuthenticatedChamadosTicketIdRouteImport
       parentRoute: typeof AuthenticatedChamadosRoute
+    }
+    '/_authenticated/regras/usuarios': {
+      id: '/_authenticated/regras/usuarios'
+      path: '/usuarios'
+      fullPath: '/regras/usuarios'
+      preLoaderRoute: typeof AuthenticatedRegrasUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRegrasRoute
     }
   }
 }
@@ -316,16 +355,27 @@ const AuthenticatedChamadosRouteWithChildren =
     AuthenticatedChamadosRouteChildren,
   )
 
+interface AuthenticatedRegrasRouteChildren {
+  AuthenticatedRegrasUsuariosRoute: typeof AuthenticatedRegrasUsuariosRoute
+}
+
+const AuthenticatedRegrasRouteChildren: AuthenticatedRegrasRouteChildren = {
+  AuthenticatedRegrasUsuariosRoute: AuthenticatedRegrasUsuariosRoute,
+}
+
+const AuthenticatedRegrasRouteWithChildren =
+  AuthenticatedRegrasRoute._addFileChildren(AuthenticatedRegrasRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAtendimentoRoute: typeof AuthenticatedAtendimentoRoute
   AuthenticatedChamadosRoute: typeof AuthenticatedChamadosRouteWithChildren
-  AuthenticatedRegrasRoute: typeof AuthenticatedRegrasRoute
+  AuthenticatedRegrasRoute: typeof AuthenticatedRegrasRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAtendimentoRoute: AuthenticatedAtendimentoRoute,
   AuthenticatedChamadosRoute: AuthenticatedChamadosRouteWithChildren,
-  AuthenticatedRegrasRoute: AuthenticatedRegrasRoute,
+  AuthenticatedRegrasRoute: AuthenticatedRegrasRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -333,12 +383,14 @@ const AuthenticatedRouteRouteWithChildren =
 
 interface DashboardRouteChildren {
   DashboardAcompanhamentoRoute: typeof DashboardAcompanhamentoRoute
+  DashboardAvaliacoesRoute: typeof DashboardAvaliacoesRoute
   DashboardSerieHistoricaRoute: typeof DashboardSerieHistoricaRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAcompanhamentoRoute: DashboardAcompanhamentoRoute,
+  DashboardAvaliacoesRoute: DashboardAvaliacoesRoute,
   DashboardSerieHistoricaRoute: DashboardSerieHistoricaRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }

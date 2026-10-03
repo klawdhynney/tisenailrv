@@ -32,6 +32,8 @@ import {
   Trash2,
   Upload,
   UserCheck,
+  Users,
+  Star,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -43,9 +45,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ConfirmAction } from "@/components/ConfirmAction";
-import { EmaLoader } from "@/components/EmaLoader";
 import { useStore } from "@/lib/store-context";
 import { supabase } from "@/integrations/supabase/client";
+import { GestaoUsuarios } from "@/components/GestaoUsuarios";
 import {
   CAMPOS_ABERTURA_PADRAO,
   CAMPOS_EXPORTACAO,
@@ -67,11 +69,10 @@ import {
   DASHBOARD_PADRAO,
   RODAPE_PADRAO,
   CORES_PRIORIDADE,
-  ANIMACAO_CARREGAMENTO_PADRAO,
+  AVALIACAO_PADRAO,
   type CampoAbertura,
   type ParametroCor,
   type Periodo,
-  type VelocidadeAnimacao,
 } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/regras")({
@@ -227,141 +228,8 @@ function ImageUploadInput({
   );
 }
 
-function GifUploadInput({
-  value,
-  onChange,
-}: {
-  value?: string | null;
-  onChange: (val: string | null) => void;
-}) {
-  const [dragOver, setDragOver] = useState(false);
-  const [validando, setValidando] = useState(false);
-
-  const processarArquivo = async (file: File) => {
-    // 1. Limite de tamanho: 3 MB
-    if (file.size > 3 * 1024 * 1024) {
-      toast.error("O arquivo GIF deve ter no máximo 3 MB.");
-      return;
-    }
-
-    setValidando(true);
-    try {
-      // 2. Validação profunda de conteúdo binário (Magic Bytes do GIF)
-      const buffer = await file.slice(0, 6).arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      const header = String.fromCharCode(...bytes);
-
-      if (header !== "GIF87a" && header !== "GIF89a") {
-        toast.error("Arquivo inválido. O arquivo selecionado não é um GIF animado real.");
-        return;
-      }
-
-      // 3. Lê o arquivo como DataURL
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        if (result) {
-          onChange(result);
-          toast.success("Arquivo .GIF validado e carregado com sucesso!");
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      console.error(err);
-      toast.error("Não foi possível processar o arquivo GIF.");
-    } finally {
-      setValidando(false);
-    }
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <Label className="text-xs font-semibold text-foreground">
-            Substituir Ema por arquivo .GIF (Opcional)
-          </Label>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            Envie uma animação .gif real (máx. 3 MB). Se ativo, substitui a ema em todo o site. Se falhar, a ema volta automaticamente.
-          </p>
-        </div>
-        {value ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="text-xs text-destructive hover:bg-destructive/10"
-            onClick={() => {
-              onChange(null);
-              toast.info("GIF removido. Animação voltou para a ema padrão.");
-            }}
-          >
-            <RotateCcw className="size-3.5 mr-1.5" /> Remover e voltar para a ema
-          </Button>
-        ) : null}
-      </div>
-
-      {value ? (
-        <div className="flex flex-col sm:flex-row items-center gap-4 rounded-xl border border-border bg-muted/20 p-4">
-          <div className="relative size-24 shrink-0 rounded-lg overflow-hidden border border-border/80 bg-background/50 flex items-center justify-center p-2">
-            <img src={value} alt="Pré-visualização do GIF" className="max-w-full max-h-full object-contain" />
-          </div>
-          <div className="space-y-1 text-center sm:text-left">
-            <p className="text-xs font-bold text-foreground flex items-center justify-center sm:justify-start gap-1.5 text-g-green">
-              <CheckCircle2 className="size-4" /> GIF ativo como animação do site
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              Esta animação está substituindo a mascote da ema nas telas de carregamento do sistema.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragOver(false);
-            if (e.dataTransfer.files?.[0]) {
-              processarArquivo(e.dataTransfer.files[0]);
-            }
-          }}
-          className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 text-center transition-colors cursor-pointer ${
-            dragOver ? "border-g-blue bg-g-blue/10" : "border-border hover:border-g-blue/60 bg-muted/20"
-          }`}
-          onClick={() => {
-            document.getElementById("upload-gif-animacao")?.click();
-          }}
-        >
-          <Upload className="size-5 text-muted-foreground mb-1" />
-          <p className="text-xs font-semibold text-foreground">
-            {validando ? "Validando conteúdo do GIF..." : "Clique para selecionar um arquivo .GIF ou arraste até aqui"}
-          </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            Apenas arquivos .gif autênticos (máximo de 3 MB)
-          </p>
-          <input
-            id="upload-gif-animacao"
-            type="file"
-            accept=".gif,image/gif"
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files?.[0]) {
-                processarArquivo(e.target.files[0]);
-              }
-            }}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
 function Regras() {
-  const { regras: regrasSalvas, setRegras, tickets, publicStats, removeTicket } = useStore();
+  const { regras: regrasSalvas, setRegras, tickets, publicStats, removeTicket, isAdmin } = useStore();
   const [regras, setDraft] = useState(regrasSalvas);
   const [limpandoBanco, setLimpandoBanco] = useState(false);
   const [statusLimpeza, setStatusLimpeza] = useState<string | null>(null);
@@ -370,6 +238,9 @@ function Regras() {
 
   const salvar = (patch: Partial<typeof regras>) => setDraft((prev) => ({ ...prev, ...patch }));
   const alterado = JSON.stringify(regras) !== JSON.stringify(regrasSalvas);
+
+  const salvarAvaliacoes = (patch: Partial<typeof AVALIACAO_PADRAO>) =>
+    salvar({ avaliacoes: { ...(regras.avaliacoes ?? AVALIACAO_PADRAO), ...patch } });
 
   const executarLimpezaBanco = async () => {
     setLimpandoBanco(true);
@@ -421,10 +292,6 @@ function Regras() {
     salvar({ identidadeVisual: { ...ident, ...patch } });
 
   // Animação de Carregamento (Ema)
-  const animConf = regras.animacaoCarregamento ?? ANIMACAO_CARREGAMENTO_PADRAO;
-  const salvarAnim = (patch: Partial<typeof animConf>) =>
-    salvar({ animacaoCarregamento: { ...animConf, ...patch } });
-
   // 2. Página Inicial
   const home = regras.paginaInicial ?? PAGINA_INICIAL_PADRAO;
   const salvarHome = (patch: Partial<typeof home>) =>
@@ -623,9 +490,6 @@ function Regras() {
           <TabsTrigger value="geral" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
             <Sliders className="size-4 text-g-blue" /> Geral & Logo
           </TabsTrigger>
-          <TabsTrigger value="animacao" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <Zap className="size-4 text-g-blue" /> Animação Ema
-          </TabsTrigger>
           <TabsTrigger value="inicio" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
             <Layout className="size-4 text-g-green" /> Início & Banner
           </TabsTrigger>
@@ -653,6 +517,11 @@ function Regras() {
           <TabsTrigger value="banco" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
             <Database className="size-4 text-purple-600" /> Banco & Otimização
           </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="usuarios" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
+              <Users className="size-4 text-purple-600" /> Usuários & Acessos
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* 1. ABA GERAL E IDENTIDADE */}
@@ -988,6 +857,71 @@ function Regras() {
                 >
                   <Plus className="mr-2 h-4 w-4" /> Adicionar campo personalizado
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Configuração da Avaliação da Facilidade de Abertura */}
+          <Card className="border-t-4 border-amber-500 shadow-xs">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <Star className="size-5" />
+                Avaliação da Facilidade de Abertura
+              </CardTitle>
+              <CardDescription>
+                Personalize a pergunta, opções de 1 a 5 e mensagem de agradecimento exibidas após o envio do chamado.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Pergunta exibida na tela de confirmação</Label>
+                <Input
+                  value={regras.avaliacoes?.pergunta ?? AVALIACAO_PADRAO.pergunta}
+                  onChange={(e) => salvarAvaliacoes({ pergunta: sanitizeInput(e.target.value) })}
+                  placeholder="Ex.: Como foi a facilidade de abrir este chamado?"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Opções de resposta (notas 1 a 5)</Label>
+                <div className="grid gap-2 sm:grid-cols-5">
+                  {[0, 1, 2, 3, 4].map((idx) => {
+                    const ops = [...(regras.avaliacoes?.opcoes ?? AVALIACAO_PADRAO.opcoes)];
+                    return (
+                      <div key={idx} className="space-y-1">
+                        <span className="text-[11px] font-semibold text-muted-foreground">Nota {idx + 1}</span>
+                        <Input
+                          value={ops[idx] ?? ""}
+                          onChange={(e) => {
+                            ops[idx] = sanitizeInput(e.target.value);
+                            salvarAvaliacoes({ opcoes: ops as [string, string, string, string, string] });
+                          }}
+                          placeholder={`Opção ${idx + 1}`}
+                          className="text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">Placeholder do comentário opcional</Label>
+                  <Input
+                    value={regras.avaliacoes?.placeholderComentario ?? AVALIACAO_PADRAO.placeholderComentario}
+                    onChange={(e) => salvarAvaliacoes({ placeholderComentario: sanitizeInput(e.target.value) })}
+                    placeholder="Deixe um comentário opcional..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">Mensagem de agradecimento</Label>
+                  <Input
+                    value={regras.avaliacoes?.agradecimento ?? AVALIACAO_PADRAO.agradecimento}
+                    onChange={(e) => salvarAvaliacoes({ agradecimento: sanitizeInput(e.target.value) })}
+                    placeholder="Obrigado pela sua avaliação!"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -2035,144 +1969,12 @@ function Regras() {
           </Card>
         </TabsContent>
 
-        {/* ABA ANIMAÇÃO DE CARREGAMENTO */}
-        <TabsContent value="animacao" className="space-y-6 focus-visible:outline-none">
-          <Card className="border-t-4 border-g-blue shadow-xs">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-g-blue dark:text-blue-400">
-                <Zap className="size-5" />
-                Animação de Carregamento (Ema Correndo)
-              </CardTitle>
-              <CardDescription>
-                Configure a exibição da mascote ema correndo durante o carregamento de páginas, envio de chamados e ações do sistema.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Interruptor ligar/desligar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border bg-card/60">
-                <div className="space-y-0.5">
-                  <Label htmlFor="anim-ativo" className="text-sm font-bold text-foreground cursor-pointer">
-                    Ativar animação da Ema
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Quando ligada, exibe a ema correndo com efeitos de pista e poeira. Se desligada, um indicador simples de carregamento substitui a ema (nunca tela vazia).
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs font-bold ${animConf.ativo ? "text-g-green" : "text-muted-foreground"}`}>
-                    {animConf.ativo ? "Ligada" : "Desligada"}
-                  </span>
-                  <Switch
-                    id="anim-ativo"
-                    checked={animConf.ativo}
-                    onCheckedChange={(checked) => salvarAnim({ ativo: checked })}
-                  />
-                </div>
-              </div>
-
-              {/* Escolha de velocidade */}
-              <div className="space-y-3">
-                <Label className="text-xs font-semibold text-foreground">Velocidade da Corrida</Label>
-                <div className="grid grid-cols-3 gap-3 max-w-md">
-                  {(
-                    [
-                      { id: "lenta" as const, label: "Lenta", desc: "Passos cadenciados" },
-                      { id: "normal" as const, label: "Normal", desc: "Velocidade padrão" },
-                      { id: "rapida" as const, label: "Rápida", desc: "Corrida veloz" },
-                    ]
-                  ).map((v) => {
-                    const isSelected = animConf.velocidade === v.id;
-                    return (
-                      <button
-                        key={v.id}
-                        type="button"
-                        onClick={() => salvarAnim({ velocidade: v.id })}
-                        className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
-                          isSelected
-                            ? "border-g-blue bg-g-blue/10 text-g-blue font-bold shadow-xs ring-2 ring-g-blue/20"
-                            : "border-border bg-card hover:border-g-blue/50 text-muted-foreground"
-                        }`}
-                      >
-                        <span className="text-sm">{v.label}</span>
-                        <span className="text-[10px] opacity-80 mt-0.5">{v.desc}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Texto de carregamento */}
-              <div className="space-y-2 max-w-md">
-                <Label htmlFor="anim-texto" className="text-xs font-semibold text-foreground">
-                  Texto de Carregamento
-                </Label>
-                <Input
-                  id="anim-texto"
-                  value={animConf.texto}
-                  onChange={(e) => salvarAnim({ texto: sanitizeInput(e.target.value) })}
-                  placeholder="Ex.: Carregando..."
-                  maxLength={50}
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  Texto acessível exibido abaixo da ema durante a animação (com suporte a leitores de tela).
-                </p>
-              </div>
-
-              {/* Upload de GIF alternativo */}
-              <div className="pt-2 border-t border-border/60">
-                <GifUploadInput
-                  value={animConf.gifUrl}
-                  onChange={(gif) => salvarAnim({ gifUrl: gif })}
-                />
-              </div>
-
-              {/* Pré-visualização ao vivo */}
-              <div className="space-y-2 pt-2">
-                <Label className="text-xs font-semibold text-foreground">Pré-visualização em Tempo Real</Label>
-                <div className="rounded-2xl border-2 border-dashed border-border p-6 bg-muted/20 flex flex-col items-center justify-center min-h-[180px]">
-                  <EmaLoader
-                    texto={animConf.texto || "Carregando..."}
-                    velocidade={animConf.velocidade}
-                    ativo={animConf.ativo}
-                    gifUrl={animConf.gifUrl}
-                  />
-                </div>
-              </div>
-
-              {/* Botões de Ação da Seção */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    salvarAnim(ANIMACAO_CARREGAMENTO_PADRAO);
-                    toast.info("Configurações da animação restauradas para o padrão no rascunho.");
-                  }}
-                >
-                  <RotateCcw className="mr-1.5 size-3.5" /> Restaurar padrão
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="google-green"
-                  size="sm"
-                  className="font-bold gap-1.5 shadow-xs"
-                  onClick={async () => {
-                    const ok = await setRegras({ ...regras, animacaoCarregamento: animConf });
-                    if (ok) {
-                      toast.success("Preferências da animação salvas com sucesso!");
-                    } else {
-                      toast.error("Não foi possível salvar as preferências da animação.");
-                    }
-                  }}
-                >
-                  <CheckCircle2 className="size-4" /> Salvar preferências da animação
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* 11. ABA USUÁRIOS E ACESSOS (SOMENTE ADMIN) */}
+        {isAdmin && (
+          <TabsContent value="usuarios" className="space-y-6 focus-visible:outline-none">
+            <GestaoUsuarios />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

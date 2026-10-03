@@ -13,11 +13,12 @@ import {
   DASHBOARD_PADRAO,
   RODAPE_PADRAO,
   LGPD_PADRAO,
-  ANIMACAO_CARREGAMENTO_PADRAO,
+  AVALIACAO_PADRAO,
   type Regras,
   type Ticket,
   type Prioridade,
   type Status,
+  type PapelUsuario,
 } from "./types";
 
 type Row = Database["public"]["Tables"]["tickets"]["Row"];
@@ -44,7 +45,7 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     },
     rodape: { ...RODAPE_PADRAO, ...(regrasSalvas.rodape || {}) },
     lgpd: { ...LGPD_PADRAO, ...(regrasSalvas.lgpd || {}) },
-    animacaoCarregamento: { ...ANIMACAO_CARREGAMENTO_PADRAO, ...(regrasSalvas.animacaoCarregamento || {}) },
+    avaliacoes: { ...AVALIACAO_PADRAO, ...(regrasSalvas.avaliacoes || {}) },
   };
 }
 
@@ -92,6 +93,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [hidratado, setHidratado] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [isGestor, setIsGestor] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState<PapelUsuario>("usuario");
+  const [userBlocked, setUserBlocked] = useState(false);
   const [authPronto, setAuthPronto] = useState(false);
 
   // Sessão
@@ -101,23 +105,60 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  // Papel de gestor
+  // Papel e sincronização do usuário
   useEffect(() => {
     let ativo = true;
     const uid = session?.user.id;
     if (!uid) {
       setIsGestor(false);
+      setIsAdmin(false);
+      setUserRole("usuario");
+      setUserBlocked(false);
       setAuthPronto(true);
       return;
     }
     setAuthPronto(false);
     (async () => {
-       await supabase.rpc("claim_manager_access");
-       const { data } = await supabase.rpc("is_named_manager");
-        if (!ativo) return;
-         setIsGestor(data === true);
+      try {
+        await supabase.rpc("sync_user_profile");
+      } catch (err) {
+        console.warn("sync_user_profile:", err);
+      }
+      try {
+        await supabase.rpc("claim_manager_access");
+      } catch (err) {
+        console.warn("claim_manager_access:", err);
+      }
+
+      const [adminRes, gestorRes, profileRes] = await Promise.all([
+        supabase.rpc("is_admin"),
+        supabase.rpc("is_named_manager"),
+        supabase.from("user_profiles").select("bloqueado").eq("id", uid).maybeSingle(),
+      ]);
+
+      if (!ativo) return;
+
+      const bloqueado = profileRes.data?.bloqueado === true;
+      if (bloqueado) {
+        setUserBlocked(true);
+        setIsAdmin(false);
+        setIsGestor(false);
+        setUserRole("usuario");
         setAuthPronto(true);
+        await supabase.auth.signOut();
+        return;
+      }
+
+      setUserBlocked(false);
+      const eAdmin = adminRes.data === true;
+      const eGestor = eAdmin || gestorRes.data === true;
+
+      setIsAdmin(eAdmin);
+      setIsGestor(eGestor);
+      setUserRole(eAdmin ? "admin" : eGestor ? "gestor" : "usuario");
+      setAuthPronto(true);
     })();
+
     return () => {
       ativo = false;
     };
@@ -219,8 +260,40 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ tickets, publicStats, regras, hidratado, session, isGestor, authPronto, addTicket, updateTicket, removeTicket, setRegras, sair }),
-    [tickets, publicStats, regras, hidratado, session, isGestor, authPronto, addTicket, updateTicket, removeTicket, setRegras, sair],
+    () => ({
+      tickets,
+      publicStats,
+      regras,
+      hidratado,
+      session,
+      isGestor,
+      isAdmin,
+      userRole,
+      userBlocked,
+      authPronto,
+      addTicket,
+      updateTicket,
+      removeTicket,
+      setRegras,
+      sair,
+    }),
+    [
+      tickets,
+      publicStats,
+      regras,
+      hidratado,
+      session,
+      isGestor,
+      isAdmin,
+      userRole,
+      userBlocked,
+      authPronto,
+      addTicket,
+      updateTicket,
+      removeTicket,
+      setRegras,
+      sair,
+    ],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

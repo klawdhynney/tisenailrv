@@ -295,6 +295,43 @@ export const RODAPE_PADRAO: RodapeConfig = {
   whatsappSuporte: "66 99644-4461",
 };
 
+export type PapelUsuario = "admin" | "gestor" | "usuario";
+
+export interface UsuarioAdmin {
+  id: string;
+  email: string;
+  nome?: string | null;
+  fotoUrl?: string | null;
+  role: PapelUsuario;
+  bloqueado: boolean;
+  ultimoAcesso?: string | null;
+  createdAt: string;
+}
+
+export interface AvaliacaoChamado {
+  id: number;
+  ticketId: number;
+  userId: string;
+  userEmail?: string | null;
+  nota: number; // 1 a 5
+  comentario?: string | null;
+  createdAt: string;
+}
+
+export interface AvaliacaoConfig {
+  pergunta: string;
+  opcoes: [string, string, string, string, string];
+  placeholderComentario: string;
+  agradecimento: string;
+}
+
+export const AVALIACAO_PADRAO: AvaliacaoConfig = {
+  pergunta: "Como foi a facilidade de abrir este chamado?",
+  opcoes: ["Muito difícil", "Difícil", "Regular", "Fácil", "Muito fácil"],
+  placeholderComentario: "Deixe um comentário opcional sobre a sua experiência (até 300 caracteres)...",
+  agradecimento: "Obrigado pela sua avaliação! Seu feedback nos ajuda a aprimorar o atendimento.",
+};
+
 export type VelocidadeAnimacao = "lenta" | "normal" | "rapida";
 
 export interface AnimacaoCarregamentoConfig {
@@ -305,7 +342,7 @@ export interface AnimacaoCarregamentoConfig {
 }
 
 export const ANIMACAO_CARREGAMENTO_PADRAO: AnimacaoCarregamentoConfig = {
-  ativo: true,
+  ativo: false,
   velocidade: "normal",
   texto: "Carregando...",
   gifUrl: null,
@@ -339,6 +376,7 @@ export interface Regras {
   acompanhamento?: AcompanhamentoConfig | undefined;
   dashboard?: DashboardConfig | undefined;
   rodape?: RodapeConfig | undefined;
+  avaliacoes?: AvaliacaoConfig | undefined;
   animacaoCarregamento?: AnimacaoCarregamentoConfig | undefined;
 }
 
@@ -444,7 +482,7 @@ export const LGPD_PADRAO: LgpdConfig = {
   responsavel:
     "O controlador dos dados é o proprietário do site o Sr. Claudinei Lima. A Central de Chamados de TI usa esses dados somente para prestar o suporte que você solicitou.",
   dadosColetados:
-    "Coletamos apenas o necessário para atender seu chamado:\n• Nome e contato (e-mail ou telefone) de quem abre o chamado\n• Setor, sala ou local onde o problema ocorre\n• Descrição do problema e anexos enviados voluntariamente\n• Histórico de atendimento: status, respostas e data de cada etapa\n\nNão pedimos dados sensíveis. Evite incluir senhas, documentos pessoais ou informações de saúde na descrição do chamado.",
+    "Coletamos apenas o estritamente necessário para autenticação, suporte e melhoria dos serviços:\n• Nome, e-mail e foto de perfil da conta Google ou Microsoft utilizados no login\n• Setor, sala ou local exato onde o problema ocorre\n• Descrição técnica da demanda ou problema informado\n• Avaliações e comentários voluntários sobre a facilidade de abertura do chamado\n• Histórico do atendimento: protocolo, status, procedimentos técnicos e prazos de SLA\n\nNão solicitamos dados sensíveis nem telefone. Evite incluir senhas, documentos pessoais ou informações confidenciais na descrição do chamado.",
   finalidade:
     "• Registrar, atender e acompanhar seu chamado de TI\n• Entrar em contato para esclarecer ou concluir o atendimento\n• Gerar indicadores gerais de atendimento, sem identificar pessoas\n• Manter a segurança do site.",
   compartilhamento:
@@ -517,6 +555,7 @@ export const REGRAS_PADRAO: Regras = {
   acompanhamento: { ...ACOMPANHAMENTO_PADRAO },
   dashboard: { ...DASHBOARD_PADRAO },
   rodape: { ...RODAPE_PADRAO },
+  avaliacoes: { ...AVALIACAO_PADRAO },
   animacaoCarregamento: { ...ANIMACAO_CARREGAMENTO_PADRAO },
 };
 
