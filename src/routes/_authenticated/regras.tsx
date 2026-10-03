@@ -33,6 +33,7 @@ import {
   Upload,
   UserCheck,
   Users,
+  Sparkles,
   Star,
   Zap,
 } from "lucide-react";
@@ -70,6 +71,7 @@ import {
   RODAPE_PADRAO,
   CORES_PRIORIDADE,
   AVALIACAO_PADRAO,
+  IA_SUPORTE_PADRAO,
   type CampoAbertura,
   type ParametroCor,
   type Periodo,
@@ -396,6 +398,11 @@ function Regras() {
   const salvarRodape = (patch: Partial<typeof rodapeConf>) =>
     salvar({ rodape: { ...rodapeConf, ...patch } });
 
+  // IA de suporte
+  const iaConf = regras.iaSuporte ?? IA_SUPORTE_PADRAO;
+  const salvarIa = (patch: Partial<typeof iaConf>) =>
+    salvar({ iaSuporte: { ...iaConf, ...patch } });
+
   // 9. Horários, SLA e Atendimento
   const horariosPorDia = regras.expediente.horariosPorDia ?? {
     0: { ativo: false, inicio: regras.expediente.inicio, fim: regras.expediente.fim },
@@ -522,6 +529,11 @@ function Regras() {
               <Users className="size-4 text-purple-600" /> Usuários & Acessos
             </TabsTrigger>
           )}
+          {isAdmin && (
+            <TabsTrigger value="ia" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
+              <Sparkles className="size-4 text-purple-600" /> IA de Suporte
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* 1. ABA GERAL E IDENTIDADE */}
@@ -597,6 +609,61 @@ function Regras() {
                   </div>
                 </div>
               </div>
+
+              {/* Seção Favicon gerenciável (somente administradores) */}
+              {isAdmin && (
+                <div className="pt-5 border-t border-border space-y-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">
+                      Favicon (ícone da aba do navegador)
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Personalize o ícone que aparece na aba do navegador ao acessar o site.
+                    </p>
+                  </div>
+                  <div className="grid gap-5 md:grid-cols-2 items-start">
+                    <ImageUploadInput
+                      label="Upload ou URL do Favicon"
+                      value={ident.faviconUrl || "/favicon.png"}
+                      onChange={(val) => salvarIdentidade({ faviconUrl: val })}
+                      aspectRatioHint="Formato quadrado recomendado (PNG, ICO ou SVG, 32x32 até 128x128)"
+                      maxSizeMb={1}
+                    />
+
+                    {/* Pré-visualização da aba do navegador */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold">Pré-visualização da Aba do Navegador</Label>
+                      <div className="rounded-xl border border-border/80 bg-muted/30 p-4 space-y-3">
+                        <div className="flex items-center gap-2 rounded-t-lg border-b border-border/80 bg-muted/70 px-3 py-2 max-w-xs shadow-xs">
+                          <img
+                            src={ident.faviconUrl || "/favicon.png"}
+                            alt="Favicon"
+                            className="size-4 object-contain rounded-xs shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/favicon.png";
+                            }}
+                          />
+                          <span className="text-xs font-medium text-foreground truncate">
+                            {ident.tituloSite || "TI SENAI LRV"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Ícone da aba configurado</span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs text-g-blue hover:underline"
+                            onClick={() => salvarIdentidade({ faviconUrl: "/favicon.png" })}
+                          >
+                            Restaurar padrão (/favicon.png)
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1162,11 +1229,10 @@ function Regras() {
                     value={dashConf.tipoGraficoPadrao}
                     onChange={(e) => salvarDashboard({ tipoGraficoPadrao: e.target.value as any })}
                   >
+                    <option value="kpi">Cartões de Indicadores (Big Numbers)</option>
                     <option value="pizza">Gráfico de Rosca / Pizza</option>
                     <option value="barras">Gráfico de Barras horizontais</option>
-                    <option value="kpi">Cartões de KPI (Big Numbers)</option>
-                    <option value="gauge">Gráfico de Medidor (Gauge Chart)</option>
-                    <option value="combinado">Gráfico Combinado (Linhas e Colunas)</option>
+                    <option value="historico">Série histórica por chamados</option>
                   </select>
                 </div>
               </div>
@@ -1973,6 +2039,114 @@ function Regras() {
         {isAdmin && (
           <TabsContent value="usuarios" className="space-y-6 focus-visible:outline-none">
             <GestaoUsuarios />
+          </TabsContent>
+        )}
+
+        {/* 12. ABA IA DE SUPORTE (SOMENTE ADMIN) */}
+        {isAdmin && (
+          <TabsContent value="ia" className="space-y-6 focus-visible:outline-none">
+            <Card className="border-t-4 border-purple-600 shadow-xs">
+              <CardHeader>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                      <Sparkles className="size-5" />
+                      IA de Suporte Técnico
+                    </CardTitle>
+                    <CardDescription>
+                      Configure o prompt do sistema, diretrizes técnicas e parâmetros de respostas da IA nos atendimentos.
+                    </CardDescription>
+                  </div>
+                  <ConfirmAction
+                    title="Restaurar prompt e configurações padrão da IA?"
+                    description="O prompt do sistema e os limites de tokens serão redefinidos para os padrões de fábrica técnicos e diretos do SENAI LRV."
+                    confirmLabel="Restaurar padrão"
+                    variant="destructive"
+                    onConfirm={() => {
+                      salvar({ iaSuporte: { ...IA_SUPORTE_PADRAO } });
+                      toast.success("Configurações padrão da IA restauradas!");
+                    }}
+                  >
+                    <Button variant="outline" size="sm" className="gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                      <RotateCcw className="size-3.5" /> Restaurar padrão
+                    </Button>
+                  </ConfirmAction>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold text-foreground">
+                      Prompt do Sistema (Diretrizes Técnicas da IA)
+                    </Label>
+                    <span className="text-[11px] text-muted-foreground">
+                      {iaConf.promptSistema.length} caracteres
+                    </span>
+                  </div>
+                  <Textarea
+                    rows={12}
+                    value={iaConf.promptSistema}
+                    onChange={(e) => salvarIa({ promptSistema: e.target.value })}
+                    className="font-mono text-xs leading-relaxed bg-background/80"
+                    placeholder="Instruções e diretrizes técnicas do assistente..."
+                  />
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Define o tom direto, técnico, formal e objetivo, proibindo preâmbulos ou termos como &quot;sugiro&quot; / &quot;recomendo&quot;.
+                  </p>
+                </div>
+
+                <div className="grid gap-5 md:grid-cols-3 pt-4 border-t border-border">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold">
+                      Limite de Tokens (Resposta do Chamado)
+                    </Label>
+                    <Input
+                      type="number"
+                      min={100}
+                      max={1000}
+                      value={iaConf.maxTokensResposta}
+                      onChange={(e) => salvarIa({ maxTokensResposta: Number(e.target.value) || 300 })}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Padrão: 300 tokens (respostas de até 80 palavras).
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold">
+                      Limite de Tokens (Aprimorar Texto)
+                    </Label>
+                    <Input
+                      type="number"
+                      min={100}
+                      max={1500}
+                      value={iaConf.maxTokensAprimoramento}
+                      onChange={(e) => salvarIa({ maxTokensAprimoramento: Number(e.target.value) || 400 })}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Padrão: 400 tokens para revisões técnicas.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold">
+                      Temperatura (Criatividade vs. Rigor)
+                    </Label>
+                    <Input
+                      type="number"
+                      step={0.05}
+                      min={0}
+                      max={1}
+                      value={iaConf.temperatura}
+                      onChange={(e) => salvarIa({ temperatura: Number(e.target.value) || 0.2 })}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Padrão: 0.2 para precisão e consistência técnica.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         )}
       </Tabs>

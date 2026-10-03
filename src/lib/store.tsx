@@ -14,6 +14,7 @@ import {
   RODAPE_PADRAO,
   LGPD_PADRAO,
   AVALIACAO_PADRAO,
+  IA_SUPORTE_PADRAO,
   type Regras,
   type Ticket,
   type Prioridade,
@@ -24,6 +25,11 @@ import {
 type Row = Database["public"]["Tables"]["tickets"]["Row"];
 
 function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
+  const dashSalvo = regrasSalvas.dashboard || {};
+  const tipoPadrao = (dashSalvo.tipoGraficoPadrao as any) === "gauge" || (dashSalvo.tipoGraficoPadrao as any) === "combinado"
+    ? "kpi"
+    : dashSalvo.tipoGraficoPadrao || DASHBOARD_PADRAO.tipoGraficoPadrao;
+
   return {
     ...REGRAS_PADRAO,
     ...regrasSalvas,
@@ -40,12 +46,14 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     acompanhamento: { ...ACOMPANHAMENTO_PADRAO, ...(regrasSalvas.acompanhamento || {}) },
     dashboard: {
       ...DASHBOARD_PADRAO,
-      ...(regrasSalvas.dashboard || {}),
-      graficosAtivos: { ...DASHBOARD_PADRAO.graficosAtivos, ...(regrasSalvas.dashboard?.graficosAtivos || {}) },
+      ...dashSalvo,
+      tipoGraficoPadrao: tipoPadrao,
+      graficosAtivos: { ...DASHBOARD_PADRAO.graficosAtivos, ...(dashSalvo.graficosAtivos || {}) },
     },
     rodape: { ...RODAPE_PADRAO, ...(regrasSalvas.rodape || {}) },
     lgpd: { ...LGPD_PADRAO, ...(regrasSalvas.lgpd || {}) },
     avaliacoes: { ...AVALIACAO_PADRAO, ...(regrasSalvas.avaliacoes || {}) },
+    iaSuporte: { ...IA_SUPORTE_PADRAO, ...(regrasSalvas.iaSuporte || {}) },
   };
 }
 

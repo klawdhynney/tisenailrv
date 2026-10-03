@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, Save, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, RotateCcw, Save, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { TextoAssistido } from "@/components/TextoAssistido";
 import { useLoading } from "@/lib/loading-context";
@@ -119,7 +120,10 @@ function TicketEditor({
   const [suggesting, setSuggesting] = useState(false);
   const [suggested, setSuggested] = useState<Ticket["prioridade"] | null>(null);
   const [gerandoRespostas, setGerandoRespostas] = useState(false);
+  const [erroRespostas, setErroRespostas] = useState<string | null>(null);
   const [respostasTecnicas, setRespostasTecnicas] = useState<{ opcao1: string; opcao2: string } | null>(null);
+  const [edicaoOpcao1, setEdicaoOpcao1] = useState("");
+  const [edicaoOpcao2, setEdicaoOpcao2] = useState("");
   const autoSuggestedId = useRef<number | null>(null);
   const autoAssignedId = useRef<number | null>(null);
   useEffect(() => setDraft(prev => ({ ...ticket, responsavel: "Claudinei Lima", status: prev.status === "Aberto" && ticket.status === "Aberto" ? "Em andamento" : ticket.status })), [ticket]);
@@ -188,22 +192,26 @@ function TicketEditor({
 
   async function gerarRespostasTecnicas() {
     setGerandoRespostas(true);
+    setErroRespostas(null);
     try {
       const res = await sugerirRespostasAtendimento({
         data: {
           ticketId: ticket.id,
-          solicitante: draft.solicitante,
-          setor: draft.setor,
-          local: draft.local,
           categoria: draft.categoria,
+          prioridade: draft.prioridade,
+          local: draft.local,
           descricao: draft.descricao,
           procedimentoAtual: draft.procedimento ?? undefined,
         },
       });
       setRespostasTecnicas(res);
-      toast.info("A IA gerou 2 respostas técnicas e descritivas para você avaliar.");
+      setEdicaoOpcao1(res.opcao1);
+      setEdicaoOpcao2(res.opcao2);
+      toast.success("Resposta técnica gerada com sucesso!");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível gerar respostas técnicas.");
+      const msg = err instanceof Error ? err.message : "Não foi possível gerar a resposta técnica.";
+      setErroRespostas(msg);
+      toast.error(msg);
     } finally {
       setGerandoRespostas(false);
     }
@@ -348,10 +356,24 @@ function TicketEditor({
             onClick={gerarRespostasTecnicas}
             className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-xs hover:shadow-md transition-all border-0 text-xs px-3 py-1.5"
           >
-            <Sparkles className="size-3.5 animate-pulse" />
-            {gerandoRespostas ? "Sugerindo resposta com IA…" : "Sugerir resposta com IA"}
+            <Sparkles className="size-3.5" />
+            {gerandoRespostas ? "Gerando resposta técnica…" : "Resposta técnica"}
           </Button>
         </div>
+
+        {erroRespostas && (
+          <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs flex items-center justify-between gap-2 text-destructive">
+            <span>{erroRespostas}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs border-destructive/40"
+              onClick={gerarRespostasTecnicas}
+            >
+              <RotateCcw className="size-3 mr-1" /> Tentar de novo
+            </Button>
+          </div>
+        )}
 
         {respostasTecnicas && (
           <div className="rounded-2xl border-2 border-g-blue/30 bg-muted/20 p-4 text-sm shadow-md space-y-4 animate-in fade-in">
@@ -359,7 +381,7 @@ function TicketEditor({
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4 text-g-blue" />
                 <span className="font-bold text-foreground">
-                  Sugestões técnicas e descritivas para o procedimento:
+                  Resposta técnica para o procedimento (editável antes de usar):
                 </span>
               </div>
               <Button type="button" size="sm" variant="ghost" onClick={() => setRespostasTecnicas(null)}>
@@ -370,54 +392,64 @@ function TicketEditor({
             <div className="grid gap-4 md:grid-cols-2">
               {/* Opção 1 */}
               <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-card p-4 transition-all hover:border-g-blue">
-                <div>
+                <div className="space-y-2">
                   <div className="mb-2">
                     <span className="rounded-full bg-g-blue/15 px-2.5 py-0.5 text-xs font-bold text-g-blue">
-                      Opção 1 · Procedimento Passo a Passo
+                      Opção 1 · Resposta Direta & Passo a Passo
                     </span>
                   </div>
-                  <p className="whitespace-pre-wrap text-sm text-foreground/90">{respostasTecnicas.opcao1}</p>
+                  <Textarea
+                    rows={4}
+                    value={edicaoOpcao1}
+                    onChange={(e) => setEdicaoOpcao1(e.target.value)}
+                    className="text-xs sm:text-sm bg-background/80"
+                  />
                 </div>
                 <div className="mt-4 pt-2 border-t border-border/50">
                   <Button
                     type="button"
                     size="sm"
                     variant="google-blue"
-                    className="w-full gap-1.5"
+                    className="w-full gap-1.5 font-bold text-xs"
                     onClick={() => {
-                      field("procedimento", respostasTecnicas.opcao1);
+                      field("procedimento", edicaoOpcao1);
                       setRespostasTecnicas(null);
-                      toast.success("Opção 1 aplicada no procedimento!");
+                      toast.success("Resposta aplicada no procedimento!");
                     }}
                   >
-                    <Check className="size-3.5" /> Aplicar no procedimento
+                    <Check className="size-3.5" /> Usar resposta
                   </Button>
                 </div>
               </div>
 
               {/* Opção 2 */}
               <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-card p-4 transition-all hover:border-g-green">
-                <div>
+                <div className="space-y-2">
                   <div className="mb-2">
                     <span className="rounded-full bg-g-green/15 px-2.5 py-0.5 text-xs font-bold text-g-green">
-                      Opção 2 · Parecer Técnico & Boas Práticas
+                      Opção 2 · Parecer Técnico & Diagnóstico
                     </span>
                   </div>
-                  <p className="whitespace-pre-wrap text-sm text-foreground/90">{respostasTecnicas.opcao2}</p>
+                  <Textarea
+                    rows={4}
+                    value={edicaoOpcao2}
+                    onChange={(e) => setEdicaoOpcao2(e.target.value)}
+                    className="text-xs sm:text-sm bg-background/80"
+                  />
                 </div>
                 <div className="mt-4 pt-2 border-t border-border/50">
                   <Button
                     type="button"
                     size="sm"
                     variant="google-green"
-                    className="w-full gap-1.5"
+                    className="w-full gap-1.5 font-bold text-xs"
                     onClick={() => {
-                      field("procedimento", respostasTecnicas.opcao2);
+                      field("procedimento", edicaoOpcao2);
                       setRespostasTecnicas(null);
-                      toast.success("Opção 2 aplicada no procedimento!");
+                      toast.success("Resposta aplicada no procedimento!");
                     }}
                   >
-                    <Check className="size-3.5" /> Aplicar no procedimento
+                    <Check className="size-3.5" /> Usar resposta
                   </Button>
                 </div>
               </div>
@@ -455,7 +487,7 @@ function TicketEditor({
                   setSuggested(null);
                 }}
               >
-                Aplicar sugestão da IA: {suggested}
+                Aplicar prioridade técnica: {suggested}
               </Button>
             )}
           </div>

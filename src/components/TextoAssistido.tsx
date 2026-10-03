@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Check } from "lucide-react";
+import { Sparkles, Check, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,8 +45,12 @@ export function TextoAssistido({
   ocultarIa?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
   const [sugestoes, setSugestoes] = useState<{ versao1: string; versao2: string } | null>(null);
+  const [edicaoV1, setEdicaoV1] = useState("");
+  const [edicaoV2, setEdicaoV2] = useState("");
   const [cursor, setCursor] = useState(value.length);
+
   const fragmento = value.slice(0, cursor).match(/(?:^|\s)([\p{L}]{3,})$/u)?.[1] ?? "";
   const palavras =
     fragmento.length >= 3
@@ -61,12 +65,17 @@ export function TextoAssistido({
 
   async function revisar() {
     setLoading(true);
+    setErro(null);
     try {
       const res = await revisarTexto({ data: { texto: value, modo: "revisao" } });
       setSugestoes(res);
-      toast.info("A IA gerou 2 versões para você escolher.");
+      setEdicaoV1(res.versao1);
+      setEdicaoV2(res.versao2);
+      toast.success("Texto aprimorado com sucesso!");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível revisar o texto.");
+      const msg = error instanceof Error ? error.message : "Não foi possível aprimorar o texto.";
+      setErro(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -107,15 +116,28 @@ export function TextoAssistido({
         </div>
       )}
       {!ocultarIa && (
-        <Button
-          type="button"
-          size="sm"
-          disabled={loading || value.trim().length < 5}
-          onClick={revisar}
-          className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-md hover:shadow-lg transition-all duration-200 border-0"
-        >
-          <Sparkles className="size-4 animate-pulse" /> {loading ? "Aprimorando texto com IA…" : "Aprimorar texto com IA"}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            disabled={loading || value.trim().length < 5}
+            onClick={revisar}
+            className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-xs hover:shadow-md transition-all duration-200 border-0 text-xs"
+          >
+            <Sparkles className="size-3.5" /> {loading ? "Aprimorando texto…" : "Aprimorar texto"}
+          </Button>
+          {erro && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={revisar}
+              className="text-xs text-destructive border-destructive/30 hover:bg-destructive/10 gap-1.5"
+            >
+              <RotateCcw className="size-3" /> Tentar de novo
+            </Button>
+          )}
+        </div>
       )}
 
       {sugestoes && (
@@ -123,7 +145,7 @@ export function TextoAssistido({
           <div className="flex items-center justify-between border-b border-border pb-2">
             <div className="flex items-center gap-2">
               <Sparkles className="size-4 text-g-blue" />
-              <span className="font-bold text-foreground">Escolha uma das 2 versões aprimoradas pela IA:</span>
+              <span className="font-bold text-foreground">Versões técnicas aprimoradas (editáveis):</span>
             </div>
             <Button type="button" size="sm" variant="ghost" onClick={() => setSugestoes(null)}>
               Descartar
@@ -132,55 +154,61 @@ export function TextoAssistido({
 
           <div className="grid gap-3 sm:grid-cols-2">
             {/* Versão 1 */}
-            <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-muted/40 p-3.5 transition-all hover:border-g-blue hover:shadow-sm">
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="rounded-full bg-g-blue/15 px-2.5 py-0.5 text-xs font-bold text-g-blue">
-                    Versão 1 · Formal & Direta
-                  </span>
-                </div>
-                <p className="whitespace-pre-wrap text-sm text-foreground/90">{sugestoes.versao1}</p>
+            <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-muted/30 p-3.5 transition-all hover:border-g-blue">
+              <div className="space-y-2">
+                <span className="rounded-full bg-g-blue/15 px-2.5 py-0.5 text-xs font-bold text-g-blue">
+                  Versão 1 · Direta & Técnica
+                </span>
+                <Textarea
+                  rows={4}
+                  value={edicaoV1}
+                  onChange={(e) => setEdicaoV1(e.target.value)}
+                  className="text-xs sm:text-sm bg-background/80"
+                />
               </div>
-              <div className="mt-4 pt-2 border-t border-border/50">
+              <div className="mt-3 pt-2 border-t border-border/50">
                 <Button
                   type="button"
                   size="sm"
                   variant="google-blue"
-                  className="w-full gap-1.5"
+                  className="w-full gap-1.5 text-xs font-bold"
                   onClick={() => {
-                    onChange(sugestoes.versao1);
+                    onChange(edicaoV1);
                     setSugestoes(null);
-                    toast.success("Versão 1 aplicada com sucesso!");
+                    toast.success("Texto atualizado com sucesso!");
                   }}
                 >
-                  <Check className="size-3.5" /> Usar Versão 1
+                  <Check className="size-3.5" /> Usar texto
                 </Button>
               </div>
             </div>
 
             {/* Versão 2 */}
-            <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-muted/40 p-3.5 transition-all hover:border-g-green hover:shadow-sm">
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="rounded-full bg-g-green/15 px-2.5 py-0.5 text-xs font-bold text-g-green">
-                    Versão 2 · Técnica & Descritiva
-                  </span>
-                </div>
-                <p className="whitespace-pre-wrap text-sm text-foreground/90">{sugestoes.versao2}</p>
+            <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-muted/30 p-3.5 transition-all hover:border-g-green">
+              <div className="space-y-2">
+                <span className="rounded-full bg-g-green/15 px-2.5 py-0.5 text-xs font-bold text-g-green">
+                  Versão 2 · Formal & Estruturada
+                </span>
+                <Textarea
+                  rows={4}
+                  value={edicaoV2}
+                  onChange={(e) => setEdicaoV2(e.target.value)}
+                  className="text-xs sm:text-sm bg-background/80"
+                />
               </div>
-              <div className="mt-4 pt-2 border-t border-border/50">
+              <div className="mt-3 pt-2 border-t border-border/50">
                 <Button
                   type="button"
                   size="sm"
                   variant="google-green"
-                  className="w-full gap-1.5"
+                  className="w-full gap-1.5 text-xs font-bold"
                   onClick={() => {
-                    onChange(sugestoes.versao2);
+                    onChange(edicaoV2);
                     setSugestoes(null);
-                    toast.success("Versão 2 aplicada com sucesso!");
+                    toast.success("Texto atualizado com sucesso!");
                   }}
                 >
-                  <Check className="size-3.5" /> Usar Versão 2
+                  <Check className="size-3.5" /> Usar texto
                 </Button>
               </div>
             </div>

@@ -98,6 +98,7 @@ export interface IdentidadeVisualConfig {
   subtitulo?: string;
   logoUrl?: string;
   logoAlt?: string;
+  faviconUrl?: string;
   corPrimaria?: string;
   temaPadrao: "claro" | "escuro" | "pastel";
 }
@@ -109,6 +110,7 @@ export const IDENTIDADE_VISUAL_PADRAO: IdentidadeVisualConfig = {
   subtitulo: "Central de Atendimento ao Usuário",
   logoUrl: "",
   logoAlt: "SENAI Lucas do Rio Verde",
+  faviconUrl: "/favicon.png",
   corPrimaria: "#1a73e8",
   temaPadrao: "claro",
 };
@@ -245,7 +247,7 @@ export const ACOMPANHAMENTO_PADRAO: AcompanhamentoConfig = {
   itensPorPaginaPadrao: 10,
 };
 
-export type TipoGrafico = "pizza" | "barras" | "kpi" | "gauge" | "combinado";
+export type TipoGrafico = "kpi" | "pizza" | "barras" | "historico";
 
 export interface DashboardConfig {
   titulo: string;
@@ -253,12 +255,13 @@ export interface DashboardConfig {
   visaoPadrao: string;
   tipoGraficoPadrao: TipoGrafico;
   graficosAtivos: {
+    kpi: boolean;
     pizza: boolean;
     barras: boolean;
-    kpi: boolean;
-    gauge: boolean;
-    combinado: boolean;
-    serieHistorica: boolean;
+    historico: boolean;
+    gauge?: boolean;
+    combinado?: boolean;
+    serieHistorica?: boolean;
   };
 }
 
@@ -266,14 +269,12 @@ export const DASHBOARD_PADRAO: DashboardConfig = {
   titulo: "Dashboard de chamados",
   subtitulo: "Indicadores públicos",
   visaoPadrao: "problemas",
-  tipoGraficoPadrao: "pizza",
+  tipoGraficoPadrao: "kpi",
   graficosAtivos: {
+    kpi: true,
     pizza: true,
     barras: true,
-    kpi: true,
-    gauge: true,
-    combinado: true,
-    serieHistorica: true,
+    historico: true,
   },
 };
 
@@ -348,6 +349,29 @@ export const ANIMACAO_CARREGAMENTO_PADRAO: AnimacaoCarregamentoConfig = {
   gifUrl: null,
 };
 
+export interface IaSuporteConfig {
+  promptSistema: string;
+  maxTokensResposta: number;
+  maxTokensAprimoramento: number;
+  temperatura: number;
+}
+
+export const IA_SUPORTE_PADRAO: IaSuporteConfig = {
+  promptSistema: `Você é o assistente técnico da Central de Chamados de TI do SENAI LRV. Sua saída é o texto final que será enviado diretamente ao solicitante no chamado.
+Regras:
+- Escreva a resposta pronta para uso. Nunca diga que está sugerindo ou recomendando. Proibido usar: 'sugiro', 'recomendo', 'poderia', 'talvez', 'aqui está', 'segue', 'espero ter ajudado', 'fico à disposição' e frases semelhantes.
+- Sem introduções, explicações sobre a própria resposta, agradecimentos repetidos ou despedidas longas.
+- Tom formal e cordial, técnico e objetivo. Saudação curta opcional ('Prezado(a),') e, se necessário, fechamento em uma linha ('Atenciosamente, Equipe de TI').
+- Tamanho: até 5 linhas ou 80 palavras. Quando houver procedimento, use passos numerados curtos, uma ação por passo, no máximo 7 passos.
+- Use terminologia técnica correta. Informe a causa provável e a ação a executar, em frases afirmativas e diretas (ex.: 'Reinicie o serviço de impressão.', 'Foi identificado falha de autenticação.').
+- Se faltar informação essencial, faça uma única pergunta objetiva ou liste até 3 dados necessários.
+- Não invente informações nem prometa prazos que não constem no chamado.
+- Ao aprimorar um texto escrito pelo técnico: devolva somente o texto aprimorado, mais direto, técnico, formal e cordial, mantendo o sentido original, sem comentários.`,
+  maxTokensResposta: 300,
+  maxTokensAprimoramento: 400,
+  temperatura: 0.2,
+};
+
 export interface Regras {
   prazos: Record<Prioridade, number>; // horas úteis
   expediente: {
@@ -378,6 +402,7 @@ export interface Regras {
   rodape?: RodapeConfig | undefined;
   avaliacoes?: AvaliacaoConfig | undefined;
   animacaoCarregamento?: AnimacaoCarregamentoConfig | undefined;
+  iaSuporte?: IaSuporteConfig | undefined;
 }
 
 export const FILTROS_PLANILHA = ["Mês", "Busca", "Por página", "Categoria", "Setor", "SLA"] as const;
@@ -557,5 +582,6 @@ export const REGRAS_PADRAO: Regras = {
   rodape: { ...RODAPE_PADRAO },
   avaliacoes: { ...AVALIACAO_PADRAO },
   animacaoCarregamento: { ...ANIMACAO_CARREGAMENTO_PADRAO },
+  iaSuporte: { ...IA_SUPORTE_PADRAO },
 };
 

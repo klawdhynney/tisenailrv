@@ -46,6 +46,18 @@ export function AppShell({ children }: { children: ReactNode }) {
     setTema(novo);
   };
   const { isGestor, isAdmin, userRole, session, sair, regras } = useStore();
+
+  useEffect(() => {
+    const faviconUrl = regras.identidadeVisual?.faviconUrl || "/favicon.png";
+    let link = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    link.href = faviconUrl;
+  }, [regras.identidadeVisual?.faviconUrl]);
+
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const showBanner = (pathname === "/" || pathname === "/abrir") && (regras.paginaInicial?.mostrarBanner ?? true);
   const bannerImgSrc = regras.paginaInicial?.bannerUrl || senaiHero;
