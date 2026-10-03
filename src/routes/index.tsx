@@ -133,6 +133,9 @@ function Inicio() {
                 <FilePlus2 className="size-7" />
               </div>
               <h2 className="mt-4 text-xl font-bold text-foreground">Abrir Chamado</h2>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                Registre solicitações de suporte, incidentes e demandas técnicas para triagem e atendimento imediato.
+              </p>
             </div>
             <div className="mt-6 pt-2">
               <Button asChild size="lg" variant="google-green" className="w-full text-base font-bold shadow-md">
@@ -149,6 +152,9 @@ function Inicio() {
                 <ClipboardList className="size-7" />
               </div>
               <h2 className="mt-4 text-xl font-bold text-foreground">Acompanhar Chamados</h2>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                Consulte o status operacional, prazos de SLA e histórico detalhado das solicitações registradas.
+              </p>
             </div>
             <div className="mt-6 pt-2">
               <Button asChild size="lg" variant="google-blue" className="w-full text-base font-bold shadow-md">

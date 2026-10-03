@@ -33,6 +33,9 @@ function Atendimento() {
             </span>
             Atendimento de Chamados
           </h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Fila operacional de chamados técnicos para triagem, atualização de status e cumprimento de SLA.
+          </p>
         </div>
         <div className="no-print flex flex-wrap items-center gap-2">
           <Button

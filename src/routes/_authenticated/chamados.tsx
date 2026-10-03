@@ -76,6 +76,9 @@ function Planilha() {
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
             Planilha de chamados
           </h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Tabela consolidada de controle operacional, importação de dados e exportação de relatórios técnicos.
+          </p>
         </div>
         <div className="no-print flex flex-wrap items-center gap-2">
         <input ref={arquivoRef} type="file" accept=".xlsx,.xls" className="hidden" aria-label="Arquivo Excel" onChange={e => importar(e.target.files?.[0])} />

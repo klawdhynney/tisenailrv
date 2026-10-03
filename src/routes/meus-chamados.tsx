@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { TextoAssistido } from "@/components/TextoAssistido";
 import { PrioridadeChip, StatusChip } from "@/components/Chips";
-import { EmaLoader } from "@/components/EmaLoader";
 
 export const Route = createFileRoute("/meus-chamados")({
   beforeLoad: async () => {
@@ -393,19 +392,16 @@ function MeusChamados() {
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
             Meus chamados
           </h1>
-          {activeWhatsapp ? (
-            <p className="mt-1 text-sm text-muted-foreground flex items-center gap-1.5">
-              <MessageCircle className="size-4 text-[#25D366]" />
-              <span>Conectado pelo WhatsApp:</span>
-              <strong className="font-semibold text-foreground">{activeWhatsapp}</strong>
-            </p>
-          ) : activeEmail ? (
-            <p className="mt-1 text-sm text-muted-foreground flex items-center gap-1.5">
-              <Mail className="size-4 text-g-blue" />
-              <span>Conectado como</span>
+          <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
+            Histórico pessoal, andamento operacional de SLA e inclusão de dados adicionais aos seus tickets.
+          </p>
+          {activeEmail && (
+            <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1.5 font-mono">
+              <Mail className="size-3.5 text-g-blue" />
+              <span>Conectado como:</span>
               <strong className="font-semibold text-foreground">{activeEmail}</strong>
             </p>
-          ) : null}
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -457,8 +453,8 @@ function MeusChamados() {
           </div>
         </div>
       ) : loading ? (
-        <div className="py-12 flex flex-col items-center justify-center">
-          <EmaLoader texto="Carregando seus chamados..." />
+        <div className="py-12 text-center text-sm text-muted-foreground font-medium">
+          Carregando seus chamados...
         </div>
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-border/70 bg-card p-8 text-center space-y-4">
