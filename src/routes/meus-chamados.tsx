@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { TextoAssistido } from "@/components/TextoAssistido";
 import { PrioridadeChip, StatusChip } from "@/components/Chips";
+import { EmaLoader } from "@/components/EmaLoader";
 
 export const Route = createFileRoute("/meus-chamados")({
   ssr: false,
@@ -436,9 +437,8 @@ function MeusChamados() {
           </div>
         </div>
       ) : loading ? (
-        <div className="py-12 text-center text-sm text-muted-foreground">
-          <RefreshCw className="mx-auto mb-2 size-6 animate-spin text-g-blue" />
-          Carregando seus chamados...
+        <div className="py-12 flex flex-col items-center justify-center">
+          <EmaLoader texto="Carregando seus chamados..." />
         </div>
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-border/70 bg-card p-8 text-center space-y-4">

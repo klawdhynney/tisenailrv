@@ -1,21 +1,37 @@
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useLoading } from "@/lib/loading-context";
 
 export function ConfirmAction({
   children,
   title,
   description,
   confirmLabel = "Confirmar",
+  cancelLabel = "Voltar",
   onConfirm,
+  onCancel,
   variant = "google-green",
   disabled = false,
+  loadingText = "Processando...",
 }: {
   children: ReactNode;
   title: string;
   description: string;
   confirmLabel?: string;
+  cancelLabel?: string;
   onConfirm: () => void | Promise<unknown>;
+  onCancel?: () => void | Promise<unknown>;
   variant?:
     | "default"
     | "outline"
@@ -27,9 +43,11 @@ export function ConfirmAction({
     | "google-green"
     | "google-purple";
   disabled?: boolean;
+  loadingText?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
+  const { wrapAsync, isLoading } = useLoading();
 
   const actionClass =
     variant === "destructive" || variant === "google-red"
@@ -43,7 +61,7 @@ export function ConfirmAction({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button type="button" variant={variant} disabled={disabled}>
+        <Button type="button" variant={variant} disabled={disabled || busy || isLoading}>
           {children}
         </Button>
       </AlertDialogTrigger>
@@ -53,23 +71,42 @@ export function ConfirmAction({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy}>Voltar</AlertDialogCancel>
+          <AlertDialogCancel
+            disabled={busy || isLoading}
+            onClick={async () => {
+              if (onCancel) {
+                try {
+                  await wrapAsync(async () => {
+                    await onCancel();
+                  }, "Cancelando...");
+                } catch (e) {
+                  console.error(e);
+                }
+              }
+            }}
+          >
+            {cancelLabel}
+          </AlertDialogCancel>
           <AlertDialogAction
-            disabled={busy}
+            disabled={busy || isLoading}
             className={actionClass}
             onClick={async (event) => {
               event.preventDefault();
-              if (busy) return;
+              if (busy || isLoading) return;
               setBusy(true);
               try {
-                await onConfirm();
+                await wrapAsync(async () => {
+                  await onConfirm();
+                }, loadingText);
                 setOpen(false);
+              } catch (err) {
+                console.error(err);
               } finally {
                 setBusy(false);
               }
             }}
           >
-            {busy ? "Aguarde…" : confirmLabel}
+            {busy || isLoading ? "Aguarde…" : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

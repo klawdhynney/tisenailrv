@@ -32,6 +32,7 @@ import {
   Trash2,
   Upload,
   UserCheck,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -40,7 +41,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { EmaLoader } from "@/components/EmaLoader";
 import { useStore } from "@/lib/store-context";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -64,9 +67,11 @@ import {
   DASHBOARD_PADRAO,
   RODAPE_PADRAO,
   CORES_PRIORIDADE,
+  ANIMACAO_CARREGAMENTO_PADRAO,
   type CampoAbertura,
   type ParametroCor,
   type Periodo,
+  type VelocidadeAnimacao,
 } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/regras")({
@@ -282,6 +287,11 @@ function Regras() {
   const salvarIdentidade = (patch: Partial<typeof ident>) =>
     salvar({ identidadeVisual: { ...ident, ...patch } });
 
+  // Animação de Carregamento (Ema)
+  const animConf = regras.animacaoCarregamento ?? ANIMACAO_CARREGAMENTO_PADRAO;
+  const salvarAnim = (patch: Partial<typeof animConf>) =>
+    salvar({ animacaoCarregamento: { ...animConf, ...patch } });
+
   // 2. Página Inicial
   const home = regras.paginaInicial ?? PAGINA_INICIAL_PADRAO;
   const salvarHome = (patch: Partial<typeof home>) =>
@@ -476,9 +486,12 @@ function Regras() {
 
       {/* Abas Organizadas */}
       <Tabs defaultValue="geral" className="w-full space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 p-1.5 bg-muted/80 rounded-xl h-auto">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 p-1.5 bg-muted/80 rounded-xl h-auto">
           <TabsTrigger value="geral" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
             <Sliders className="size-4 text-g-blue" /> Geral & Logo
+          </TabsTrigger>
+          <TabsTrigger value="animacao" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
+            <Zap className="size-4 text-g-blue" /> Animação Ema
           </TabsTrigger>
           <TabsTrigger value="inicio" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
             <Layout className="size-4 text-g-green" /> Início & Banner
@@ -1884,6 +1897,136 @@ function Regras() {
                 >
                   {limpandoBanco ? "Otimizando..." : "Executar Limpeza e Otimização"}
                 </ConfirmAction>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ABA ANIMAÇÃO DE CARREGAMENTO */}
+        <TabsContent value="animacao" className="space-y-6 focus-visible:outline-none">
+          <Card className="border-t-4 border-g-blue shadow-xs">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-g-blue dark:text-blue-400">
+                <Zap className="size-5" />
+                Animação de Carregamento (Ema Correndo)
+              </CardTitle>
+              <CardDescription>
+                Configure a exibição da mascote ema correndo durante o carregamento de páginas, envio de chamados e ações do sistema.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Interruptor ligar/desligar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border bg-card/60">
+                <div className="space-y-0.5">
+                  <Label htmlFor="anim-ativo" className="text-sm font-bold text-foreground cursor-pointer">
+                    Ativar animação da Ema
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Quando ligada, exibe a ema correndo com efeitos de pista e poeira. Se desligada, um indicador simples de carregamento substitui a ema (nunca tela vazia).
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs font-bold ${animConf.ativo ? "text-g-green" : "text-muted-foreground"}`}>
+                    {animConf.ativo ? "Ligada" : "Desligada"}
+                  </span>
+                  <Switch
+                    id="anim-ativo"
+                    checked={animConf.ativo}
+                    onCheckedChange={(checked) => salvarAnim({ ativo: checked })}
+                  />
+                </div>
+              </div>
+
+              {/* Escolha de velocidade */}
+              <div className="space-y-3">
+                <Label className="text-xs font-semibold text-foreground">Velocidade da Corrida</Label>
+                <div className="grid grid-cols-3 gap-3 max-w-md">
+                  {(
+                    [
+                      { id: "lenta" as const, label: "Lenta", desc: "Passos cadenciados" },
+                      { id: "normal" as const, label: "Normal", desc: "Velocidade padrão" },
+                      { id: "rapida" as const, label: "Rápida", desc: "Corrida veloz" },
+                    ]
+                  ).map((v) => {
+                    const isSelected = animConf.velocidade === v.id;
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => salvarAnim({ velocidade: v.id })}
+                        className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
+                          isSelected
+                            ? "border-g-blue bg-g-blue/10 text-g-blue font-bold shadow-xs ring-2 ring-g-blue/20"
+                            : "border-border bg-card hover:border-g-blue/50 text-muted-foreground"
+                        }`}
+                      >
+                        <span className="text-sm">{v.label}</span>
+                        <span className="text-[10px] opacity-80 mt-0.5">{v.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Texto de carregamento */}
+              <div className="space-y-2 max-w-md">
+                <Label htmlFor="anim-texto" className="text-xs font-semibold text-foreground">
+                  Texto de Carregamento
+                </Label>
+                <Input
+                  id="anim-texto"
+                  value={animConf.texto}
+                  onChange={(e) => salvarAnim({ texto: sanitizeInput(e.target.value) })}
+                  placeholder="Ex.: Carregando..."
+                  maxLength={50}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Texto acessível exibido abaixo da ema durante a animação (com suporte a leitores de tela).
+                </p>
+              </div>
+
+              {/* Pré-visualização ao vivo */}
+              <div className="space-y-2 pt-2">
+                <Label className="text-xs font-semibold text-foreground">Pré-visualização em Tempo Real</Label>
+                <div className="rounded-2xl border-2 border-dashed border-border p-6 bg-muted/20 flex flex-col items-center justify-center min-h-[180px]">
+                  <EmaLoader
+                    texto={animConf.texto || "Carregando..."}
+                    velocidade={animConf.velocidade}
+                    ativo={animConf.ativo}
+                  />
+                </div>
+              </div>
+
+              {/* Botões de Ação da Seção */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    salvarAnim(ANIMACAO_CARREGAMENTO_PADRAO);
+                    toast.info("Configurações da animação restauradas para o padrão no rascunho.");
+                  }}
+                >
+                  <RotateCcw className="mr-1.5 size-3.5" /> Restaurar padrão
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="google-green"
+                  size="sm"
+                  className="font-bold gap-1.5 shadow-xs"
+                  onClick={async () => {
+                    const ok = await setRegras({ ...regras, animacaoCarregamento: animConf });
+                    if (ok) {
+                      toast.success("Preferências da animação salvas com sucesso!");
+                    } else {
+                      toast.error("Não foi possível salvar as preferências da animação.");
+                    }
+                  }}
+                >
+                  <CheckCircle2 className="size-4" /> Salvar preferências da animação
+                </Button>
               </div>
             </CardContent>
           </Card>

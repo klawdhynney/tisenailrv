@@ -12,6 +12,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { PrioridadeChip, SlaChip, StatusChip } from "@/components/Chips";
+import { EmaLoader } from "@/components/EmaLoader";
+import { useLoading } from "@/lib/loading-context";
 import { useStore } from "@/lib/store-context";
 import { calcularSla, formatarData, formatarDataHora } from "@/lib/sla";
 import { isColunaAcompAtiva, type Ticket } from "@/lib/types";
@@ -32,6 +34,7 @@ type ProgressTicket = Database["public"]["Functions"]["public_ticket_sla_progres
 
 function Acompanhamento() {
   const { regras, isGestor } = useStore();
+  const { wrapAsync, isLoading } = useLoading();
   const config = regras.acompanhamento;
   const colunas = config?.colunasVisiveis || [
     "verChamado",
@@ -223,9 +226,8 @@ function Acompanhamento() {
 
       {/* Indicador de carregamento */}
       {loading ? (
-        <div className="rounded-2xl border-2 border-dashed border-border py-16 text-center">
-          <Loader2 className="mx-auto size-8 animate-spin text-g-blue" />
-          <p className="mt-3 text-sm font-semibold text-muted-foreground">Carregando chamados...</p>
+        <div className="rounded-2xl border-2 border-dashed border-border py-12 text-center flex flex-col items-center justify-center">
+          <EmaLoader texto="Carregando chamados..." />
         </div>
       ) : visible.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-border py-16 text-center">
@@ -308,7 +310,12 @@ function Acompanhamento() {
                     size="sm"
                     variant="google-blue"
                     className="w-full gap-1.5 font-bold shadow-xs text-xs"
-                    onClick={() => setChamadoSelecionado(t)}
+                    disabled={isLoading}
+                    onClick={() => {
+                      wrapAsync(async () => {
+                        setChamadoSelecionado(t);
+                      }, "Abrindo chamado...");
+                    }}
                   >
                     <Eye className="size-3.5" /> Ver chamado
                   </Button>
@@ -385,7 +392,12 @@ function Acompanhamento() {
                           <Button
                             size="sm"
                             variant="google-blue"
-                            onClick={() => setChamadoSelecionado(t)}
+                            disabled={isLoading}
+                            onClick={() => {
+                              wrapAsync(async () => {
+                                setChamadoSelecionado(t);
+                              }, "Abrindo chamado...");
+                            }}
                             className="gap-1.5 font-semibold text-xs shadow-xs"
                           >
                             <Eye className="size-3.5" /> Ver chamado

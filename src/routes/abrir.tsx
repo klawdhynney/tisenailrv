@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
+import { useLoading } from "@/lib/loading-context";
 import { TextoAssistido } from "@/components/TextoAssistido";
 import { CAMPOS_ABERTURA_PADRAO } from "@/lib/types";
 
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/abrir")({
 
 function AbrirChamado() {
   const { regras, addTicket } = useStore();
+  const { wrapAsync, isLoading } = useLoading();
   const navigate = useNavigate();
   const campos = regras.camposAbertura ?? CAMPOS_ABERTURA_PADRAO;
   const isCampoAtivo = (id: string) => campos.find((c) => c.id === id)?.ativo ?? true;
@@ -173,75 +175,85 @@ interface FormValues {
   }
 
   async function confirmarEnvioFinal() {
-    if (enviando) return;
+    if (enviando || isLoading) return;
     setEnviando(true);
     setConfirmandoEnvio(false);
 
-    const customData = campos
-      .filter((c) => !["solicitante", "email", "setor", "categoria", "local", "contato", "descricao"].includes(c.id) && c.ativo && customForm[c.id])
-      .map((c) => `[${c.label}: ${(customForm[c.id] ?? "").trim()}]`)
-      .join("\n");
-
-    const descricaoFinal = [form.descricao ? form.descricao.trim() : "", customData].filter(Boolean).join("\n\n");
-    const digitsContato = (form.contato || "").replace(/\D/g, "");
-    const emailCalculado = `${digitsContato || "contato"}@whatsapp.senailrv.local`;
-
-    const ticketId = await addTicket(
-      {
-        abertoEm: "",
-        hora: "",
-        solicitante: (form.solicitante || "Solicitante").trim(),
-        setor: form.setor || "Geral",
-        local: form.local ? form.local.trim() : "",
-        categoria: form.categoria || "Geral",
-        descricao: descricaoFinal || "Sem descrição informada.",
-        prioridade: "Média",
-        responsavel: null,
-        status: "Aberto",
-        contato: form.contato ? form.contato.trim() : null,
-        fechadoEm: null,
-        horario: null,
-        procedimento: null,
-      },
-      emailCalculado,
-    );
-
-    setEnviando(false);
-    if (ticketId === null) {
-      toast.error("Não foi possível registrar o chamado. Tente novamente.");
-      return;
-    }
-    toast.success("Chamado registrado! A equipe de TI já recebeu.");
-    setSucessoId(ticketId);
-
     try {
-      const emailFinal = emailCalculado.toLowerCase();
-      localStorage.setItem("tisenai_user_email", emailFinal);
-      localStorage.setItem("tisenai_email", emailFinal);
-      if (digitsContato.length >= 10) {
-        localStorage.setItem("tisenai_user_whatsapp", digitsContato);
-        localStorage.setItem("tisenai_user_whatsapp_display", form.contato.trim());
-      }
-      const existentes = JSON.parse(localStorage.getItem("tisenai_meus_tickets") || "[]");
-      const novos = [
-        {
-          id: ticketId,
-          aberto_em: new Date().toISOString().split("T")[0],
-          email: emailFinal,
-          contato: form.contato ? form.contato.trim() : null,
-          solicitante: form.solicitante?.trim() || "Solicitante",
-          setor: form.setor || "Geral",
-          local: form.local || "",
-          descricao: descricaoFinal,
-          status: "Aberto",
-          prioridade: "Média",
-          procedimento: null,
+      await wrapAsync(
+        async () => {
+          const customData = campos
+            .filter((c) => !["solicitante", "email", "setor", "categoria", "local", "contato", "descricao"].includes(c.id) && c.ativo && customForm[c.id])
+            .map((c) => `[${c.label}: ${(customForm[c.id] ?? "").trim()}]`)
+            .join("\n");
+
+          const descricaoFinal = [form.descricao ? form.descricao.trim() : "", customData].filter(Boolean).join("\n\n");
+          const digitsContato = (form.contato || "").replace(/\D/g, "");
+          const emailCalculado = `${digitsContato || "contato"}@whatsapp.senailrv.local`;
+
+          const ticketId = await addTicket(
+            {
+              abertoEm: "",
+              hora: "",
+              solicitante: (form.solicitante || "Solicitante").trim(),
+              setor: form.setor || "Geral",
+              local: form.local ? form.local.trim() : "",
+              categoria: form.categoria || "Geral",
+              descricao: descricaoFinal || "Sem descrição informada.",
+              prioridade: "Média",
+              responsavel: null,
+              status: "Aberto",
+              contato: form.contato ? form.contato.trim() : null,
+              fechadoEm: null,
+              horario: null,
+              procedimento: null,
+            },
+            emailCalculado,
+          );
+
+          if (ticketId === null) {
+            toast.error("Não foi possível registrar o chamado. Tente novamente.");
+            return;
+          }
+          toast.success("Chamado registrado! A equipe de TI já recebeu.");
+          setSucessoId(ticketId);
+
+          try {
+            const emailFinal = emailCalculado.toLowerCase();
+            localStorage.setItem("tisenai_user_email", emailFinal);
+            localStorage.setItem("tisenai_email", emailFinal);
+            if (digitsContato.length >= 10) {
+              localStorage.setItem("tisenai_user_whatsapp", digitsContato);
+              localStorage.setItem("tisenai_user_whatsapp_display", form.contato.trim());
+            }
+            const existentes = JSON.parse(localStorage.getItem("tisenai_meus_tickets") || "[]");
+            const novos = [
+              {
+                id: ticketId,
+                aberto_em: new Date().toISOString().split("T")[0],
+                email: emailFinal,
+                contato: form.contato ? form.contato.trim() : null,
+                solicitante: form.solicitante?.trim() || "Solicitante",
+                setor: form.setor || "Geral",
+                local: form.local || "",
+                descricao: descricaoFinal,
+                status: "Aberto",
+                prioridade: "Média",
+                procedimento: null,
+              },
+              ...existentes.filter((t: any) => t.id !== ticketId),
+            ];
+            localStorage.setItem("tisenai_meus_tickets", JSON.stringify(novos));
+          } catch {
+            // ignore
+          }
         },
-        ...existentes.filter((t: any) => t.id !== ticketId),
-      ];
-      localStorage.setItem("tisenai_meus_tickets", JSON.stringify(novos));
+        { text: "Registrando chamado..." }
+      );
     } catch {
-      // ignore
+      toast.error("Erro inesperado ao registrar o chamado.");
+    } finally {
+      setEnviando(false);
     }
   }
 

@@ -13,6 +13,7 @@ import {
   DASHBOARD_PADRAO,
   RODAPE_PADRAO,
   LGPD_PADRAO,
+  ANIMACAO_CARREGAMENTO_PADRAO,
   type Regras,
   type Ticket,
   type Prioridade,
@@ -43,6 +44,7 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     },
     rodape: { ...RODAPE_PADRAO, ...(regrasSalvas.rodape || {}) },
     lgpd: { ...LGPD_PADRAO, ...(regrasSalvas.lgpd || {}) },
+    animacaoCarregamento: { ...ANIMACAO_CARREGAMENTO_PADRAO, ...(regrasSalvas.animacaoCarregamento || {}) },
   };
 }
 

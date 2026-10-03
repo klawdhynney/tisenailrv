@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { TextoAssistido } from "@/components/TextoAssistido";
+import { EmaLoader } from "@/components/EmaLoader";
+import { useLoading } from "@/lib/loading-context";
 import { useStore } from "@/lib/store-context";
 import { PRIORIDADES, type Ticket } from "@/lib/types";
 import { calcularSla, formatarData, formatarDataHora } from "@/lib/sla";
@@ -76,7 +78,25 @@ function TicketDetail() {
   const { ticketId } = Route.useParams();
   const { tickets, regras, hidratado, updateTicket, removeTicket, isGestor } = useStore();
   const ticket = tickets.find(t => t.id === Number(ticketId));
-  if (!ticket) return <div className="space-y-4"><Button asChild variant="outline"><Link to="/atendimento"><ArrowLeft className="size-4" /> Atendimento</Link></Button><p className="text-muted-foreground">{hidratado ? "Chamado não encontrado." : "Carregando chamado…"}</p></div>;
+  if (!ticket) {
+    if (!hidratado) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16">
+          <EmaLoader texto="Carregando chamado..." />
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-4">
+        <Button asChild variant="outline">
+          <Link to="/atendimento">
+            <ArrowLeft className="size-4" /> Atendimento
+          </Link>
+        </Button>
+        <p className="text-muted-foreground">Chamado não encontrado.</p>
+      </div>
+    );
+  }
   return <TicketEditor key={ticket.id} ticket={ticket} regras={regras} updateTicket={updateTicket} removeTicket={removeTicket} isGestor={isGestor} />;
 }
 
@@ -94,6 +114,7 @@ function TicketEditor({
   isGestor: boolean;
 }) {
   const navigate = useNavigate();
+  const { wrapAsync, isLoading } = useLoading();
   const [draft, setDraft] = useState<Ticket>(() => ({ ...ticket, responsavel: "Claudinei Lima", status: ticket.status === "Aberto" ? "Em andamento" : ticket.status }));
   const [saving, setSaving] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
@@ -136,18 +157,26 @@ function TicketEditor({
       patch.fechadoEm = null; patch.horario = null;
     }
     setSaving(true);
-    try { const ok = await updateTicket(ticket.id, patch); toast[ok ? "success" : "error"](ok ? "Chamado salvo." : "Não foi possível salvar o chamado."); }
-    finally { setSaving(false); }
+    try {
+      await wrapAsync(async () => {
+        const ok = await updateTicket(ticket.id, patch);
+        toast[ok ? "success" : "error"](ok ? "Chamado salvo." : "Não foi possível salvar o chamado.");
+      }, "Salvando chamado...");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function excluirChamado() {
-    const ok = await removeTicket(ticket.id);
-    if (ok) {
-      toast.success(`Chamado #${ticket.id} excluído com sucesso.`);
-      navigate({ to: "/atendimento" });
-    } else {
-      toast.error("Não foi possível excluir o chamado.");
-    }
+    await wrapAsync(async () => {
+      const ok = await removeTicket(ticket.id);
+      if (ok) {
+        toast.success(`Chamado #${ticket.id} excluído com sucesso.`);
+        navigate({ to: "/atendimento" });
+      } else {
+        toast.error("Não foi possível excluir o chamado.");
+      }
+    }, "Excluindo chamado...");
   }
 
   const hasChanges = editable.some(k => draft[k] !== ticket[k]);

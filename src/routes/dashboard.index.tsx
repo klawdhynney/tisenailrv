@@ -10,6 +10,7 @@ import type { Database } from "@/integrations/supabase/types";
 import type { Ticket, TipoGrafico } from "@/lib/types";
 import { MESES_DISPONIVEIS } from "@/lib/types";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLoading } from "@/lib/loading-context";
 
 export const Route = createFileRoute("/dashboard/")({
   head: () => ({ meta: [
@@ -73,6 +74,7 @@ const mesAtualPadrao = () => {
 
 function Dashboard() {
   const { publicStats, isGestor, regras } = useStore();
+  const { wrapAsync, isLoading } = useLoading();
   const [progress, setProgress] = useState<Database["public"]["Functions"]["public_ticket_sla_progress"]["Returns"]>([]);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const timer = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(timer); }, []);
@@ -126,34 +128,38 @@ function Dashboard() {
   const dados: Item[] = todosDados.length <= CORES.length ? todosDados : [...todosDados.slice(0, CORES.length - 1), { name: "Outros", value: todosDados.slice(CORES.length - 1).reduce((n, x) => n + x.value, 0) }];
   const cor = (_nome: string, i: number) => CORES[i] ?? "#FFFFFF";
   const baixarResumo = async () => {
-    const { exportarXlsx } = await import("@/lib/exportar");
-    const totalVal = dados.reduce((sum, item) => sum + item.value, 0);
-    const linhas = dados.map((r) => {
-      const pct = totalVal > 0 ? `${((r.value / totalVal) * 100).toFixed(1)}%` : "0%";
-      return {
-        "Visão": visao,
-        "Item": r.name,
-        "Chamados": r.value,
-        "Porcentagem": pct,
-      };
-    });
-    await exportarXlsx(linhas, `dashboard-${visao}-${mes}`);
+    await wrapAsync(async () => {
+      const { exportarXlsx } = await import("@/lib/exportar");
+      const totalVal = dados.reduce((sum, item) => sum + item.value, 0);
+      const linhas = dados.map((r) => {
+        const pct = totalVal > 0 ? `${((r.value / totalVal) * 100).toFixed(1)}%` : "0%";
+        return {
+          "Visão": visao,
+          "Item": r.name,
+          "Chamados": r.value,
+          "Porcentagem": pct,
+        };
+      });
+      await exportarXlsx(linhas, `dashboard-${visao}-${mes}`);
+    }, "Exportando resumo...");
   };
 
   const baixarDashboardCompleto = async () => {
-    const { exportarDashboardCompletoPdf } = await import("@/lib/exportar");
-    const labelMes = mes === "todos" ? "Todos os meses" : (MESES_DISPONIVEIS.find(m => m.key === mes)?.label ?? mes);
-    await exportarDashboardCompletoPdf({
-      mesLabel: labelMes,
-      total,
-      andamento: ativos,
-      resolvidos,
-      recorrentes: RECORRENTES.map(r => ({ ...r })),
-      setores,
-      prioridades: contar("prioridade"),
-      status: contar("status"),
-      sla: dadosSla,
-    }, `Dashboard_Completo_${mes}`);
+    await wrapAsync(async () => {
+      const { exportarDashboardCompletoPdf } = await import("@/lib/exportar");
+      const labelMes = mes === "todos" ? "Todos os meses" : (MESES_DISPONIVEIS.find(m => m.key === mes)?.label ?? mes);
+      await exportarDashboardCompletoPdf({
+        mesLabel: labelMes,
+        total,
+        andamento: ativos,
+        resolvidos,
+        recorrentes: RECORRENTES.map(r => ({ ...r })),
+        setores,
+        prioridades: contar("prioridade"),
+        status: contar("status"),
+        sla: dadosSla,
+      }, `Dashboard_Completo_${mes}`);
+    }, "Gerando PDF do dashboard...");
   };
 
   const dashConf = regras.dashboard;

@@ -295,6 +295,20 @@ export const RODAPE_PADRAO: RodapeConfig = {
   whatsappSuporte: "66 99644-4461",
 };
 
+export type VelocidadeAnimacao = "lenta" | "normal" | "rapida";
+
+export interface AnimacaoCarregamentoConfig {
+  ativo: boolean;
+  velocidade: VelocidadeAnimacao;
+  texto: string;
+}
+
+export const ANIMACAO_CARREGAMENTO_PADRAO: AnimacaoCarregamentoConfig = {
+  ativo: true,
+  velocidade: "normal",
+  texto: "Carregando...",
+};
+
 export interface Regras {
   prazos: Record<Prioridade, number>; // horas úteis
   expediente: {
@@ -323,6 +337,7 @@ export interface Regras {
   acompanhamento?: AcompanhamentoConfig | undefined;
   dashboard?: DashboardConfig | undefined;
   rodape?: RodapeConfig | undefined;
+  animacaoCarregamento?: AnimacaoCarregamentoConfig | undefined;
 }
 
 export const FILTROS_PLANILHA = ["Mês", "Busca", "Por página", "Categoria", "Setor", "SLA"] as const;
@@ -500,5 +515,6 @@ export const REGRAS_PADRAO: Regras = {
   acompanhamento: { ...ACOMPANHAMENTO_PADRAO },
   dashboard: { ...DASHBOARD_PADRAO },
   rodape: { ...RODAPE_PADRAO },
+  animacaoCarregamento: { ...ANIMACAO_CARREGAMENTO_PADRAO },
 };
 
