@@ -120,7 +120,7 @@ export function TextoAssistido({
           <Button
             type="button"
             size="sm"
-            disabled={loading || value.trim().length < 5}
+            disabled={loading || value.trim().length < 2}
             onClick={revisar}
             className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-xs hover:shadow-md transition-all duration-200 border-0 text-xs"
           >

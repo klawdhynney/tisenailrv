@@ -293,7 +293,6 @@ function Regras() {
   const salvarIdentidade = (patch: Partial<typeof ident>) =>
     salvar({ identidadeVisual: { ...ident, ...patch } });
 
-  // Animação de Carregamento (Ema)
   // 2. Página Inicial
   const home = regras.paginaInicial ?? PAGINA_INICIAL_PADRAO;
   const salvarHome = (patch: Partial<typeof home>) =>

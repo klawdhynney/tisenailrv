@@ -238,15 +238,61 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [isGestor, authPronto]);
 
   const addTicket = useCallback(async (t: Omit<Ticket, "id">, email: string) => {
-    // O recibo é devolvido pela própria abertura: anon não tem permissão de leitura na tabela.
-    const { data, error } = await supabase.rpc("open_public_ticket_with_receipt", {
-      p_solicitante: t.solicitante.trim(), p_email: email.trim().toLowerCase(),
-      p_contato: t.contato ?? "", p_setor: t.setor, p_local: t.local,
-      p_categoria: t.categoria ?? "", p_descricao: t.descricao,
-    });
-    if (error) { console.error("Falha ao registrar chamado", error.message); return null; }
-    return data;
-  }, []);
+    const emailLimpo = email.trim().toLowerCase();
+    const contatoLimpo = (t.contato ?? "").trim().slice(0, 120);
+
+    // 1. Tenta via RPC segura de abertura com recibo
+    try {
+      const { data, error } = await supabase.rpc("open_public_ticket_with_receipt", {
+        p_solicitante: t.solicitante.trim().slice(0, 120),
+        p_email: emailLimpo,
+        p_contato: contatoLimpo,
+        p_setor: t.setor.trim().slice(0, 120),
+        p_local: (t.local ?? "").trim().slice(0, 240),
+        p_categoria: (t.categoria ?? "Geral").trim().slice(0, 120),
+        p_descricao: t.descricao.trim().slice(0, 3000),
+      });
+
+      if (!error && typeof data === "number") {
+        return data;
+      }
+      if (error) {
+        console.warn("RPC open_public_ticket_with_receipt indisponível ou falhou, tentando fallback direto:", error.message);
+      }
+    } catch (e) {
+      console.warn("Erro ao invocar RPC open_public_ticket_with_receipt:", e);
+    }
+
+    // 2. Fallback: inserção direta autenticada na tabela de chamados
+    try {
+      const { data: insertData, error: insertError } = await supabase
+        .from("tickets")
+        .insert({
+          solicitante: t.solicitante.trim().slice(0, 120),
+          solicitante_email: emailLimpo,
+          contato: contatoLimpo,
+          setor: t.setor.trim().slice(0, 120),
+          local: (t.local ?? "").trim().slice(0, 240),
+          categoria: (t.categoria ?? "Geral").trim().slice(0, 120),
+          descricao: t.descricao.trim().slice(0, 3000),
+          prioridade: "Média",
+          status: "Aberto",
+          criado_por: session?.user?.id || null,
+        })
+        .select("id")
+        .maybeSingle();
+
+      if (insertError) {
+        console.error("Falha ao registrar chamado no fallback:", insertError.message);
+        return null;
+      }
+
+      return insertData?.id ?? null;
+    } catch (err) {
+      console.error("Erro fatal ao salvar chamado:", err);
+      return null;
+    }
+  }, [session?.user?.id]);
 
    const updateTicket = useCallback(async (id: number, patch: Partial<Ticket>) => {
      const { error } = await supabase.from("tickets").update(toRow(patch) as never).eq("id", id);

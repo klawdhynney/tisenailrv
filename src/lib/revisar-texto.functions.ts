@@ -24,7 +24,7 @@ async function obterConfigIa(): Promise<IaSuporteConfig> {
 }
 
 const revisarInputSchema = z.object({
-  texto: z.string().trim().min(5).max(3000),
+  texto: z.string().trim().min(2, "Digite pelo menos 2 caracteres para aprimorar.").max(3000),
   modo: z.enum(["revisao", "tecnica"]).default("revisao"),
 });
 
