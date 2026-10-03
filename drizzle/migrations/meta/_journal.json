@@ -127,6 +127,13 @@
       "when": 1790900000000,
       "tag": "0017_require_auth_for_tickets",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791000000000,
+      "tag": "0018_usuarios_perfis_avaliacoes_e_indices",
+      "breakpoints": true
     }
   ]
 }
