@@ -4,7 +4,6 @@ import { Eye, Headset, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PrioridadeChip, SlaChip, StatusChip } from "@/components/Chips";
-import { EmaLoader } from "@/components/EmaLoader";
 import { useStore } from "@/lib/store-context";
 import { calcularSla, formatarData, formatarDataHora, segundosUteis } from "@/lib/sla";
 import { COLUNAS_PLANILHA, FILTROS_PLANILHA, MESES_DISPONIVEIS, type Ticket } from "@/lib/types";
@@ -161,7 +160,7 @@ export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
          </thead>
          <tbody>
            {visible.map(t => <TicketRow key={t.id} ticket={t} colunas={colunas} attendance={attendance} />)}
-           {!visible.length && <tr><td colSpan={Math.max(1, colunas.length)} className="px-4 py-8 text-center text-muted-foreground">{hidratado ? "Nenhum chamado encontrado." : <div className="flex flex-col items-center justify-center"><EmaLoader texto="Carregando chamados..." /></div>}</td></tr>}
+           {!visible.length && <tr><td colSpan={Math.max(1, colunas.length)} className="px-4 py-8 text-center text-muted-foreground">{hidratado ? "Nenhum chamado encontrado." : "Carregando chamados..."}</td></tr>}
          </tbody>
        </table>
     </div>

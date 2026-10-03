@@ -12,7 +12,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { PrioridadeChip, SlaChip, StatusChip } from "@/components/Chips";
-import { EmaLoader } from "@/components/EmaLoader";
 import { useLoading } from "@/lib/loading-context";
 import { useStore } from "@/lib/store-context";
 import { calcularSla, formatarData, formatarDataHora } from "@/lib/sla";
@@ -247,8 +246,8 @@ function Acompanhamento() {
 
       {/* Indicador de carregamento */}
       {loading ? (
-        <div className="rounded-2xl border-2 border-dashed border-border py-12 text-center flex flex-col items-center justify-center">
-          <EmaLoader texto="Carregando chamados..." />
+        <div className="rounded-2xl border-2 border-dashed border-border py-12 text-center text-sm text-muted-foreground font-medium">
+          Carregando chamados...
         </div>
       ) : visible.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-border py-16 text-center">

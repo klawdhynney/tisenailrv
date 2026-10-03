@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { TextoAssistido } from "@/components/TextoAssistido";
-import { EmaLoader } from "@/components/EmaLoader";
 import { useLoading } from "@/lib/loading-context";
 import { useStore } from "@/lib/store-context";
 import { PRIORIDADES, type Ticket } from "@/lib/types";
@@ -81,8 +80,8 @@ function TicketDetail() {
   if (!ticket) {
     if (!hidratado) {
       return (
-        <div className="flex flex-col items-center justify-center py-16">
-          <EmaLoader texto="Carregando chamado..." />
+        <div className="py-16 text-center text-sm text-muted-foreground font-medium">
+          Carregando chamado...
         </div>
       );
     }
