@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Activity, BarChart3, CircleGauge, ClipboardList, FileSpreadsheet, FileText, LayoutGrid, PieChartIcon, Printer, Table2, TrendingUp } from "lucide-react";
+import { Activity, BarChart3, CircleGauge, ClipboardList, FileSpreadsheet, FileText, LayoutGrid, PieChartIcon, Printer, Star, Table2, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { calcularSla } from "@/lib/sla";
 import { useStore } from "@/lib/store-context";
@@ -247,6 +247,14 @@ function Dashboard() {
               <ClipboardList className="size-3.5 mr-1" /> Acompanhar chamados
             </Link>
           </Button>
+
+          {isGestor && (
+            <Button asChild size="sm" variant="outline" className="font-bold shadow-xs text-amber-600 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/10">
+              <Link to="/dashboard/avaliacoes">
+                <Star className="size-3.5 mr-1 fill-amber-400 text-amber-500" /> Avaliações
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
     </section>
