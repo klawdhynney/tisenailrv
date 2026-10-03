@@ -46,9 +46,8 @@ export function TextoAssistido({
 }) {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const [sugestoes, setSugestoes] = useState<{ versao1: string; versao2: string } | null>(null);
-  const [edicaoV1, setEdicaoV1] = useState("");
-  const [edicaoV2, setEdicaoV2] = useState("");
+  const [textoAprimorado, setTextoAprimorado] = useState<string | null>(null);
+  const [edicaoTexto, setEdicaoTexto] = useState("");
   const [cursor, setCursor] = useState(value.length);
 
   const fragmento = value.slice(0, cursor).match(/(?:^|\s)([\p{L}]{3,})$/u)?.[1] ?? "";
@@ -67,10 +66,10 @@ export function TextoAssistido({
     setLoading(true);
     setErro(null);
     try {
-      const res = await revisarTexto({ data: { texto: value, modo: "revisao" } });
-      setSugestoes(res);
-      setEdicaoV1(res.versao1);
-      setEdicaoV2(res.versao2);
+      const res = await revisarTexto({ data: { texto: value } });
+      const resultado = res.texto || res.versao1 || "";
+      setTextoAprimorado(resultado);
+      setEdicaoTexto(resultado);
       toast.success("Texto aprimorado com sucesso!");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Não foi possível aprimorar o texto.";
@@ -93,7 +92,7 @@ export function TextoAssistido({
         onChange={(e) => {
           onChange(e.target.value);
           setCursor(e.target.selectionStart);
-          setSugestoes(null);
+          setTextoAprimorado(null);
         }}
       />
       {palavras.length > 0 && (
@@ -140,77 +139,39 @@ export function TextoAssistido({
         </div>
       )}
 
-      {sugestoes && (
-        <div className="rounded-2xl border-2 border-g-blue/30 bg-card p-4 text-sm shadow-md space-y-4 animate-in fade-in">
+      {textoAprimorado && (
+        <div className="rounded-2xl border-2 border-g-blue/30 bg-card p-4 text-sm shadow-md space-y-3 animate-in fade-in">
           <div className="flex items-center justify-between border-b border-border pb-2">
             <div className="flex items-center gap-2">
               <Sparkles className="size-4 text-g-blue" />
-              <span className="font-bold text-foreground">Versões técnicas aprimoradas (editáveis):</span>
+              <span className="font-bold text-foreground">Texto aprimorado (editável antes de aplicar):</span>
             </div>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setSugestoes(null)}>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setTextoAprimorado(null)}>
               Descartar
             </Button>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {/* Versão 1 */}
-            <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-muted/30 p-3.5 transition-all hover:border-g-blue">
-              <div className="space-y-2">
-                <span className="rounded-full bg-g-blue/15 px-2.5 py-0.5 text-xs font-bold text-g-blue">
-                  Versão 1 · Direta & Técnica
-                </span>
-                <Textarea
-                  rows={4}
-                  value={edicaoV1}
-                  onChange={(e) => setEdicaoV1(e.target.value)}
-                  className="text-xs sm:text-sm bg-background/80"
-                />
-              </div>
-              <div className="mt-3 pt-2 border-t border-border/50">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="google-blue"
-                  className="w-full gap-1.5 text-xs font-bold"
-                  onClick={() => {
-                    onChange(edicaoV1);
-                    setSugestoes(null);
-                    toast.success("Texto atualizado com sucesso!");
-                  }}
-                >
-                  <Check className="size-3.5" /> Usar texto
-                </Button>
-              </div>
-            </div>
-
-            {/* Versão 2 */}
-            <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-muted/30 p-3.5 transition-all hover:border-g-green">
-              <div className="space-y-2">
-                <span className="rounded-full bg-g-green/15 px-2.5 py-0.5 text-xs font-bold text-g-green">
-                  Versão 2 · Formal & Estruturada
-                </span>
-                <Textarea
-                  rows={4}
-                  value={edicaoV2}
-                  onChange={(e) => setEdicaoV2(e.target.value)}
-                  className="text-xs sm:text-sm bg-background/80"
-                />
-              </div>
-              <div className="mt-3 pt-2 border-t border-border/50">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="google-green"
-                  className="w-full gap-1.5 text-xs font-bold"
-                  onClick={() => {
-                    onChange(edicaoV2);
-                    setSugestoes(null);
-                    toast.success("Texto atualizado com sucesso!");
-                  }}
-                >
-                  <Check className="size-3.5" /> Usar texto
-                </Button>
-              </div>
+          <div className="space-y-2">
+            <Textarea
+              rows={4}
+              value={edicaoTexto}
+              onChange={(e) => setEdicaoTexto(e.target.value)}
+              className="text-xs sm:text-sm bg-background/80 font-sans leading-relaxed"
+            />
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+              <Button
+                type="button"
+                size="sm"
+                variant="google-blue"
+                className="gap-1.5 text-xs font-bold"
+                onClick={() => {
+                  onChange(edicaoTexto);
+                  setTextoAprimorado(null);
+                  toast.success("Texto atualizado com sucesso!");
+                }}
+              >
+                <Check className="size-3.5" /> Aplicar texto aprimorado
+              </Button>
             </div>
           </div>
         </div>

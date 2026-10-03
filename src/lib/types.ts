@@ -368,7 +368,7 @@ Regras:
 - Se faltar informação essencial, faça uma única pergunta objetiva ou liste até 3 dados necessários.
 - Não invente informações nem prometa prazos que não constem no chamado.
 - Ao aprimorar um texto escrito pelo técnico: devolva somente o texto aprimorado, mais direto, técnico, formal e cordial, mantendo o sentido original, sem comentários.`,
-  maxTokensResposta: 300,
+  maxTokensResposta: 400,
   maxTokensAprimoramento: 400,
   temperatura: 0.2,
 };

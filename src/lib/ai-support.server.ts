@@ -1,5 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText } from "ai";
+import { generateText } from "ai";
 
 export interface AskAiOptions {
   maxTokens?: number;
@@ -7,47 +7,107 @@ export interface AskAiOptions {
   timeoutMs?: number;
 }
 
+/**
+ * Trata rigorosamente a saída da IA:
+ * - Remove blocos de markdown e tags de formatação (código, negrito, itálico, títulos)
+ * - Remove aspas envolventes
+ * - Remove rótulos como "Resposta:", "Opção 1:", "Parecer técnico:", etc.
+ * - Remove preâmbulos e frases introdutórias ("Aqui está", "Segue", etc.)
+ * - Remove termos proibidos de recomendação caso apareçam no início ("Sugiro que", etc.)
+ * - Retorna unicamente o texto final pronto e limpo para edição/envio.
+ */
 export function limparSaidaIa(texto: string): string {
   if (!texto) return "";
   let limpo = texto.trim();
 
-  // Remove blocos de markdown envolventes ``` ... ``` se envolver todo o texto
-  if (limpo.startsWith("```") && limpo.endsWith("```")) {
-    limpo = limpo.replace(/^```[a-z]*\s*\n?/i, "").replace(/\n?```$/i, "").trim();
+  // Se o modelo acidentalmente devolveu um objeto JSON em string, extrai o conteúdo textual
+  if ((limpo.startsWith("{") && limpo.endsWith("}")) || (limpo.startsWith("[") && limpo.endsWith("]"))) {
+    try {
+      const parsed = JSON.parse(limpo);
+      if (typeof parsed === "string") {
+        limpo = parsed;
+      } else if (parsed && typeof parsed === "object") {
+        const valorExtraido =
+          parsed.texto ||
+          parsed.resposta ||
+          parsed.opcao1 ||
+          parsed.versao1 ||
+          parsed.procedimento ||
+          Object.values(parsed).find((v) => typeof v === "string" && v.length > 0);
+        if (typeof valorExtraido === "string") {
+          limpo = valorExtraido;
+        }
+      }
+    } catch {
+      // continua com limpeza textual normal
+    }
   }
 
-  // Remove preâmbulos comuns indesejados
-  const preambulos = [
-    /^(?:Aqui está|Segue|Abaixo segue|Segue abaixo)(?:\s+(?:a|o|uma|um))?(?:\s+(?:resposta|sugestão|parecer|procedimento)(?:\s+técnico|\s+técnica)?)?\s*:\s*/i,
-    /^(?:Resposta|Sugestão|Parecer|Procedimento)(?:\s+(?:técnico|técnica))?\s*:\s*/i,
-    /^(?:Prezado\(a\),?\s*)?(?:Aqui está|Segue|Segue a resposta técnica)\s*:\s*/i,
+  // Remove blocos de código markdown ```...```
+  limpo = limpo.replace(/^```[a-z]*\s*\n?/i, "").replace(/\n?```$/i, "").trim();
+
+  // Remove cabeçalhos markdown (#, ##, ###)
+  limpo = limpo.replace(/^#{1,6}\s+/gm, "");
+
+  // Remove negrito e itálico markdown
+  limpo = limpo.replace(/\*\*([^*]+)\*\*/g, "$1");
+  limpo = limpo.replace(/__([^_]+)__/g, "$1");
+  limpo = limpo.replace(/(^|[^\w*])\*([^*\n]+)\*([^\w*]|$)/g, "$1$2$3");
+
+  // Remove marcadores de citação markdown
+  limpo = limpo.replace(/^>\s+/gm, "");
+
+  // Remove eco do modo se o modelo repetir a instrução
+  limpo = limpo.replace(/^MODO:\s*(?:RESPONDER CHAMADO|APRIMORAR TEXTO)\s*\n?/i, "");
+
+  // Remove linhas, rótulos ou preâmbulos introdutórios no início do texto
+  const rotulosEPreambulos = [
+    /^(?:Prezado\(a\),?\s*)?(?:Aqui está|Segue|Segue abaixo|Abaixo segue|Apresento|Conforme solicitado|Conforme pedido)[^\n.:]*?:\s*\n?/i,
+    /^(?:Resposta|Resposta com IA|Resposta técnica|Parecer|Parecer técnico|Procedimento|Procedimento técnico|Opção \d+|Versão \d+|Texto aprimorado|Texto melhorado|Texto corrigido|Retorno|Diagnóstico|Sugestão)[^\n.:]*?:\s*\n?/i,
+    /^(?:Com base nas informações fornecidas|Analisando o chamado|De acordo com os dados informados|Com base no relato apresentado),?\s*\n?/i,
   ];
 
-  for (const regex of preambulos) {
-    limpo = limpo.replace(regex, "");
+  let alterado = true;
+  while (alterado) {
+    alterado = false;
+    for (const regex of rotulosEPreambulos) {
+      if (regex.test(limpo)) {
+        limpo = limpo.replace(regex, "").trim();
+        alterado = true;
+      }
+    }
   }
 
-  // Remove aspas envolventes se houver
-  if (
-    (limpo.startsWith('"') && limpo.endsWith('"')) ||
-    (limpo.startsWith("“") && limpo.endsWith("”")) ||
-    (limpo.startsWith("'") && limpo.endsWith("'"))
-  ) {
-    limpo = limpo.slice(1, -1).trim();
+  // Remove termos de recomendação caso apareçam no início (ex.: "Sugiro que", "Recomendo que", "Poderia")
+  limpo = limpo.replace(/^(?:Sugiro(?:\s+que)?|Recomendo(?:\s+que)?|Poderia(?:\s+ser)?|Sugere-se(?:\s+que)?|Recomenda-se(?:\s+que)?)\s+/i, "");
+
+  // Remove despedidas repetitivas e clichês proibidos ao final
+  limpo = limpo.replace(/\n*(?:Espero ter ajudado\.?|Fico à disposição(?:\s+para dúvidas)?\.?|Qualquer dúvida, estou à disposição\.?|Qualquer dúvida, nos avise\.?)\s*$/i, "");
+
+  // Remove aspas envolventes externas
+  limpo = limpo.replace(/^["'“”«»]+|["'“”«»]+$/g, "").trim();
+
+  // Garante primeira letra maiúscula após remoção de preâmbulos
+  if (limpo.length > 0) {
+    limpo = limpo.charAt(0).toUpperCase() + limpo.slice(1);
   }
 
-  return limpo;
+  return limpo.trim();
 }
 
+/**
+ * Executa chamada de IA com prompt único do sistema e mensagem estruturada do usuário.
+ * Limite estrito de 400 tokens e temperatura 0.2.
+ * Em caso de estouro de tokens (finishReason=length), refaz uma vez com síntese estrita ou lança erro explicativo.
+ */
 export async function askSupportAI(system: string, prompt: string, options: AskAiOptions = {}): Promise<string> {
   const lovableKey = process.env["LOVABLE_API_KEY"] || process.env["VITE_LOVABLE_API_KEY"];
   const openAiKey = process.env["OPENAI_API_KEY"];
-
   const apiKey = lovableKey || openAiKey;
 
-  // Se não houver chave de API configurada, utiliza geração inteligente local para evitar travar a tela
+  // Se não houver chave de API configurada, utiliza motor heurístico local resiliente
   if (!apiKey) {
-    console.warn("[IA Suporte] LOVABLE_API_KEY ou OPENAI_API_KEY não configurada no servidor. Utilizando motor heurístico local.");
+    console.warn("[IA Suporte] LOVABLE_API_KEY ou OPENAI_API_KEY não configurada. Utilizando motor técnico local.");
     return gerarFallbackLocal(system, prompt);
   }
 
@@ -63,30 +123,58 @@ export async function askSupportAI(system: string, prompt: string, options: AskA
       : undefined,
   });
 
+  const maxTokens = options.maxTokens ?? 400;
+  const temperature = options.temperature ?? 0.2;
   const timeoutMs = options.timeoutMs ?? 20000;
+
   const abortController = new AbortController();
   const timeoutId = setTimeout(() => {
     abortController.abort(new Error("Tempo limite de 20 segundos excedido"));
   }, timeoutMs);
 
   try {
-    const result = streamText({
+    // 1ª Tentativa
+    const result = await generateText({
       model: provider(modelName),
-      maxRetries: 1,
       system,
       prompt,
-      temperature: options.temperature ?? 0.2,
-      maxTokens: options.maxTokens ?? 400,
+      temperature,
+      maxTokens,
       abortSignal: abortController.signal,
     });
 
-    const text = (await result.text).trim();
-    if (!text || text.length > 4000) {
+    // Se foi cortada pelo limite de tokens, não entregamos texto incompleto: refazemos uma vez com síntese
+    if (result.finishReason === "length") {
+      console.warn("[IA Suporte] Resposta cortada pelo limite de tokens. Refazendo chamada uma vez com síntese estrita...");
+      const promptSintetico = `${prompt}\n\nInstrução estrita: Escreva a resposta completa em no máximo 4 linhas, sem exceder 400 tokens.`;
+      
+      const retryResult = await generateText({
+        model: provider(modelName),
+        system,
+        prompt: promptSintetico,
+        temperature,
+        maxTokens,
+        abortSignal: abortController.signal,
+      });
+
+      if (retryResult.finishReason === "length") {
+        throw new Error("A resposta ultrapassou o limite de 400 tokens e não pôde ser concluída. Resuma o chamado e tente novamente.");
+      }
+
+      const textoRetry = retryResult.text.trim();
+      if (!textoRetry) throw new Error("A IA retornou uma resposta em branco.");
+      return limparSaidaIa(textoRetry);
+    }
+
+    const textoFinal = result.text.trim();
+    if (!textoFinal) {
       return gerarFallbackLocal(system, prompt);
     }
-    return limparSaidaIa(text);
+
+    return limparSaidaIa(textoFinal);
   } catch (error) {
     console.warn("[IA Suporte] Falha na chamada da API externa, acionando fallback local:", error);
+    // Se o erro foi timeout ou indisponibilidade, aciona motor local sem quebrar a tela
     return gerarFallbackLocal(system, prompt);
   } finally {
     clearTimeout(timeoutId);
@@ -94,39 +182,31 @@ export async function askSupportAI(system: string, prompt: string, options: AskA
 }
 
 /**
- * Motor heurístico técnico local: garante que aprimoramento de texto e sugestões
- * de atendimento sempre retornem respostas de alta qualidade mesmo se o gateway externo estiver sem saldo ou chave.
+ * Motor heurístico técnico local:
+ * Mantém consistência dos dois modos quando não houver conexão de API disponível.
  */
-function gerarFallbackLocal(system: string, prompt: string): string {
-  const isAprimoramento = system.includes("APRIMORAMENTO") || system.includes("versao1");
-  const isRespostaAtendimento = system.includes("RESPOSTA AO CHAMADO") || system.includes("opcao1");
+function gerarFallbackLocal(_system: string, prompt: string): string {
+  const isAprimoramento = prompt.startsWith("MODO: APRIMORAR TEXTO");
+  const isRespostaAtendimento = prompt.startsWith("MODO: RESPONDER CHAMADO");
 
   if (isAprimoramento) {
-    const textoLimpo = prompt.replace(/[^\w\sÀ-ÿ.,!?-]/g, "").trim();
-    const primeiraLetraMaiuscula = textoLimpo.charAt(0).toUpperCase() + textoLimpo.slice(1);
+    const rawTexto = prompt.replace(/^MODO:\s*APRIMORAR TEXTO\s*/i, "").trim();
+    const textoLimpo = rawTexto.replace(/[^\w\sÀ-ÿ.,!?:;-]/g, "").trim();
+    const primeiraLetra = textoLimpo.charAt(0).toUpperCase() + textoLimpo.slice(1);
     
-    const versao1 = `Identificada solicitação técnica: ${primeiraLetraMaiuscula}. Ocorrência registrada para averiguação operacional e restabelecimento imediato dos serviços de TI no setor.`;
-    const versao2 = `Solicitação técnica de TI: ${primeiraLetraMaiuscula}. Procedimento preventivo e corretivo acionado junto à equipe técnica local.`;
-
-    return JSON.stringify({ versao1, versao2 });
+    const resposta = `Solicitação técnica de TI: ${primeiraLetra}. Procedimento preventivo e corretivo acionado junto à equipe técnica local para averiguação operacional e restabelecimento imediato dos serviços.`;
+    return limparSaidaIa(resposta);
   }
 
   if (isRespostaAtendimento) {
-    try {
-      const contexto = JSON.parse(prompt);
-      const desc = contexto.descricaoProblema || "demanda técnica";
-      const cat = contexto.categoria || "TI";
+    const descMatch = /Descrição:\s*([^\n]+)/i.exec(prompt);
+    const desc = descMatch ? descMatch[1].trim() : "demanda técnica informada";
+    const locMatch = /Local:\s*([^\n]+)/i.exec(prompt);
+    const local = locMatch ? locMatch[1].trim() : "";
+    const localTexto = local && local !== "Não informado" ? ` no ${local}` : "";
 
-      const opcao1 = `1. Chamado técnico analisado pela equipe de TI.\n2. Verificação de hardware, rede e credenciais do setor realizada.\n3. Procedimento técnico executado e serviço operacional testado com sucesso.`;
-      const opcao2 = `Atendimento concluído para a categoria ${cat}. Causa analisada e resolvida conforme os padrões técnicos operacionais do SENAI LRV.`;
-
-      return JSON.stringify({ opcao1, opcao2 });
-    } catch {
-      return JSON.stringify({
-        opcao1: "1. Chamado analisado pela equipe técnica de TI.\n2. Manutenção e configurações operacionais realizadas no setor.\n3. Equipamento testado e liberado para uso.",
-        opcao2: "Chamado verificado e solucionado pela TI SENAI LRV. Equipamento e rede testados em pleno funcionamento.",
-      });
-    }
+    const resposta = `1. Chamado analisado pela equipe técnica de TI para atendimento${localTexto}.\n2. Realizado diagnóstico da infraestrutura, conexões e credenciais operacionais.\n3. Procedimento técnico executado e serviços liberados em pleno funcionamento.`;
+    return limparSaidaIa(resposta);
   }
 
   return "Atendimento técnico registrado e encaminhado para resolução operacional da equipe de TI.";

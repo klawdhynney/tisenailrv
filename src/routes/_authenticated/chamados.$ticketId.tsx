@@ -197,16 +197,19 @@ function TicketEditor({
       const res = await sugerirRespostasAtendimento({
         data: {
           ticketId: ticket.id,
+          titulo: `Chamado #${ticket.id}`,
           categoria: draft.categoria,
           prioridade: draft.prioridade,
           local: draft.local,
           descricao: draft.descricao,
           procedimentoAtual: draft.procedimento ?? undefined,
+          mensagens: draft.procedimento ? [draft.procedimento] : [],
         },
       });
+      const respostaFinal = res.texto || res.opcao1 || "";
       setRespostasTecnicas(res);
-      setEdicaoOpcao1(res.opcao1);
-      setEdicaoOpcao2(res.opcao2);
+      setEdicaoOpcao1(respostaFinal);
+      setEdicaoOpcao2(respostaFinal);
       toast.success("Resposta técnica gerada com sucesso!");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Não foi possível gerar a resposta técnica.";
@@ -376,12 +379,12 @@ function TicketEditor({
         )}
 
         {respostasTecnicas && (
-          <div className="rounded-2xl border-2 border-g-blue/30 bg-muted/20 p-4 text-sm shadow-md space-y-4 animate-in fade-in">
+          <div className="rounded-2xl border-2 border-g-blue/30 bg-card p-4 text-sm shadow-md space-y-3 animate-in fade-in">
             <div className="flex items-center justify-between border-b border-border pb-2">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4 text-g-blue" />
                 <span className="font-bold text-foreground">
-                  Resposta técnica para o procedimento (editável antes de usar):
+                  Resposta com IA (editável antes de usar):
                 </span>
               </div>
               <Button type="button" size="sm" variant="ghost" onClick={() => setRespostasTecnicas(null)}>
@@ -389,69 +392,28 @@ function TicketEditor({
               </Button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Opção 1 */}
-              <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-card p-4 transition-all hover:border-g-blue">
-                <div className="space-y-2">
-                  <div className="mb-2">
-                    <span className="rounded-full bg-g-blue/15 px-2.5 py-0.5 text-xs font-bold text-g-blue">
-                      Opção 1 · Resposta Direta & Passo a Passo
-                    </span>
-                  </div>
-                  <Textarea
-                    rows={4}
-                    value={edicaoOpcao1}
-                    onChange={(e) => setEdicaoOpcao1(e.target.value)}
-                    className="text-xs sm:text-sm bg-background/80"
-                  />
-                </div>
-                <div className="mt-4 pt-2 border-t border-border/50">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="google-blue"
-                    className="w-full gap-1.5 font-bold text-xs"
-                    onClick={() => {
-                      field("procedimento", edicaoOpcao1);
-                      setRespostasTecnicas(null);
-                      toast.success("Resposta aplicada no procedimento!");
-                    }}
-                  >
-                    <Check className="size-3.5" /> Usar resposta
-                  </Button>
-                </div>
-              </div>
-
-              {/* Opção 2 */}
-              <div className="flex flex-col justify-between rounded-xl border border-border/80 bg-card p-4 transition-all hover:border-g-green">
-                <div className="space-y-2">
-                  <div className="mb-2">
-                    <span className="rounded-full bg-g-green/15 px-2.5 py-0.5 text-xs font-bold text-g-green">
-                      Opção 2 · Parecer Técnico & Diagnóstico
-                    </span>
-                  </div>
-                  <Textarea
-                    rows={4}
-                    value={edicaoOpcao2}
-                    onChange={(e) => setEdicaoOpcao2(e.target.value)}
-                    className="text-xs sm:text-sm bg-background/80"
-                  />
-                </div>
-                <div className="mt-4 pt-2 border-t border-border/50">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="google-green"
-                    className="w-full gap-1.5 font-bold text-xs"
-                    onClick={() => {
-                      field("procedimento", edicaoOpcao2);
-                      setRespostasTecnicas(null);
-                      toast.success("Resposta aplicada no procedimento!");
-                    }}
-                  >
-                    <Check className="size-3.5" /> Usar resposta
-                  </Button>
-                </div>
+            <div className="space-y-3">
+              <Textarea
+                rows={5}
+                value={edicaoOpcao1}
+                onChange={(e) => setEdicaoOpcao1(e.target.value)}
+                className="text-xs sm:text-sm bg-background/80 font-sans leading-relaxed"
+                placeholder="Resposta técnica pronta para uso..."
+              />
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="google-blue"
+                  className="gap-1.5 font-bold text-xs"
+                  onClick={() => {
+                    field("procedimento", edicaoOpcao1);
+                    setRespostasTecnicas(null);
+                    toast.success("Resposta aplicada no procedimento!");
+                  }}
+                >
+                  <Check className="size-3.5" /> Aplicar no procedimento
+                </Button>
               </div>
             </div>
           </div>

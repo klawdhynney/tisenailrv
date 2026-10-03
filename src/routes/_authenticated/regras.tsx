@@ -2053,12 +2053,12 @@ function Regras() {
                       IA de Suporte Técnico
                     </CardTitle>
                     <CardDescription>
-                      Configure o prompt do sistema, diretrizes técnicas e parâmetros de respostas da IA nos atendimentos.
+                      Prompt único do sistema para os modos &quot;Responder chamado&quot; e &quot;Aprimorar texto&quot;.
                     </CardDescription>
                   </div>
                   <ConfirmAction
                     title="Restaurar prompt e configurações padrão da IA?"
-                    description="O prompt do sistema e os limites de tokens serão redefinidos para os padrões de fábrica técnicos e diretos do SENAI LRV."
+                    description="O prompt do sistema será redefinido para o padrão técnico e direto da Central TI SENAI LRV, com limite de 400 tokens e temperatura 0.2."
                     confirmLabel="Restaurar padrão"
                     variant="destructive"
                     onConfirm={() => {
@@ -2076,54 +2076,46 @@ function Regras() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-bold text-foreground">
-                      Prompt do Sistema (Diretrizes Técnicas da IA)
+                      Prompt do Sistema (Único para ambos os modos)
                     </Label>
-                    <span className="text-[11px] text-muted-foreground">
+                    <span className="text-xs font-semibold text-muted-foreground">
                       {iaConf.promptSistema.length} caracteres
                     </span>
                   </div>
                   <Textarea
-                    rows={12}
+                    rows={16}
                     value={iaConf.promptSistema}
                     onChange={(e) => salvarIa({ promptSistema: e.target.value })}
-                    className="font-mono text-xs leading-relaxed bg-background/80"
+                    className="font-mono text-xs leading-relaxed bg-background/80 min-h-[320px]"
                     placeholder="Instruções e diretrizes técnicas do assistente..."
                   />
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Define o tom direto, técnico, formal e objetivo, proibindo preâmbulos ou termos como &quot;sugiro&quot; / &quot;recomendo&quot;.
-                  </p>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                    <span>
+                      Este prompt único é compartilhado pelas funções <strong>MODO: RESPONDER CHAMADO</strong> e <strong>MODO: APRIMORAR TEXTO</strong>.
+                    </span>
+                    <span className="font-medium text-foreground/80">
+                      Contador: {iaConf.promptSistema.length} caracteres digitados
+                    </span>
+                  </div>
                 </div>
 
-                <div className="grid gap-5 md:grid-cols-3 pt-4 border-t border-border">
+                <div className="grid gap-5 md:grid-cols-2 pt-4 border-t border-border">
                   <div className="space-y-2">
                     <Label className="text-xs font-semibold">
-                      Limite de Tokens (Resposta do Chamado)
+                      Limite de Tokens por Resposta (ambos os modos)
                     </Label>
                     <Input
                       type="number"
                       min={100}
-                      max={1000}
-                      value={iaConf.maxTokensResposta}
-                      onChange={(e) => salvarIa({ maxTokensResposta: Number(e.target.value) || 300 })}
+                      max={2000}
+                      value={iaConf.maxTokensResposta || 400}
+                      onChange={(e) => {
+                        const val = Number(e.target.value) || 400;
+                        salvarIa({ maxTokensResposta: val, maxTokensAprimoramento: val });
+                      }}
                     />
                     <p className="text-[11px] text-muted-foreground">
-                      Padrão: 300 tokens (respostas de até 80 palavras).
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold">
-                      Limite de Tokens (Aprimorar Texto)
-                    </Label>
-                    <Input
-                      type="number"
-                      min={100}
-                      max={1500}
-                      value={iaConf.maxTokensAprimoramento}
-                      onChange={(e) => salvarIa({ maxTokensAprimoramento: Number(e.target.value) || 400 })}
-                    />
-                    <p className="text-[11px] text-muted-foreground">
-                      Padrão: 400 tokens para revisões técnicas.
+                      Padrão: 400 tokens nos dois modos. Respostas curtas, técnicas e diretas.
                     </p>
                   </div>
 
@@ -2136,11 +2128,11 @@ function Regras() {
                       step={0.05}
                       min={0}
                       max={1}
-                      value={iaConf.temperatura}
-                      onChange={(e) => salvarIa({ temperatura: Number(e.target.value) || 0.2 })}
+                      value={iaConf.temperatura ?? 0.2}
+                      onChange={(e) => salvarIa({ temperatura: Number(e.target.value) ?? 0.2 })}
                     />
                     <p className="text-[11px] text-muted-foreground">
-                      Padrão: 0.2 para precisão e consistência técnica.
+                      Padrão: 0.2 para precisão, foco e consistência técnica.
                     </p>
                   </div>
                 </div>
