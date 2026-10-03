@@ -2,6 +2,16 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useStore } from "@/lib/store-context";
 import senaiIcone from "@/assets/senai-icone.png";
 import senaiHero from "@/assets/senai-hero.png";
@@ -35,7 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     localStorage.setItem("tema-ti", novo);
     setTema(novo);
   };
-  const { isGestor, session, sair, regras } = useStore();
+  const { isGestor, isAdmin, userRole, session, sair, regras } = useStore();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const showBanner = (pathname === "/" || pathname === "/abrir") && (regras.paginaInicial?.mostrarBanner ?? true);
   const bannerImgSrc = regras.paginaInicial?.bannerUrl || senaiHero;
@@ -50,7 +60,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const nomeUsuario =
     session?.user.user_metadata?.full_name ||
     session?.user.user_metadata?.name ||
-    emailUsuario?.split("@")[0];
+    emailUsuario?.split("@")[0] ||
+    "Usuário";
+
+  const papelRotulo = isAdmin
+    ? "Administrador"
+    : isGestor
+    ? "Gestor de TI"
+    : "Usuário";
 
   const itens = [
     ...navPublico,
@@ -75,25 +92,81 @@ export function AppShell({ children }: { children: ReactNode }) {
     ));
 
   const botaoConta = session ? (
-    <div className="flex items-center gap-2.5">
-      <div className="hidden sm:flex flex-col text-right leading-tight max-w-[160px]">
-        <span className="text-xs font-bold text-foreground truncate" title={nomeUsuario}>
-          {nomeUsuario}
-        </span>
-        <span className="text-[10px] text-muted-foreground font-mono truncate" title={emailUsuario}>
-          {emailUsuario}
-        </span>
-      </div>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => sair()}
-        title="Sair da conta"
-        className="font-bold text-xs text-muted-foreground hover:text-destructive hover:border-destructive/40 transition-colors shadow-2xs"
-      >
-        <LogOut className="h-3.5 w-3.5 mr-1 text-g-red" /> Sair
-      </Button>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="Menu do usuário"
+          className="group relative flex items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform hover:scale-105 active:scale-95"
+        >
+          <UserAvatar
+            session={session}
+            className="ring-2 ring-primary/40 group-hover:ring-primary shadow-sm"
+            sizeClassName="size-9"
+          />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64 p-2 shadow-lg rounded-xl">
+        <DropdownMenuLabel className="font-normal p-2">
+          <div className="flex items-center gap-3">
+            <UserAvatar session={session} sizeClassName="size-11" />
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-bold text-foreground truncate" title={nomeUsuario}>
+                {nomeUsuario}
+              </span>
+              <span className="text-xs text-muted-foreground truncate" title={emailUsuario}>
+                {emailUsuario}
+              </span>
+              <div className="mt-1">
+                <Badge
+                  variant={isAdmin ? "default" : isGestor ? "secondary" : "outline"}
+                  className="text-[10px] px-1.5 py-0 font-medium"
+                >
+                  {papelRotulo}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className="cursor-pointer">
+          <Link to="/meus-chamados" className="flex items-center gap-2">
+            <FilePlus2 className="h-4 w-4 text-muted-foreground" />
+            <span>Meus Chamados</span>
+          </Link>
+        </DropdownMenuItem>
+        {isGestor && (
+          <>
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link to="/atendimento" className="flex items-center gap-2">
+                <Headset className="h-4 w-4 text-muted-foreground" />
+                <span>Atendimento</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link to="/dashboard" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <span>Dashboard</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link to="/regras" className="flex items-center gap-2">
+                <Settings2 className="h-4 w-4 text-muted-foreground" />
+                <span>Painel de Ajustes</span>
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => sair()}
+          className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10 flex items-center gap-2 font-medium"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Sair</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   ) : (
     <Button asChild variant="outline" size="sm" className="font-bold text-xs text-muted-foreground hover:text-foreground transition-colors shadow-2xs">
       <Link to="/auth">
@@ -148,19 +221,40 @@ export function AppShell({ children }: { children: ReactNode }) {
         {aberto && (
           <nav className="flex flex-col gap-2.5 border-t border-border bg-card p-4 lg:hidden animate-in slide-in-from-top-2 duration-200">
             {session && (
-              <div className="flex items-center gap-2.5 rounded-xl bg-muted/50 p-2.5 border border-border/60">
-                <div className="size-8 rounded-full bg-g-blue/20 text-g-blue flex items-center justify-center font-bold text-xs shrink-0">
-                  {nomeUsuario?.[0]?.toUpperCase() || "U"}
-                </div>
-                <div className="overflow-hidden leading-tight">
-                  <p className="text-xs font-bold text-foreground truncate">{nomeUsuario}</p>
+              <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-2.5 border border-border/60">
+                <UserAvatar session={session} sizeClassName="size-9" />
+                <div className="overflow-hidden leading-tight flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-xs font-bold text-foreground truncate">{nomeUsuario}</p>
+                    <Badge variant={isAdmin ? "default" : isGestor ? "secondary" : "outline"} className="text-[9px] px-1 py-0">
+                      {papelRotulo}
+                    </Badge>
+                  </div>
                   <p className="text-[10px] text-muted-foreground font-mono truncate">{emailUsuario}</p>
                 </div>
               </div>
             )}
             {links(true)}
             <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-2">
-              <div className="flex-1">{botaoConta}</div>
+              {session ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setAberto(false);
+                    sair();
+                  }}
+                  className="font-bold text-xs text-destructive hover:bg-destructive/10 border-destructive/30"
+                >
+                  <LogOut className="h-3.5 w-3.5 mr-1" /> Sair
+                </Button>
+              ) : (
+                <Button asChild variant="outline" size="sm" onClick={() => setAberto(false)} className="font-bold text-xs">
+                  <Link to="/auth">
+                    <LogIn className="h-3.5 w-3.5 mr-1" /> Entrar
+                  </Link>
+                </Button>
+              )}
               {botaoAlternarTema(false)}
             </div>
           </nav>
@@ -179,6 +273,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 alt={bannerAltText}
                 width={2048}
                 height={768}
+                loading="lazy"
+                decoding="async"
                 className="aspect-[21/9] sm:aspect-[24/8] min-h-[140px] sm:min-h-[200px] max-h-[320px] w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.015]"
               />
             </Link>
