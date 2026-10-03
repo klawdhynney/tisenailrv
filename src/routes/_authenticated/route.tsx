@@ -5,9 +5,14 @@ import { useStore } from "@/lib/store-context";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
+    if (error || !data.user) {
+      throw redirect({
+        to: "/auth",
+        search: { redirectTo: location.pathname },
+      });
+    }
     return { user: data.user };
   },
   component: AreaGestor,

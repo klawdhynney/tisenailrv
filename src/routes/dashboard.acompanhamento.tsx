@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Search, ArrowLeft, ShieldCheck, ExternalLink, RotateCcw, Loader2 } from "lucide-react";
+import { Eye, Search, ArrowLeft, ShieldCheck, ExternalLink, RotateCcw, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,11 +21,22 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/dashboard/acompanhamento")({
+  beforeLoad: async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      throw redirect({
+        to: "/auth",
+        search: { redirectTo: "/dashboard/acompanhamento" },
+      });
+    }
+  },
   component: Acompanhamento,
   head: () => ({
     meta: [
       { title: "Acompanhar chamados | TI SENAI LRV" },
-      { name: "description", content: "Acompanhamento público dos chamados de TI, status, prioridades e prazos de SLA." },
+      { name: "description", content: "Acompanhamento dos chamados de TI, status, prioridades e prazos de SLA." },
     ],
   }),
 });
@@ -33,8 +44,9 @@ export const Route = createFileRoute("/dashboard/acompanhamento")({
 type ProgressTicket = Database["public"]["Functions"]["public_ticket_sla_progress"]["Returns"][number];
 
 function Acompanhamento() {
-  const { regras, isGestor } = useStore();
+  const { regras, isGestor, session, authPronto } = useStore();
   const { wrapAsync, isLoading } = useLoading();
+  const navigate = useNavigate();
   const config = regras.acompanhamento;
   const colunas = config?.colunasVisiveis || [
     "verChamado",
@@ -54,6 +66,15 @@ function Acompanhamento() {
   const [statusFilter, setStatusFilter] = useState("todos");
   const [chamadoSelecionado, setChamadoSelecionado] = useState<ProgressTicket | null>(null);
   const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    if (authPronto && !session) {
+      navigate({
+        to: "/auth",
+        search: { redirectTo: "/dashboard/acompanhamento" },
+      });
+    }
+  }, [authPronto, session, navigate]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
@@ -231,13 +252,15 @@ function Acompanhamento() {
         </div>
       ) : visible.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-border py-16 text-center">
-          <p className="text-base font-bold text-foreground">Nenhum chamado encontrado</p>
+          <p className="text-base font-bold text-foreground">
+            {search || statusFilter !== "todos" ? "Nenhum chamado encontrado" : "Você não possui chamados no momento"}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {search || statusFilter !== "todos"
               ? "Tente ajustar os filtros de busca para encontrar o que procura."
-              : "Não há chamados registrados no momento."}
+              : "Abra um novo chamado para relatar um incidente ou solicitar atendimento da TI."}
           </p>
-          {(search || statusFilter !== "todos") && (
+          {search || statusFilter !== "todos" ? (
             <Button
               variant="outline"
               size="sm"
@@ -248,6 +271,12 @@ function Acompanhamento() {
               className="mt-4"
             >
               <RotateCcw className="mr-1.5 size-3.5" /> Redefinir filtros
+            </Button>
+          ) : (
+            <Button asChild size="sm" variant="google-green" className="mt-4 gap-1.5 font-bold shadow-xs">
+              <Link to="/abrir">
+                <PlusCircle className="size-4" /> Abrir novo chamado
+              </Link>
             </Button>
           )}
         </div>

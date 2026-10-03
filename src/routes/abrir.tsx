@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Cpu, MapPin, CheckCircle2, MessageCircle, ArrowLeft, SendHorizontal, Mail } from "lucide-react";
 import { toast } from "sonner";
@@ -6,18 +6,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { useLoading } from "@/lib/loading-context";
 import { TextoAssistido } from "@/components/TextoAssistido";
 import { CAMPOS_ABERTURA_PADRAO } from "@/lib/types";
 
 export const Route = createFileRoute("/abrir")({
+  ssr: false,
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      throw redirect({ to: "/auth", search: { redirectTo: "/abrir" } });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Abrir chamado | TI Senai LRV" },
-      { name: "description", content: "Formulário simples para abrir um chamado de TI informando setor e descrição do problema e local." },
+      { name: "description", content: "Formulário para abrir chamado de TI informando setor, descrição do problema e local." },
       { property: "og:title", content: "Abrir Chamado de TI" },
-      { property: "og:description", content: "Registre seu chamado de TI em poucos segundos." },
+      { property: "og:description", content: "Registre seu chamado de TI com sua conta institucional." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -26,7 +34,7 @@ export const Route = createFileRoute("/abrir")({
 });
 
 function AbrirChamado() {
-  const { regras, addTicket } = useStore();
+  const { session, authPronto, regras, addTicket } = useStore();
   const { wrapAsync, isLoading } = useLoading();
   const navigate = useNavigate();
   const campos = regras.camposAbertura ?? CAMPOS_ABERTURA_PADRAO;
@@ -86,6 +94,27 @@ interface FormValues {
     }
     setPreferenciaCarregada(true);
   }, []);
+
+  useEffect(() => {
+    if (authPronto && !session) {
+      navigate({ to: "/auth", search: { redirectTo: "/abrir" } });
+    }
+  }, [authPronto, session, navigate]);
+
+  useEffect(() => {
+    if (session?.user) {
+      const email = session.user.email || "";
+      const nome =
+        session.user.user_metadata?.full_name ||
+        session.user.user_metadata?.name ||
+        "";
+      setForm((f) => ({
+        ...f,
+        email: f.email || email,
+        solicitante: f.solicitante || nome,
+      }));
+    }
+  }, [session]);
 
   useEffect(() => {
     if (!preferenciaCarregada) return;
@@ -189,7 +218,9 @@ interface FormValues {
 
           const descricaoFinal = [form.descricao ? form.descricao.trim() : "", customData].filter(Boolean).join("\n\n");
           const digitsContato = (form.contato || "").replace(/\D/g, "");
-          const emailCalculado = `${digitsContato || "contato"}@whatsapp.senailrv.local`;
+          const emailCalculado =
+            session?.user?.email ||
+            (form.email ? form.email.trim().toLowerCase() : `${digitsContato || "contato"}@senailrv.local`);
 
           const ticketId = await addTicket(
             {

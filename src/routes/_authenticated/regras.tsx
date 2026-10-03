@@ -227,6 +227,139 @@ function ImageUploadInput({
   );
 }
 
+function GifUploadInput({
+  value,
+  onChange,
+}: {
+  value?: string | null;
+  onChange: (val: string | null) => void;
+}) {
+  const [dragOver, setDragOver] = useState(false);
+  const [validando, setValidando] = useState(false);
+
+  const processarArquivo = async (file: File) => {
+    // 1. Limite de tamanho: 3 MB
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error("O arquivo GIF deve ter no máximo 3 MB.");
+      return;
+    }
+
+    setValidando(true);
+    try {
+      // 2. Validação profunda de conteúdo binário (Magic Bytes do GIF)
+      const buffer = await file.slice(0, 6).arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      const header = String.fromCharCode(...bytes);
+
+      if (header !== "GIF87a" && header !== "GIF89a") {
+        toast.error("Arquivo inválido. O arquivo selecionado não é um GIF animado real.");
+        return;
+      }
+
+      // 3. Lê o arquivo como DataURL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        if (result) {
+          onChange(result);
+          toast.success("Arquivo .GIF validado e carregado com sucesso!");
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error(err);
+      toast.error("Não foi possível processar o arquivo GIF.");
+    } finally {
+      setValidando(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <Label className="text-xs font-semibold text-foreground">
+            Substituir Ema por arquivo .GIF (Opcional)
+          </Label>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Envie uma animação .gif real (máx. 3 MB). Se ativo, substitui a ema em todo o site. Se falhar, a ema volta automaticamente.
+          </p>
+        </div>
+        {value ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs text-destructive hover:bg-destructive/10"
+            onClick={() => {
+              onChange(null);
+              toast.info("GIF removido. Animação voltou para a ema padrão.");
+            }}
+          >
+            <RotateCcw className="size-3.5 mr-1.5" /> Remover e voltar para a ema
+          </Button>
+        ) : null}
+      </div>
+
+      {value ? (
+        <div className="flex flex-col sm:flex-row items-center gap-4 rounded-xl border border-border bg-muted/20 p-4">
+          <div className="relative size-24 shrink-0 rounded-lg overflow-hidden border border-border/80 bg-background/50 flex items-center justify-center p-2">
+            <img src={value} alt="Pré-visualização do GIF" className="max-w-full max-h-full object-contain" />
+          </div>
+          <div className="space-y-1 text-center sm:text-left">
+            <p className="text-xs font-bold text-foreground flex items-center justify-center sm:justify-start gap-1.5 text-g-green">
+              <CheckCircle2 className="size-4" /> GIF ativo como animação do site
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Esta animação está substituindo a mascote da ema nas telas de carregamento do sistema.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            if (e.dataTransfer.files?.[0]) {
+              processarArquivo(e.dataTransfer.files[0]);
+            }
+          }}
+          className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 text-center transition-colors cursor-pointer ${
+            dragOver ? "border-g-blue bg-g-blue/10" : "border-border hover:border-g-blue/60 bg-muted/20"
+          }`}
+          onClick={() => {
+            document.getElementById("upload-gif-animacao")?.click();
+          }}
+        >
+          <Upload className="size-5 text-muted-foreground mb-1" />
+          <p className="text-xs font-semibold text-foreground">
+            {validando ? "Validando conteúdo do GIF..." : "Clique para selecionar um arquivo .GIF ou arraste até aqui"}
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Apenas arquivos .gif autênticos (máximo de 3 MB)
+          </p>
+          <input
+            id="upload-gif-animacao"
+            type="file"
+            accept=".gif,image/gif"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.[0]) {
+                processarArquivo(e.target.files[0]);
+              }
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Regras() {
   const { regras: regrasSalvas, setRegras, tickets, publicStats, removeTicket } = useStore();
   const [regras, setDraft] = useState(regrasSalvas);
@@ -1985,6 +2118,14 @@ function Regras() {
                 </p>
               </div>
 
+              {/* Upload de GIF alternativo */}
+              <div className="pt-2 border-t border-border/60">
+                <GifUploadInput
+                  value={animConf.gifUrl}
+                  onChange={(gif) => salvarAnim({ gifUrl: gif })}
+                />
+              </div>
+
               {/* Pré-visualização ao vivo */}
               <div className="space-y-2 pt-2">
                 <Label className="text-xs font-semibold text-foreground">Pré-visualização em Tempo Real</Label>
@@ -1993,6 +2134,7 @@ function Regras() {
                     texto={animConf.texto || "Carregando..."}
                     velocidade={animConf.velocidade}
                     ativo={animConf.ativo}
+                    gifUrl={animConf.gifUrl}
                   />
                 </div>
               </div>

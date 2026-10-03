@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -22,13 +22,24 @@ import { PrioridadeChip, StatusChip } from "@/components/Chips";
 import { EmaLoader } from "@/components/EmaLoader";
 
 export const Route = createFileRoute("/meus-chamados")({
+  beforeLoad: async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      throw redirect({
+        to: "/auth",
+        search: { redirectTo: "/meus-chamados" },
+      });
+    }
+  },
   ssr: false,
   head: () => ({
     meta: [
       { title: "Meus chamados | TI Senai LRV" },
       {
         name: "description",
-        content: "Acompanhe e complemente os chamados associados ao seu e-mail ou WhatsApp.",
+        content: "Acompanhe e complemente os chamados associados à sua conta de usuário.",
       },
       { property: "og:title", content: "Meus chamados | TI Senai LRV" },
       {
@@ -208,13 +219,22 @@ function AvaliacaoAtendimento({
 }
 
 function MeusChamados() {
-  const { session, sair } = useStore();
+  const { session, sair, authPronto } = useStore();
   const navigate = useNavigate();
   const [rows, setRows] = useState<OwnTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [emailLocal, setEmailLocal] = useState<string | null>(null);
   const [whatsappLocal, setWhatsappLocal] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authPronto && !session) {
+      navigate({
+        to: "/auth",
+        search: { redirectTo: "/meus-chamados" },
+      });
+    }
+  }, [authPronto, session, navigate]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {

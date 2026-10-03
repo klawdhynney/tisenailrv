@@ -113,6 +113,20 @@
       "when": 1790751479894,
       "tag": "0015_allow_description_without_separate_location",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790800000000,
+      "tag": "0016_enable_realtime_configuracoes_and_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790900000000,
+      "tag": "0017_require_auth_for_tickets",
+      "breakpoints": true
     }
   ]
 }

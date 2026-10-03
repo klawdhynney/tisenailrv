@@ -301,12 +301,14 @@ export interface AnimacaoCarregamentoConfig {
   ativo: boolean;
   velocidade: VelocidadeAnimacao;
   texto: string;
+  gifUrl?: string | null;
 }
 
 export const ANIMACAO_CARREGAMENTO_PADRAO: AnimacaoCarregamentoConfig = {
   ativo: true,
   velocidade: "normal",
   texto: "Carregando...",
+  gifUrl: null,
 };
 
 export interface Regras {

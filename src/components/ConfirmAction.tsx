@@ -47,7 +47,7 @@ export function ConfirmAction({
 }) {
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
-  const { wrapAsync, isLoading } = useLoading();
+  const { wrapAsync, resetLoading, isLoading } = useLoading();
 
   const actionClass =
     variant === "destructive" || variant === "google-red"
@@ -59,7 +59,16 @@ export function ConfirmAction({
       : "";
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog
+      open={open}
+      onOpenChange={(val) => {
+        setOpen(val);
+        if (!val) {
+          setBusy(false);
+          resetLoading();
+        }
+      }}
+    >
       <AlertDialogTrigger asChild>
         <Button type="button" variant={variant} disabled={disabled || busy || isLoading}>
           {children}
@@ -72,13 +81,12 @@ export function ConfirmAction({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel
-            disabled={busy || isLoading}
+            disabled={busy}
             onClick={async () => {
+              resetLoading();
               if (onCancel) {
                 try {
-                  await wrapAsync(async () => {
-                    await onCancel();
-                  }, "Cancelando...");
+                  await onCancel();
                 } catch (e) {
                   console.error(e);
                 }

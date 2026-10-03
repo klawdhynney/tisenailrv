@@ -45,7 +45,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const textoRodape = regras.rodape?.textoDireitos || "© 2026 TI SENAI LRV • Todos os direitos reservados • Criado por Claudinei Lima";
   const mostrarLgpd = regras.rodape?.mostrarLgpd ?? true;
   const rotuloLgpd = regras.rodape?.rotuloLgpd || "Privacidade e LGPD";
-  const itens = [...navPublico, ...(isGestor ? navGestor : [])];
+
+  const emailUsuario = session?.user.email;
+  const nomeUsuario =
+    session?.user.user_metadata?.full_name ||
+    session?.user.user_metadata?.name ||
+    emailUsuario?.split("@")[0];
+
+  const itens = [
+    ...navPublico,
+    ...(session && !isGestor ? [{ to: "/meus-chamados", label: "Meus Chamados", icon: FilePlus2 }] : []),
+    ...(isGestor ? navGestor : []),
+  ];
 
   const links = (mobile: boolean) =>
     itens.map((item) => (
@@ -64,16 +75,27 @@ export function AppShell({ children }: { children: ReactNode }) {
     ));
 
   const botaoConta = session ? (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => sair()}
-      className="font-medium text-xs text-muted-foreground hover:text-g-red hover:border-g-red/50 transition-colors"
-    >
-      <LogOut className="h-3.5 w-3.5 mr-1 text-g-red" /> Sair
-    </Button>
+    <div className="flex items-center gap-2.5">
+      <div className="hidden sm:flex flex-col text-right leading-tight max-w-[160px]">
+        <span className="text-xs font-bold text-foreground truncate" title={nomeUsuario}>
+          {nomeUsuario}
+        </span>
+        <span className="text-[10px] text-muted-foreground font-mono truncate" title={emailUsuario}>
+          {emailUsuario}
+        </span>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => sair()}
+        title="Sair da conta"
+        className="font-bold text-xs text-muted-foreground hover:text-destructive hover:border-destructive/40 transition-colors shadow-2xs"
+      >
+        <LogOut className="h-3.5 w-3.5 mr-1 text-g-red" /> Sair
+      </Button>
+    </div>
   ) : (
-    <Button asChild variant="outline" size="sm" className="font-medium text-xs text-muted-foreground hover:text-foreground transition-colors">
+    <Button asChild variant="outline" size="sm" className="font-bold text-xs text-muted-foreground hover:text-foreground transition-colors shadow-2xs">
       <Link to="/auth">
         <LogIn className="h-3.5 w-3.5 mr-1" /> Entrar
       </Link>
@@ -124,10 +146,23 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         <div className="h-1 w-full bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
         {aberto && (
-          <nav className="flex flex-col gap-2 border-t border-border bg-card p-3 lg:hidden">
+          <nav className="flex flex-col gap-2.5 border-t border-border bg-card p-4 lg:hidden animate-in slide-in-from-top-2 duration-200">
+            {session && (
+              <div className="flex items-center gap-2.5 rounded-xl bg-muted/50 p-2.5 border border-border/60">
+                <div className="size-8 rounded-full bg-g-blue/20 text-g-blue flex items-center justify-center font-bold text-xs shrink-0">
+                  {nomeUsuario?.[0]?.toUpperCase() || "U"}
+                </div>
+                <div className="overflow-hidden leading-tight">
+                  <p className="text-xs font-bold text-foreground truncate">{nomeUsuario}</p>
+                  <p className="text-[10px] text-muted-foreground font-mono truncate">{emailUsuario}</p>
+                </div>
+              </div>
+            )}
             {links(true)}
-            {botaoConta}
-            {botaoAlternarTema(true)}
+            <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-2">
+              <div className="flex-1">{botaoConta}</div>
+              {botaoAlternarTema(false)}
+            </div>
           </nav>
         )}
       </header>
