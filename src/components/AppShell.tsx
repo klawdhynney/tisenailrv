@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun } from "lucide-react";
+import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Users } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -85,6 +85,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     ...navPublico,
     ...(session && !isGestor ? [{ to: "/meus-chamados", label: "Meus Chamados", icon: FilePlus2 }] : []),
     ...(isGestor ? navGestor : []),
+    ...(isAdmin ? [{ to: "/regras/usuarios", label: "Usuários", icon: Users }] : []),
   ];
 
   const links = (mobile: boolean) =>
@@ -167,6 +168,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span>Painel de Ajustes</span>
               </Link>
             </DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link to="/regras/usuarios" className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-purple-600" />
+                  <span>Gestão de Usuários</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
           </>
         )}
         <DropdownMenuSeparator />
