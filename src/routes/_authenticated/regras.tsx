@@ -1084,8 +1084,9 @@ function Regras() {
                   >
                     <option value="pizza">Gráfico de Rosca / Pizza</option>
                     <option value="barras">Gráfico de Barras horizontais</option>
-                    <option value="linhas">Gráfico de Linhas</option>
-                    <option value="abc">Curva ABC (Gráfico de Pareto com classificação A/B/C)</option>
+                    <option value="kpi">Cartões de KPI (Big Numbers)</option>
+                    <option value="gauge">Gráfico de Medidor (Gauge Chart)</option>
+                    <option value="combinado">Gráfico Combinado (Linhas e Colunas)</option>
                   </select>
                 </div>
               </div>

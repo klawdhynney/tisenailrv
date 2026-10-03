@@ -245,16 +245,19 @@ export const ACOMPANHAMENTO_PADRAO: AcompanhamentoConfig = {
   itensPorPaginaPadrao: 10,
 };
 
+export type TipoGrafico = "pizza" | "barras" | "kpi" | "gauge" | "combinado";
+
 export interface DashboardConfig {
   titulo: string;
   subtitulo: string;
   visaoPadrao: string;
-  tipoGraficoPadrao: "pizza" | "barras" | "linhas" | "abc";
+  tipoGraficoPadrao: TipoGrafico;
   graficosAtivos: {
     pizza: boolean;
     barras: boolean;
-    linhas: boolean;
-    abc: boolean;
+    kpi: boolean;
+    gauge: boolean;
+    combinado: boolean;
     serieHistorica: boolean;
   };
 }
@@ -267,8 +270,9 @@ export const DASHBOARD_PADRAO: DashboardConfig = {
   graficosAtivos: {
     pizza: true,
     barras: true,
-    linhas: true,
-    abc: true,
+    kpi: true,
+    gauge: true,
+    combinado: true,
     serieHistorica: true,
   },
 };
