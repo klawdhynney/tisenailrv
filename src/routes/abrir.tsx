@@ -1,16 +1,17 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Cpu, MapPin, CheckCircle2, MessageCircle, ArrowLeft, SendHorizontal, Mail } from "lucide-react";
+import { Cpu, MapPin, CheckCircle2, ArrowLeft, SendHorizontal, Mail, Star, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { useLoading } from "@/lib/loading-context";
 import { TextoAssistido } from "@/components/TextoAssistido";
-import { CAMPOS_ABERTURA_PADRAO } from "@/lib/types";
+import { CAMPOS_ABERTURA_PADRAO, AVALIACAO_PADRAO } from "@/lib/types";
 
 export const Route = createFileRoute("/abrir")({
   ssr: false,
@@ -33,6 +34,15 @@ export const Route = createFileRoute("/abrir")({
   component: AbrirChamado,
 });
 
+interface FormValues {
+  solicitante: string;
+  email: string;
+  setor: string;
+  categoria: string;
+  local: string;
+  descricao: string;
+}
+
 function AbrirChamado() {
   const { session, authPronto, regras, addTicket } = useStore();
   const { wrapAsync, isLoading } = useLoading();
@@ -46,23 +56,12 @@ function AbrirChamado() {
     return campos.find((c) => c.id === id)?.label ?? fallback;
   };
 
-interface FormValues {
-  solicitante: string;
-  email: string;
-  setor: string;
-  categoria: string;
-  local: string;
-  contato: string;
-  descricao: string;
-}
-
   const [form, setForm] = useState<FormValues>({
     solicitante: "",
     email: "",
     setor: "",
     categoria: "",
     local: "",
-    contato: "",
     descricao: "",
   });
   const [customForm, setCustomForm] = useState<Record<string, string>>({});
@@ -73,21 +72,26 @@ interface FormValues {
   const [lembrar, setLembrar] = useState(false);
   const [preferenciaCarregada, setPreferenciaCarregada] = useState(false);
 
+  // Estados da Avaliação (Ajuste 6)
+  const [notaAvaliacao, setNotaAvaliacao] = useState<number | null>(null);
+  const [comentarioAvaliacao, setComentarioAvaliacao] = useState("");
+  const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
+  const [avaliacaoEnviada, setAvaliacaoEnviada] = useState(false);
+  const [avaliacaoPulada, setAvaliacaoPulada] = useState(false);
+
+  const configAvaliacao = regras.avaliacoes ?? AVALIACAO_PADRAO;
+
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("ti-senai-dados") ?? "null");
-      const salvoWpp = localStorage.getItem("tisenai_user_whatsapp_display") || localStorage.getItem("tisenai_user_whatsapp") || "";
       if (saved && typeof saved === "object") {
         setForm((f) => ({
           ...f,
           solicitante: typeof saved.solicitante === "string" ? saved.solicitante : "",
           setor: typeof saved.setor === "string" ? saved.setor : "",
-          contato: typeof saved.contato === "string" ? saved.contato : salvoWpp,
           local: typeof saved.local === "string" ? saved.local : "",
         }));
         setLembrar(true);
-      } else if (salvoWpp) {
-        setForm((f) => ({ ...f, contato: salvoWpp }));
       }
     } catch {
       localStorage.removeItem("ti-senai-dados");
@@ -110,7 +114,7 @@ interface FormValues {
         "";
       setForm((f) => ({
         ...f,
-        email: f.email || email,
+        email: email,
         solicitante: f.solicitante || nome,
       }));
     }
@@ -124,14 +128,13 @@ interface FormValues {
         JSON.stringify({
           solicitante: form.solicitante,
           setor: form.setor,
-          contato: form.contato,
           local: form.local,
         }),
       );
     } else {
       localStorage.removeItem("ti-senai-dados");
     }
-  }, [preferenciaCarregada, lembrar, form.solicitante, form.setor, form.contato, form.local]);
+  }, [preferenciaCarregada, lembrar, form.solicitante, form.setor, form.local]);
 
   const set = (k: string, v: string) => {
     if (k in form) {
@@ -150,11 +153,6 @@ interface FormValues {
       if (isCampoObrigatorio("solicitante") && (val.length < 2 || val.length > 120)) {
         novosErros.solicitante = "Informe seu nome completo.";
       }
-    }
-
-    const digits = (form.contato || "").replace(/\D/g, "");
-    if (digits.length < 10) {
-      novosErros.contato = "Informe seu WhatsApp com DDD.";
     }
 
     if (isCampoAtivo("setor")) {
@@ -217,16 +215,15 @@ interface FormValues {
             .join("\n");
 
           const descricaoFinal = [form.descricao ? form.descricao.trim() : "", customData].filter(Boolean).join("\n\n");
-          const digitsContato = (form.contato || "").replace(/\D/g, "");
-          const emailCalculado =
-            session?.user?.email ||
-            (form.email ? form.email.trim().toLowerCase() : `${digitsContato || "contato"}@senailrv.local`);
+          const nomeFinal = (form.solicitante || session?.user?.user_metadata?.full_name || "Solicitante").trim();
+          const emailCalculado = session?.user?.email || (form.email ? form.email.trim().toLowerCase() : "usuario@senailrv.local");
+          const contatoCalculado = `${nomeFinal} (${emailCalculado})`;
 
           const ticketId = await addTicket(
             {
               abertoEm: "",
               hora: "",
-              solicitante: (form.solicitante || "Solicitante").trim(),
+              solicitante: nomeFinal,
               setor: form.setor || "Geral",
               local: form.local ? form.local.trim() : "",
               categoria: form.categoria || "Geral",
@@ -234,7 +231,7 @@ interface FormValues {
               prioridade: "Média",
               responsavel: null,
               status: "Aberto",
-              contato: form.contato ? form.contato.trim() : null,
+              contato: contatoCalculado,
               fechadoEm: null,
               horario: null,
               procedimento: null,
@@ -253,18 +250,14 @@ interface FormValues {
             const emailFinal = emailCalculado.toLowerCase();
             localStorage.setItem("tisenai_user_email", emailFinal);
             localStorage.setItem("tisenai_email", emailFinal);
-            if (digitsContato.length >= 10) {
-              localStorage.setItem("tisenai_user_whatsapp", digitsContato);
-              localStorage.setItem("tisenai_user_whatsapp_display", form.contato.trim());
-            }
             const existentes = JSON.parse(localStorage.getItem("tisenai_meus_tickets") || "[]");
             const novos = [
               {
                 id: ticketId,
                 aberto_em: new Date().toISOString().split("T")[0],
                 email: emailFinal,
-                contato: form.contato ? form.contato.trim() : null,
-                solicitante: form.solicitante?.trim() || "Solicitante",
+                contato: contatoCalculado,
+                solicitante: nomeFinal,
                 setor: form.setor || "Geral",
                 local: form.local || "",
                 descricao: descricaoFinal,
@@ -288,56 +281,195 @@ interface FormValues {
     }
   }
 
+  // Enviar Avaliação do Chamado (Ajuste 6)
+  async function submeterAvaliacao() {
+    if (!sucessoId || !notaAvaliacao || enviandoAvaliacao) return;
+    setEnviandoAvaliacao(true);
+    try {
+      const { error } = await supabase.from("avaliacoes_chamados").insert({
+        ticket_id: sucessoId,
+        user_id: session?.user?.id || null,
+        user_email: session?.user?.email || null,
+        nota: notaAvaliacao,
+        comentario: comentarioAvaliacao.trim() ? comentarioAvaliacao.trim().slice(0, 300) : null,
+      });
+
+      if (error) {
+        console.error("Erro ao registrar avaliação:", error.message);
+        toast.error("Não foi possível registrar a avaliação, mas o chamado segue registrado.");
+      } else {
+        toast.success("Obrigado pela sua avaliação!");
+        setAvaliacaoEnviada(true);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro inesperado ao enviar avaliação.");
+    } finally {
+      setEnviandoAvaliacao(false);
+    }
+  }
+
   if (sucessoId) {
-    const shareMessage = `Chamado #${sucessoId}\nRequisitante: ${(form.solicitante || "").trim()}\nDescrição e local: ${(form.descricao || "").trim()}`;
+    const opcoesRotulos = configAvaliacao?.opcoes || AVALIACAO_PADRAO.opcoes;
 
     return (
-      <div className="mx-auto max-w-2xl py-12 px-4 animate-in fade-in zoom-in duration-300">
-        <div className="rounded-3xl border-2 border-g-green/20 bg-card p-8 text-center shadow-xl">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-g-green/10 text-g-green">
-            <CheckCircle2 className="size-12" />
+      <div className="mx-auto max-w-2xl py-8 px-4 animate-in fade-in zoom-in duration-300">
+        <div className="rounded-3xl border-2 border-g-green/30 bg-card p-6 sm:p-8 text-center shadow-xl space-y-6">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-g-green/10 text-g-green">
+            <CheckCircle2 className="size-10" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Chamado #{sucessoId} enviado!</h1>
-          <p className="text-muted-foreground mb-6">
-            Sua solicitação foi registrada com sucesso.
-          </p>
 
-          <div className="grid gap-4">
-            <div className="rounded-2xl bg-muted/50 p-4 text-left text-sm space-y-2 border border-border">
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Protocolo:</span>
-                <span className="font-bold">#{sucessoId}</span>
-              </div>
-              {form.setor && (
-                <div className="flex justify-between">
-                  <span className="font-medium text-muted-foreground">Setor:</span>
-                  <span>{form.setor}</span>
-                </div>
-              )}
-              {form.categoria && (
-                <div className="flex justify-between">
-                  <span className="font-medium text-muted-foreground">Tipo:</span>
-                  <span>{form.categoria}</span>
-                </div>
-              )}
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              Chamado #{sucessoId} enviado!
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Sua solicitação foi registrada no sistema e encaminhada para a equipe técnica.
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-muted/40 p-4 text-left text-xs sm:text-sm space-y-2 border border-border/70">
+            <div className="flex justify-between border-b border-border/40 pb-1.5">
+              <span className="font-medium text-muted-foreground">Protocolo:</span>
+              <span className="font-bold text-foreground">#{sucessoId}</span>
             </div>
+            {form.setor && (
+              <div className="flex justify-between border-b border-border/40 pb-1.5">
+                <span className="font-medium text-muted-foreground">Setor:</span>
+                <span className="text-foreground">{form.setor}</span>
+              </div>
+            )}
+            {form.categoria && (
+              <div className="flex justify-between border-b border-border/40 pb-1.5">
+                <span className="font-medium text-muted-foreground">Tipo de problema:</span>
+                <span className="font-semibold text-g-blue">{form.categoria}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="font-medium text-muted-foreground">E-mail vinculado:</span>
+              <span className="font-mono text-xs text-muted-foreground">{session?.user?.email || form.email}</span>
+            </div>
+          </div>
 
-            <div className="pt-4 space-y-3">
-              <Button asChild size="lg" variant="google-green" className="w-full text-base font-bold shadow-md">
-                <a
-                  href={`https://wa.me/5566996444461?text=${encodeURIComponent(shareMessage)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+          {/* AJUSTE 6: Bloco de Avaliação da Facilidade */}
+          {!avaliacaoEnviada && !avaliacaoPulada && (
+            <div className="rounded-2xl border border-border/80 bg-muted/20 p-5 text-left space-y-4">
+              <div className="text-center sm:text-left">
+                <h2 className="text-base font-bold text-foreground">
+                  {configAvaliacao?.pergunta || AVALIACAO_PADRAO.pergunta}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Avaliação rápida da experiência para aprimoramento contínuo da plataforma.
+                </p>
+              </div>
+
+              {/* Botões de 1 a 5 estrelas / opções */}
+              <div className="grid grid-cols-5 gap-1.5 sm:gap-2 pt-1">
+                {[1, 2, 3, 4, 5].map((val) => {
+                  const selecionado = notaAvaliacao === val;
+                  const labelOpcao = opcoesRotulos[val - 1] || `${val}`;
+                  return (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setNotaAvaliacao(val)}
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                        selecionado
+                          ? "border-primary bg-primary/10 text-primary shadow-xs ring-2 ring-primary/40 font-bold scale-[1.03]"
+                          : "border-border/70 bg-card hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                      }`}
+                      title={labelOpcao}
+                    >
+                      <Star
+                        className={`size-5 sm:size-6 mb-1 ${
+                          selecionado || (notaAvaliacao && val <= notaAvaliacao)
+                            ? "fill-amber-400 text-amber-500"
+                            : "text-muted-foreground/50"
+                        }`}
+                      />
+                      <span className="text-[10px] sm:text-xs font-semibold leading-tight line-clamp-2">
+                        {labelOpcao}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Campo opcional de comentário */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                  <span>Comentário (opcional)</span>
+                  <span>{comentarioAvaliacao.length}/300</span>
+                </div>
+                <Textarea
+                  value={comentarioAvaliacao}
+                  maxLength={300}
+                  onChange={(e) => setComentarioAvaliacao(e.target.value)}
+                  placeholder={configAvaliacao?.placeholderComentario || AVALIACAO_PADRAO.placeholderComentario}
+                  rows={2}
+                  className="text-xs sm:text-sm resize-none rounded-xl"
+                />
+              </div>
+
+              {/* Botões Enviar avaliação e Pular */}
+              <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAvaliacaoPulada(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground"
                 >
-                  <MessageCircle className="mr-2 size-5" /> Enviar no WhatsApp
-                </a>
-              </Button>
-              <div className="flex justify-center">
-                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate({ to: "/" })}>
-                  <ArrowLeft className="mr-2 size-4" /> Voltar para o início
+                  Pular
+                </Button>
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  disabled={notaAvaliacao === null || enviandoAvaliacao}
+                  onClick={submeterAvaliacao}
+                  className="font-bold text-xs"
+                >
+                  {enviandoAvaliacao ? "Enviando..." : "Enviar avaliação"}
                 </Button>
               </div>
             </div>
+          )}
+
+          {avaliacaoEnviada && (
+            <div className="rounded-2xl border border-g-green/40 bg-g-green/10 p-4 text-center space-y-1 animate-in fade-in duration-200">
+              <p className="text-sm font-bold text-foreground">
+                {configAvaliacao?.agradecimento || AVALIACAO_PADRAO.agradecimento}
+              </p>
+              <div className="flex items-center justify-center gap-1 pt-1 text-amber-500">
+                {[1, 2, 3, 4, 5].map((v) => (
+                  <Star
+                    key={v}
+                    className={`size-4 ${v <= (notaAvaliacao ?? 0) ? "fill-amber-400 text-amber-500" : "text-muted-foreground/30"}`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {avaliacaoPulada && (
+            <p className="text-xs text-muted-foreground">
+              Avaliação não enviada. Obrigado pela utilização do serviço.
+            </p>
+          )}
+
+          {/* Ações de navegação */}
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button asChild variant="outline" size="default" className="w-full sm:w-auto font-medium text-xs sm:text-sm">
+              <Link to="/meus-chamados">
+                <FileText className="mr-2 size-4" /> Ver meus chamados
+              </Link>
+            </Button>
+            <Button asChild variant="default" size="default" className="w-full sm:w-auto font-semibold text-xs sm:text-sm">
+              <Link to="/">
+                <ArrowLeft className="mr-2 size-4" /> Voltar para o início
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -345,7 +477,6 @@ interface FormValues {
   }
 
   const customFields = campos.filter((c) => !["solicitante", "email", "setor", "categoria", "local", "contato", "descricao"].includes(c.id) && c.ativo);
-
   const configAbrir = regras.abrirChamado;
 
   return (
@@ -353,15 +484,23 @@ interface FormValues {
       <div className="rounded-2xl border-l-4 border-g-green bg-card px-5 py-5 text-center shadow-sm">
         <div className="flex items-center justify-center gap-3">
           <span className="rounded-xl bg-g-green/15 p-3 text-g-green"><Cpu className="size-7" /></span>
-          <h1 className="text-3xl font-bold">{configAbrir?.titulo || "Abrir chamado de TI"}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{configAbrir?.titulo || "Abrir chamado de TI"}</h1>
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
           {configAbrir?.textoApoio || "Abra o seu chamado, descreva o problema e informe o local exato para agilizar o atendimento."}
         </p>
       </div>
+
       <Card className="rounded-2xl border-t-4 border-g-blue shadow-md">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="flex items-center gap-2"><MapPin className="size-5 text-g-blue" /> Dados do chamado</CardTitle>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0 pb-4">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <MapPin className="size-5 text-g-blue" /> Dados do chamado
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground mt-0.5">
+              Preencha os dados técnicos e localização para triagem e atendimento imediato.
+            </CardDescription>
+          </div>
           <span className="text-xs text-muted-foreground"><span className="font-bold text-[var(--g-red)]">*</span> Campos obrigatórios</span>
         </CardHeader>
         <CardContent>
@@ -373,13 +512,15 @@ interface FormValues {
                 </Campo>
               )}
 
-              <Campo label="Número do WhatsApp" obrigatorio={true} erro={erros.contato}>
-                <Input
-                  value={form.contato}
-                  onChange={(e) => set("contato", e.target.value)}
-                  placeholder="65 99999-9999"
-                  className="font-medium"
-                />
+              <Campo label="E-mail da conta">
+                <div className="relative">
+                  <Input
+                    value={session?.user?.email || form.email}
+                    disabled
+                    className="bg-muted cursor-not-allowed text-muted-foreground font-mono text-xs pl-8"
+                  />
+                  <Mail className="size-3.5 text-muted-foreground absolute left-2.5 top-3" />
+                </div>
               </Campo>
             </div>
 
@@ -438,13 +579,13 @@ interface FormValues {
               </Campo>
             )}
 
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} /> Lembrar meus dados neste aparelho
+            <label className="flex items-center gap-2 text-sm text-muted-foreground select-none cursor-pointer">
+              <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} className="rounded" /> Lembrar meus dados neste aparelho
             </label>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Button type="submit" variant="google-green" size="lg" disabled={enviando} className="w-full sm:w-auto font-bold gap-2 shadow-md">
-                <SendHorizontal className="size-5 shrink-0" /> {enviando ? "Enviando…" : (configAbrir?.textoBotao || "Enviar chamado")}
+                <SendHorizontal className="size-5 shrink-0" /> {enviando ? "Enviando..." : (configAbrir?.textoBotao || "Enviar chamado")}
               </Button>
               <Button
                 type="button"
@@ -475,7 +616,7 @@ interface FormValues {
         </CardContent>
       </Card>
 
-      {/* Caixa modal de confirmação minimalista, elegante e centralizada */}
+      {/* Caixa modal de confirmação */}
       {confirmandoEnvio && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="w-full max-w-lg rounded-2xl border border-border/80 bg-background/95 p-6 sm:p-7 shadow-xl space-y-5 animate-in zoom-in-95 duration-200 backdrop-blur-sm">
@@ -485,6 +626,7 @@ interface FormValues {
               </div>
               <div>
                 <h2 className="text-xl font-bold tracking-tight text-foreground">Confirmar abertura de chamado</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Revise as informações antes do envio imediato à equipe.</p>
               </div>
             </div>
 
@@ -494,8 +636,8 @@ interface FormValues {
                 <span className="font-semibold text-foreground">{form.solicitante || "Não informado"}</span>
               </div>
               <div className="flex justify-between border-b border-border/40 pb-1.5">
-                <span className="text-muted-foreground">WhatsApp:</span>
-                <span className="font-semibold text-foreground">{form.contato || "Não informado"}</span>
+                <span className="text-muted-foreground">E-mail:</span>
+                <span className="font-semibold text-foreground">{session?.user?.email || form.email || "Não informado"}</span>
               </div>
               <div className="flex justify-between border-b border-border/40 pb-1.5">
                 <span className="text-muted-foreground">Setor:</span>
@@ -531,10 +673,11 @@ interface FormValues {
               <Button
                 type="button"
                 variant="google-green"
+                disabled={enviando}
                 className="flex-1 sm:flex-none font-semibold shadow-xs gap-2"
                 onClick={confirmarEnvioFinal}
               >
-                <SendHorizontal className="size-4" /> Confirmar e registrar
+                <SendHorizontal className="size-4" /> {enviando ? "Enviando..." : "Confirmar e registrar"}
               </Button>
             </div>
           </div>
