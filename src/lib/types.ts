@@ -305,6 +305,7 @@ export interface UsuarioAdmin {
   fotoUrl?: string | null;
   role: PapelUsuario;
   bloqueado: boolean;
+  statusConta?: "ativo" | "bloqueado" | "pendente";
   ultimoAcesso?: string | null;
   createdAt: string;
 }

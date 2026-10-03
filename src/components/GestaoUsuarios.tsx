@@ -28,12 +28,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import type { PapelUsuario, UsuarioAdmin } from "@/lib/types";
 
+const ADMINS_INICIAIS_AUTORIZADOS = [
+  "klaw.com@gmail.com",
+  "klawdhynney@gmail.com",
+  "claudineigoncalvesdelima@hotmail.com",
+  "claudinei.lima@senaimt.ind.br",
+];
+
 interface AuditLog {
   id: number;
   admin_email: string;
   alvo_email: string;
   acao: string;
-  detalhes: string | null;
+  detalhes: any;
   created_at: string;
 }
 
@@ -42,6 +49,23 @@ interface PreRegistered {
   email: string;
   role: PapelUsuario;
   created_at: string;
+}
+
+function formatarDetalhesAuditoria(det: any): string {
+  if (!det) return "";
+  if (typeof det === "string") return det;
+  if (typeof det === "object") {
+    if (det.novo_perfil) return `Novo perfil: ${det.novo_perfil}`;
+    if (det.perfil) return `Perfil: ${det.perfil} (${det.status || "pendente"})`;
+    if (det.bloqueado !== undefined) return det.bloqueado ? "Bloqueado" : "Desbloqueado";
+    if (det.motivo) return String(det.motivo);
+    try {
+      return JSON.stringify(det);
+    } catch {
+      return "";
+    }
+  }
+  return String(det);
 }
 
 export function GestaoUsuarios() {
@@ -71,40 +95,65 @@ export function GestaoUsuarios() {
   const carregarDados = async () => {
     setCarregando(true);
     try {
+      let listaUsuarios: UsuarioAdmin[] = [];
+
       // 1. Carregar lista de usuários via RPC segura
       const { data: usersData, error: usersErr } = await supabase.rpc("admin_get_users");
       if (usersErr) {
         console.warn("RPC admin_get_users:", usersErr.message);
         // Fallback: carregar perfis caso a RPC ainda esteja sincronizando
         const { data: fallbackProfiles } = await supabase.from("user_profiles").select("*");
-        if (fallbackProfiles) {
-          setUsuarios(
-            fallbackProfiles.map((p) => ({
-              id: p.id,
-              email: p.email,
-              nome: p.nome,
-              fotoUrl: p.foto_url,
-              role: (p.role as PapelUsuario) || "usuario",
-              bloqueado: p.bloqueado ?? false,
-              ultimoAcesso: p.ultimo_acesso,
-              createdAt: p.created_at,
-            })),
-          );
+        if (fallbackProfiles && fallbackProfiles.length > 0) {
+          listaUsuarios = fallbackProfiles.map((p) => ({
+            id: p.id,
+            email: p.email,
+            nome: p.nome,
+            fotoUrl: p.foto_url,
+            role: (p.role as PapelUsuario) || (ADMINS_INICIAIS_AUTORIZADOS.includes(p.email.toLowerCase().trim()) ? "admin" : "usuario"),
+            bloqueado: p.bloqueado ?? false,
+            statusConta: (p.bloqueado ? "bloqueado" : p.ultimo_acesso ? "ativo" : "pendente") as "ativo" | "bloqueado" | "pendente",
+            ultimoAcesso: p.ultimo_acesso,
+            createdAt: p.created_at,
+          }));
         }
-      } else if (usersData) {
-        setUsuarios(
-          (usersData as any[]).map((u) => ({
+      } else if (usersData && Array.isArray(usersData)) {
+        listaUsuarios = (usersData as any[]).map((u) => {
+          const status = u.status || (u.bloqueado ? "bloqueado" : u.ultimo_acesso ? "ativo" : "pendente");
+          return {
             id: u.id,
             email: u.email,
             nome: u.nome,
             fotoUrl: u.foto_url,
             role: (u.role as PapelUsuario) || "usuario",
             bloqueado: u.bloqueado ?? false,
+            statusConta: status as "ativo" | "bloqueado" | "pendente",
             ultimoAcesso: u.ultimo_acesso,
             createdAt: u.created_at,
-          })),
-        );
+          };
+        });
       }
+
+      // Garante que todos os 4 administradores autorizados apareçam na lista (mesmo antes do primeiro login)
+      for (const emailAdmin of ADMINS_INICIAIS_AUTORIZADOS) {
+        const existe = listaUsuarios.some(
+          (u) => u.email.toLowerCase().trim() === emailAdmin.toLowerCase().trim(),
+        );
+        if (!existe) {
+          listaUsuarios.push({
+            id: `pending-${emailAdmin}`,
+            email: emailAdmin,
+            nome: "Aguardando 1º acesso",
+            fotoUrl: null,
+            role: "admin",
+            bloqueado: false,
+            statusConta: "pendente",
+            ultimoAcesso: null,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      }
+
+      setUsuarios(listaUsuarios);
 
       // 2. Carregar logs de auditoria
       const { data: logsData } = await supabase
@@ -112,8 +161,20 @@ export function GestaoUsuarios() {
         .select("*")
         .order("created_at", { ascending: false })
         .limit(40);
-      if (logsData) {
+      if (logsData && logsData.length > 0) {
         setLogs(logsData as unknown as AuditLog[]);
+      } else {
+        // Fallback com o registro do cadastro inicial dos administradores
+        setLogs(
+          ADMINS_INICIAIS_AUTORIZADOS.map((email, idx) => ({
+            id: -(idx + 1),
+            admin_email: "sistema@senaimt.ind.br",
+            alvo_email: email,
+            acao: "cadastro inicial de administradores",
+            detalhes: { perfil: "admin", status: "pendente" },
+            created_at: new Date().toISOString(),
+          })),
+        );
       }
 
       // 3. Carregar pré-cadastros
@@ -121,8 +182,18 @@ export function GestaoUsuarios() {
         .from("pre_registered_roles")
         .select("*")
         .order("created_at", { ascending: false });
-      if (preData) {
+      if (preData && preData.length > 0) {
         setPreRegistros(preData as unknown as PreRegistered[]);
+      } else {
+        // Exibe os 4 admins autorizados como pré-cadastros caso ainda não tenham logado
+        setPreRegistros(
+          ADMINS_INICIAIS_AUTORIZADOS.map((email, idx) => ({
+            id: -(idx + 1),
+            email,
+            role: "admin" as PapelUsuario,
+            created_at: new Date().toISOString(),
+          })),
+        );
       }
     } catch (e) {
       console.error("Erro ao carregar gestão de usuários:", e);
@@ -148,7 +219,8 @@ export function GestaoUsuarios() {
       const matchRole = filtroRole === "todos" || u.role === filtroRole;
       const matchStatus =
         filtroStatus === "todos" ||
-        (filtroStatus === "ativo" && !u.bloqueado) ||
+        (filtroStatus === "ativo" && !u.bloqueado && (u.statusConta === "ativo" || (!u.statusConta && !!u.ultimoAcesso))) ||
+        (filtroStatus === "pendente" && (u.statusConta === "pendente" || !u.ultimoAcesso)) ||
         (filtroStatus === "bloqueado" && u.bloqueado);
 
       return matchBusca && matchRole && matchStatus;
@@ -160,17 +232,32 @@ export function GestaoUsuarios() {
     if (!usuarioEditar) return;
     setSalvandoPapel(true);
     try {
-      const { error } = await supabase.rpc("admin_set_user_role", {
-        target_user_id: usuarioEditar.id,
-        new_role: novoPapel,
-      });
+      if (usuarioEditar.id.startsWith("pending-")) {
+        const { error } = await supabase.rpc("admin_preregister_role", {
+          p_email: usuarioEditar.email,
+          p_role: novoPapel,
+        });
 
-      if (error) {
-        toast.error(error.message || "Erro ao alterar papel.");
+        if (error) {
+          toast.error(error.message || "Erro ao atualizar permissão do pré-cadastro.");
+        } else {
+          toast.success(`Perfil de pré-cadastro de ${usuarioEditar.email} atualizado para ${novoPapel}!`);
+          setUsuarioEditar(null);
+          await carregarDados();
+        }
       } else {
-        toast.success(`Perfil de ${usuarioEditar.nome || usuarioEditar.email} atualizado para ${novoPapel}!`);
-        setUsuarioEditar(null);
-        await carregarDados();
+        const { error } = await supabase.rpc("admin_set_user_role", {
+          target_user_id: usuarioEditar.id,
+          new_role: novoPapel,
+        });
+
+        if (error) {
+          toast.error(error.message || "Erro ao alterar papel.");
+        } else {
+          toast.success(`Perfil de ${usuarioEditar.nome || usuarioEditar.email} atualizado para ${novoPapel}!`);
+          setUsuarioEditar(null);
+          await carregarDados();
+        }
       }
     } catch (err: any) {
       toast.error(err.message || "Erro inesperado.");
@@ -181,6 +268,11 @@ export function GestaoUsuarios() {
 
   // Bloquear ou desbloquear
   const handleAlternarBloqueio = async (u: UsuarioAdmin) => {
+    if (u.statusConta === "pendente" || u.id.startsWith("pending-")) {
+      toast.info("Este e-mail ainda não realizou o primeiro acesso com Google ou Microsoft.");
+      return;
+    }
+
     const novoStatus = !u.bloqueado;
     try {
       const { error } = await supabase.rpc("admin_set_user_blocked", {
@@ -334,24 +426,33 @@ export function GestaoUsuarios() {
             {logs.length === 0 ? (
               <p className="text-xs text-muted-foreground py-3 text-center">Nenhum evento registrado ainda.</p>
             ) : (
-              logs.map((log) => (
-                <div
-                  key={log.id}
-                  className="rounded-xl border border-border/60 bg-background/80 p-2.5 text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-semibold text-foreground truncate">{log.admin_email}</span>
-                    <span className="text-muted-foreground">→</span>
-                    <span className="font-medium text-g-blue truncate">{log.acao}</span>
-                    <span className="text-muted-foreground truncate">({log.alvo_email})</span>
+              logs.map((log) => {
+                const eCadastroInicial = log.acao === "cadastro inicial de administradores";
+                return (
+                  <div
+                    key={log.id}
+                    className={`rounded-xl border p-2.5 text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4 ${
+                      eCadastroInicial
+                        ? "border-purple-500/40 bg-purple-500/10"
+                        : "border-border/60 bg-background/80"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-semibold text-foreground truncate">{log.admin_email}</span>
+                      <span className="text-muted-foreground">→</span>
+                      <span className={`truncate ${eCadastroInicial ? "font-bold text-purple-700 dark:text-purple-300" : "font-medium text-g-blue"}`}>
+                        {log.acao}
+                      </span>
+                      <span className="text-muted-foreground truncate">({log.alvo_email})</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 text-muted-foreground text-[11px]">
+                      {log.detalhes && <span className="italic">{formatarDetalhesAuditoria(log.detalhes)}</span>}
+                      <span>•</span>
+                      <span>{new Date(log.created_at).toLocaleString("pt-BR")}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 text-muted-foreground text-[11px]">
-                    {log.detalhes && <span className="italic">{log.detalhes}</span>}
-                    <span>•</span>
-                    <span>{new Date(log.created_at).toLocaleString("pt-BR")}</span>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </CardContent>
         </Card>
@@ -423,6 +524,7 @@ export function GestaoUsuarios() {
           >
             <option value="todos">Todos os status</option>
             <option value="ativo">Ativo</option>
+            <option value="pendente">Pendente</option>
             <option value="bloqueado">Bloqueado</option>
           </select>
         </div>
@@ -445,11 +547,16 @@ export function GestaoUsuarios() {
           <div className="grid gap-3">
             {usuariosFiltrados.map((u) => {
               const eProprioUsuario = u.id === session?.user?.id;
+              const ePreCadastroPendente = u.statusConta === "pendente" || !u.ultimoAcesso;
               return (
                 <div
                   key={u.id}
                   className={`rounded-2xl border bg-card p-3 sm:p-4 shadow-2xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 ${
-                    u.bloqueado ? "border-destructive/40 bg-destructive/5" : "border-border/80 hover:border-primary/40"
+                    u.bloqueado
+                      ? "border-destructive/40 bg-destructive/5"
+                      : ePreCadastroPendente
+                      ? "border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60"
+                      : "border-border/80 hover:border-primary/40"
                   }`}
                 >
                   {/* Foto, Nome e E-mail */}
@@ -470,6 +577,11 @@ export function GestaoUsuarios() {
                             Você
                           </span>
                         )}
+                        {ADMINS_INICIAIS_AUTORIZADOS.includes(u.email.toLowerCase().trim()) && (
+                          <span className="text-[10px] font-bold text-purple-700 dark:text-purple-300 bg-purple-500/15 px-1.5 py-0.2 rounded-md">
+                            Proprietário / Admin Inicial
+                          </span>
+                        )}
                       </div>
                       <span className="text-xs font-mono text-muted-foreground truncate block" title={u.email}>
                         {u.email}
@@ -479,6 +591,10 @@ export function GestaoUsuarios() {
                         {u.bloqueado ? (
                           <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
                             Bloqueado
+                          </Badge>
+                        ) : ePreCadastroPendente ? (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-400/40">
+                            Pendente
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-emerald-600 border-emerald-300 dark:border-emerald-800">
@@ -501,6 +617,10 @@ export function GestaoUsuarios() {
                         <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
                           Bloqueado
                         </Badge>
+                      ) : ePreCadastroPendente ? (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-400/40">
+                          Pendente
+                        </Badge>
                       ) : (
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-emerald-600 border-emerald-300 dark:border-emerald-800">
                           Ativo
@@ -510,7 +630,7 @@ export function GestaoUsuarios() {
                     <div className="flex flex-col text-right">
                       <span className="text-[10px] font-semibold uppercase text-muted-foreground/70">Último acesso</span>
                       <span className="text-[11px]">
-                        {u.ultimoAcesso ? new Date(u.ultimoAcesso).toLocaleDateString("pt-BR") : "Nunca acessou"}
+                        {u.ultimoAcesso ? new Date(u.ultimoAcesso).toLocaleDateString("pt-BR") : "Aguardando 1º login"}
                       </span>
                     </div>
                   </div>

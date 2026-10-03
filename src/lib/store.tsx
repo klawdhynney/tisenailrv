@@ -157,8 +157,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      const ADMINS_INICIAIS = [
+        "klaw.com@gmail.com",
+        "klawdhynney@gmail.com",
+        "claudineigoncalvesdelima@hotmail.com",
+        "claudinei.lima@senaimt.ind.br",
+      ];
+      const emailNormalizado = (session?.user.email || "").toLowerCase().trim();
+      const eAdminAutorizado = ADMINS_INICIAIS.includes(emailNormalizado);
+
       setUserBlocked(false);
-      const eAdmin = adminRes.data === true;
+      const eAdmin = adminRes.data === true || eAdminAutorizado;
       const eGestor = eAdmin || gestorRes.data === true;
 
       setIsAdmin(eAdmin);
