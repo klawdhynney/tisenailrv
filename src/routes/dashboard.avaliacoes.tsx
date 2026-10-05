@@ -117,6 +117,35 @@ function PaginaAvaliacoes() {
         // ignore
       }
 
+      // Se o banco remoto respondeu com sucesso (tabela existe), sincroniza avaliações pendentes do cache local
+      if (!error && listaRemota !== null) {
+        if (listaLocal.length > 0) {
+          const ticketsNoBanco = new Set(listaRemota.map((r) => r.ticket_id));
+          const pendentesDeEnvio = listaLocal.filter((l) => !ticketsNoBanco.has(l.ticket_id));
+          
+          if (pendentesDeEnvio.length > 0) {
+            for (const item of pendentesDeEnvio) {
+              try {
+                await supabase.rpc("submit_ticket_evaluation", {
+                  p_ticket_id: item.ticket_id,
+                  p_nota: item.nota,
+                  p_comentario: item.comentario,
+                });
+              } catch (errSync) {
+                console.warn("Falha ao sincronizar avaliação pendente com o banco:", errSync);
+              }
+            }
+          }
+
+          // Uma vez sincronizadas ou já presentes no banco, limpa o armazenamento local
+          try {
+            localStorage.removeItem("tisenai_avaliacoes_locais");
+          } catch {
+            // ignore
+          }
+        }
+      }
+
       // Mescla sem duplicar ticket_id, priorizando remota
       const ticketsVistos = new Set<number>();
       const unificadas: AvaliacaoRow[] = [];

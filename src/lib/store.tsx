@@ -281,6 +281,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               5: stats.distribuicao?.[5] || 0,
             },
           });
+          // Se a RPC respondeu com sucesso, sincroniza eventuais avaliações pendentes do cache local para o banco
+          if (typeof window !== "undefined") {
+            try {
+              const salvasLocais = JSON.parse(localStorage.getItem("tisenai_avaliacoes_locais") || "[]");
+              if (Array.isArray(salvasLocais) && salvasLocais.length > 0) {
+                for (const p of salvasLocais) {
+                  if (p.ticket_id && p.nota) {
+                    supabase.rpc("submit_ticket_evaluation", {
+                      p_ticket_id: p.ticket_id,
+                      p_nota: p.nota,
+                      p_comentario: p.comentario || null,
+                    }).catch(() => {});
+                  }
+                }
+                localStorage.removeItem("tisenai_avaliacoes_locais");
+              }
+            } catch {
+              // ignore
+            }
+          }
           return;
         }
       }
