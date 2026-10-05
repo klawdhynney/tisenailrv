@@ -606,37 +606,122 @@ function Regras() {
                 </div>
               </div>
 
-              <div className="grid gap-5 md:grid-cols-2 pt-2 border-t border-border">
-                <ImageUploadInput
-                  label="Logotipo da Barra de Navegação (Topo)"
-                  value={ident.logoUrl}
-                  onChange={(val) => salvarIdentidade({ logoUrl: val })}
-                  aspectRatioHint="Proporção horizontal recomendada (ex: 200x50)"
-                  maxSizeMb={2}
-                />
+              {/* Seção de Imagens e Identidade (Ícone e Título) */}
+              <div className="pt-2 border-t border-border space-y-5">
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">
+                    Imagens da Identidade Visual (Ícone e Título)
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Personalize o ícone e o título em formato de imagem exibidos no cabeçalho e em todo o site.
+                  </p>
+                </div>
 
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold">Texto Alternativo da Logo (Acessibilidade)</Label>
-                    <Input
-                      value={ident.logoAlt}
-                      onChange={(e) => salvarIdentidade({ logoAlt: sanitizeInput(e.target.value) })}
-                      placeholder="Ex.: Logo SENAI"
-                    />
+                <div className="grid gap-5 md:grid-cols-2 items-start">
+                  {/* Ícone */}
+                  <div className="space-y-3 rounded-2xl border border-border/80 bg-card p-4 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-bold text-foreground">Ícone do Site (Logotipo)</Label>
+                      {isAdmin && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 text-[11px] text-g-blue hover:underline px-1.5"
+                          onClick={() => salvarIdentidade({ logoUrl: "/icone.png" })}
+                        >
+                          Restaurar padrão (/icone.png)
+                        </Button>
+                      )}
+                    </div>
+                    {isAdmin ? (
+                      <ImageUploadInput
+                        label="Upload ou URL do Ícone"
+                        value={ident.logoUrl || "/icone.png"}
+                        onChange={(val) => salvarIdentidade({ logoUrl: val })}
+                        aspectRatioHint="Formato quadrado recomendado (973x973 ou 1:1)"
+                        maxSizeMb={2}
+                      />
+                    ) : (
+                      <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/40 border border-border/60">
+                        <img
+                          src={ident.logoUrl || "/icone.png"}
+                          alt="Ícone"
+                          className="size-12 rounded-full object-cover"
+                        />
+                        <span className="text-xs text-muted-foreground">Ícone gerenciado por administradores.</span>
+                      </div>
+                    )}
+                    <div className="space-y-1.5 pt-1">
+                      <Label className="text-[11px] font-semibold text-muted-foreground">Texto Alternativo do Ícone</Label>
+                      <Input
+                        value={ident.logoAlt || "TI SENAI LRV"}
+                        disabled={!isAdmin}
+                        onChange={(e) => salvarIdentidade({ logoAlt: sanitizeInput(e.target.value) })}
+                        placeholder="Ex.: TI SENAI LRV"
+                        className="text-xs"
+                      />
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold">Tema padrão para novos visitantes</Label>
-                    <select
-                      className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm font-medium"
-                      value={ident.temaPadrao}
-                      onChange={(e) => salvarIdentidade({ temaPadrao: e.target.value as any })}
-                    >
-                      <option value="claro">Tema Claro institucional (Padrão)</option>
-                      <option value="pastel">Tema Pastel suave</option>
-                      <option value="escuro">Tema Escuro moderno</option>
-                    </select>
+                  {/* Título */}
+                  <div className="space-y-3 rounded-2xl border border-border/80 bg-card p-4 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-bold text-foreground">Imagem do Título (Cabeçalho)</Label>
+                      {isAdmin && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 text-[11px] text-g-blue hover:underline px-1.5"
+                          onClick={() => salvarIdentidade({ tituloUrl: "/titulo.png" })}
+                        >
+                          Restaurar padrão (/titulo.png)
+                        </Button>
+                      )}
+                    </div>
+                    {isAdmin ? (
+                      <ImageUploadInput
+                        label="Upload ou URL da Imagem de Título"
+                        value={ident.tituloUrl || "/titulo.png"}
+                        onChange={(val) => salvarIdentidade({ tituloUrl: val })}
+                        aspectRatioHint="Formato retangular / badge recomendado (1024x384)"
+                        maxSizeMb={2}
+                      />
+                    ) : (
+                      <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/40 border border-border/60">
+                        <img
+                          src={ident.tituloUrl || "/titulo.png"}
+                          alt="Título"
+                          className="h-8 w-auto object-contain"
+                        />
+                        <span className="text-xs text-muted-foreground">Título gerenciado por administradores.</span>
+                      </div>
+                    )}
+                    <div className="space-y-1.5 pt-1">
+                      <Label className="text-[11px] font-semibold text-muted-foreground">Texto Alternativo do Título</Label>
+                      <Input
+                        value={ident.tituloAlt || "TI SENAI LRV"}
+                        disabled={!isAdmin}
+                        onChange={(e) => salvarIdentidade({ tituloAlt: sanitizeInput(e.target.value) })}
+                        placeholder="Ex.: TI SENAI LRV"
+                        className="text-xs"
+                      />
+                    </div>
                   </div>
+                </div>
+
+                <div className="space-y-2 max-w-sm pt-2">
+                  <Label className="text-xs font-semibold">Tema padrão para novos visitantes</Label>
+                  <select
+                    className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm font-medium"
+                    value={ident.temaPadrao}
+                    onChange={(e) => salvarIdentidade({ temaPadrao: e.target.value as any })}
+                  >
+                    <option value="claro">Tema Claro institucional (Padrão)</option>
+                    <option value="pastel">Tema Pastel suave</option>
+                    <option value="escuro">Tema Escuro moderno</option>
+                  </select>
                 </div>
               </div>
 
@@ -648,15 +733,15 @@ function Regras() {
                       Favicon (ícone da aba do navegador)
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      Personalize o ícone que aparece na aba do navegador ao acessar o site.
+                      Personalize o ícone que aparece na aba do navegador ao acessar o site (usa o ícone padrão como base).
                     </p>
                   </div>
                   <div className="grid gap-5 md:grid-cols-2 items-start">
                     <ImageUploadInput
                       label="Upload ou URL do Favicon"
-                      value={ident.faviconUrl || "/favicon.jpg"}
+                      value={ident.faviconUrl || "/favicon.png"}
                       onChange={(val) => salvarIdentidade({ faviconUrl: val })}
-                      aspectRatioHint="Formato quadrado recomendado (JPG, PNG, ICO ou SVG, 32x32 até 128x128)"
+                      aspectRatioHint="Formato quadrado recomendado (PNG, ICO ou SVG, 32x32 até 128x128)"
                       maxSizeMb={1}
                     />
 
@@ -666,13 +751,13 @@ function Regras() {
                       <div className="rounded-xl border border-border/80 bg-muted/30 p-4 space-y-3">
                         <div className="flex items-center gap-2 rounded-t-lg border-b border-border/80 bg-muted/70 px-3 py-2 max-w-xs shadow-xs">
                           <img
-                            src={ident.faviconUrl || "/favicon.jpg"}
+                            src={ident.faviconUrl || "/favicon.png"}
                             alt="Favicon"
                             loading="lazy"
                             decoding="async"
                             className="size-4 object-contain rounded-xs shrink-0"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/favicon.jpg";
+                              (e.target as HTMLImageElement).src = "/favicon.png";
                             }}
                           />
                           <span className="text-xs font-medium text-foreground truncate">
@@ -686,9 +771,9 @@ function Regras() {
                             size="sm"
                             variant="ghost"
                             className="h-7 text-xs text-g-blue hover:underline"
-                            onClick={() => salvarIdentidade({ faviconUrl: "/favicon.jpg" })}
+                            onClick={() => salvarIdentidade({ faviconUrl: "/favicon.png" })}
                           >
-                            Restaurar padrão (/favicon.jpg)
+                            Restaurar padrão (/favicon.png)
                           </Button>
                         </div>
                       </div>
@@ -730,31 +815,61 @@ function Regras() {
               </div>
 
               {home.exibirBanner && (
-                <div className="grid gap-5 md:grid-cols-2 pt-2 border-t border-border">
-                  <ImageUploadInput
-                    label="Imagem do Banner Hero (Página Inicial)"
-                    value={home.bannerUrl}
-                    onChange={(val) => salvarHome({ bannerUrl: val })}
-                    aspectRatioHint="Panorâmica recomendada (1200x300 ou 16:9)"
-                    maxSizeMb={3}
-                  />
-
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold">Texto do Badge Superior</Label>
-                      <Input
-                        value={home.badgeTexto}
-                        onChange={(e) => salvarHome({ badgeTexto: sanitizeInput(e.target.value) })}
-                        placeholder="Ex.: Central de Atendimento de TI"
-                      />
+                <div className="space-y-4 pt-2 border-t border-border">
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div className="space-y-2 rounded-2xl border border-border/80 bg-card p-4 shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-foreground">Capa / Banner Hero (Página Inicial)</Label>
+                        {isAdmin && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 text-[11px] text-g-blue hover:underline px-1.5"
+                            onClick={() => salvarHome({ bannerUrl: "/capa.png" })}
+                          >
+                            Restaurar padrão (/capa.png)
+                          </Button>
+                        )}
+                      </div>
+                      {isAdmin ? (
+                        <ImageUploadInput
+                          label="Upload ou URL da Imagem de Capa"
+                          value={home.bannerUrl || "/capa.png"}
+                          onChange={(val) => salvarHome({ bannerUrl: val })}
+                          aspectRatioHint="Panorâmica recomendada (2048x768 ou ~21:9)"
+                          maxSizeMb={4}
+                        />
+                      ) : (
+                        <div className="p-2 rounded-xl bg-muted/40 border border-border/60">
+                          <img
+                            src={home.bannerUrl || "/capa.png"}
+                            alt="Capa"
+                            className="aspect-[21/9] w-full rounded-lg object-cover"
+                          />
+                        </div>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold">Texto Alternativo do Banner</Label>
-                      <Input
-                        value={home.bannerAlt}
-                        onChange={(e) => salvarHome({ bannerAlt: sanitizeInput(e.target.value) })}
-                        placeholder="Ex.: Banner institucional TI SENAI"
-                      />
+
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold">Texto do Badge Superior</Label>
+                        <Input
+                          value={home.badgeTexto}
+                          disabled={!isAdmin}
+                          onChange={(e) => salvarHome({ badgeTexto: sanitizeInput(e.target.value) })}
+                          placeholder="Ex.: Central de Atendimento de TI"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold">Texto Alternativo da Capa</Label>
+                        <Input
+                          value={home.bannerAlt || "TI SENAI Lucas do Rio Verde"}
+                          disabled={!isAdmin}
+                          onChange={(e) => salvarHome({ bannerAlt: sanitizeInput(e.target.value) })}
+                          placeholder="Ex.: TI SENAI Lucas do Rio Verde"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -13,7 +13,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useStore } from "@/lib/store-context";
-import senaiHero from "@/assets/senai-hero-20261005.png";
+import defaultIcone from "@/assets/icone.png";
+import defaultTitulo from "@/assets/titulo.png";
+import defaultCapa from "@/assets/capa.png";
+
+const ASSET_VERSION = "20261005_v3";
 
 const navPublico = [
   { to: "/", label: "Início", icon: Home },
@@ -48,7 +52,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const rawFavicon = regras.identidadeVisual?.faviconUrl?.trim();
-    const faviconUrl = !rawFavicon || rawFavicon === "/favicon.png" ? "/favicon.jpg" : rawFavicon;
+    const faviconUrl =
+      !rawFavicon || rawFavicon.includes("senai") || rawFavicon.endsWith(".jpg")
+        ? `${defaultIcone}?v=${ASSET_VERSION}`
+        : rawFavicon.startsWith("data:")
+        ? rawFavicon
+        : `${rawFavicon}${rawFavicon.includes("?") ? "&" : "?"}v=${ASSET_VERSION}`;
     let link = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
     if (!link) {
       link = document.createElement("link");
@@ -56,24 +65,37 @@ export function AppShell({ children }: { children: ReactNode }) {
       document.head.appendChild(link);
     }
     link.href = faviconUrl;
-    if (faviconUrl.endsWith(".jpg") || faviconUrl.endsWith(".jpeg")) {
-      link.type = "image/jpeg";
-    }
+    link.type = faviconUrl.endsWith(".ico") ? "image/x-icon" : "image/png";
   }, [regras.identidadeVisual?.faviconUrl]);
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const showBanner = (pathname === "/" || pathname === "/abrir") && (regras.paginaInicial?.mostrarBanner ?? true);
   const bannerUrlSalva = regras.paginaInicial?.bannerUrl?.trim() || "";
-  // Descarta base64 legado de imagem anterior que possa ter ficado no banco e aplica parâmetro de versão
+  // Descarta imagens legadas que possam ter ficado gravadas no banco e aplica parâmetro de versão
   const bannerUrlValida =
-    bannerUrlSalva && !bannerUrlSalva.includes("iVBORw0KGgoAAAANSUhEUgAACAAAAAMACAIAAAA/whCdA")
+    bannerUrlSalva &&
+    !bannerUrlSalva.includes("iVBORw0KGgoAAAANSUhEUgAACAAAAAMACAIAAAA/whCdA") &&
+    !bannerUrlSalva.includes("senai-") &&
+    !bannerUrlSalva.endsWith(".jpg")
       ? (bannerUrlSalva.startsWith("data:")
           ? bannerUrlSalva
-          : `${bannerUrlSalva}${bannerUrlSalva.includes("?") ? "&" : "?"}v=20261005`)
+          : `${bannerUrlSalva}${bannerUrlSalva.includes("?") ? "&" : "?"}v=${ASSET_VERSION}`)
       : "";
-  const bannerImgSrc = bannerUrlValida || `${senaiHero}?v=20261005`;
-  const bannerAltText = regras.paginaInicial?.bannerAlt || "SENAI Lucas do Rio Verde - Central de Tecnologia da Informação";
-  const logoSrc = regras.identidadeVisual?.logoUrl?.trim() || "/favicon.jpg";
+  const bannerImgSrc = bannerUrlValida || `${defaultCapa}?v=${ASSET_VERSION}`;
+  const bannerAltText = regras.paginaInicial?.bannerAlt || "TI SENAI Lucas do Rio Verde";
+
+  const rawLogo = regras.identidadeVisual?.logoUrl?.trim() || "";
+  const logoSrc =
+    rawLogo && !rawLogo.endsWith(".jpg") && !rawLogo.includes("senai-")
+      ? (rawLogo.startsWith("data:") ? rawLogo : `${rawLogo}${rawLogo.includes("?") ? "&" : "?"}v=${ASSET_VERSION}`)
+      : `${defaultIcone}?v=${ASSET_VERSION}`;
+
+  const rawTitulo = regras.identidadeVisual?.tituloUrl?.trim() || "";
+  const tituloSrc =
+    rawTitulo && !rawTitulo.endsWith(".jpg") && !rawTitulo.includes("senai-")
+      ? (rawTitulo.startsWith("data:") ? rawTitulo : `${rawTitulo}${rawTitulo.includes("?") ? "&" : "?"}v=${ASSET_VERSION}`)
+      : `${defaultTitulo}?v=${ASSET_VERSION}`;
+
   const tituloSite = regras.identidadeVisual?.tituloSite || "TI SENAI LRV";
   const textoRodape = regras.rodape?.textoDireitos || "© 2026 TI SENAI LRV • Todos os direitos reservados • Criado por Claudinei Lima";
   const mostrarLgpd = regras.rodape?.mostrarLgpd ?? true;
@@ -233,9 +255,23 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen max-w-full overflow-x-hidden flex flex-col justify-between">
       <header className="sticky top-0 z-40 border-b-2 border-border bg-card/90 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 sm:px-6 lg:px-8 py-3">
-           <Link to="/" className="flex shrink-0 items-center gap-2.5 group">
-               <img src={logoSrc} alt={tituloSite} width={38} height={38} decoding="async" className="size-9.5 rounded-full object-cover shadow-sm scale-105 transition-transform duration-200" />
-              <span className="text-sm font-extrabold text-foreground sm:text-base">{tituloSite}</span>
+          <Link to="/" className="flex shrink-0 items-center gap-2 sm:gap-2.5 group" title={`${tituloSite} - Início`}>
+            <img
+              src={logoSrc}
+              alt="Ícone TI SENAI LRV"
+              width={38}
+              height={38}
+              decoding="async"
+              className="size-9 sm:size-9.5 rounded-full object-cover shadow-sm scale-105 transition-transform duration-200 group-hover:scale-110 shrink-0"
+            />
+            <img
+              src={tituloSrc}
+              alt="TI SENAI LRV"
+              width={160}
+              height={36}
+              decoding="async"
+              className="h-7 sm:h-8.5 w-auto max-w-[155px] sm:max-w-[210px] object-contain transition-transform duration-200 group-hover:opacity-95"
+            />
           </Link>
           <nav className="ml-auto hidden items-center gap-2 lg:flex">
             {links(false)}
@@ -315,7 +351,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         {children}
       </main>
       <footer className="mt-auto border-t border-border py-6 text-center text-xs text-muted-foreground">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-2 gap-y-1.5 px-4 sm:px-6 lg:px-8">
+          <img
+            src={logoSrc}
+            alt="Ícone TI SENAI LRV"
+            width={18}
+            height={18}
+            decoding="async"
+            className="size-4.5 rounded-full object-cover inline-block align-middle shrink-0"
+          />
           <span>{textoRodape}</span>
           {mostrarLgpd && (
             <>

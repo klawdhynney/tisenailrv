@@ -3,7 +3,7 @@ import { ArrowRight, FilePlus2, Activity, ClipboardList, CheckCircle2, Star, Ext
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
 import { AVALIACAO_PADRAO } from "@/lib/types";
-import labImage from "@/assets/technology-lab.jpg";
+import capaImage from "@/assets/capa.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -13,9 +13,9 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "TI SENAI LRV" },
       { property: "og:description", content: "Central de Chamados de TI e indicadores públicos." },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "/favicon.jpg" },
+      { property: "og:image", content: "/capa.png?v=20261005_v3" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "/favicon.jpg" },
+      { name: "twitter:image", content: "/capa.png?v=20261005_v3" },
     ],
   }),
   component: Inicio,
@@ -44,13 +44,13 @@ function Inicio() {
       {/* Hero com Título e Indicadores de Desempenho integrados junto à descrição */}
       <section className="relative isolate overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <img
-          src={labImage}
-          alt="Ambiente de tecnologia e atendimento de TI"
-          width={1536}
+          src={`${capaImage}?v=20261005_v3`}
+          alt="TI SENAI Lucas do Rio Verde"
+          width={2048}
           height={768}
           loading="lazy"
           decoding="async"
-          className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-25 dark:opacity-15"
+          className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-15 dark:opacity-10"
         />
         <div className="absolute inset-0 -z-10 bg-card/85 backdrop-blur-[1px]" />
         <div className="flex flex-col items-center text-center px-6 py-8 sm:px-10 sm:py-10 max-w-4xl mx-auto">

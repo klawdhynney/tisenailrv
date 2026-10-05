@@ -124,6 +124,8 @@ export interface IdentidadeVisualConfig {
   subtitulo?: string;
   logoUrl?: string;
   logoAlt?: string;
+  tituloUrl?: string;
+  tituloAlt?: string;
   faviconUrl?: string;
   corPrimaria?: string;
   temaPadrao: "claro" | "escuro" | "pastel";
@@ -134,9 +136,11 @@ export const IDENTIDADE_VISUAL_PADRAO: IdentidadeVisualConfig = {
   nome: "SENAI Lucas do Rio Verde",
   sigla: "TI SENAI LRV",
   subtitulo: "Central de Atendimento ao Usuário",
-  logoUrl: "",
-  logoAlt: "SENAI Lucas do Rio Verde",
-  faviconUrl: "/favicon.jpg",
+  logoUrl: "/icone.png",
+  logoAlt: "TI SENAI LRV",
+  tituloUrl: "/titulo.png",
+  tituloAlt: "TI SENAI LRV",
+  faviconUrl: "/favicon.png",
   corPrimaria: "#1a73e8",
   temaPadrao: "claro",
 };
@@ -157,8 +161,8 @@ export const PAGINA_INICIAL_PADRAO: PaginaInicialConfig = {
   subtitulo: "Central oficial de suporte e serviços de Tecnologia da Informação do SENAI Lucas do Rio Verde.",
   mostrarBanner: true,
   exibirBanner: true,
-  bannerUrl: "",
-  bannerAlt: "SENAI Lucas do Rio Verde - Ambiente Tecnológico de Inovação e Educação Profissional",
+  bannerUrl: "/capa.png",
+  bannerAlt: "TI SENAI Lucas do Rio Verde",
 };
 
 export interface IndicadorItemConfig {

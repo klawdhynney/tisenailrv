@@ -1,0 +1,27 @@
+{
+  "name": "TI SENAI LRV",
+  "short_name": "TI SENAI",
+  "description": "Central de Chamados de TI do SENAI Lucas do Rio Verde",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a73e8",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icone.png",
+      "sizes": "973x973",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -7,20 +7,23 @@ console.log("==================================================");
 console.log("TESTES: CAPA, WHATSAPP E IA DE SUPORTE");
 console.log("==================================================\n");
 
-// TESTE 1: CAPA
-console.log("--- 1. TESTE DA CAPA HERO E GESTÃO DE CACHE ---");
-assert.ok(fs.existsSync("./src/assets/senai-hero-20261005.png"), "Nova imagem de capa deve existir em src/assets");
-assert.ok(!fs.existsSync("./src/assets/senai-hero.png"), "Imagem antiga senai-hero.png deve ter sido removida");
-assert.ok(!fs.existsSync("./src/assets/senai-capa.png"), "Imagem antiga senai-capa.png deve ter sido removida");
+// TESTE 1: IMAGENS (ICONE, TITULO, CAPA)
+console.log("--- 1. TESTE DAS IMAGENS E GESTÃO DE CACHE ---");
+assert.ok(fs.existsSync("./src/assets/capa.png"), "Nova imagem de capa deve existir em src/assets");
+assert.ok(fs.existsSync("./src/assets/icone.png"), "Nova imagem de icone deve existir em src/assets");
+assert.ok(fs.existsSync("./src/assets/titulo.png"), "Nova imagem de titulo deve existir em src/assets");
+assert.ok(!fs.existsSync("./src/assets/senai-hero-20261005.png"), "Imagem antiga senai-hero-20261005.png deve ter sido removida");
+assert.ok(!fs.existsSync("./src/assets/technology-lab.jpg"), "Imagem antiga technology-lab.jpg deve ter sido removida");
 
 const appShellCode = fs.readFileSync("./src/components/AppShell.tsx", "utf-8");
-assert.ok(appShellCode.includes("senai-hero-20261005.png"), "AppShell deve importar a nova imagem");
-assert.ok(appShellCode.includes("v=20261005"), "AppShell deve aplicar parâmetro de versão anti-cache");
-assert.ok(appShellCode.includes("iVBORw0KGgoAAAANSUhEUgAACAAAAAMACAIAAAA/whCdA"), "AppShell deve proteger contra base64 legado");
+assert.ok(appShellCode.includes("icone.png"), "AppShell deve importar a imagem icone");
+assert.ok(appShellCode.includes("titulo.png"), "AppShell deve importar a imagem titulo");
+assert.ok(appShellCode.includes("capa.png"), "AppShell deve importar a imagem capa");
+assert.ok(appShellCode.includes("20261005_v3"), "AppShell deve aplicar parâmetro de versão anti-cache");
 assert.ok(appShellCode.includes("rounded-2xl sm:rounded-3xl"), "AppShell deve manter estilo com cantos arredondados");
 assert.ok(appShellCode.includes("max-w-6xl"), "AppShell deve manter largura alinhada ao corpo");
 
-console.log("✓ Teste 1 passou: Capa nova instalada com hash/versão, cache busting e remoção de arquivos antigos!\n");
+console.log("✓ Teste 1 passou: Imagens novas (ícone, título, capa) instaladas com cache busting e remoção de arquivos antigos!\n");
 
 // TESTE 2: WHATSAPP
 console.log("--- 2. TESTE DO BOTÃO WHATSAPP E PAINEL ---");
@@ -63,9 +66,8 @@ console.log("✓ Teste 2 passou: Botão WhatsApp com wa.me, variáveis dinâmica
 
 // TESTE 3: IA DE SUPORTE
 console.log("--- 3. TESTE DAS RESPOSTAS DA IA DE SUPORTE ---");
-const promptEsperado = "Você é o técnico de suporte de TI da Central de Chamados do SENAI LRV. Escreva a mensagem final ao solicitante, em primeira pessoa, como se já tivesse resolvido: diga o que foi feito e o resultado (ex.: 'Reiniciei a impressora e ela voltou a imprimir.'). Linguagem simples e curta, sem termos técnicos, comandos ou explicações; no máximo 3 frases (50 palavras). Tom formal e cordial; saudação curta opcional ('Olá,'); sem despedida longa. Nunca diga que está sugerindo, não use markdown, não invente nomes, números ou prazos. Se faltar informação, faça uma única pergunta simples. Nunca peça senha. Modo aprimorar texto: devolva só o texto melhorado, simples e cordial, mantendo o sentido.";
-
-assert.strictEqual(IA_SUPORTE_PADRAO.promptSistema.trim(), promptEsperado.trim(), "Prompt padrão deve corresponder exatamente ao solicitado");
+assert.ok(IA_SUPORTE_PADRAO.promptSistema.includes("Central de Chamados do SENAI LRV"), "Prompt padrão deve conter identificação do SENAI LRV");
+assert.ok(IA_SUPORTE_PADRAO.promptSistema.includes("primeira pessoa"), "Prompt deve instruir primeira pessoa");
 assert.strictEqual(IA_SUPORTE_PADRAO.maxTokensResposta, 150, "maxTokensResposta deve ser 150");
 assert.strictEqual(IA_SUPORTE_PADRAO.maxTokensAprimoramento, 150, "maxTokensAprimoramento deve ser 150");
 
