@@ -11,8 +11,40 @@ import {
 } from "./types";
 
 /**
+ * Verifica se o usuário atual autenticado possui permissão de gestor.
+ */
+async function verificarSeEhGestor(): Promise<boolean> {
+  try {
+    const { data: allowed } = await supabase.rpc("is_named_manager");
+    return allowed === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Trata o erro da IA apresentando mensagem amigável para o usuário final
+ * e detalhe técnico resumido para administradores.
+ */
+export function tratarErroIa(error: unknown, isGestor: boolean): Error {
+  if (error instanceof Error && error.message.includes("desativad")) {
+    return error;
+  }
+
+  const motivoTecnico = (error as any)?.motivoTecnico || (error instanceof Error ? error.message : String(error));
+  console.error("[IA Suporte] Detalhe técnico da falha no servidor:", motivoTecnico);
+
+  if (isGestor && motivoTecnico && motivoTecnico !== "A IA não conseguiu responder agora. Tente novamente.") {
+    return new Error(`A IA não conseguiu responder agora. Tente novamente. (Motivo: ${motivoTecnico})`);
+  }
+
+  return new Error("A IA não conseguiu responder agora. Tente novamente.");
+}
+
+/**
  * Obtém as configurações da IA de suporte do banco de dados,
  * garantindo valores padrão resilientes para cada uma das 3 abas.
+ * Se o prompt do painel vier vazio ou em branco, usa sempre o padrão.
  */
 export async function obterConfigIa(): Promise<IaSuporteConfig> {
   try {
@@ -22,7 +54,7 @@ export async function obterConfigIa(): Promise<IaSuporteConfig> {
 
     const respostaAtendimento = {
       ativo: iaSalva.respostaAtendimento?.ativo ?? true,
-      prompt: (iaSalva.respostaAtendimento?.prompt || iaSalva.promptSistema || PROMPT_SUGERIR_RESPOSTA_PADRAO).trim(),
+      prompt: (iaSalva.respostaAtendimento?.prompt || iaSalva.promptSistema || "").trim() || PROMPT_SUGERIR_RESPOSTA_PADRAO,
       maxTokens: Number(iaSalva.respostaAtendimento?.maxTokens || iaSalva.maxTokensResposta) || 150,
       temperatura: typeof iaSalva.respostaAtendimento?.temperatura === "number"
         ? iaSalva.respostaAtendimento.temperatura
@@ -33,14 +65,14 @@ export async function obterConfigIa(): Promise<IaSuporteConfig> {
 
     const aprimorarTexto = {
       ativo: iaSalva.aprimorarTexto?.ativo ?? true,
-      prompt: (iaSalva.aprimorarTexto?.prompt || PROMPT_APRIMORAR_TEXTO_PADRAO).trim(),
+      prompt: (iaSalva.aprimorarTexto?.prompt || "").trim() || PROMPT_APRIMORAR_TEXTO_PADRAO,
       maxTokens: Number(iaSalva.aprimorarTexto?.maxTokens || iaSalva.maxTokensAprimoramento) || 150,
       temperatura: typeof iaSalva.aprimorarTexto?.temperatura === "number" ? iaSalva.aprimorarTexto.temperatura : 0.2,
     };
 
     const sugerirAbertura = {
       ativo: iaSalva.sugerirAbertura?.ativo ?? true,
-      prompt: (iaSalva.sugerirAbertura?.prompt || PROMPT_SUGERIR_ABERTURA_PADRAO).trim(),
+      prompt: (iaSalva.sugerirAbertura?.prompt || "").trim() || PROMPT_SUGERIR_ABERTURA_PADRAO,
       maxTokens: Number(iaSalva.sugerirAbertura?.maxTokens) || 100,
       temperatura: typeof iaSalva.sugerirAbertura?.temperatura === "number" ? iaSalva.sugerirAbertura.temperatura : 0.2,
     };
@@ -244,21 +276,26 @@ export const revisarTexto = createServerFn({ method: "POST" })
 
     const userMessage = partesAprimorar.join("\n");
 
-    const raw = await askSupportAI(config.aprimorarTexto.prompt, userMessage, {
-      maxTokens: config.aprimorarTexto.maxTokens || 150,
-      temperature: config.aprimorarTexto.temperatura ?? 0.2,
-      timeoutMs: 12000,
-      modo: "aprimorar",
-      textoOriginal: data.texto.trim(),
-    });
+    try {
+      const raw = await askSupportAI(config.aprimorarTexto.prompt, userMessage, {
+        maxTokens: config.aprimorarTexto.maxTokens || 150,
+        temperature: config.aprimorarTexto.temperatura ?? 0.2,
+        timeoutMs: 12000,
+        modo: "aprimorar",
+        textoOriginal: data.texto.trim(),
+      });
 
-    const textoFinal = limparSaidaIa(raw);
+      const textoFinal = limparSaidaIa(raw);
 
-    return {
-      texto: textoFinal,
-      versao1: textoFinal,
-      versao2: textoFinal,
-    };
+      return {
+        texto: textoFinal,
+        versao1: textoFinal,
+        versao2: textoFinal,
+      };
+    } catch (err) {
+      const isGestor = await verificarSeEhGestor();
+      throw tratarErroIa(err, isGestor);
+    }
   });
 
 const sugerirAberturaInputSchema = z.object({
@@ -301,24 +338,29 @@ export const sugerirTextoAbertura = createServerFn({ method: "POST" })
 
     const userMessage = partes.join("\n");
 
-    const raw = await askSupportAI(config.sugerirAbertura.prompt, userMessage, {
-      maxTokens: config.sugerirAbertura.maxTokens || 100,
-      temperature: config.sugerirAbertura.temperatura ?? 0.2,
-      timeoutMs: 10000,
-      modo: "abertura",
-      textoOriginal: data.textoAtual?.trim() || "",
-      dadosOpcoes: {
-        setor: data.setor,
-        local: data.local,
-        categoria: data.categoria,
-      },
-    });
+    try {
+      const raw = await askSupportAI(config.sugerirAbertura.prompt, userMessage, {
+        maxTokens: config.sugerirAbertura.maxTokens || 100,
+        temperature: config.sugerirAbertura.temperatura ?? 0.2,
+        timeoutMs: 10000,
+        modo: "abertura",
+        textoOriginal: data.textoAtual?.trim() || "",
+        dadosOpcoes: {
+          setor: data.setor,
+          local: data.local,
+          categoria: data.categoria,
+        },
+      });
 
-    const textoFinal = limparSaidaIa(raw);
+      const textoFinal = limparSaidaIa(raw);
 
-    return {
-      texto: textoFinal,
-    };
+      return {
+        texto: textoFinal,
+      };
+    } catch (err) {
+      const isGestor = await verificarSeEhGestor();
+      throw tratarErroIa(err, isGestor);
+    }
   });
 
 const atendimentoInputSchema = z.object({
@@ -423,18 +465,23 @@ export const sugerirRespostasAtendimento = createServerFn({ method: "POST" })
 
     const userMessage = userMessageParts.join("\n");
 
-    const raw = await askSupportAI(config.respostaAtendimento.prompt, userMessage, {
-      maxTokens: config.respostaAtendimento.maxTokens || 150,
-      temperature: config.respostaAtendimento.temperatura ?? 0.2,
-      timeoutMs: 12000,
-      modo: "resposta",
-    });
+    try {
+      const raw = await askSupportAI(config.respostaAtendimento.prompt, userMessage, {
+        maxTokens: config.respostaAtendimento.maxTokens || 150,
+        temperature: config.respostaAtendimento.temperatura ?? 0.2,
+        timeoutMs: 12000,
+        modo: "resposta",
+      });
 
-    const textoFinal = limparSaidaIa(raw);
+      const textoFinal = limparSaidaIa(raw);
 
-    return {
-      texto: textoFinal,
-      opcao1: textoFinal,
-      opcao2: textoFinal,
-    };
+      return {
+        texto: textoFinal,
+        opcao1: textoFinal,
+        opcao2: textoFinal,
+      };
+    } catch (err) {
+      const isGestor = await verificarSeEhGestor();
+      throw tratarErroIa(err, isGestor);
+    }
   });

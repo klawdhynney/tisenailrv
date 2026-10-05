@@ -1,5 +1,20 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import { generateText } from "ai";
+import {
+  PROMPT_SUGERIR_RESPOSTA_PADRAO,
+  PROMPT_APRIMORAR_TEXTO_PADRAO,
+  PROMPT_SUGERIR_ABERTURA_PADRAO,
+} from "./types";
+
+export class AiSupportError extends Error {
+  motivoTecnico: string;
+  statusCode?: number;
+
+  constructor(mensagemAmigavel: string, motivoTecnico: string, statusCode?: number) {
+    super(mensagemAmigavel);
+    this.name = "AiSupportError";
+    this.motivoTecnico = motivoTecnico;
+    this.statusCode = statusCode;
+  }
+}
 
 export interface AskAiOptions {
   maxTokens?: number;
@@ -215,10 +230,113 @@ export function aplicarMelhoriasHeuristicas(texto: string, contexto = ""): strin
   return limpo;
 }
 
+interface ChatCompletionResult {
+  ok: boolean;
+  status: number;
+  content: string;
+  finishReason?: string;
+  errorDetail?: string;
+}
+
 /**
- * Executa chamada de IA com prompt único do sistema e mensagem estruturada do usuário.
- * Se a saída vier igual à entrada e o texto tiver erros, refaz a chamada uma vez com instrução reforçada.
- * Em caso de erro, lança exceção descritiva para o usuário (nunca devolve o original em silêncio).
+ * Executa requisição HTTP direta ao endpoint OpenAI Chat Completions.
+ * Garante compatibilidade universal com o Gateway Lovable (ai.gateway.lovable.dev) e OpenAI oficial,
+ * evitando endpoints incompatíveis (como /v1/responses) e capturando logs e erros detalhados.
+ */
+async function chamarChatCompletions(
+  endpointUrl: string,
+  apiKey: string,
+  isLovableGateway: boolean,
+  modelName: string,
+  messages: Array<{ role: string; content: string }>,
+  temperature?: number,
+  maxTokens?: number,
+  timeoutMs: number = 12000
+): Promise<ChatCompletionResult> {
+  const payload: Record<string, any> = {
+    model: modelName,
+    messages,
+  };
+
+  if (typeof temperature === "number" && !isNaN(temperature)) {
+    payload.temperature = temperature;
+  }
+  if (typeof maxTokens === "number" && maxTokens > 0) {
+    payload.max_tokens = maxTokens;
+  }
+
+  // 1. DIAGNÓSTICO: Registra no log do servidor o endpoint e o corpo exato (sem expor segredos)
+  console.log(`[IA Suporte] Endpoint: ${endpointUrl}`);
+  console.log(`[IA Suporte] Corpo da requisição:`, JSON.stringify(payload));
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${apiKey}`,
+  };
+
+  if (isLovableGateway) {
+    headers["Lovable-API-Key"] = apiKey;
+    headers["X-Lovable-AIG-SDK"] = "chat-completions";
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error("Tempo limite de requisição excedido")), timeoutMs);
+
+  try {
+    const res = await fetch(endpointUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    if (res.ok) {
+      const data: any = await res.json();
+      const content = data?.choices?.[0]?.message?.content || "";
+      const finishReason = data?.choices?.[0]?.finish_reason;
+      return {
+        ok: true,
+        status: res.status,
+        content,
+        finishReason,
+      };
+    }
+
+    // Registra no log do servidor o texto completo do erro retornado pelo provedor (incluindo detalhe do 400)
+    const errorText = await res.text();
+    console.error(`[IA Suporte] Provedor retornou status ${res.status}:`, errorText);
+
+    let detalhe = `HTTP ${res.status}`;
+    try {
+      const parsed = JSON.parse(errorText);
+      detalhe = parsed.message || parsed.title || parsed.error?.message || parsed.details || detalhe;
+    } catch {
+      detalhe = errorText.slice(0, 250) || detalhe;
+    }
+
+    return {
+      ok: false,
+      status: res.status,
+      content: "",
+      errorDetail: detalhe,
+    };
+  } catch (err: any) {
+    console.error("[IA Suporte] Falha na comunicação de rede com o provedor:", err);
+    return {
+      ok: false,
+      status: 0,
+      content: "",
+      errorDetail: err?.message || "Falha de rede com o provedor de IA.",
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Executa chamada de IA validando a requisição antes de enviar (modelo, prompt e texto não vazios).
+ * Se o provedor devolver 400, tenta uma vez de novo com parâmetros mínimos (sem temperatura nem limites opcionais).
+ * Em caso de erro, lança exceção com detalhe para logs e mensagem amigável para o usuário.
  */
 export async function askSupportAI(system: string, prompt: string, options: AskAiOptions = {}): Promise<string> {
   const lovableKey = process.env["LOVABLE_API_KEY"] || process.env["VITE_LOVABLE_API_KEY"];
@@ -231,105 +349,172 @@ export async function askSupportAI(system: string, prompt: string, options: AskA
     return gerarFallbackLocal(system, prompt, options);
   }
 
+  // 1. Validação prévia de modelo e mensagens
+  let cleanSystem = (system || "").trim();
+  if (!cleanSystem) {
+    if (options.modo === "aprimorar") {
+      cleanSystem = PROMPT_APRIMORAR_TEXTO_PADRAO;
+    } else if (options.modo === "abertura") {
+      cleanSystem = PROMPT_SUGERIR_ABERTURA_PADRAO;
+    } else {
+      cleanSystem = PROMPT_SUGERIR_RESPOSTA_PADRAO;
+    }
+  }
+
+  // Remove caracteres de controle nulos e sanitiza
+  cleanSystem = cleanSystem.replace(/\0/g, "").slice(0, 4000);
+  let cleanPrompt = (prompt || "").trim().replace(/\0/g, "").slice(0, 8000);
+
+  if (!cleanPrompt) {
+    throw new AiSupportError(
+      "A IA não conseguiu responder agora. Tente novamente.",
+      "Texto de entrada vazio ou inválido."
+    );
+  }
+
+  const messages: Array<{ role: string; content: string }> = [];
+  if (cleanSystem) {
+    messages.push({ role: "system", content: cleanSystem });
+  }
+  messages.push({ role: "user", content: cleanPrompt });
+
   const isLovableGateway = !!lovableKey;
-  const baseURL = isLovableGateway ? "https://ai.gateway.lovable.dev/v1" : "https://api.openai.com/v1";
-  const modelName = isLovableGateway ? "openai/gpt-4o-mini" : "gpt-4o-mini";
+  const baseURL = isLovableGateway
+    ? (process.env["LOVABLE_GATEWAY_URL"] || "https://ai.gateway.lovable.dev/v1")
+    : "https://api.openai.com/v1";
+  const endpoint = `${baseURL.replace(/\/+$/, "")}/chat/completions`;
 
-  const provider = createOpenAI({
-    baseURL,
-    apiKey,
-    headers: isLovableGateway
-      ? { "Lovable-API-Key": lovableKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" }
-      : undefined,
-  });
+  // Modelos suportados no gateway e fallback
+  const primaryModel = isLovableGateway ? "google/gemini-2.5-flash" : "gpt-4o-mini";
+  const fallbackModel = isLovableGateway ? "openai/gpt-4o-mini" : "gpt-4o-mini";
 
-  const maxTokens = options.maxTokens ?? 150;
+  const maxTokens = options.maxTokens ?? (options.modo === "abertura" ? 100 : 150);
   const temperature = options.temperature ?? 0.2;
   const timeoutMs = options.timeoutMs ?? 12000;
 
-  const abortController = new AbortController();
-  const timeoutId = setTimeout(() => {
-    abortController.abort(new Error("Tempo limite de 12 segundos excedido"));
-  }, timeoutMs);
+  // Tentativa 1: parâmetros completos
+  let response = await chamarChatCompletions(
+    endpoint,
+    apiKey,
+    isLovableGateway,
+    primaryModel,
+    messages,
+    temperature,
+    maxTokens,
+    timeoutMs
+  );
 
-  try {
-    // 1ª Tentativa
-    const result = await generateText({
-      model: provider(modelName),
-      system,
-      prompt,
+  // 2. Se o provedor devolver 400 (Bad Request), tenta uma vez de novo com parâmetros mínimos
+  if (!response.ok && response.status === 400) {
+    console.warn(`[IA Suporte] Provedor retornou 400 (detalhe: ${response.errorDetail}). Refazendo chamada uma vez com parâmetros mínimos...`);
+    response = await chamarChatCompletions(
+      endpoint,
+      apiKey,
+      isLovableGateway,
+      primaryModel,
+      messages,
+      undefined,
+      undefined,
+      timeoutMs
+    );
+
+    // Se ainda falhar com 400 no gateway Lovable, tenta o modelo alternativo de contingência
+    if (!response.ok && response.status === 400 && fallbackModel !== primaryModel) {
+      console.warn(`[IA Suporte] Tentando modelo alternativo no gateway: ${fallbackModel}...`);
+      response = await chamarChatCompletions(
+        endpoint,
+        apiKey,
+        isLovableGateway,
+        fallbackModel,
+        messages,
+        undefined,
+        undefined,
+        timeoutMs
+      );
+    }
+  }
+
+  // Se falhar após tentativas
+  if (!response.ok) {
+    const motivo = response.errorDetail || "Falha na comunicação com o provedor de IA.";
+    throw new AiSupportError(
+      "A IA não conseguiu responder agora. Tente novamente.",
+      motivo,
+      response.status
+    );
+  }
+
+  // Se foi cortada pelo limite de tokens, refaz uma vez com síntese estrita
+  if (response.finishReason === "length") {
+    console.warn("[IA Suporte] Resposta cortada por limite de tokens. Refazendo com instrução de síntese estrita...");
+    const mensagensSintese = [
+      ...messages,
+      {
+        role: "user",
+        content: `Instrução estrita: Escreva a resposta completa em no máximo 1 ou 2 frases curtas e objetivas, sem exceder ${maxTokens} tokens.`,
+      },
+    ];
+    const retryResult = await chamarChatCompletions(
+      endpoint,
+      apiKey,
+      isLovableGateway,
+      primaryModel,
+      mensagensSintese,
       temperature,
       maxTokens,
-      abortSignal: abortController.signal,
-    });
-
-    // Se foi cortada pelo limite de tokens, refazemos uma vez com síntese estrita
-    if (result.finishReason === "length") {
-      console.warn("[IA Suporte] Resposta cortada pelo limite de tokens. Refazendo chamada uma vez com síntese estrita...");
-      const promptSintetico = `${prompt}\n\nInstrução estrita: Escreva a resposta completa em no máximo 1 ou 2 frases curtas e objetivas, sem exceder ${maxTokens} tokens.`;
-
-      const retryResult = await generateText({
-        model: provider(modelName),
-        system,
-        prompt: promptSintetico,
-        temperature,
-        maxTokens,
-        abortSignal: abortController.signal,
-      });
-
-      if (retryResult.finishReason === "length") {
-        throw new Error(`A resposta ultrapassou o limite de ${maxTokens} tokens. Reduza o texto ou aumente o limite nas configurações.`);
-      }
-
-      const textoRetry = retryResult.text.trim();
-      if (!textoRetry) throw new Error("A IA retornou uma resposta em branco.");
-      return limparSaidaIa(textoRetry);
+      timeoutMs
+    );
+    if (retryResult.ok && retryResult.content.trim()) {
+      response = retryResult;
     }
-
-    let textoFinal = result.text.trim();
-    if (!textoFinal) {
-      throw new Error("A IA retornou uma resposta em branco.");
-    }
-
-    let saidaTratada = limparSaidaIa(textoFinal);
-
-    // Se for modo aprimoramento e a saída vier igual à entrada com erros detectados, refaz uma vez com instrução reforçada
-    const textoOriginal = options.textoOriginal?.trim();
-    if (
-      textoOriginal &&
-      saidaTratada.toLowerCase() === textoOriginal.toLowerCase() &&
-      temErrosOuGiria(textoOriginal)
-    ) {
-      console.warn("[IA Suporte] Saída idêntica à entrada com erros detectados. Refazendo chamada uma vez com instrução reforçada...");
-      const promptReforcado = `${prompt}\n\nATENÇÃO: A resposta anterior foi idêntica ao original. O texto contém abreviações, gírias ou erros gramaticais ('pc', 'ta', 'pq', 'vc', falta de concordância ou frases incompletas). Reescreva obrigatoriamente em português formal e cordial, expandindo abreviações e corrigindo concordâncias. A saída DEVE ser aprimorada e diferente da original.`;
-
-      const retryResult = await generateText({
-        model: provider(modelName),
-        system,
-        prompt: promptReforcado,
-        temperature: 0.3,
-        maxTokens,
-        abortSignal: abortController.signal,
-      });
-
-      const saidaRetry = limparSaidaIa(retryResult.text.trim());
-      if (saidaRetry && saidaRetry.toLowerCase() !== textoOriginal.toLowerCase()) {
-        saidaTratada = saidaRetry;
-      } else {
-        // Fallback heurístico inteligente para nunca devolver o texto quebrado
-        saidaTratada = aplicarMelhoriasHeuristicas(textoOriginal);
-      }
-    }
-
-    return saidaTratada;
-  } catch (error: any) {
-    console.error("[IA Suporte] Erro na chamada da API:", error);
-    // Em caso de erro na API externa, nunca devolve o original em silêncio: lança erro explicativo
-    const msg = error?.message || "Falha na comunicação com o provedor de IA.";
-    throw new Error(`Erro na IA: ${msg}`);
-  } finally {
-    clearTimeout(timeoutId);
   }
+
+  let textoFinal = response.content.trim();
+  if (!textoFinal) {
+    throw new AiSupportError(
+      "A IA não conseguiu responder agora. Tente novamente.",
+      "A IA retornou uma resposta em branco."
+    );
+  }
+
+  let saidaTratada = limparSaidaIa(textoFinal);
+
+  // Se for modo aprimoramento e a saída vier igual à entrada com erros detectados, refaz uma vez com instrução reforçada
+  const textoOriginal = options.textoOriginal?.trim();
+  if (
+    textoOriginal &&
+    saidaTratada.toLowerCase() === textoOriginal.toLowerCase() &&
+    temErrosOuGiria(textoOriginal)
+  ) {
+    console.warn("[IA Suporte] Saída idêntica à entrada com erros detectados. Refazendo chamada uma vez com instrução reforçada...");
+    const mensagensReforcadas = [
+      ...messages,
+      {
+        role: "user",
+        content: `ATENÇÃO: A resposta anterior foi idêntica ao original. O texto contém abreviações, gírias ou erros gramaticais ('pc', 'ta', 'pq', 'vc', falta de concordância ou frases incompletas). Reescreva obrigatoriamente em português formal e cordial, expandindo abreviações e corrigindo concordâncias. A saída DEVE ser aprimorada e diferente da original.`,
+      },
+    ];
+
+    const retryResult = await chamarChatCompletions(
+      endpoint,
+      apiKey,
+      isLovableGateway,
+      primaryModel,
+      mensagensReforcadas,
+      0.3,
+      maxTokens,
+      timeoutMs
+    );
+
+    const saidaRetry = retryResult.ok ? limparSaidaIa(retryResult.content.trim()) : "";
+    if (saidaRetry && saidaRetry.toLowerCase() !== textoOriginal.toLowerCase()) {
+      saidaTratada = saidaRetry;
+    } else {
+      saidaTratada = aplicarMelhoriasHeuristicas(textoOriginal);
+    }
+  }
+
+  return saidaTratada;
 }
 
 /**
