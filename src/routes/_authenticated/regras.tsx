@@ -652,9 +652,9 @@ function Regras() {
                   <div className="grid gap-5 md:grid-cols-2 items-start">
                     <ImageUploadInput
                       label="Upload ou URL do Favicon"
-                      value={ident.faviconUrl || "/favicon.png"}
+                      value={ident.faviconUrl || "/favicon.jpg"}
                       onChange={(val) => salvarIdentidade({ faviconUrl: val })}
-                      aspectRatioHint="Formato quadrado recomendado (PNG, ICO ou SVG, 32x32 até 128x128)"
+                      aspectRatioHint="Formato quadrado recomendado (JPG, PNG, ICO ou SVG, 32x32 até 128x128)"
                       maxSizeMb={1}
                     />
 
@@ -664,11 +664,11 @@ function Regras() {
                       <div className="rounded-xl border border-border/80 bg-muted/30 p-4 space-y-3">
                         <div className="flex items-center gap-2 rounded-t-lg border-b border-border/80 bg-muted/70 px-3 py-2 max-w-xs shadow-xs">
                           <img
-                            src={ident.faviconUrl || "/favicon.png"}
+                            src={ident.faviconUrl || "/favicon.jpg"}
                             alt="Favicon"
                             className="size-4 object-contain rounded-xs shrink-0"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/favicon.png";
+                              (e.target as HTMLImageElement).src = "/favicon.jpg";
                             }}
                           />
                           <span className="text-xs font-medium text-foreground truncate">
@@ -682,9 +682,9 @@ function Regras() {
                             size="sm"
                             variant="ghost"
                             className="h-7 text-xs text-g-blue hover:underline"
-                            onClick={() => salvarIdentidade({ faviconUrl: "/favicon.png" })}
+                            onClick={() => salvarIdentidade({ faviconUrl: "/favicon.jpg" })}
                           >
-                            Restaurar padrão (/favicon.png)
+                            Restaurar padrão (/favicon.jpg)
                           </Button>
                         </div>
                       </div>

@@ -48,7 +48,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { isGestor, isAdmin, userRole, session, sair, regras } = useStore();
 
   useEffect(() => {
-    const faviconUrl = regras.identidadeVisual?.faviconUrl || "/favicon.png";
+    const rawFavicon = regras.identidadeVisual?.faviconUrl?.trim();
+    const faviconUrl = !rawFavicon || rawFavicon === "/favicon.png" ? "/favicon.jpg" : rawFavicon;
     let link = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
     if (!link) {
       link = document.createElement("link");
@@ -56,6 +57,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       document.head.appendChild(link);
     }
     link.href = faviconUrl;
+    if (faviconUrl.endsWith(".jpg") || faviconUrl.endsWith(".jpeg")) {
+      link.type = "image/jpeg";
+    }
   }, [regras.identidadeVisual?.faviconUrl]);
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });

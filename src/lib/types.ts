@@ -136,7 +136,7 @@ export const IDENTIDADE_VISUAL_PADRAO: IdentidadeVisualConfig = {
   subtitulo: "Central de Atendimento ao Usuário",
   logoUrl: "",
   logoAlt: "SENAI Lucas do Rio Verde",
-  faviconUrl: "/favicon.png",
+  faviconUrl: "/favicon.jpg",
   corPrimaria: "#1a73e8",
   temaPadrao: "claro",
 };
