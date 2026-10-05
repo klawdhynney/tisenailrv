@@ -78,6 +78,7 @@ function PaginaAvaliacoes() {
     async function carregar() {
       setCarregando(true);
       let listaRemota: AvaliacaoRow[] = [];
+      let tabelaDisponivel = false;
 
       try {
         const { data, error } = await supabase
@@ -92,6 +93,7 @@ function PaginaAvaliacoes() {
           }
         } else if (data) {
           listaRemota = data as AvaliacaoRow[];
+          tabelaDisponivel = true;
           if (ativo) setErroTabela(null);
         }
       } catch (e: any) {
@@ -118,7 +120,7 @@ function PaginaAvaliacoes() {
       }
 
       // Se o banco remoto respondeu com sucesso (tabela existe), sincroniza avaliações pendentes do cache local
-      if (!error && listaRemota !== null) {
+      if (tabelaDisponivel) {
         if (listaLocal.length > 0) {
           const ticketsNoBanco = new Set(listaRemota.map((r) => r.ticket_id));
           const pendentesDeEnvio = listaLocal.filter((l) => !ticketsNoBanco.has(l.ticket_id));

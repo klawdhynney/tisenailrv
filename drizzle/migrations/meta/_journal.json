@@ -183,6 +183,13 @@
       "when": 1791700000000,
       "tag": "0025_avaliacoes_completas_e_resumo_publico",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791800000000,
+      "tag": "0026_consolidado_plataforma_e_avaliacoes",
+      "breakpoints": true
     }
   ]
 }
