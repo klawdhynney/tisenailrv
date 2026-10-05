@@ -2,38 +2,64 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { askSupportAI, limparSaidaIa } from "./ai-support.server";
 import { supabase } from "@/integrations/supabase/client";
-import { IA_SUPORTE_PADRAO, PROMPT_IA_SUPORTE_PADRAO, type IaSuporteConfig } from "./types";
+import {
+  IA_SUPORTE_PADRAO,
+  PROMPT_SUGERIR_RESPOSTA_PADRAO,
+  PROMPT_APRIMORAR_TEXTO_PADRAO,
+  PROMPT_SUGERIR_ABERTURA_PADRAO,
+  type IaSuporteConfig,
+} from "./types";
 
 /**
  * Obtém as configurações da IA de suporte do banco de dados,
- * garantindo o prompt oficial atualizado e os parâmetros de busca na base de resolvidos.
+ * garantindo valores padrão resilientes para cada uma das 3 abas.
  */
-async function obterConfigIa(): Promise<IaSuporteConfig> {
+export async function obterConfigIa(): Promise<IaSuporteConfig> {
   try {
     const { data } = await supabase.from("configuracoes").select("regras").eq("id", 1).maybeSingle();
     const regrasSalvas = (data?.regras as any) || {};
-    if (regrasSalvas.iaSuporte && typeof regrasSalvas.iaSuporte === "object") {
-      const promptSalvo = regrasSalvas.iaSuporte.promptSistema || "";
-      const usarPromptAtualizado =
-        promptSalvo &&
-        promptSalvo.includes("CHAMADOS RESOLVIDOS SEMELHANTES") &&
-        !promptSalvo.includes("assistente técnico da Central de Chamados")
-          ? promptSalvo
-          : PROMPT_IA_SUPORTE_PADRAO;
+    const iaSalva = (regrasSalvas.iaSuporte as any) || {};
 
-      return {
-        promptSistema: usarPromptAtualizado,
-        maxTokensResposta: Number(regrasSalvas.iaSuporte.maxTokensResposta) || 150,
-        maxTokensAprimoramento: Number(regrasSalvas.iaSuporte.maxTokensAprimoramento) || 150,
-        temperatura: typeof regrasSalvas.iaSuporte.temperatura === "number" ? regrasSalvas.iaSuporte.temperatura : 0.2,
-        usarChamadosResolvidos: regrasSalvas.iaSuporte.usarChamadosResolvidos ?? true,
-        maxExemplosResolvidos: Math.min(5, Math.max(1, Number(regrasSalvas.iaSuporte.maxExemplosResolvidos) || 5)),
-      };
-    }
+    const respostaAtendimento = {
+      ativo: iaSalva.respostaAtendimento?.ativo ?? true,
+      prompt: (iaSalva.respostaAtendimento?.prompt || iaSalva.promptSistema || PROMPT_SUGERIR_RESPOSTA_PADRAO).trim(),
+      maxTokens: Number(iaSalva.respostaAtendimento?.maxTokens || iaSalva.maxTokensResposta) || 150,
+      temperatura: typeof iaSalva.respostaAtendimento?.temperatura === "number"
+        ? iaSalva.respostaAtendimento.temperatura
+        : (typeof iaSalva.temperatura === "number" ? iaSalva.temperatura : 0.2),
+      usarChamadosResolvidos: iaSalva.respostaAtendimento?.usarChamadosResolvidos ?? iaSalva.usarChamadosResolvidos ?? true,
+      maxExemplosResolvidos: Math.min(5, Math.max(1, Number(iaSalva.respostaAtendimento?.maxExemplosResolvidos || iaSalva.maxExemplosResolvidos) || 5)),
+    };
+
+    const aprimorarTexto = {
+      ativo: iaSalva.aprimorarTexto?.ativo ?? true,
+      prompt: (iaSalva.aprimorarTexto?.prompt || PROMPT_APRIMORAR_TEXTO_PADRAO).trim(),
+      maxTokens: Number(iaSalva.aprimorarTexto?.maxTokens || iaSalva.maxTokensAprimoramento) || 150,
+      temperatura: typeof iaSalva.aprimorarTexto?.temperatura === "number" ? iaSalva.aprimorarTexto.temperatura : 0.2,
+    };
+
+    const sugerirAbertura = {
+      ativo: iaSalva.sugerirAbertura?.ativo ?? true,
+      prompt: (iaSalva.sugerirAbertura?.prompt || PROMPT_SUGERIR_ABERTURA_PADRAO).trim(),
+      maxTokens: Number(iaSalva.sugerirAbertura?.maxTokens) || 100,
+      temperatura: typeof iaSalva.sugerirAbertura?.temperatura === "number" ? iaSalva.sugerirAbertura.temperatura : 0.2,
+    };
+
+    return {
+      respostaAtendimento,
+      aprimorarTexto,
+      sugerirAbertura,
+      promptSistema: respostaAtendimento.prompt,
+      maxTokensResposta: respostaAtendimento.maxTokens,
+      maxTokensAprimoramento: aprimorarTexto.maxTokens,
+      temperatura: respostaAtendimento.temperatura,
+      usarChamadosResolvidos: respostaAtendimento.usarChamadosResolvidos,
+      maxExemplosResolvidos: respostaAtendimento.maxExemplosResolvidos,
+    };
   } catch (err) {
     console.warn("[IA Suporte] Falha ao obter configuração de IA do banco, usando padrão:", err);
+    return IA_SUPORTE_PADRAO;
   }
-  return IA_SUPORTE_PADRAO;
 }
 
 /**
@@ -156,6 +182,10 @@ export const revisarTexto = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const config = await obterConfigIa();
 
+    if (config.aprimorarTexto.ativo === false) {
+      throw new Error("O recurso de aprimoramento de texto com IA está desativado no painel de configurações.");
+    }
+
     // Carrega mensagens da conversa se não fornecidas diretamente e ticketId estiver presente
     let mensagens = data.mensagens || [];
     if (data.ticketId && mensagens.length === 0) {
@@ -177,7 +207,7 @@ export const revisarTexto = createServerFn({ method: "POST" })
       }
     }
 
-    // MODO: APRIMORAR TEXTO - envia o contexto completo do chamado e o texto digitado pelo técnico
+    // MODO: APRIMORAR TEXTO - envia o contexto do chamado e o texto digitado
     const partesAprimorar: string[] = ["MODO: APRIMORAR TEXTO"];
 
     const temContexto =
@@ -214,10 +244,12 @@ export const revisarTexto = createServerFn({ method: "POST" })
 
     const userMessage = partesAprimorar.join("\n");
 
-    const raw = await askSupportAI(config.promptSistema, userMessage, {
-      maxTokens: config.maxTokensAprimoramento || 150,
-      temperature: config.temperatura ?? 0.2,
+    const raw = await askSupportAI(config.aprimorarTexto.prompt, userMessage, {
+      maxTokens: config.aprimorarTexto.maxTokens || 150,
+      temperature: config.aprimorarTexto.temperatura ?? 0.2,
       timeoutMs: 12000,
+      modo: "aprimorar",
+      textoOriginal: data.texto.trim(),
     });
 
     const textoFinal = limparSaidaIa(raw);
@@ -226,6 +258,66 @@ export const revisarTexto = createServerFn({ method: "POST" })
       texto: textoFinal,
       versao1: textoFinal,
       versao2: textoFinal,
+    };
+  });
+
+const sugerirAberturaInputSchema = z.object({
+  setor: z.string().optional(),
+  categoria: z.string().optional(), // Tipo de problema
+  local: z.string().optional(),
+  outrosCampos: z.record(z.string()).optional(),
+  textoAtual: z.string().optional(),
+});
+
+export const sugerirTextoAbertura = createServerFn({ method: "POST" })
+  .validator((input: unknown) => sugerirAberturaInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const config = await obterConfigIa();
+
+    if (config.sugerirAbertura.ativo === false) {
+      throw new Error("A sugestão de texto para abertura de chamados está desativada no painel de configurações.");
+    }
+
+    const partes: string[] = ["Opções selecionadas pelo solicitante:"];
+    if (data.setor && data.setor.trim()) {
+      partes.push(`Setor: ${sanitizarTextoLgpd(data.setor.trim(), 100)}`);
+    }
+    if (data.local && data.local.trim()) {
+      partes.push(`Local: ${sanitizarTextoLgpd(data.local.trim(), 100)}`);
+    }
+    if (data.categoria && data.categoria.trim()) {
+      partes.push(`Tipo de problema: ${sanitizarTextoLgpd(data.categoria.trim(), 100)}`);
+    }
+    if (data.outrosCampos && Object.keys(data.outrosCampos).length > 0) {
+      for (const [k, v] of Object.entries(data.outrosCampos)) {
+        if (v && typeof v === "string" && v.trim()) {
+          partes.push(`${k}: ${sanitizarTextoLgpd(v.trim(), 100)}`);
+        }
+      }
+    }
+    if (data.textoAtual && data.textoAtual.trim()) {
+      partes.push(`Texto já digitado pelo solicitante:\n${sanitizarTextoLgpd(data.textoAtual.trim(), 500)}`);
+    }
+
+    const userMessage = partes.join("\n");
+
+    const raw = await askSupportAI(config.sugerirAbertura.prompt, userMessage, {
+      maxTokens: config.sugerirAbertura.maxTokens || 100,
+      temperature: config.sugerirAbertura.temperatura ?? 0.2,
+      timeoutMs: 10000,
+      modo: "abertura",
+      textoOriginal: data.textoAtual?.trim() || "",
+      dadosOpcoes: {
+        setor: data.setor,
+        local: data.local,
+        categoria: data.categoria,
+      },
+    });
+
+    const textoFinal = limparSaidaIa(raw);
+
+    return {
+      texto: textoFinal,
     };
   });
 
@@ -245,19 +337,23 @@ export const sugerirRespostasAtendimento = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const config = await obterConfigIa();
 
+    if (config.respostaAtendimento.ativo === false) {
+      throw new Error("A sugestão de resposta no atendimento está desativada no painel de configurações.");
+    }
+
     const titulo =
       data.titulo ||
       (data.categoria ? `${data.categoria} (Chamado #${data.ticketId ?? ""})` : data.ticketId ? `Chamado #${data.ticketId}` : "Chamado Técnico");
 
     // 1. Busca chamados resolvidos semelhantes se o interruptor estiver ligado
     let blocoResolvidos = "";
-    if (config.usarChamadosResolvidos ?? true) {
+    if (config.respostaAtendimento.usarChamadosResolvidos ?? true) {
       const termoBusca = [data.categoria, data.titulo, data.descricao].filter(Boolean).join(" ");
       const resolvidos = await buscarResolvidosSemelhantes({
         termo: termoBusca,
         categoria: data.categoria,
         ticketIdAtual: data.ticketId,
-        limite: config.maxExemplosResolvidos ?? 5,
+        limite: config.respostaAtendimento.maxExemplosResolvidos ?? 5,
       });
 
       if (resolvidos.length > 0) {
@@ -327,10 +423,11 @@ export const sugerirRespostasAtendimento = createServerFn({ method: "POST" })
 
     const userMessage = userMessageParts.join("\n");
 
-    const raw = await askSupportAI(config.promptSistema, userMessage, {
-      maxTokens: config.maxTokensResposta || 150,
-      temperature: config.temperatura ?? 0.2,
+    const raw = await askSupportAI(config.respostaAtendimento.prompt, userMessage, {
+      maxTokens: config.respostaAtendimento.maxTokens || 150,
+      temperature: config.respostaAtendimento.temperatura ?? 0.2,
       timeoutMs: 12000,
+      modo: "resposta",
     });
 
     const textoFinal = limparSaidaIa(raw);

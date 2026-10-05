@@ -169,6 +169,14 @@
       "when": 1791500000000,
       "tag": "0023_busca_chamados_resolvidos",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791600000000,
+      "tag": "0024_ia_tres_modos_config",
+      "breakpoints": true
     }
   ]
 }
+

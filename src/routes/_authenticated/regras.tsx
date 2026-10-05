@@ -405,6 +405,27 @@ function Regras() {
   const salvarIa = (patch: Partial<typeof iaConf>) =>
     salvar({ iaSuporte: { ...iaConf, ...patch } });
 
+  const iaResposta = iaConf.respostaAtendimento ?? IA_SUPORTE_PADRAO.respostaAtendimento;
+  const salvarIaResposta = (patch: Partial<typeof IA_SUPORTE_PADRAO.respostaAtendimento>) =>
+    salvarIa({
+      respostaAtendimento: { ...iaResposta, ...patch },
+      promptSistema: patch.prompt ?? iaResposta.prompt,
+      maxTokensResposta: patch.maxTokens ?? iaResposta.maxTokens,
+    });
+
+  const iaAprimorar = iaConf.aprimorarTexto ?? IA_SUPORTE_PADRAO.aprimorarTexto;
+  const salvarIaAprimorar = (patch: Partial<typeof IA_SUPORTE_PADRAO.aprimorarTexto>) =>
+    salvarIa({
+      aprimorarTexto: { ...iaAprimorar, ...patch },
+      maxTokensAprimoramento: patch.maxTokens ?? iaAprimorar.maxTokens,
+    });
+
+  const iaAbertura = iaConf.sugerirAbertura ?? IA_SUPORTE_PADRAO.sugerirAbertura;
+  const salvarIaSugerirAbertura = (patch: Partial<typeof IA_SUPORTE_PADRAO.sugerirAbertura>) =>
+    salvarIa({
+      sugerirAbertura: { ...iaAbertura, ...patch },
+    });
+
   // WhatsApp Notificação
   const whatsappConf = regras.whatsapp ?? WHATSAPP_PADRAO;
   const salvarWhatsapp = (patch: Partial<typeof whatsappConf>) =>
@@ -2147,137 +2168,329 @@ function Regras() {
                   <div>
                     <CardTitle className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
                       <Sparkles className="size-5" />
-                      IA de Suporte Técnico
+                      IA de Suporte e Automação
                     </CardTitle>
                     <CardDescription>
-                      Prompt único do sistema para os modos &quot;Responder chamado&quot; e &quot;Aprimorar texto&quot;.
+                      Configure prompts, limites de tokens e parâmetros separados para cada uma das 3 funcionalidades de IA.
                     </CardDescription>
                   </div>
                   <ConfirmAction
-                    title="Restaurar prompt e configurações padrão da IA?"
-                    description="O prompt do sistema será redefinido para o padrão ágil e cordial da Central TI SENAI LRV, com limite de 150 tokens e temperatura 0.2."
-                    confirmLabel="Restaurar padrão"
+                    title="Restaurar todas as configurações da IA?"
+                    description="Todos os prompts (sugestão de resposta, aprimorar texto e sugestão de abertura) voltarão para os valores oficiais do sistema."
+                    confirmLabel="Restaurar tudo"
                     variant="destructive"
                     onConfirm={() => {
                       salvar({ iaSuporte: { ...IA_SUPORTE_PADRAO } });
-                      toast.success("Configurações padrão da IA restauradas!");
+                      toast.success("Todas as configurações da IA foram restauradas para o padrão!");
                     }}
                   >
                     <Button variant="outline" size="sm" className="gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                      <RotateCcw className="size-3.5" /> Restaurar padrão
+                      <RotateCcw className="size-3.5" /> Restaurar tudo
                     </Button>
                   </ConfirmAction>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-bold text-foreground">
-                      Prompt do Sistema (Único para ambos os modos)
-                    </Label>
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      {iaConf.promptSistema.length} caracteres
-                    </span>
-                  </div>
-                  <Textarea
-                    rows={12}
-                    value={iaConf.promptSistema}
-                    onChange={(e) => salvarIa({ promptSistema: e.target.value })}
-                    className="font-mono text-xs leading-relaxed bg-background/80 min-h-[220px]"
-                    placeholder="Instruções e diretrizes técnicas do assistente..."
-                  />
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                    <span>
-                      Este prompt único é compartilhado pelas funções <strong>MODO: RESPONDER CHAMADO</strong> e <strong>MODO: APRIMORAR TEXTO</strong>.
-                    </span>
-                    <span className="font-medium text-foreground/80">
-                      Contador: {iaConf.promptSistema.length} caracteres digitados
-                    </span>
-                  </div>
-                </div>
+                <Tabs defaultValue="resposta" className="w-full space-y-4">
+                  <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-1.5 p-1 bg-muted/60 rounded-xl h-auto">
+                    <TabsTrigger value="resposta" className="flex items-center gap-1.5 py-2 rounded-lg text-xs font-semibold">
+                      <MessageCircle className="size-3.5 text-purple-600" /> 1. Sugerir resposta no atendimento
+                    </TabsTrigger>
+                    <TabsTrigger value="aprimorar" className="flex items-center gap-1.5 py-2 rounded-lg text-xs font-semibold">
+                      <Sparkles className="size-3.5 text-blue-600" /> 2. Aprimorar texto
+                    </TabsTrigger>
+                    <TabsTrigger value="abertura" className="flex items-center gap-1.5 py-2 rounded-lg text-xs font-semibold">
+                      <FileText className="size-3.5 text-green-600" /> 3. Sugerir texto ao abrir chamado
+                    </TabsTrigger>
+                  </TabsList>
 
-                <div className="grid gap-5 md:grid-cols-2 pt-4 border-t border-border">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold">
-                      Limite de Tokens por Resposta (ambos os modos)
-                    </Label>
-                    <Input
-                      type="number"
-                      min={50}
-                      max={1000}
-                      value={iaConf.maxTokensResposta || 150}
-                      onChange={(e) => {
-                        const val = Number(e.target.value) || 150;
-                        salvarIa({ maxTokensResposta: val, maxTokensAprimoramento: val });
-                      }}
-                    />
-                    <p className="text-[11px] text-muted-foreground">
-                      Padrão: 150 tokens nos dois modos. Respostas rápidas e objetivas em até 3 frases (50 palavras).
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold">
-                      Temperatura (Criatividade vs. Rigor)
-                    </Label>
-                    <Input
-                      type="number"
-                      step={0.05}
-                      min={0}
-                      max={1}
-                      value={iaConf.temperatura ?? 0.2}
-                      onChange={(e) => salvarIa({ temperatura: Number(e.target.value) ?? 0.2 })}
-                    />
-                    <p className="text-[11px] text-muted-foreground">
-                      Padrão: 0.2 para precisão, foco e consistência técnica.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-border space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-muted/20">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor="ia-usar-resolvidos" className="text-sm font-semibold cursor-pointer">
-                          Usar chamados resolvidos como referência
+                  {/* SUB-ABA A: SUGERIR RESPOSTA NO ATENDIMENTO */}
+                  <TabsContent value="resposta" className="space-y-5 pt-2 focus-visible:outline-none">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-muted/20">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="ia-resposta-ativo" className="text-sm font-semibold cursor-pointer">
+                          Sugerir resposta no atendimento técnico
                         </Label>
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                          Base Histórica
+                        <p className="text-xs text-muted-foreground">
+                          Habilita a sugestão automática de procedimentos e respostas nos chamados com base no histórico e regras.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          id="ia-resposta-ativo"
+                          checked={iaResposta.ativo}
+                          onCheckedChange={(checked) => salvarIaResposta({ ativo: checked })}
+                        />
+                        <ConfirmAction
+                          title="Restaurar padrão da sugestão de resposta?"
+                          description="O prompt e configurações da sugestão no atendimento voltarão para o padrão oficial."
+                          confirmLabel="Restaurar"
+                          variant="destructive"
+                          onConfirm={() => {
+                            salvarIaResposta({ ...IA_SUPORTE_PADRAO.respostaAtendimento });
+                            toast.success("Padrão de sugestão de resposta restaurado!");
+                          }}
+                        >
+                          <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground hover:text-foreground">
+                            <RotateCcw className="size-3" /> Restaurar padrão
+                          </Button>
+                        </ConfirmAction>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-foreground">
+                          Prompt do Sistema (Sugerir resposta no atendimento)
+                        </Label>
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          {iaResposta.prompt.length} caracteres
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Busca no servidor até 5 chamados resolvidos semelhantes da mesma categoria para orientar a IA com soluções já validadas pela equipe (sem nomes ou dados pessoais).
-                      </p>
+                      <Textarea
+                        rows={8}
+                        value={iaResposta.prompt}
+                        onChange={(e) => salvarIaResposta({ prompt: e.target.value })}
+                        className="font-mono text-xs leading-relaxed bg-background/80 min-h-[160px]"
+                        placeholder="Instruções para geração da resposta técnica ao solicitante..."
+                      />
                     </div>
-                    <Switch
-                      id="ia-usar-resolvidos"
-                      checked={iaConf.usarChamadosResolvidos ?? true}
-                      onCheckedChange={(checked) => salvarIa({ usarChamadosResolvidos: checked })}
-                    />
-                  </div>
 
-                  {(iaConf.usarChamadosResolvidos ?? true) && (
-                    <div className="space-y-2 max-w-sm pl-1">
-                      <Label htmlFor="ia-max-exemplos" className="text-xs font-semibold">
-                        Número de exemplos semelhantes (1 a 5)
-                      </Label>
-                      <Input
-                        id="ia-max-exemplos"
-                        type="number"
-                        min={1}
-                        max={5}
-                        value={iaConf.maxExemplosResolvidos ?? 5}
-                        onChange={(e) => {
-                          const val = Math.min(5, Math.max(1, Number(e.target.value) || 5));
-                          salvarIa({ maxExemplosResolvidos: val });
-                        }}
+                    <div className="grid gap-5 md:grid-cols-2 pt-2 border-t border-border">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold">Limite de Tokens por Resposta</Label>
+                        <Input
+                          type="number"
+                          min={50}
+                          max={1000}
+                          value={iaResposta.maxTokens || 150}
+                          onChange={(e) => salvarIaResposta({ maxTokens: Number(e.target.value) || 150 })}
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          Padrão: 150 tokens. Respostas objetivas em até 3 frases (50 palavras).
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold">Temperatura (0 a 1)</Label>
+                        <Input
+                          type="number"
+                          step={0.05}
+                          min={0}
+                          max={1}
+                          value={iaResposta.temperatura ?? 0.2}
+                          onChange={(e) => salvarIaResposta({ temperatura: Number(e.target.value) ?? 0.2 })}
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          Padrão: 0.2 para precisão, foco e rigor técnico.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-border space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-muted/20">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="ia-usar-resolvidos" className="text-sm font-semibold cursor-pointer">
+                            Usar chamados resolvidos como referência
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Busca no servidor até 5 chamados resolvidos semelhantes da mesma categoria para orientar a IA com soluções já validadas pela equipe (sem dados pessoais).
+                          </p>
+                        </div>
+                        <Switch
+                          id="ia-usar-resolvidos"
+                          checked={iaResposta.usarChamadosResolvidos ?? true}
+                          onCheckedChange={(checked) => salvarIaResposta({ usarChamadosResolvidos: checked })}
+                        />
+                      </div>
+
+                      {(iaResposta.usarChamadosResolvidos ?? true) && (
+                        <div className="space-y-2 max-w-sm pl-1">
+                          <Label htmlFor="ia-max-exemplos" className="text-xs font-semibold">
+                            Número de exemplos semelhantes (1 a 5)
+                          </Label>
+                          <Input
+                            id="ia-max-exemplos"
+                            type="number"
+                            min={1}
+                            max={5}
+                            value={iaResposta.maxExemplosResolvidos ?? 5}
+                            onChange={(e) => {
+                              const val = Math.min(5, Math.max(1, Number(e.target.value) || 5));
+                              salvarIaResposta({ maxExemplosResolvidos: val });
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  {/* SUB-ABA B: APRIMORAR TEXTO */}
+                  <TabsContent value="aprimorar" className="space-y-5 pt-2 focus-visible:outline-none">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-muted/20">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="ia-aprimorar-ativo" className="text-sm font-semibold cursor-pointer">
+                          Aprimorar texto com IA
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Permite ao técnico e ao solicitante corrigir ortografia, expandir gírias (pc, ta, pq, vc) e completar frases inacabadas.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          id="ia-aprimorar-ativo"
+                          checked={iaAprimorar.ativo}
+                          onCheckedChange={(checked) => salvarIaAprimorar({ ativo: checked })}
+                        />
+                        <ConfirmAction
+                          title="Restaurar padrão do aprimoramento de texto?"
+                          description="O prompt e configurações de aprimoramento de texto voltarão para o padrão oficial em português do Brasil."
+                          confirmLabel="Restaurar"
+                          variant="destructive"
+                          onConfirm={() => {
+                            salvarIaAprimorar({ ...IA_SUPORTE_PADRAO.aprimorarTexto });
+                            toast.success("Padrão de aprimoramento de texto restaurado!");
+                          }}
+                        >
+                          <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground hover:text-foreground">
+                            <RotateCcw className="size-3" /> Restaurar padrão
+                          </Button>
+                        </ConfirmAction>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-foreground">
+                          Prompt do Sistema (Aprimorar texto)
+                        </Label>
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          {iaAprimorar.prompt.length} caracteres
+                        </span>
+                      </div>
+                      <Textarea
+                        rows={8}
+                        value={iaAprimorar.prompt}
+                        onChange={(e) => salvarIaAprimorar({ prompt: e.target.value })}
+                        className="font-mono text-xs leading-relaxed bg-background/80 min-h-[160px]"
+                        placeholder="Diretrizes para o revisor ortográfico e gramatical..."
                       />
                       <p className="text-[11px] text-muted-foreground">
-                        Quantidade de chamados resolvidos enviados como referência de solução (padrão: 5).
+                        Utilizado pelo botão &quot;Aprimorar texto&quot; no atendimento técnico e na abertura de chamados.
                       </p>
                     </div>
-                  )}
-                </div>
+
+                    <div className="grid gap-5 md:grid-cols-2 pt-2 border-t border-border">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold">Limite de Tokens</Label>
+                        <Input
+                          type="number"
+                          min={50}
+                          max={1000}
+                          value={iaAprimorar.maxTokens || 150}
+                          onChange={(e) => salvarIaAprimorar({ maxTokens: Number(e.target.value) || 150 })}
+                        />
+                        <p className="text-[11px] text-muted-foreground">Padrão: 150 tokens.</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold">Temperatura (0 a 1)</Label>
+                        <Input
+                          type="number"
+                          step={0.05}
+                          min={0}
+                          max={1}
+                          value={iaAprimorar.temperatura ?? 0.2}
+                          onChange={(e) => salvarIaAprimorar({ temperatura: Number(e.target.value) ?? 0.2 })}
+                        />
+                        <p className="text-[11px] text-muted-foreground">Padrão: 0.2.</p>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* SUB-ABA C: SUGERIR TEXTO AO ABRIR CHAMADO */}
+                  <TabsContent value="abertura" className="space-y-5 pt-2 focus-visible:outline-none">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-muted/20">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="ia-abertura-ativo" className="text-sm font-semibold cursor-pointer">
+                          Sugerir texto ao abrir chamado
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Permite ao solicitante gerar uma descrição clara e objetiva com 1 clique a partir das opções marcadas (setor, local e tipo de problema).
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          id="ia-abertura-ativo"
+                          checked={iaAbertura.ativo}
+                          onCheckedChange={(checked) => salvarIaSugerirAbertura({ ativo: checked })}
+                        />
+                        <ConfirmAction
+                          title="Restaurar padrão da sugestão de abertura?"
+                          description="O prompt e configurações da sugestão ao abrir chamado voltarão para o padrão oficial."
+                          confirmLabel="Restaurar"
+                          variant="destructive"
+                          onConfirm={() => {
+                            salvarIaSugerirAbertura({ ...IA_SUPORTE_PADRAO.sugerirAbertura });
+                            toast.success("Padrão de sugestão de abertura restaurado!");
+                          }}
+                        >
+                          <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground hover:text-foreground">
+                            <RotateCcw className="size-3" /> Restaurar padrão
+                          </Button>
+                        </ConfirmAction>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-foreground">
+                          Prompt do Sistema (Sugerir texto ao abrir chamado)
+                        </Label>
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          {iaAbertura.prompt.length} caracteres
+                        </span>
+                      </div>
+                      <Textarea
+                        rows={8}
+                        value={iaAbertura.prompt}
+                        onChange={(e) => salvarIaSugerirAbertura({ prompt: e.target.value })}
+                        className="font-mono text-xs leading-relaxed bg-background/80 min-h-[160px]"
+                        placeholder="Instruções para redigir a descrição do chamado para o solicitante..."
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Utilizado pelo botão &quot;Sugerir texto&quot; no formulário de abertura de chamados.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2 pt-2 border-t border-border">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold">Limite de Tokens (Resposta Rápida)</Label>
+                        <Input
+                          type="number"
+                          min={30}
+                          max={500}
+                          value={iaAbertura.maxTokens || 100}
+                          onChange={(e) => salvarIaSugerirAbertura({ maxTokens: Number(e.target.value) || 100 })}
+                        />
+                        <p className="text-[11px] text-muted-foreground">Padrão: 100 tokens (modelo leve, 1 a 2 frases objetivas).</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold">Temperatura (0 a 1)</Label>
+                        <Input
+                          type="number"
+                          step={0.05}
+                          min={0}
+                          max={1}
+                          value={iaAbertura.temperatura ?? 0.2}
+                          onChange={(e) => salvarIaSugerirAbertura({ temperatura: Number(e.target.value) ?? 0.2 })}
+                        />
+                        <p className="text-[11px] text-muted-foreground">Padrão: 0.2.</p>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </TabsContent>

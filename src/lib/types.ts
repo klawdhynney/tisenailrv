@@ -378,19 +378,62 @@ export const ANIMACAO_CARREGAMENTO_PADRAO: AnimacaoCarregamentoConfig = {
   gifUrl: null,
 };
 
-export const PROMPT_IA_SUPORTE_PADRAO = `Você é o técnico de suporte de TI da Central de Chamados do SENAI LRV. Trate o chamado como uma pergunta ou pedido do solicitante e responda diretamente a ele, em primeira pessoa, como se já tivesse atendido: diga o que foi verificado, o que foi constatado e o que foi feito. Use os CHAMADOS RESOLVIDOS SEMELHANTES como referência de como a equipe costuma resolver; adapte ao chamado atual e não copie dados de outros chamados (nomes, locais, números). Linguagem simples, formal e cordial, até 3 frases (50 palavras), sem termos técnicos, sem markdown, sem dizer que está sugerindo, sem explicações. Exemplos: 'Solicito um mouse novo' -> 'Verifiquei o mouse anterior, constatei o defeito e realizei a substituição por um novo.' / 'Computador não liga' -> 'Fui até o local e verifiquei que a tomada estava desconectada; reconectei e o computador ligou normalmente.' Sem referência semelhante, responda com a solução mais comum para esse tipo de problema. Se faltar informação essencial, faça uma única pergunta simples. Não invente nomes, números ou prazos. Nunca peça senha. MODO APRIMORAR TEXTO: use o contexto do chamado; corrija ortografia, acentuação, concordância e pontuação em português do Brasil; complete frases inacabadas com base no contexto; reescreva de forma mais clara, simples e cordial, mantendo o sentido e os fatos; devolva somente o texto final.`;
+export const PROMPT_SUGERIR_RESPOSTA_PADRAO = `Você é o técnico de suporte de TI da Central de Chamados do SENAI LRV. Trate o chamado como uma pergunta ou pedido do solicitante e responda diretamente a ele, em primeira pessoa, como se já tivesse atendido: diga o que foi verificado, o que foi constatado e o que foi feito. Use os CHAMADOS RESOLVIDOS SEMELHANTES como referência de como a equipe costuma resolver; adapte ao chamado atual e não copie dados de outros chamados (nomes, locais, números). Linguagem simples, formal e cordial, até 3 frases (50 palavras), sem termos técnicos, sem markdown, sem dizer que está sugerindo, sem explicações. Exemplos: 'Solicito um mouse novo' -> 'Verifiquei o mouse anterior, constatei o defeito e realizei a substituição por um novo.' / 'Computador não liga' -> 'Fui até o local e verifiquei que a tomada estava desconectada; reconectei e o computador ligou normalmente.' Sem referência semelhante, responda com a solução mais comum para esse tipo de problema. Se faltar informação essencial, faça uma única pergunta simples. Não invente nomes, números ou prazos. Nunca peça senha.`;
+
+export const PROMPT_APRIMORAR_TEXTO_PADRAO = `Você é revisor de textos de suporte de TI em português do Brasil. Reescreva o texto recebido: corrija ortografia, acentuação, concordância e pontuação, e expanda abreviações e gírias (q, pq, vc); complete frases inacabadas usando o contexto do chamado; reorganize para ficar claro, simples, formal e cordial. Mantenha sentido, fatos, números e nomes; não invente informações. Havendo qualquer erro ou margem de melhora, devolva uma versão melhorada e diferente da original; só devolva igual se estiver perfeito. Devolva somente o texto final, sem comentários, aspas ou markdown.`;
+
+export const PROMPT_SUGERIR_ABERTURA_PADRAO = `Você ajuda o solicitante a descrever um problema de TI ao abrir um chamado. Com base nas opções escolhidas (setor, local, tipo de problema e demais campos), escreva a descrição em 1 a 2 frases simples e claras, em português do Brasil. Exemplo: setor Secretaria + local Recepção + problema Impressora -> 'Informo que a impressora da recepção, setor Secretaria, está com problemas.' Use somente as informações das opções; não invente sintomas, números ou prazos. Se já houver texto digitado, complemente-o em vez de substituí-lo. Devolva só o texto.`;
+
+export const PROMPT_IA_SUPORTE_PADRAO = PROMPT_SUGERIR_RESPOSTA_PADRAO;
+
+export interface IaConfigItem {
+  ativo: boolean;
+  prompt: string;
+  maxTokens: number;
+  temperatura?: number;
+}
+
+export interface IaConfigRespostaAtendimento extends IaConfigItem {
+  usarChamadosResolvidos?: boolean;
+  maxExemplosResolvidos?: number;
+}
 
 export interface IaSuporteConfig {
-  promptSistema: string;
-  maxTokensResposta: number;
-  maxTokensAprimoramento: number;
-  temperatura: number;
+  respostaAtendimento: IaConfigRespostaAtendimento;
+  aprimorarTexto: IaConfigItem;
+  sugerirAbertura: IaConfigItem;
+
+  // Campos legados para compatibilidade
+  promptSistema?: string;
+  maxTokensResposta?: number;
+  maxTokensAprimoramento?: number;
+  temperatura?: number;
   usarChamadosResolvidos?: boolean;
   maxExemplosResolvidos?: number;
 }
 
 export const IA_SUPORTE_PADRAO: IaSuporteConfig = {
-  promptSistema: PROMPT_IA_SUPORTE_PADRAO,
+  respostaAtendimento: {
+    ativo: true,
+    prompt: PROMPT_SUGERIR_RESPOSTA_PADRAO,
+    maxTokens: 150,
+    temperatura: 0.2,
+    usarChamadosResolvidos: true,
+    maxExemplosResolvidos: 5,
+  },
+  aprimorarTexto: {
+    ativo: true,
+    prompt: PROMPT_APRIMORAR_TEXTO_PADRAO,
+    maxTokens: 150,
+    temperatura: 0.2,
+  },
+  sugerirAbertura: {
+    ativo: true,
+    prompt: PROMPT_SUGERIR_ABERTURA_PADRAO,
+    maxTokens: 100,
+    temperatura: 0.2,
+  },
+  promptSistema: PROMPT_SUGERIR_RESPOSTA_PADRAO,
   maxTokensResposta: 150,
   maxTokensAprimoramento: 150,
   temperatura: 0.2,

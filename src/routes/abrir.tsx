@@ -1,17 +1,27 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Cpu, MapPin, CheckCircle2, ArrowLeft, SendHorizontal, Mail, Star, FileText, MessageCircle } from "lucide-react";
+import { Cpu, MapPin, CheckCircle2, ArrowLeft, SendHorizontal, Mail, Star, FileText, MessageCircle, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { useLoading } from "@/lib/loading-context";
 import { TextoAssistido } from "@/components/TextoAssistido";
 import { CAMPOS_ABERTURA_PADRAO, AVALIACAO_PADRAO } from "@/lib/types";
+import { sugerirTextoAbertura, revisarTexto } from "@/lib/revisar-texto.functions";
 
 export const Route = createFileRoute("/abrir")({
   ssr: false,
@@ -79,6 +89,12 @@ function AbrirChamado() {
   const [avaliacaoEnviada, setAvaliacaoEnviada] = useState(false);
   const [avaliacaoPulada, setAvaliacaoPulada] = useState(false);
 
+  // Estados da IA ao abrir chamado
+  const [sugerindoTexto, setSugerindoTexto] = useState(false);
+  const [aprimorandoTexto, setAprimorandoTexto] = useState(false);
+  const [dialogSubstituirAberto, setDialogSubstituirAberto] = useState(false);
+  const [sugestaoPendente, setSugestaoPendente] = useState<string | null>(null);
+
   const configAvaliacao = regras.avaliacoes ?? AVALIACAO_PADRAO;
 
   useEffect(() => {
@@ -143,6 +159,80 @@ function AbrirChamado() {
       setCustomForm((cf) => ({ ...cf, [k]: v }));
     }
   };
+
+  const podeSugerir = Boolean(form.local?.trim() && form.categoria?.trim());
+
+  async function handleSugerirTexto() {
+    if (!podeSugerir || sugerindoTexto) return;
+
+    setSugerindoTexto(true);
+    try {
+      const res = await sugerirTextoAbertura({
+        data: {
+          setor: form.setor || undefined,
+          local: form.local || undefined,
+          categoria: form.categoria || undefined,
+          outrosCampos: Object.keys(customForm).length > 0 ? customForm : undefined,
+          textoAtual: form.descricao?.trim() || undefined,
+        },
+      });
+
+      const sugestao = res.texto?.trim();
+      if (!sugestao) {
+        throw new Error("A IA não retornou uma sugestão de texto.");
+      }
+
+      if (form.descricao && form.descricao.trim().length > 0) {
+        setSugestaoPendente(sugestao);
+        setDialogSubstituirAberto(true);
+      } else {
+        set("descricao", sugestao);
+        toast.success("Descrição sugerida inserida no campo!");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Não foi possível sugerir o texto com IA.");
+    } finally {
+      setSugerindoTexto(false);
+    }
+  }
+
+  function aplicarSubstituicao(tipo: "substituir" | "complementar") {
+    if (!sugestaoPendente) return;
+    if (tipo === "substituir") {
+      set("descricao", sugestaoPendente);
+      toast.success("Texto substituído pela sugestão da IA!");
+    } else {
+      const atual = form.descricao.trim();
+      const novo = atual ? `${atual}\n\n${sugestaoPendente}` : sugestaoPendente;
+      set("descricao", novo);
+      toast.success("Texto complementado com a sugestão da IA!");
+    }
+    setDialogSubstituirAberto(false);
+    setSugestaoPendente(null);
+  }
+
+  async function handleAprimorarTexto() {
+    if (!form.descricao || form.descricao.trim().length < 2 || aprimorandoTexto) return;
+    setAprimorandoTexto(true);
+    try {
+      const res = await revisarTexto({
+        data: {
+          texto: form.descricao,
+          categoria: form.categoria,
+          local: form.local,
+        },
+      });
+      const resultado = res.texto || res.versao1 || "";
+      if (resultado) {
+        set("descricao", resultado);
+        toast.success("Texto aprimorado com sucesso!");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Não foi possível aprimorar o texto.");
+    } finally {
+      setAprimorandoTexto(false);
+    }
+  }
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -652,7 +742,40 @@ function AbrirChamado() {
             )}
 
             {isCampoAtivo("descricao") && (
-              <Campo label={getCampoLabel("descricao", configAbrir?.rotuloDescricao || "Descreva o problema*")} obrigatorio={isCampoObrigatorio("descricao")} erro={erros.descricao}>
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Label className="flex items-center gap-1 text-sm font-medium">
+                    <span>{getCampoLabel("descricao", configAbrir?.rotuloDescricao || "Descreva o problema*").replace(/\*$/, "")}</span>
+                    <span className="font-bold text-[var(--g-red)] text-sm select-none" title="Campo obrigatório">*</span>
+                  </Label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={!podeSugerir || sugerindoTexto}
+                      onClick={handleSugerirTexto}
+                      className="gap-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/40 disabled:opacity-50"
+                      title={podeSugerir ? "Sugerir descrição com IA a partir das opções selecionadas" : "Preencha o local e o tipo de problema para habilitar a sugestão de texto"}
+                    >
+                      <Wand2 className="size-3.5 text-purple-600" />
+                      {sugerindoTexto ? "Sugerindo..." : "Sugerir texto"}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={aprimorandoTexto || !form.descricao || form.descricao.trim().length < 2}
+                      onClick={handleAprimorarTexto}
+                      className="gap-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 disabled:opacity-50"
+                      title="Aprimorar ortografia, gírias e clareza do texto digitado"
+                    >
+                      <Sparkles className="size-3.5 text-blue-600" />
+                      {aprimorandoTexto ? "Aprimorando..." : "Aprimorar texto"}
+                    </Button>
+                  </div>
+                </div>
+
                 <TextoAssistido
                   rows={5}
                   value={form.descricao}
@@ -660,8 +783,10 @@ function AbrirChamado() {
                   placeholder={configAbrir?.placeholderDescricao || "Ex.: Computador sem internet na sala 1"}
                   categoria={form.categoria}
                   local={form.local}
+                  ocultarIa={true}
                 />
-              </Campo>
+                {erros.descricao && <p className="mt-1 text-xs font-medium text-[var(--g-red)]">{erros.descricao}</p>}
+              </div>
             )}
 
             <label className="flex items-center gap-2 text-sm text-muted-foreground select-none cursor-pointer">
@@ -768,6 +893,57 @@ function AbrirChamado() {
           </div>
         </div>
       )}
+
+      {/* Modal de confirmação Substituir ou Complementar */}
+      <AlertDialog open={dialogSubstituirAberto} onOpenChange={setDialogSubstituirAberto}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-base font-bold">
+              <Sparkles className="size-4 text-purple-600" /> Sugestão de texto gerada
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground">
+              O campo de descrição já contém um texto digitado. Escolha como deseja aplicar a sugestão da IA:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {sugestaoPendente && (
+            <div className="p-3 rounded-xl border border-purple-200 dark:border-purple-900 bg-purple-50/50 dark:bg-purple-950/20 text-xs text-foreground font-sans leading-relaxed">
+              <span className="font-semibold text-purple-700 dark:text-purple-300 block mb-1">Sugestão da IA:</span>
+              &ldquo;{sugestaoPendente}&rdquo;
+            </div>
+          )}
+
+          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2 pt-2">
+            <AlertDialogCancel
+              onClick={() => {
+                setDialogSubstituirAberto(false);
+                setSugestaoPendente(null);
+              }}
+              className="text-xs sm:mr-auto"
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => aplicarSubstituicao("complementar")}
+              className="text-xs font-semibold"
+            >
+              Complementar
+            </Button>
+            <Button
+              type="button"
+              variant="google-blue"
+              size="sm"
+              onClick={() => aplicarSubstituicao("substituir")}
+              className="text-xs font-bold"
+            >
+              Substituir
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

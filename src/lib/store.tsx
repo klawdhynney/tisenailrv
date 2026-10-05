@@ -15,6 +15,9 @@ import {
   LGPD_PADRAO,
   AVALIACAO_PADRAO,
   IA_SUPORTE_PADRAO,
+  PROMPT_SUGERIR_RESPOSTA_PADRAO,
+  PROMPT_APRIMORAR_TEXTO_PADRAO,
+  PROMPT_SUGERIR_ABERTURA_PADRAO,
   WHATSAPP_PADRAO,
   MOTIVOS_PAUSA_SLA_PADRAO,
   type Regras,
@@ -38,25 +41,52 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     paginaInicialSalva.bannerUrl = "";
   }
 
-  // Atualiza IA de suporte se estiver com a versão antiga anterior ou sem referências de chamados semelhantes
-  const iaSuporteSalva = { ...regrasSalvas.iaSuporte };
-  if (
-    !iaSuporteSalva.promptSistema ||
-    !iaSuporteSalva.promptSistema.includes("CHAMADOS RESOLVIDOS SEMELHANTES") ||
-    iaSuporteSalva.promptSistema.includes("assistente técnico da Central de Chamados") ||
-    iaSuporteSalva.maxTokensResposta === 400
-  ) {
-    iaSuporteSalva.promptSistema = IA_SUPORTE_PADRAO.promptSistema;
-    iaSuporteSalva.maxTokensResposta = 150;
-    iaSuporteSalva.maxTokensAprimoramento = 150;
-    iaSuporteSalva.temperatura = 0.2;
-  }
-  if (iaSuporteSalva.usarChamadosResolvidos === undefined) {
-    iaSuporteSalva.usarChamadosResolvidos = true;
-  }
-  if (!iaSuporteSalva.maxExemplosResolvidos) {
-    iaSuporteSalva.maxExemplosResolvidos = 5;
-  }
+  // Atualiza IA de suporte garantindo estrutura em 3 abas e retrocompatibilidade
+  const iaSuporteSalva = ((regrasSalvas.iaSuporte || {}) as any);
+
+  const respostaAtendimento = {
+    ...IA_SUPORTE_PADRAO.respostaAtendimento,
+    ...(iaSuporteSalva.respostaAtendimento || {}),
+    prompt: iaSuporteSalva.respostaAtendimento?.prompt || iaSuporteSalva.promptSistema || PROMPT_SUGERIR_RESPOSTA_PADRAO,
+    maxTokens: Number(iaSuporteSalva.respostaAtendimento?.maxTokens || iaSuporteSalva.maxTokensResposta) || 150,
+    temperatura: typeof iaSuporteSalva.respostaAtendimento?.temperatura === "number"
+      ? iaSuporteSalva.respostaAtendimento.temperatura
+      : (typeof iaSuporteSalva.temperatura === "number" ? iaSuporteSalva.temperatura : 0.2),
+    usarChamadosResolvidos: iaSuporteSalva.respostaAtendimento?.usarChamadosResolvidos ?? iaSuporteSalva.usarChamadosResolvidos ?? true,
+    maxExemplosResolvidos: Math.min(5, Math.max(1, Number(iaSuporteSalva.respostaAtendimento?.maxExemplosResolvidos || iaSuporteSalva.maxExemplosResolvidos) || 5)),
+  };
+
+  const aprimorarTexto = {
+    ...IA_SUPORTE_PADRAO.aprimorarTexto,
+    ...(iaSuporteSalva.aprimorarTexto || {}),
+    prompt: iaSuporteSalva.aprimorarTexto?.prompt || PROMPT_APRIMORAR_TEXTO_PADRAO,
+    maxTokens: Number(iaSuporteSalva.aprimorarTexto?.maxTokens || iaSuporteSalva.maxTokensAprimoramento) || 150,
+    temperatura: typeof iaSuporteSalva.aprimorarTexto?.temperatura === "number"
+      ? iaSuporteSalva.aprimorarTexto.temperatura
+      : 0.2,
+  };
+
+  const sugerirAbertura = {
+    ...IA_SUPORTE_PADRAO.sugerirAbertura,
+    ...(iaSuporteSalva.sugerirAbertura || {}),
+    prompt: iaSuporteSalva.sugerirAbertura?.prompt || PROMPT_SUGERIR_ABERTURA_PADRAO,
+    maxTokens: Number(iaSuporteSalva.sugerirAbertura?.maxTokens) || 100,
+    temperatura: typeof iaSuporteSalva.sugerirAbertura?.temperatura === "number"
+      ? iaSuporteSalva.sugerirAbertura.temperatura
+      : 0.2,
+  };
+
+  const iaSuporteFinal = {
+    respostaAtendimento,
+    aprimorarTexto,
+    sugerirAbertura,
+    promptSistema: respostaAtendimento.prompt,
+    maxTokensResposta: respostaAtendimento.maxTokens,
+    maxTokensAprimoramento: aprimorarTexto.maxTokens,
+    temperatura: respostaAtendimento.temperatura,
+    usarChamadosResolvidos: respostaAtendimento.usarChamadosResolvidos,
+    maxExemplosResolvidos: respostaAtendimento.maxExemplosResolvidos,
+  };
 
   return {
     ...REGRAS_PADRAO,
@@ -82,7 +112,7 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     rodape: { ...RODAPE_PADRAO, ...(regrasSalvas.rodape || {}) },
     lgpd: { ...LGPD_PADRAO, ...(regrasSalvas.lgpd || {}) },
     avaliacoes: { ...AVALIACAO_PADRAO, ...(regrasSalvas.avaliacoes || {}) },
-    iaSuporte: { ...IA_SUPORTE_PADRAO, ...iaSuporteSalva },
+    iaSuporte: { ...IA_SUPORTE_PADRAO, ...iaSuporteFinal },
     whatsapp: { ...WHATSAPP_PADRAO, ...(regrasSalvas.whatsapp || {}) },
   };
 }
