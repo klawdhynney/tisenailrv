@@ -408,22 +408,33 @@ function AbrirChamado() {
         }
       }
 
-      // 3. Salva no cache local do solicitante com created_at e sem duplicatas
+      // 3. Gerenciamento do armazenamento local:
+      // Se gravou no banco com sucesso, limpa a entrada local correspondente.
+      // Se o banco falhou (indisponível/tabela pendente), guarda apenas como reserva.
       try {
         const salvas = JSON.parse(localStorage.getItem("tisenai_avaliacoes_locais") || "[]");
         const semAtual = Array.isArray(salvas) ? salvas.filter((item: any) => item.ticket_id !== sucessoId) : [];
-        semAtual.unshift({
-          id: Date.now(),
-          ticket_id: sucessoId,
-          user_id: session?.user?.id || null,
-          user_email: session?.user?.email || null,
-          nota: notaAvaliacao,
-          comentario: comentarioLimpo,
-          enviado_ao_banco: gravado,
-          created_at: new Date().toISOString(),
-          data: new Date().toISOString(),
-        });
-        localStorage.setItem("tisenai_avaliacoes_locais", JSON.stringify(semAtual));
+
+        if (gravado) {
+          if (semAtual.length > 0) {
+            localStorage.setItem("tisenai_avaliacoes_locais", JSON.stringify(semAtual));
+          } else {
+            localStorage.removeItem("tisenai_avaliacoes_locais");
+          }
+        } else {
+          semAtual.unshift({
+            id: Date.now(),
+            ticket_id: sucessoId,
+            user_id: session?.user?.id || null,
+            user_email: session?.user?.email || null,
+            nota: notaAvaliacao,
+            comentario: comentarioLimpo,
+            enviado_ao_banco: false,
+            created_at: new Date().toISOString(),
+            data: new Date().toISOString(),
+          });
+          localStorage.setItem("tisenai_avaliacoes_locais", JSON.stringify(semAtual));
+        }
       } catch {
         // ignore
       }

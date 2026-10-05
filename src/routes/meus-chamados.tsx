@@ -141,34 +141,50 @@ function AvaliacaoAtendimento({
               },
               { onConflict: "ticket_id" },
             )
+            .then(({ error: upsertErr }) => {
+              if (upsertErr) {
+                // Guarda como reserva local pois o banco remoto falhou
+                try {
+                  const salvasLocais = JSON.parse(localStorage.getItem("tisenai_avaliacoes_locais") || "[]");
+                  const semAtual = Array.isArray(salvasLocais) ? salvasLocais.filter((i: any) => i.ticket_id !== ticketId) : [];
+                  semAtual.unshift({
+                    id: Date.now(),
+                    ticket_id: ticketId,
+                    nota: notaMapeada,
+                    comentario: comentarioLimpo,
+                    enviado_ao_banco: false,
+                    created_at: new Date().toISOString(),
+                    data: new Date().toISOString(),
+                  });
+                  localStorage.setItem("tisenai_avaliacoes_locais", JSON.stringify(semAtual));
+                } catch {
+                  // ignore
+                }
+              }
+            })
             .catch(() => {});
+        } else {
+          // Sucesso no banco: limpa do cache local se existir para não duplicar
+          try {
+            const salvasLocais = JSON.parse(localStorage.getItem("tisenai_avaliacoes_locais") || "[]");
+            const semAtual = Array.isArray(salvasLocais) ? salvasLocais.filter((i: any) => i.ticket_id !== ticketId) : [];
+            if (semAtual.length > 0) {
+              localStorage.setItem("tisenai_avaliacoes_locais", JSON.stringify(semAtual));
+            } else {
+              localStorage.removeItem("tisenai_avaliacoes_locais");
+            }
+          } catch {
+            // ignore
+          }
         }
       })
       .catch(() => {});
 
-    // 2. Salva no cache clássico por ID
+    // 2. Salva no cache clássico por ID para visualização imediata do próprio solicitante
     try {
       const todas = JSON.parse(localStorage.getItem("tisenai_avaliacoes") || "{}");
       todas[ticketId] = payload;
       localStorage.setItem("tisenai_avaliacoes", JSON.stringify(todas));
-    } catch {
-      // ignore
-    }
-
-    // 3. Salva no cache unificado de avaliações locais (usado no dashboard e início)
-    try {
-      const salvasLocais = JSON.parse(localStorage.getItem("tisenai_avaliacoes_locais") || "[]");
-      const semAtual = Array.isArray(salvasLocais) ? salvasLocais.filter((i: any) => i.ticket_id !== ticketId) : [];
-      semAtual.unshift({
-        id: Date.now(),
-        ticket_id: ticketId,
-        nota: notaMapeada,
-        comentario: comentarioLimpo,
-        enviado_ao_banco: true,
-        created_at: new Date().toISOString(),
-        data: new Date().toISOString(),
-      });
-      localStorage.setItem("tisenai_avaliacoes_locais", JSON.stringify(semAtual));
     } catch {
       // ignore
     }
