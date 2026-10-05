@@ -96,7 +96,7 @@ export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
               value={slaFilter}
               onChange={(e) => setSlaFilter(e.target.value)}
             >
-              {["Todos", "No prazo", "Estourado", "Cancelado", "Aguardando"].map((s) => (
+              {["Todos", "No prazo", "Estourado", "SLA pausado", "Cancelado", "Aguardando"].map((s) => (
                 <option key={s}>{s}</option>
               ))}
             </select>
@@ -173,9 +173,11 @@ function TicketRow({ ticket: t, colunas, attendance = false }: { ticket: Ticket;
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { if (!attendance) return; const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, [attendance]);
   const sla = calcularSla(t, regras, now);
-  const atrasado = Boolean(sla.prazo && now > sla.prazo);
-  const restanteSeg = sla.prazo ? atrasado ? segundosUteis(sla.prazo, now, regras) : segundosUteis(now, sla.prazo, regras) : null;
-  const relogio = restanteSeg === null ? "—" : `${atrasado ? "−" : ""}${String(Math.floor(restanteSeg / 3600)).padStart(2, "0")}:${String(Math.floor((restanteSeg % 3600) / 60)).padStart(2, "0")}:${String(restanteSeg % 60).padStart(2, "0")}`;
+  const atrasado = Boolean(sla.prazo && now > sla.prazo && !t.slaPausado);
+  const restanteSeg = t.slaPausado
+    ? (sla.restanteMin !== null ? Math.max(0, sla.restanteMin * 60) : null)
+    : sla.prazo ? (atrasado ? segundosUteis(sla.prazo, now, regras) : segundosUteis(now, sla.prazo, regras)) : null;
+  const relogio = restanteSeg === null ? "—" : `${atrasado ? "−" : ""}${String(Math.floor(restanteSeg / 3600)).padStart(2, "0")}:${String(Math.floor((restanteSeg % 3600) / 60)).padStart(2, "0")}:${String(restanteSeg % 60).padStart(2, "0")}${t.slaPausado ? " (pausado)" : ""}`;
   const action = (
     <Button asChild size="sm" variant={attendance ? "google-green" : "google-blue"}>
       <Link to="/chamados/$ticketId" params={{ ticketId: String(t.id) }}>

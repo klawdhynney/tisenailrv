@@ -9,6 +9,7 @@ import {
   MapPin,
   MessageCircle,
   MessageSquare,
+  Pause,
   PlusCircle,
   RefreshCw,
   SendHorizontal,
@@ -19,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { TextoAssistido } from "@/components/TextoAssistido";
 import { PrioridadeChip, StatusChip } from "@/components/Chips";
+import { TicketChat } from "@/components/TicketChat";
 
 export const Route = createFileRoute("/meus-chamados")({
   beforeLoad: async () => {
@@ -55,6 +57,7 @@ export const Route = createFileRoute("/meus-chamados")({
 type OwnTicket = {
   id: number;
   aberto_em: string;
+  hora?: string | null;
   descricao: string;
   status: string;
   prioridade: string;
@@ -64,6 +67,10 @@ type OwnTicket = {
   procedimento: string | null;
   contato?: string | null;
   email?: string | null;
+  sla_pausado?: boolean;
+  sla_pausado_em?: string | null;
+  sla_pausa_motivo?: string | null;
+  sla_segundos_pausados_acumulados?: number;
 };
 
 const EMOJIS_AVALIACAO = [
@@ -264,7 +271,7 @@ function MeusChamados() {
       // 1. Tenta carregar pela sessão autenticada do Supabase
       const { data: dbData } = await supabase
         .from("tickets")
-        .select("id,aberto_em,descricao,status,prioridade,solicitante,local,setor,procedimento,contato,solicitante_email")
+        .select("id,aberto_em,hora,descricao,status,prioridade,solicitante,local,setor,procedimento,contato,solicitante_email,sla_pausado,sla_pausado_em,sla_pausa_motivo,sla_segundos_pausados_acumulados")
         .order("id", { ascending: false });
 
       if (dbData && dbData.length > 0) {
@@ -272,6 +279,7 @@ function MeusChamados() {
           dbData.map((d: any) => ({
             ...d,
             email: d.solicitante_email,
+            sla_pausado: Boolean(d.sla_pausado),
           })),
         );
         setLoading(false);
@@ -304,7 +312,7 @@ function MeusChamados() {
       // 3. Atualiza os dados locais com o progresso público em tempo real (SLA, status, prioridade)
       const { data: publicProgress } = await supabase.rpc("public_ticket_sla_progress");
       if (publicProgress && publicProgress.length > 0) {
-        const progressMap = new Map(publicProgress.map((p) => [p.id, p]));
+        const progressMap = new Map((publicProgress as any[]).map((p) => [p.id, p]));
 
         locais = locais.map((t) => {
           const live = progressMap.get(t.id);
@@ -314,6 +322,11 @@ function MeusChamados() {
               status: live.status || t.status,
               prioridade: live.prioridade || t.prioridade,
               aberto_em: live.aberto_em || t.aberto_em,
+              hora: live.hora || t.hora,
+              sla_pausado: Boolean(live.sla_pausado),
+              sla_pausado_em: live.sla_pausado_em || t.sla_pausado_em,
+              sla_pausa_motivo: live.sla_pausa_motivo || t.sla_pausa_motivo,
+              sla_segundos_pausados_acumulados: live.sla_segundos_pausados_acumulados || t.sla_segundos_pausados_acumulados,
             };
           }
           return t;
@@ -498,6 +511,11 @@ function MeusChamados() {
                 <div className="flex items-center gap-2">
                   <PrioridadeChip valor={t.prioridade} />
                   <StatusChip valor={t.status} />
+                  {t.sla_pausado && (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-black bg-[#F59E0B] text-black shadow-xs">
+                      <Pause className="size-3 shrink-0" /> SLA pausado
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -515,6 +533,22 @@ function MeusChamados() {
                   </span>
                 )}
               </div>
+
+              {/* Banner de SLA Pausado (quando ativo) */}
+              {t.sla_pausado && (
+                <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs flex items-center gap-2.5 animate-in fade-in">
+                  <Pause className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <div>
+                    <span className="font-bold text-amber-700 dark:text-amber-300">
+                      SLA pausado pela equipe:
+                    </span>{" "}
+                    <span className="text-foreground">{t.sla_pausa_motivo || "Aguardando tratativa"}</span>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      O relógio de prazo limite foi congelado e o tempo da pausa não contará como atraso.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Descrição */}
               <div className="rounded-xl bg-muted/40 p-3.5 text-sm text-foreground/90 border border-border/40 whitespace-pre-wrap leading-relaxed">
@@ -547,31 +581,20 @@ function MeusChamados() {
                 />
               )}
 
-              {/* Área para adicionar informações */}
-              <div className="pt-2 border-t border-border/60 space-y-2.5">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                  <MessageSquare className="size-3.5 text-g-blue" />
-                  <span>Enviar informações complementares</span>
-                </div>
-                <TextoAssistido
-                  value={drafts[t.id] ?? ""}
-                  onChange={(val) => setDrafts((prev) => ({ ...prev, [t.id]: val }))}
-                  rows={2}
-                  placeholder="Acrescente detalhes sobre o problema se necessário..."
+              {/* Conversa e Interação Direta com a Equipe de TI (Chat) */}
+              <div className="pt-2 border-t border-border/60 space-y-2">
+                <TicketChat
+                  ticketId={t.id}
+                  solicitanteNome={t.solicitante}
+                  solicitanteEmail={t.email}
+                  ticketDescricao={t.descricao}
+                  ticketAbertoEm={t.aberto_em}
+                  ticketHora={t.hora}
+                  ticketProcedimento={t.procedimento}
+                  currentUserEmail={activeEmail}
+                  currentUserName={session?.user?.user_metadata?.full_name || t.solicitante}
+                  isGestorOrAdmin={false}
                 />
-                <div className="flex justify-end">
-                  <ConfirmAction
-                    disabled={(drafts[t.id]?.trim().length ?? 0) < 5}
-                    title={`Enviar informações ao chamado #${t.id}?`}
-                    description="Seu complemento será anexado ao chamado e poderá ser lido pelos técnicos de TI."
-                    confirmLabel="Sim, enviar"
-                    onConfirm={() => addInformation(t.id)}
-                  >
-                    <span className="flex items-center gap-1.5 text-xs font-semibold">
-                      <SendHorizontal className="size-3.5" /> Enviar complemento
-                    </span>
-                  </ConfirmAction>
-                </div>
               </div>
             </article>
           ))}

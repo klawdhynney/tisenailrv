@@ -21,6 +21,7 @@ import {
   Lock,
   MessageCircle,
   Palette,
+  Pause,
   Plane,
   Plus,
   RotateCcw,
@@ -55,6 +56,7 @@ import {
   COLUNAS_PLANILHA,
   FILTROS_PLANILHA,
   LGPD_PADRAO,
+  MOTIVOS_PAUSA_SLA_PADRAO,
   PARAMETROS_PRIORIDADE_PADRAO,
   PARAMETROS_SLA_PADRAO,
   PARAMETROS_STATUS_PADRAO,
@@ -1966,8 +1968,8 @@ function Regras() {
             </Card>
           </div>
 
-          {/* Setores, Categorias e Responsáveis */}
-          <div className="grid gap-5 lg:grid-cols-3 pt-2 border-t border-border">
+          {/* Setores, Categorias, Responsáveis e Motivos de Pausa do SLA */}
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4 pt-2 border-t border-border">
             <ListaEditavel
               titulo="Setores Solicitantes"
               corTitulo="text-g-blue dark:text-blue-400"
@@ -1993,6 +1995,15 @@ function Regras() {
               botaoAdicionarTexto="Adicionar responsável"
               itens={responsaveis}
               onChange={(resp) => salvar({ responsaveis: resp })}
+            />
+
+            <ListaEditavel
+              titulo="Motivos de Pausa do SLA"
+              corTitulo="text-amber-500 dark:text-amber-400"
+              icone={<Pause className="size-5" />}
+              botaoAdicionarTexto="Adicionar motivo"
+              itens={regras.motivosPausaSla ?? MOTIVOS_PAUSA_SLA_PADRAO}
+              onChange={(motivosPausaSla) => salvar({ motivosPausaSla })}
             />
           </div>
 

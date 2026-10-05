@@ -1,16 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, RotateCcw, Save, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, RotateCcw, Save, Sparkles, Trash2, Pause, Play, Clock, History, MessageSquare, AlertCircle, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { TextoAssistido } from "@/components/TextoAssistido";
+import { TicketChat } from "@/components/TicketChat";
 import { useLoading } from "@/lib/loading-context";
 import { useStore } from "@/lib/store-context";
 import { PRIORIDADES, type Ticket } from "@/lib/types";
-import { calcularSla, formatarData, formatarDataHora } from "@/lib/sla";
+import { calcularSla, formatarData, formatarDataHora, formatarDuracao, segundosUteis } from "@/lib/sla";
 import { sugerirPrioridade } from "@/lib/sugerir-prioridade.functions";
 import { sugerirRespostasAtendimento } from "@/lib/revisar-texto.functions";
 
@@ -76,7 +77,7 @@ const statusEstilos: Record<string, { active: string; inactive: string }> = {
 
 function TicketDetail() {
   const { ticketId } = Route.useParams();
-  const { tickets, regras, hidratado, updateTicket, removeTicket, isGestor } = useStore();
+  const { tickets, regras, hidratado, updateTicket, removeTicket, isGestor, session } = useStore();
   const ticket = tickets.find(t => t.id === Number(ticketId));
   if (!ticket) {
     if (!hidratado) {
@@ -97,7 +98,17 @@ function TicketDetail() {
       </div>
     );
   }
-  return <TicketEditor key={ticket.id} ticket={ticket} regras={regras} updateTicket={updateTicket} removeTicket={removeTicket} isGestor={isGestor} />;
+  return (
+    <TicketEditor
+      key={ticket.id}
+      ticket={ticket}
+      regras={regras}
+      updateTicket={updateTicket}
+      removeTicket={removeTicket}
+      isGestor={isGestor}
+      session={session}
+    />
+  );
 }
 
 function TicketEditor({
@@ -106,12 +117,14 @@ function TicketEditor({
   updateTicket,
   removeTicket,
   isGestor,
+  session,
 }: {
   ticket: Ticket;
   regras: ReturnType<typeof useStore>["regras"];
   updateTicket: ReturnType<typeof useStore>["updateTicket"];
   removeTicket: ReturnType<typeof useStore>["removeTicket"];
   isGestor: boolean;
+  session: ReturnType<typeof useStore>["session"];
 }) {
   const navigate = useNavigate();
   const { wrapAsync, isLoading } = useLoading();
@@ -141,6 +154,98 @@ function TicketEditor({
   const sla = calcularSla(ticket, regras);
   const field = <K extends keyof Ticket>(key: K, value: Ticket[K]) => setDraft(prev => ({ ...prev, [key]: value }));
   const editable = ["solicitante", "setor", "local", "descricao", "categoria", "prioridade", "responsavel", "status", "procedimento", "contato"] as const;
+
+  // Estado e controle de Pausa de SLA
+  const [modalPausaAberto, setModalPausaAberto] = useState(false);
+  const motivosDisponiveis = regras.motivosPausaSla && regras.motivosPausaSla.length > 0
+    ? regras.motivosPausaSla
+    : [
+        "Aguardando resposta do usuário",
+        "Aguardando peça ou fornecedor",
+        "Aguardando validação externa",
+        "Equipamento em bancada",
+        "Aguardando agendamento",
+        "Outros",
+      ];
+  const [motivoPausa, setMotivoPausa] = useState(motivosDisponiveis[0] || "Aguardando resposta do usuário");
+  const [motivoCustom, setMotivoCustom] = useState("");
+  const [mostrarHistoricoPausas, setMostrarHistoricoPausas] = useState(false);
+
+  async function pausarSla() {
+    const motivoFinal = motivoPausa === "Outros" && motivoCustom.trim() ? motivoCustom.trim() : motivoPausa;
+    const agoraIso = new Date().toISOString();
+    const autor = session?.user?.user_metadata?.full_name || session?.user?.email || "Equipe de TI";
+    const historico = [
+      ...(ticket.slaHistoricoPausas || []),
+      {
+        id: crypto.randomUUID(),
+        inicio: agoraIso,
+        fim: null,
+        motivo: motivoFinal,
+        autor,
+      },
+    ];
+
+    setSaving(true);
+    try {
+      await wrapAsync(async () => {
+        const ok = await updateTicket(ticket.id, {
+          slaPausado: true,
+          slaPausadoEm: agoraIso,
+          slaPausaMotivo: motivoFinal,
+          slaPausaAutor: autor,
+          slaHistoricoPausas: historico,
+        });
+        if (ok) {
+          toast.success("SLA pausado com sucesso! O relógio foi parado.");
+          setModalPausaAberto(false);
+          setMotivoCustom("");
+        } else {
+          toast.error("Não foi possível pausar o SLA.");
+        }
+      }, "Pausando SLA...");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function retomarSla() {
+    const agora = new Date();
+    const inicioPausa = ticket.slaPausadoEm ? new Date(ticket.slaPausadoEm) : agora;
+    const segPausados = segundosUteis(inicioPausa, agora, regras);
+    const novoAcumulado = (ticket.slaSegundosPausadosAcumulados || 0) + segPausados;
+
+    const historico = [...(ticket.slaHistoricoPausas || [])];
+    if (historico.length > 0) {
+      const ult = historico[historico.length - 1];
+      historico[historico.length - 1] = {
+        ...ult,
+        fim: agora.toISOString(),
+        segundosUteisPausados: segPausados,
+      };
+    }
+
+    setSaving(true);
+    try {
+      await wrapAsync(async () => {
+        const ok = await updateTicket(ticket.id, {
+          slaPausado: false,
+          slaPausadoEm: null,
+          slaPausaMotivo: null,
+          slaPausaAutor: null,
+          slaHistoricoPausas: historico,
+          slaSegundosPausadosAcumulados: novoAcumulado,
+        });
+        if (ok) {
+          toast.success("SLA retomado! O tempo de pausa foi somado ao prazo limite.");
+        } else {
+          toast.error("Não foi possível retomar o SLA.");
+        }
+      }, "Retomando SLA...");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   function alterarPrioridade(novaPrioridade: Ticket["prioridade"]) {
     field("prioridade", novaPrioridade);
@@ -262,9 +367,27 @@ function TicketEditor({
               Chamado de Suporte TI
             </span>
             <h1 className="mt-2 text-3xl font-black text-foreground">Chamado #{ticket.id}</h1>
-            <p className="mt-1 text-sm font-medium text-muted-foreground">
-              Aberto em {formatarData(ticket.abertoEm, ticket.hora)} · Prazo: {formatarDataHora(sla.prazo)} · SLA: {sla.situacao}
-            </p>
+            <div className="mt-1 text-sm font-medium text-muted-foreground flex flex-wrap items-center gap-1.5">
+              <span>Aberto em {formatarData(ticket.abertoEm, ticket.hora)}</span>
+              <span>·</span>
+              <span>Prazo: {formatarDataHora(sla.prazo)}</span>
+              <span>·</span>
+              <span>SLA:</span>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-bold shadow-2xs inline-flex items-center gap-1 ${
+                  ticket.slaPausado
+                    ? "bg-[#F59E0B] text-black ring-2 ring-[#F59E0B]/40 font-black"
+                    : sla.situacao === "Estourado"
+                    ? "bg-[#EA4335] text-white"
+                    : sla.situacao === "No prazo"
+                    ? "bg-[#34A853] text-white"
+                    : "bg-muted text-foreground"
+                }`}
+              >
+                {ticket.slaPausado && <Pause className="size-3 shrink-0" />}
+                {ticket.slaPausado ? "SLA pausado" : sla.situacao}
+              </span>
+            </div>
           </div>
           <div className="flex flex-col items-end gap-1.5">
             <div className="flex items-center gap-2">
@@ -290,6 +413,131 @@ function TicketEditor({
           </div>
         </div>
       </div>
+
+      {/* Banner de SLA Pausado ou Controles de Pausa */}
+      {ticket.slaPausado ? (
+        <div className="rounded-2xl border-2 border-amber-500/40 bg-amber-500/10 p-5 shadow-sm space-y-3 animate-in fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-amber-500 text-black px-2.5 py-0.5 text-xs font-black uppercase inline-flex items-center gap-1 shadow-2xs">
+                  <Pause className="size-3" /> SLA pausado
+                </span>
+                <span className="text-xs font-bold text-foreground">Relógio operacional interrompido</span>
+              </div>
+              <p className="text-xs sm:text-sm text-foreground/90 font-medium">
+                <strong>Motivo da pausa:</strong> {ticket.slaPausaMotivo || "Aguardando tratativa"}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Pausado em {ticket.slaPausadoEm ? new Date(ticket.slaPausadoEm).toLocaleString("pt-BR") : "—"} por {ticket.slaPausaAutor || "Gestor"}.
+                {sla.restanteMin !== null && (
+                  <span className="ml-2 font-semibold text-amber-700 dark:text-amber-400">
+                    Tempo restante congelado: {formatarDuracao(sla.restanteMin)}
+                  </span>
+                )}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {ticket.slaHistoricoPausas && ticket.slaHistoricoPausas.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setMostrarHistoricoPausas((v) => !v)}
+                  className="text-xs gap-1 border-amber-400/40"
+                >
+                  <History className="size-3.5" />
+                  {mostrarHistoricoPausas ? "Ocultar histórico" : "Ver histórico"}
+                </Button>
+              )}
+              <ConfirmAction
+                title={`Retomar SLA do chamado #${ticket.id}?`}
+                description="O relógio do SLA voltará a correr. O tempo em que o chamado ficou pausado será automaticamente somado ao prazo limite útil."
+                confirmLabel="Sim, retomar SLA"
+                variant="google-green"
+                onConfirm={retomarSla}
+              >
+                <Button type="button" variant="google-green" size="sm" className="font-bold gap-1.5 shadow-xs">
+                  <Play className="size-4" /> Retomar SLA
+                </Button>
+              </ConfirmAction>
+            </div>
+          </div>
+        </div>
+      ) : !["Resolvido", "Cancelado"].includes(ticket.status) ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-card p-3.5 shadow-2xs">
+          <div className="flex items-center gap-2 text-xs">
+            <Clock className="size-4 text-g-blue" />
+            <span className="font-semibold text-foreground">Situação do SLA:</span>
+            <span className={`font-bold ${sla.situacao === "Estourado" ? "text-red-600" : "text-emerald-600"}`}>
+              {sla.situacao}
+            </span>
+            {sla.restanteMin !== null && (
+              <span className="text-muted-foreground">({formatarDuracao(sla.restanteMin)})</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {ticket.slaHistoricoPausas && ticket.slaHistoricoPausas.length > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setMostrarHistoricoPausas((v) => !v)}
+                className="text-xs text-muted-foreground hover:text-foreground gap-1 h-8"
+              >
+                <History className="size-3.5" />
+                {mostrarHistoricoPausas ? "Ocultar histórico" : `Histórico (${ticket.slaHistoricoPausas.length})`}
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setModalPausaAberto(true)}
+              className="text-xs font-bold text-amber-600 dark:text-amber-400 border-amber-400/40 hover:bg-amber-500/10 gap-1.5 h-8"
+            >
+              <Pause className="size-3.5" /> Pausar SLA
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Histórico detalhado de pausas (quando aberto) */}
+      {mostrarHistoricoPausas && ticket.slaHistoricoPausas && ticket.slaHistoricoPausas.length > 0 && (
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-2 animate-in fade-in">
+          <div className="flex items-center justify-between border-b border-border/60 pb-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+              <History className="size-3.5 text-amber-500" /> Histórico de Pausas de SLA
+            </h3>
+            <span className="text-[11px] text-muted-foreground">
+              Total acumulado: {formatarDuracao(Math.round((ticket.slaSegundosPausadosAcumulados || 0) / 60))}
+            </span>
+          </div>
+          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+            {ticket.slaHistoricoPausas.map((p, idx) => (
+              <div
+                key={p.id || idx}
+                className="rounded-xl border border-border/60 bg-background/80 p-2.5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1"
+              >
+                <div className="space-y-0.5">
+                  <span className="font-bold text-foreground">{p.motivo}</span>
+                  <p className="text-[11px] text-muted-foreground">
+                    Por: {p.autor} · Início: {new Date(p.inicio).toLocaleString("pt-BR")}
+                    {p.fim ? ` · Fim: ${new Date(p.fim).toLocaleString("pt-BR")}` : " (Em andamento)"}
+                  </p>
+                </div>
+                {p.segundosUteisPausados !== undefined && (
+                  <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 shrink-0">
+                    +{formatarDuracao(Math.round(p.segundosUteisPausados / 60))} adicionados
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 1. Card: Dados do Solicitante */}
       <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs space-y-4">
@@ -344,6 +592,25 @@ function TicketEditor({
           </h2>
         </div>
         <TextoAssistido value={draft.descricao} onChange={(value) => field("descricao", value)} ocultarIa={true} />
+      </div>
+
+      {/* Conversa e Interação Direta com o Solicitante (Chat) */}
+      <div className="space-y-3">
+        <TicketChat
+          ticketId={ticket.id}
+          solicitanteNome={ticket.solicitante}
+          solicitanteEmail={ticket.solicitanteEmail}
+          ticketDescricao={ticket.descricao}
+          ticketAbertoEm={ticket.abertoEm}
+          ticketHora={ticket.hora}
+          ticketProcedimento={draft.procedimento}
+          currentUserEmail={session?.user?.email}
+          currentUserName={session?.user?.user_metadata?.full_name || session?.user?.email?.split("@")[0] || "Claudinei Lima"}
+          isGestorOrAdmin={true}
+          onMensagemEnviada={(msg) => {
+            field("procedimento", msg);
+          }}
+        />
       </div>
 
       {/* 3. Card: Procedimento Técnico */}
@@ -538,6 +805,89 @@ function TicketEditor({
           </ConfirmAction>
         </div>
       </div>
+
+      {/* Modal de Pausa do SLA */}
+      {modalPausaAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl border-2 border-border bg-card p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <h3 className="font-bold text-base text-foreground flex items-center gap-2">
+                <Pause className="size-5 text-amber-500" /> Pausar Contagem de SLA
+              </h3>
+              <button
+                type="button"
+                onClick={() => setModalPausaAberto(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Ao pausar o SLA, o relógio de atendimento para imediatamente e não contará como atrasado. Selecione o motivo oficial da pausa:
+              </p>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">Motivo da pausa</label>
+                <select
+                  value={motivoPausa}
+                  onChange={(e) => setMotivoPausa(e.target.value)}
+                  className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  {motivosDisponiveis.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {motivoPausa === "Outros" && (
+                <div className="space-y-1.5 animate-in fade-in">
+                  <label className="text-xs font-bold text-foreground">Descreva o motivo da pausa</label>
+                  <Input
+                    value={motivoCustom}
+                    onChange={(e) => setMotivoCustom(e.target.value)}
+                    placeholder="Ex.: Aguardando retorno da concessionária de energia..."
+                    className="text-xs sm:text-sm"
+                  />
+                </div>
+              )}
+
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-foreground/90 space-y-1">
+                <p className="font-bold flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
+                  <AlertCircle className="size-4 shrink-0" /> Como funciona a retomada:
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Quando você ou outro gestor clicar em "Retomar SLA", todo o tempo em que o chamado permaneceu pausado será acrescido ao prazo útil final.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-border/60">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setModalPausaAberto(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                disabled={motivoPausa === "Outros" && !motivoCustom.trim()}
+                onClick={pausarSla}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-1.5"
+              >
+                <Pause className="size-3.5" /> Confirmar pausa do SLA
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

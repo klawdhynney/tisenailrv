@@ -77,6 +77,12 @@ export type Database = {
           responsavel: string | null
           setor: string
           sla_reiniciado_em: string | null
+          sla_pausado?: boolean
+          sla_pausado_em?: string | null
+          sla_pausa_motivo?: string | null
+          sla_pausa_autor?: string | null
+          sla_historico_pausas?: Json
+          sla_segundos_pausados_acumulados?: number
           solicitante: string
           solicitante_email: string | null
           status: string
@@ -99,6 +105,12 @@ export type Database = {
           responsavel?: string | null
           setor: string
           sla_reiniciado_em?: string | null
+          sla_pausado?: boolean
+          sla_pausado_em?: string | null
+          sla_pausa_motivo?: string | null
+          sla_pausa_autor?: string | null
+          sla_historico_pausas?: Json
+          sla_segundos_pausados_acumulados?: number
           solicitante: string
           solicitante_email?: string | null
           status?: string
@@ -121,10 +133,49 @@ export type Database = {
           responsavel?: string | null
           setor?: string
           sla_reiniciado_em?: string | null
+          sla_pausado?: boolean
+          sla_pausado_em?: string | null
+          sla_pausa_motivo?: string | null
+          sla_pausa_autor?: string | null
+          sla_historico_pausas?: Json
+          sla_segundos_pausados_acumulados?: number
           solicitante?: string
           solicitante_email?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ticket_mensagens: {
+        Row: {
+          id: string
+          ticket_id: number
+          user_id: string | null
+          autor_nome: string
+          autor_email: string
+          autor_tipo: "solicitante" | "equipe" | "sistema"
+          mensagem: string
+          criado_em: string
+        }
+        Insert: {
+          id?: string
+          ticket_id: number
+          user_id?: string | null
+          autor_nome: string
+          autor_email: string
+          autor_tipo: "solicitante" | "equipe" | "sistema"
+          mensagem: string
+          criado_em?: string
+        }
+        Update: {
+          id?: string
+          ticket_id?: number
+          user_id?: string | null
+          autor_nome?: string
+          autor_email?: string
+          autor_tipo?: "solicitante" | "equipe" | "sistema"
+          mensagem?: string
+          criado_em?: string
         }
         Relationships: []
       }
@@ -154,6 +205,22 @@ export type Database = {
       add_ticket_information: {
         Args: { additional_text: string; ticket_id: number }
         Returns: boolean
+      }
+      admin_get_users: {
+        Args: never
+        Returns: {
+          id: string
+          email: string
+          nome: string | null
+          foto_url: string | null
+          role: string
+          bloqueado: boolean
+          status: string
+          provedor: string | null
+          total_chamados: number
+          ultimo_acesso: string | null
+          created_at: string
+        }[]
       }
       claim_manager_access: { Args: never; Returns: boolean }
       has_role: {
@@ -198,6 +265,10 @@ export type Database = {
           id: number
           prioridade: string
           sla_reiniciado_em: string
+          sla_pausado?: boolean
+          sla_pausado_em?: string | null
+          sla_pausa_motivo?: string | null
+          sla_segundos_pausados_acumulados?: number
           status: string
         }[]
       }

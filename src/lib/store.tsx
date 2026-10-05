@@ -16,6 +16,7 @@ import {
   AVALIACAO_PADRAO,
   IA_SUPORTE_PADRAO,
   WHATSAPP_PADRAO,
+  MOTIVOS_PAUSA_SLA_PADRAO,
   type Regras,
   type Ticket,
   type Prioridade,
@@ -55,6 +56,7 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     ...regrasSalvas,
     prazos: { ...REGRAS_PADRAO.prazos, ...(regrasSalvas.prazos || {}) },
     expediente: { ...REGRAS_PADRAO.expediente, ...(regrasSalvas.expediente || {}) },
+    motivosPausaSla: regrasSalvas.motivosPausaSla ?? [...MOTIVOS_PAUSA_SLA_PADRAO],
     identidadeVisual: { ...IDENTIDADE_VISUAL_PADRAO, ...(regrasSalvas.identidadeVisual || {}) },
     paginaInicial: { ...PAGINA_INICIAL_PADRAO, ...paginaInicialSalva },
     indicadores: {
@@ -97,6 +99,12 @@ function fromRow(r: Row): Ticket {
     procedimento: r.procedimento,
     contato: r.contato,
     slaReiniciadoEm: r.sla_reiniciado_em,
+    slaPausado: Boolean((r as any).sla_pausado),
+    slaPausadoEm: (r as any).sla_pausado_em,
+    slaPausaMotivo: (r as any).sla_pausa_motivo,
+    slaPausaAutor: (r as any).sla_pausa_autor,
+    slaHistoricoPausas: Array.isArray((r as any).sla_historico_pausas) ? (r as any).sla_historico_pausas : [],
+    slaSegundosPausadosAcumulados: Number((r as any).sla_segundos_pausados_acumulados) || 0,
   };
 }
 
@@ -107,6 +115,9 @@ function toRow(p: Partial<Ticket>) {
     descricao: "descricao", categoria: "categoria", prioridade: "prioridade", responsavel: "responsavel",
     status: "status", fechadoEm: "fechado_em", horario: "horario", procedimento: "procedimento",
     contato: "contato", slaReiniciadoEm: "sla_reiniciado_em",
+    slaPausado: "sla_pausado", slaPausadoEm: "sla_pausado_em", slaPausaMotivo: "sla_pausa_motivo",
+    slaPausaAutor: "sla_pausa_autor", slaHistoricoPausas: "sla_historico_pausas",
+    slaSegundosPausadosAcumulados: "sla_segundos_pausados_acumulados",
   };
   for (const [k, v] of Object.entries(p)) {
     const col = map[k];

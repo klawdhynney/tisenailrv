@@ -15,6 +15,8 @@ import {
   Calendar,
   X,
   UserCheck,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +28,7 @@ import { ConfirmAction } from "@/components/ConfirmAction";
 import { UserAvatar } from "@/components/UserAvatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
+import { exportarCsv, exportarXlsx } from "@/lib/exportar";
 import type { PapelUsuario, UsuarioAdmin } from "@/lib/types";
 
 const ADMINS_INICIAIS_AUTORIZADOS = [
@@ -55,6 +58,9 @@ function formatarDetalhesAuditoria(det: any): string {
   if (!det) return "";
   if (typeof det === "string") return det;
   if (typeof det === "object") {
+    if (det.total_exportados !== undefined) {
+      return `${det.total_exportados} usuário(s) exportado(s) em ${det.formato?.toUpperCase() || "planilha"}`;
+    }
     if (det.novo_perfil) return `Novo perfil: ${det.novo_perfil}`;
     if (det.perfil) return `Perfil: ${det.perfil} (${det.status || "pendente"})`;
     if (det.bloqueado !== undefined) return det.bloqueado ? "Bloqueado" : "Desbloqueado";
@@ -79,6 +85,8 @@ export function GestaoUsuarios() {
   const [busca, setBusca] = useState("");
   const [filtroRole, setFiltroRole] = useState<string>("todos");
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
+  const [filtroProvedor, setFiltroProvedor] = useState<string>("todos");
+  const [exportando, setExportando] = useState(false);
 
   // Modais
   const [usuarioEditar, setUsuarioEditar] = useState<UsuarioAdmin | null>(null);
@@ -97,6 +105,18 @@ export function GestaoUsuarios() {
     try {
       let listaUsuarios: UsuarioAdmin[] = [];
 
+      // Carregar contagem de chamados por e-mail para garantir total de chamados sempre atualizado
+      const { data: ticketsEmail } = await supabase.from("tickets").select("email");
+      const contagemChamados = new Map<string, number>();
+      if (ticketsEmail && Array.isArray(ticketsEmail)) {
+        for (const t of ticketsEmail) {
+          if (t.email) {
+            const em = t.email.toLowerCase().trim();
+            contagemChamados.set(em, (contagemChamados.get(em) ?? 0) + 1);
+          }
+        }
+      }
+
       // 1. Carregar lista de usuários via RPC segura
       const { data: usersData, error: usersErr } = await supabase.rpc("admin_get_users");
       if (usersErr) {
@@ -104,21 +124,29 @@ export function GestaoUsuarios() {
         // Fallback: carregar perfis caso a RPC ainda esteja sincronizando
         const { data: fallbackProfiles } = await supabase.from("user_profiles").select("*");
         if (fallbackProfiles && fallbackProfiles.length > 0) {
-          listaUsuarios = fallbackProfiles.map((p) => ({
-            id: p.id,
-            email: p.email,
-            nome: p.nome,
-            fotoUrl: p.foto_url,
-            role: (p.role as PapelUsuario) || (ADMINS_INICIAIS_AUTORIZADOS.includes(p.email.toLowerCase().trim()) ? "admin" : "usuario"),
-            bloqueado: p.bloqueado ?? false,
-            statusConta: (p.bloqueado ? "bloqueado" : p.ultimo_acesso ? "ativo" : "pendente") as "ativo" | "bloqueado" | "pendente",
-            ultimoAcesso: p.ultimo_acesso,
-            createdAt: p.created_at,
-          }));
+          listaUsuarios = fallbackProfiles.map((p) => {
+            const emailLimpo = (p.email || "").toLowerCase().trim();
+            return {
+              id: p.id,
+              email: p.email,
+              nome: p.nome,
+              fotoUrl: p.foto_url,
+              role: (p.role as PapelUsuario) || (ADMINS_INICIAIS_AUTORIZADOS.includes(emailLimpo) ? "admin" : "usuario"),
+              bloqueado: p.bloqueado ?? false,
+              statusConta: (p.bloqueado ? "bloqueado" : p.ultimo_acesso ? "ativo" : "pendente") as "ativo" | "bloqueado" | "pendente",
+              ultimoAcesso: p.ultimo_acesso,
+              createdAt: p.created_at,
+              provedor: emailLimpo.endsWith("@gmail.com") ? "google" : emailLimpo.endsWith("@senaimt.ind.br") || emailLimpo.endsWith("@hotmail.com") || emailLimpo.endsWith("@outlook.com") ? "microsoft" : "email",
+              totalChamados: contagemChamados.get(emailLimpo) ?? 0,
+            };
+          });
         }
       } else if (usersData && Array.isArray(usersData)) {
         listaUsuarios = (usersData as any[]).map((u) => {
           const status = u.status || (u.bloqueado ? "bloqueado" : u.ultimo_acesso ? "ativo" : "pendente");
+          const emailLimpo = (u.email || "").toLowerCase().trim();
+          const totalTickets = contagemChamados.get(emailLimpo) ?? 0;
+          const totalFinal = u.total_chamados !== undefined && u.total_chamados !== null ? Math.max(Number(u.total_chamados), totalTickets) : totalTickets;
           return {
             id: u.id,
             email: u.email,
@@ -129,6 +157,8 @@ export function GestaoUsuarios() {
             statusConta: status as "ativo" | "bloqueado" | "pendente",
             ultimoAcesso: u.ultimo_acesso,
             createdAt: u.created_at,
+            provedor: u.provedor || (emailLimpo.endsWith("@gmail.com") ? "google" : emailLimpo.endsWith("@senaimt.ind.br") || emailLimpo.endsWith("@hotmail.com") || emailLimpo.endsWith("@outlook.com") ? "microsoft" : "email"),
+            totalChamados: totalFinal,
           };
         });
       }
@@ -139,6 +169,7 @@ export function GestaoUsuarios() {
           (u) => u.email.toLowerCase().trim() === emailAdmin.toLowerCase().trim(),
         );
         if (!existe) {
+          const emailLimpo = emailAdmin.toLowerCase().trim();
           listaUsuarios.push({
             id: `pending-${emailAdmin}`,
             email: emailAdmin,
@@ -149,6 +180,8 @@ export function GestaoUsuarios() {
             statusConta: "pendente",
             ultimoAcesso: null,
             createdAt: new Date().toISOString(),
+            provedor: emailLimpo.endsWith("@gmail.com") ? "google" : "microsoft",
+            totalChamados: contagemChamados.get(emailLimpo) ?? 0,
           });
         }
       }
@@ -223,9 +256,130 @@ export function GestaoUsuarios() {
         (filtroStatus === "pendente" && (u.statusConta === "pendente" || !u.ultimoAcesso)) ||
         (filtroStatus === "bloqueado" && u.bloqueado);
 
-      return matchBusca && matchRole && matchStatus;
+      const provLower = (u.provedor || "").toLowerCase();
+      const emailLower = (u.email || "").toLowerCase();
+      const matchProvedor =
+        filtroProvedor === "todos" ||
+        (filtroProvedor === "google" && (provLower === "google" || (!provLower && emailLower.endsWith("@gmail.com")))) ||
+        (filtroProvedor === "microsoft" && (provLower === "azure" || provLower === "microsoft" || (!provLower && (emailLower.endsWith("@senaimt.ind.br") || emailLower.endsWith("@hotmail.com") || emailLower.endsWith("@outlook.com"))))) ||
+        (filtroProvedor === "email" && (provLower === "email" || (!provLower && !emailLower.endsWith("@gmail.com") && !emailLower.endsWith("@senaimt.ind.br") && !emailLower.endsWith("@hotmail.com") && !emailLower.endsWith("@outlook.com"))));
+
+      return matchBusca && matchRole && matchStatus && matchProvedor;
     });
-  }, [usuarios, busca, filtroRole, filtroStatus]);
+  }, [usuarios, busca, filtroRole, filtroStatus, filtroProvedor]);
+
+  const getProvedorBadge = (provedor?: string | null, email?: string) => {
+    const provLower = (provedor || "").toLowerCase();
+    const emailLower = (email || "").toLowerCase();
+    if (provLower === "google" || (!provLower && emailLower.endsWith("@gmail.com"))) {
+      return (
+        <Badge variant="outline" className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-950/40">
+          Google
+        </Badge>
+      );
+    }
+    if (
+      provLower === "azure" ||
+      provLower === "microsoft" ||
+      (!provLower && (emailLower.endsWith("@senaimt.ind.br") || emailLower.endsWith("@hotmail.com") || emailLower.endsWith("@outlook.com")))
+    ) {
+      return (
+        <Badge variant="outline" className="text-[10px] font-semibold text-teal-600 dark:text-teal-400 border-teal-300 dark:border-teal-800 bg-teal-50/60 dark:bg-teal-950/40">
+          Microsoft
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-[10px] font-semibold text-muted-foreground border-border/80">
+        E-mail
+      </Badge>
+    );
+  };
+
+  const exportarUsuarios = async (formato: "csv" | "xlsx") => {
+    if (!isAdmin) {
+      toast.error("Apenas administradores podem exportar a lista de usuários.");
+      return;
+    }
+    setExportando(true);
+    try {
+      const linhas = usuariosFiltrados.map((u) => {
+        const provLower = (u.provedor || "").toLowerCase();
+        const emailLower = (u.email || "").toLowerCase();
+        const provNome =
+          provLower === "google" || (!provLower && emailLower.endsWith("@gmail.com"))
+            ? "Google"
+            : provLower === "azure" ||
+              provLower === "microsoft" ||
+              (!provLower && (emailLower.endsWith("@senaimt.ind.br") || emailLower.endsWith("@hotmail.com") || emailLower.endsWith("@outlook.com")))
+            ? "Microsoft"
+            : "E-mail";
+
+        const papelNome =
+          u.role === "admin" ? "Administrador" : u.role === "gestor" ? "Gestor" : "Usuário";
+
+        const statusNome = u.bloqueado
+          ? "Bloqueado"
+          : u.statusConta === "pendente" || !u.ultimoAcesso
+          ? "Pendente"
+          : "Ativo";
+
+        return {
+          "Nome": u.nome || u.email.split("@")[0],
+          "E-mail": u.email,
+          "Provedor": provNome,
+          "Perfil": papelNome,
+          "Status": statusNome,
+          "Primeiro Acesso": u.createdAt ? new Date(u.createdAt).toLocaleString("pt-BR") : "—",
+          "Último Acesso": u.ultimoAcesso ? new Date(u.ultimoAcesso).toLocaleString("pt-BR") : "Aguardando 1º login",
+          "Total de Chamados": u.totalChamados ?? 0,
+        };
+      });
+
+      const dataHoje = new Date().toISOString().slice(0, 10);
+      const nomeArquivo = `usuarios-cadastrados-${dataHoje}`;
+
+      if (formato === "csv") {
+        exportarCsv(linhas, nomeArquivo);
+      } else {
+        await exportarXlsx(linhas, nomeArquivo);
+      }
+
+      // Registrar histórico de auditoria
+      const { error: errAudit } = await supabase.from("audit_logs_usuarios").insert({
+        admin_id: session?.user?.id,
+        admin_email: session?.user?.email || "admin@senai.br",
+        alvo_email: "todos os usuários cadastrados",
+        acao: `exportação de usuários (${formato.toUpperCase()})`,
+        detalhes: {
+          formato,
+          total_exportados: usuariosFiltrados.length,
+          filtros_ativos: {
+            busca: busca || "nenhuma",
+            perfil: filtroRole,
+            status: filtroStatus,
+            provedor: filtroProvedor,
+          },
+          data: new Date().toISOString(),
+        },
+      });
+
+      if (errAudit) {
+        console.warn("Aviso ao salvar log de exportação:", errAudit.message);
+      } else {
+        await carregarDados();
+      }
+
+      toast.success(
+        `Exportação em ${formato.toUpperCase()} gerada com sucesso! (${usuariosFiltrados.length} usuário${usuariosFiltrados.length === 1 ? "" : "s"})`,
+      );
+    } catch (err: any) {
+      console.error("Erro na exportação de usuários:", err);
+      toast.error("Falha ao exportar a lista de usuários.");
+    } finally {
+      setExportando(false);
+    }
+  };
 
   // Alterar papel
   const handleAlterarPapel = async () => {
@@ -377,6 +531,31 @@ export function GestaoUsuarios() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {isAdmin && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportarUsuarios("csv")}
+                disabled={exportando || carregando || usuariosFiltrados.length === 0}
+                className="text-xs font-semibold gap-1.5 text-g-green dark:text-green-400 border-g-green/40 hover:bg-g-green/10"
+                title="Exportar usuários em CSV (UTF-8 com separador ponto e vírgula para Excel)"
+              >
+                <Download className="size-3.5" /> Exportar CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportarUsuarios("xlsx")}
+                disabled={exportando || carregando || usuariosFiltrados.length === 0}
+                className="text-xs font-semibold gap-1.5 text-g-blue dark:text-blue-400 border-g-blue/40 hover:bg-g-blue/10"
+                title="Exportar usuários em planilha Excel XLSX"
+              >
+                <FileSpreadsheet className="size-3.5" /> Exportar XLSX
+              </Button>
+            </>
+          )}
+
           <Button
             variant="outline"
             size="sm"
@@ -505,7 +684,7 @@ export function GestaoUsuarios() {
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={filtroRole}
             onChange={(e) => setFiltroRole(e.target.value)}
@@ -526,6 +705,17 @@ export function GestaoUsuarios() {
             <option value="ativo">Ativo</option>
             <option value="pendente">Pendente</option>
             <option value="bloqueado">Bloqueado</option>
+          </select>
+
+          <select
+            value={filtroProvedor}
+            onChange={(e) => setFiltroProvedor(e.target.value)}
+            className="h-10 rounded-xl border border-input bg-background px-3 text-xs sm:text-sm font-medium"
+          >
+            <option value="todos">Todos os provedores</option>
+            <option value="google">Google</option>
+            <option value="microsoft">Microsoft</option>
+            <option value="email">E-mail</option>
           </select>
         </div>
       </div>
@@ -579,15 +769,20 @@ export function GestaoUsuarios() {
                         )}
                         {ADMINS_INICIAIS_AUTORIZADOS.includes(u.email.toLowerCase().trim()) && (
                           <span className="text-[10px] font-bold text-purple-700 dark:text-purple-300 bg-purple-500/15 px-1.5 py-0.2 rounded-md">
-                            Proprietário / Admin Inicial
+                            Proprietário
                           </span>
                         )}
                       </div>
                       <span className="text-xs font-mono text-muted-foreground truncate block" title={u.email}>
                         {u.email}
                       </span>
-                      <div className="flex items-center gap-2 mt-1 sm:hidden">
+                      {/* Resumo Mobile */}
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1 sm:hidden">
                         {getRoleBadge(u.role)}
+                        {getProvedorBadge(u.provedor, u.email)}
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-muted text-muted-foreground">
+                          {u.totalChamados ?? 0} {u.totalChamados === 1 ? "chamado" : "chamados"}
+                        </span>
                         {u.bloqueado ? (
                           <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
                             Bloqueado
@@ -605,11 +800,15 @@ export function GestaoUsuarios() {
                     </div>
                   </div>
 
-                  {/* Informações centrais no Desktop */}
+                  {/* Informações detalhadas no Desktop: Provedor, Perfil, Total de chamados, 1º e Último Acesso */}
                   <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex flex-col items-center">
                       <span className="text-[10px] font-semibold uppercase text-muted-foreground/70">Perfil</span>
                       {getRoleBadge(u.role)}
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] font-semibold uppercase text-muted-foreground/70">Provedor</span>
+                      {getProvedorBadge(u.provedor, u.email)}
                     </div>
                     <div className="flex flex-col items-center">
                       <span className="text-[10px] font-semibold uppercase text-muted-foreground/70">Status</span>
@@ -627,9 +826,21 @@ export function GestaoUsuarios() {
                         </Badge>
                       )}
                     </div>
-                    <div className="flex flex-col text-right">
-                      <span className="text-[10px] font-semibold uppercase text-muted-foreground/70">Último acesso</span>
-                      <span className="text-[11px]">
+                    <div className="flex flex-col items-center min-w-[70px]">
+                      <span className="text-[10px] font-semibold uppercase text-muted-foreground/70">Chamados</span>
+                      <span className="font-mono font-bold text-xs text-foreground bg-muted/60 px-2 py-0.5 rounded-md border border-border/60">
+                        {u.totalChamados ?? 0}
+                      </span>
+                    </div>
+                    <div className="flex flex-col text-right min-w-[85px]">
+                      <span className="text-[10px] font-semibold uppercase text-muted-foreground/70">1º Acesso</span>
+                      <span className="text-[11px] font-mono text-foreground">
+                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString("pt-BR") : "—"}
+                      </span>
+                    </div>
+                    <div className="flex flex-col text-right min-w-[95px]">
+                      <span className="text-[10px] font-semibold uppercase text-muted-foreground/70">Último Acesso</span>
+                      <span className="text-[11px] font-mono text-foreground">
                         {u.ultimoAcesso ? new Date(u.ultimoAcesso).toLocaleDateString("pt-BR") : "Aguardando 1º login"}
                       </span>
                     </div>

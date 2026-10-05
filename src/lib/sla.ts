@@ -147,7 +147,7 @@ export function segundosUteis(a: Date, b: Date, regras: Regras): number {
 }
 
 export interface SlaInfo {
-  situacao: "No prazo" | "Estourado" | "Cancelado" | "Aguardando" | "—";
+  situacao: "No prazo" | "Estourado" | "Cancelado" | "Aguardando" | "SLA pausado" | "—";
   prazo: Date | null;
   restanteMin: number | null;
   pausadoPor: string | null;
@@ -162,10 +162,43 @@ export function calcularSla(t: Ticket, regras: Regras, agora = new Date()): SlaI
   if (!horas) return { situacao: "—", prazo: null, restanteMin: null, pausadoPor: null, percentual: 0 };
 
   const inicio = t.slaReiniciadoEm ? new Date(t.slaReiniciadoEm) : toDate(t.abertoEm, t.hora);
-  const prazo = addHorasUteis(inicio, horas, regras);
+  const segAcumulados = t.slaSegundosPausadosAcumulados || 0;
+  const horasAcumuladas = segAcumulados / 3600;
 
-  if (t.status === "Aguardando" || regras.statusQuePausam.includes(t.status))
-    return { situacao: t.status === "Aguardando" ? "Aguardando" : agora > prazo ? "Estourado" : "No prazo", prazo, restanteMin: null, pausadoPor: `Status: ${t.status}`, percentual: 0 };
+  // Prazo base somando os períodos de pausa já finalizados
+  let prazo = addHorasUteis(inicio, horas + horasAcumuladas, regras);
+
+  // Se o chamado está atualmente com SLA pausado por decisão da gestão
+  if (t.slaPausado) {
+    const inicioPausa = t.slaPausadoEm ? new Date(t.slaPausadoEm) : agora;
+    const segPausaAtual = segundosUteis(inicioPausa, agora, regras);
+    // Enquanto pausado, o prazo também se desloca com o tempo da pausa corrente
+    prazo = addHorasUteis(inicio, horas + horasAcumuladas + (segPausaAtual / 3600), regras);
+
+    // O relógio para no momento exato em que a pausa foi iniciada:
+    const minutosUsadosAtePausa = Math.max(
+      0,
+      minutosUteis(inicio, inicioPausa, regras) - Math.round(segAcumulados / 60),
+    );
+    const restanteMin = Math.max(0, Math.round(horas * 60) - minutosUsadosAtePausa);
+
+    return {
+      situacao: "SLA pausado",
+      prazo,
+      restanteMin,
+      pausadoPor: t.slaPausaMotivo || "SLA pausado",
+      percentual: Math.min(100, Math.max(0, Math.round((minutosUsadosAtePausa / (horas * 60)) * 100))),
+    };
+  }
+
+  if (t.status === "Aguardando" || (regras.statusQuePausam && regras.statusQuePausam.includes(t.status)))
+    return {
+      situacao: t.status === "Aguardando" ? "Aguardando" : agora > prazo ? "Estourado" : "No prazo",
+      prazo,
+      restanteMin: null,
+      pausadoPor: `Status: ${t.status}`,
+      percentual: 0,
+    };
 
   const ref = t.fechadoEm ? toDate(t.fechadoEm, t.horario) : agora;
   const encerrado = t.status === "Resolvido" && !!t.fechadoEm;
@@ -178,7 +211,7 @@ export function calcularSla(t: Ticket, regras: Regras, agora = new Date()): SlaI
     }
   }
 
-  const usados = minutosUteis(inicio, ref, regras);
+  const usados = Math.max(0, minutosUteis(inicio, ref, regras) - Math.round(segAcumulados / 60));
   const total = horas * 60;
   const percentual = Math.min(100, Math.round((usados / total) * 100));
   const dentro = ref.getTime() <= prazo.getTime() + 1000;

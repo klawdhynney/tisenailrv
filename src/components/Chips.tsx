@@ -1,10 +1,11 @@
+import { Pause } from "lucide-react";
 import { CORES_PRIORIDADE, CORES_SLA, CORES_STATUS, type Prioridade, type Status } from "@/lib/types";
 import { useStore } from "@/lib/store-context";
 
 function Chip({ cor, children }: { cor: { bg: string; text: string }; children: React.ReactNode }) {
   return (
     <span
-      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap shadow-xs"
+      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap shadow-xs gap-1"
       style={{ backgroundColor: cor.bg, color: cor.text }}
     >
       {children}
@@ -38,5 +39,11 @@ export function SlaChip({ valor }: { valor: string }) {
     (s) => s.nome.toLowerCase() === String(valor).toLowerCase(),
   );
   const cor = param ? { bg: param.bg, text: param.text } : CORES_SLA[valor] ?? NEUTRO;
-  return <Chip cor={cor}>{valor}</Chip>;
+  const isPausado = valor.toLowerCase().includes("pausado");
+  return (
+    <Chip cor={cor}>
+      {isPausado && <Pause className="size-3 shrink-0" />}
+      {valor}
+    </Chip>
+  );
 }

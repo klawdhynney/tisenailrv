@@ -16,6 +16,26 @@ export const STATUS_LIST: Status[] = [
   "Cancelado",
 ];
 
+export interface PausaSlaHistorico {
+  id?: string;
+  inicio: string; // ISO
+  fim?: string | null; // ISO
+  motivo: string;
+  autor: string;
+  segundosUteisPausados?: number;
+}
+
+export interface TicketMensagem {
+  id: string;
+  ticketId: number;
+  userId?: string | null;
+  autorNome: string;
+  autorEmail: string;
+  autorTipo: "solicitante" | "equipe" | "sistema";
+  mensagem: string;
+  criadoEm: string;
+}
+
 export interface Ticket {
   id: number;
   abertoEm: string; // yyyy-mm-dd
@@ -34,6 +54,12 @@ export interface Ticket {
   procedimento?: string | null;
   contato?: string | null;
   slaReiniciadoEm?: string | null;
+  slaPausado?: boolean;
+  slaPausadoEm?: string | null;
+  slaPausaMotivo?: string | null;
+  slaPausaAutor?: string | null;
+  slaHistoricoPausas?: PausaSlaHistorico[];
+  slaSegundosPausadosAcumulados?: number;
 }
 
 export function mesDoTicket(t: Ticket) {
@@ -306,6 +332,8 @@ export interface UsuarioAdmin {
   role: PapelUsuario;
   bloqueado: boolean;
   statusConta?: "ativo" | "bloqueado" | "pendente";
+  provedor?: string | null;
+  totalChamados?: number;
   ultimoAcesso?: string | null;
   createdAt: string;
 }
@@ -394,6 +422,7 @@ export interface Regras {
   setores: string[];
   categorias: string[];
   responsaveis: string[];
+  motivosPausaSla?: string[];
   planilha?: { filtros: string[]; colunas: string[]; exportacao?: string[] | undefined };
   camposAbertura?: CampoAbertura[] | undefined;
   parametrosPrioridade?: ParametroCor[] | undefined;
@@ -462,12 +491,22 @@ export const PARAMETROS_STATUS_PADRAO: ParametroCor[] = [
   { id: "s5", nome: "Resolvido", bg: "#0D652D", text: "#FFFFFF" },      // Verde escuro
 ];
 
+export const MOTIVOS_PAUSA_SLA_PADRAO: string[] = [
+  "Aguardando resposta do usuário",
+  "Aguardando peça ou fornecedor",
+  "Aguardando validação externa",
+  "Equipamento em bancada",
+  "Aguardando agendamento",
+  "Outros",
+];
+
 export const PARAMETROS_SLA_PADRAO: ParametroCor[] = [
   { id: "sla1", nome: "No prazo", bg: "#34A853", text: "#FFFFFF" },   // Verde
   { id: "sla2", nome: "Estourado", bg: "#EA4335", text: "#FFFFFF" },  // Vermelho
   { id: "sla3", nome: "Cancelado", bg: "#5F6368", text: "#FFFFFF" },  // Grafite
   { id: "sla4", nome: "Aguardando", bg: "#FA7B17", text: "#FFFFFF" }, // Laranja
-  { id: "sla5", nome: "—", bg: "#E8EAED", text: "#3C4043" },
+  { id: "sla5", nome: "SLA pausado", bg: "#F59E0B", text: "#000000" }, // Âmbar
+  { id: "sla6", nome: "—", bg: "#E8EAED", text: "#3C4043" },
 ];
 
 export const CORES_PRIORIDADE: Record<string, { bg: string; text: string }> = {
@@ -490,6 +529,7 @@ export const CORES_STATUS: Record<string, { bg: string; text: string }> = {
 export const CORES_SLA: Record<string, { bg: string; text: string }> = {
   "No prazo": { bg: "#34A853", text: "#FFFFFF" },
   Estourado: { bg: "#EA4335", text: "#FFFFFF" },
+  "SLA pausado": { bg: "#F59E0B", text: "#000000" },
   Cancelado: { bg: "#5F6368", text: "#FFFFFF" },
   Aguardando: { bg: "#FA7B17", text: "#FFFFFF" },
   "—": { bg: "#E8EAED", text: "#3C4043" },
@@ -572,6 +612,7 @@ export const REGRAS_PADRAO: Regras = {
     "Outros",
   ],
   responsaveis: ["Claudinei Lima"],
+  motivosPausaSla: [...MOTIVOS_PAUSA_SLA_PADRAO],
   planilha: {
     filtros: [...FILTROS_PLANILHA],
     colunas: [...COLUNAS_PLANILHA],

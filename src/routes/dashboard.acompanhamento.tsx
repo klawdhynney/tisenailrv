@@ -147,6 +147,7 @@ function Acompanhamento() {
       if (statusFilter !== "todos") {
         if (statusFilter === "abertos" && ["Resolvido", "Cancelado"].includes(t.status)) return false;
         if (statusFilter === "andamento" && t.status !== "Em andamento") return false;
+        if (statusFilter === "pausados" && !t.sla_pausado) return false;
         if (statusFilter === "resolvidos" && t.status !== "Resolvido") return false;
         if (statusFilter === "cancelados" && t.status !== "Cancelado") return false;
       }
@@ -206,6 +207,7 @@ function Acompanhamento() {
             <option value="todos">Todos os status</option>
             <option value="abertos">Chamados abertos</option>
             <option value="andamento">Em andamento</option>
+            <option value="pausados">SLA pausado</option>
             <option value="resolvidos">Resolvidos</option>
             <option value="cancelados">Cancelados</option>
           </select>
@@ -293,6 +295,10 @@ function Acompanhamento() {
                   fechadoEm: t.fechado_em,
                   horario: t.horario,
                   slaReiniciadoEm: t.sla_reiniciado_em,
+                  slaPausado: t.sla_pausado,
+                  slaPausadoEm: t.sla_pausado_em,
+                  slaPausaMotivo: t.sla_pausa_motivo,
+                  slaSegundosPausadosAcumulados: t.sla_segundos_pausados_acumulados,
                 } as Ticket,
                 regras,
                 now,
@@ -405,6 +411,10 @@ function Acompanhamento() {
                       fechadoEm: t.fechado_em,
                       horario: t.horario,
                       slaReiniciadoEm: t.sla_reiniciado_em,
+                      slaPausado: t.sla_pausado,
+                      slaPausadoEm: t.sla_pausado_em,
+                      slaPausaMotivo: t.sla_pausa_motivo,
+                      slaSegundosPausadosAcumulados: t.sla_segundos_pausados_acumulados,
                     } as Ticket,
                     regras,
                     now,
@@ -510,6 +520,10 @@ function Acompanhamento() {
                 fechadoEm: t.fechado_em,
                 horario: t.horario,
                 slaReiniciadoEm: t.sla_reiniciado_em,
+                slaPausado: t.sla_pausado,
+                slaPausadoEm: t.sla_pausado_em,
+                slaPausaMotivo: t.sla_pausa_motivo,
+                slaSegundosPausadosAcumulados: t.sla_segundos_pausados_acumulados,
               } as Ticket,
               regras,
               now,

@@ -35,8 +35,7 @@ import { calcularSla } from "@/lib/sla";
 import { useStore } from "@/lib/store-context";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import type { Ticket, TipoGrafico } from "@/lib/types";
-import { MESES_DISPONIVEIS } from "@/lib/types";
+import { CORES_SLA, MESES_DISPONIVEIS, type Ticket, type TipoGrafico } from "@/lib/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLoading } from "@/lib/loading-context";
 
@@ -197,13 +196,17 @@ function Dashboard() {
           fechadoEm: t.fechado_em,
           horario: t.horario,
           slaReiniciadoEm: t.sla_reiniciado_em,
+          slaPausado: t.sla_pausado,
+          slaPausadoEm: t.sla_pausado_em,
+          slaPausaMotivo: t.sla_pausa_motivo,
+          slaSegundosPausadosAcumulados: t.sla_segundos_pausados_acumulados,
         } as Ticket,
         regras,
         now,
       ).situacao;
       counts.set(situacao, (counts.get(situacao) ?? 0) + 1);
     }
-    return ["No prazo", "Estourado", "Cancelado", "—"]
+    return ["No prazo", "Estourado", "SLA pausado", "Cancelado", "Aguardando", "—"]
       .filter((name) => counts.has(name))
       .map((name) => ({ name, value: counts.get(name) ?? 0 }));
   }, [progress, mes, regras, now]);
@@ -227,7 +230,10 @@ function Dashboard() {
           { name: "Outros", value: todosDados.slice(CORES.length - 1).reduce((n, x) => n + x.value, 0) },
         ];
 
-  const cor = (_nome: string, i: number) => CORES[i] ?? "#FFFFFF";
+  const cor = (nome: string, i: number) => {
+    if (visao === "sla" && CORES_SLA[nome]?.bg) return CORES_SLA[nome].bg;
+    return CORES[i] ?? "#FFFFFF";
+  };
 
   const baixarResumo = async () => {
     await wrapAsync(async () => {
