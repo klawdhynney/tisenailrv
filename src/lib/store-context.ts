@@ -6,6 +6,8 @@ import type { Regras, Ticket } from "./types";
 export interface StoreValue {
   tickets: Ticket[];
   publicStats: Database["public"]["Tables"]["ticket_public_stats"]["Row"][];
+  evaluationStats: import("./types").AvaliacaoResumoPublico;
+  recarregarEvaluationStats: () => Promise<void>;
   regras: Regras;
   hidratado: boolean;
   session: Session | null;

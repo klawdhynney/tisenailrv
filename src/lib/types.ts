@@ -353,6 +353,9 @@ export interface AvaliacaoConfig {
   opcoes: [string, string, string, string, string];
   placeholderComentario: string;
   agradecimento: string;
+  exibirResumoInicio?: boolean;
+  tituloResumoInicio?: string;
+  descricaoResumoInicio?: string;
 }
 
 export const AVALIACAO_PADRAO: AvaliacaoConfig = {
@@ -360,6 +363,29 @@ export const AVALIACAO_PADRAO: AvaliacaoConfig = {
   opcoes: ["Muito difícil", "Difícil", "Regular", "Fácil", "Muito fácil"],
   placeholderComentario: "Deixe um comentário opcional sobre a sua experiência (até 300 caracteres)...",
   agradecimento: "Obrigado pela sua avaliação! Seu feedback nos ajuda a aprimorar o atendimento.",
+  exibirResumoInicio: true,
+  tituloResumoInicio: "Avaliações dos usuários",
+  descricaoResumoInicio: "Satisfação com a facilidade de abrir chamados.",
+};
+
+export interface AvaliacaoResumoPublico {
+  total: number;
+  media: number;
+  satisfacao_pct: number;
+  distribuicao: {
+    1: number;
+    2: number;
+    3: number;
+    4: number;
+    5: number;
+  };
+}
+
+export const AVALIACAO_RESUMO_PUBLICO_PADRAO: AvaliacaoResumoPublico = {
+  total: 0,
+  media: 0,
+  satisfacao_pct: 0,
+  distribuicao: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
 };
 
 export type VelocidadeAnimacao = "lenta" | "normal" | "rapida";

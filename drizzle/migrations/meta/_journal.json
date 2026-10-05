@@ -176,7 +176,15 @@
       "when": 1791600000000,
       "tag": "0024_ia_tres_modos_config",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791700000000,
+      "tag": "0025_avaliacoes_completas_e_resumo_publico",
+      "breakpoints": true
     }
   ]
 }
+
 

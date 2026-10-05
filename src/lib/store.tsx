@@ -14,6 +14,8 @@ import {
   RODAPE_PADRAO,
   LGPD_PADRAO,
   AVALIACAO_PADRAO,
+  AVALIACAO_RESUMO_PUBLICO_PADRAO,
+  type AvaliacaoResumoPublico,
   IA_SUPORTE_PADRAO,
   PROMPT_SUGERIR_RESPOSTA_PADRAO,
   PROMPT_APRIMORAR_TEXTO_PADRAO,
@@ -166,6 +168,7 @@ function toRow(p: Partial<Ticket>) {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [publicStats, setPublicStats] = useState<Database["public"]["Tables"]["ticket_public_stats"]["Row"][]>([]);
+  const [evaluationStats, setEvaluationStats] = useState<AvaliacaoResumoPublico>(AVALIACAO_RESUMO_PUBLICO_PADRAO);
   const [regras, setRegrasState] = useState<Regras>(REGRAS_PADRAO);
   const [hidratado, setHidratado] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
@@ -257,6 +260,92 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "ticket_public_stats" }, carregar).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  // Estatísticas agregadas de avaliações (públicas e anônimas)
+  const recarregarEvaluationStats = useCallback(async () => {
+    try {
+      // 1. Tenta a RPC get_public_evaluation_stats
+      const { data, error } = await supabase.rpc("get_public_evaluation_stats");
+      if (!error && data && typeof data === "object") {
+        const stats = data as unknown as AvaliacaoResumoPublico;
+        if (typeof stats.total === "number") {
+          setEvaluationStats({
+            total: stats.total || 0,
+            media: Number(stats.media || 0),
+            satisfacao_pct: stats.satisfacao_pct || 0,
+            distribuicao: {
+              1: stats.distribuicao?.[1] || 0,
+              2: stats.distribuicao?.[2] || 0,
+              3: stats.distribuicao?.[3] || 0,
+              4: stats.distribuicao?.[4] || 0,
+              5: stats.distribuicao?.[5] || 0,
+            },
+          });
+          return;
+        }
+      }
+
+      // 2. View pública agregada se a RPC falhar
+      const { data: viewData, error: viewError } = await supabase
+        .from("avaliacoes_public_stats" as any)
+        .select("*")
+        .maybeSingle();
+
+      if (!viewError && viewData) {
+        const v = viewData as any;
+        setEvaluationStats({
+          total: v.total || 0,
+          media: Number(v.media || 0),
+          satisfacao_pct: v.satisfacao_pct || 0,
+          distribuicao: {
+            1: v.nota_1 || 0,
+            2: v.nota_2 || 0,
+            3: v.nota_3 || 0,
+            4: v.nota_4 || 0,
+            5: v.nota_5 || 0,
+          },
+        });
+        return;
+      }
+
+      // 3. Fallback com avaliações locais no navegador
+      if (typeof window !== "undefined") {
+        const salvasLocais = JSON.parse(localStorage.getItem("tisenai_avaliacoes_locais") || "[]");
+        if (Array.isArray(salvasLocais) && salvasLocais.length > 0) {
+          const total = salvasLocais.length;
+          const soma = salvasLocais.reduce((acc, a) => acc + (Number(a.nota) || 0), 0);
+          const media = Number((soma / total).toFixed(2));
+          const sat = Math.round((salvasLocais.filter((a) => Number(a.nota) >= 4).length / total) * 100);
+          const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+          for (const a of salvasLocais) {
+            const n = Math.min(5, Math.max(1, Math.round(Number(a.nota) || 0)));
+            if (n in dist) dist[n as keyof typeof dist]++;
+          }
+          setEvaluationStats({
+            total,
+            media,
+            satisfacao_pct: sat,
+            distribuicao: dist,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Não foi possível carregar estatísticas agregadas de avaliações:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    recarregarEvaluationStats();
+    const ch = supabase
+      .channel("avaliacoes-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "avaliacoes_chamados" }, () => {
+        recarregarEvaluationStats();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [recarregarEvaluationStats]);
 
   // Regras (públicas) + tempo real
   useEffect(() => {
@@ -395,6 +484,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     () => ({
       tickets,
       publicStats,
+      evaluationStats,
+      recarregarEvaluationStats,
       regras,
       hidratado,
       session,
@@ -412,6 +503,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [
       tickets,
       publicStats,
+      evaluationStats,
+      recarregarEvaluationStats,
       regras,
       hidratado,
       session,

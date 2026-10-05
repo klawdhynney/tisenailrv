@@ -71,11 +71,14 @@ function PaginaAvaliacoes() {
   const [avaliacoes, setAvaliacoes] = useState<AvaliacaoRow[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [periodo, setPeriodo] = useState<PeriodoFiltro>("30d");
+  const [erroTabela, setErroTabela] = useState<string | null>(null);
 
   useEffect(() => {
     let ativo = true;
     async function carregar() {
       setCarregando(true);
+      let listaRemota: AvaliacaoRow[] = [];
+
       try {
         const { data, error } = await supabase
           .from("avaliacoes_chamados")
@@ -83,19 +86,70 @@ function PaginaAvaliacoes() {
           .order("created_at", { ascending: false });
 
         if (error) {
-          console.warn("Falha ao buscar avaliações:", error.message);
-        } else if (ativo && data) {
-          setAvaliacoes(data as AvaliacaoRow[]);
+          console.warn("Falha ao buscar avaliações no Supabase:", error.message);
+          if (ativo) {
+            setErroTabela(error.code === "PGRST205" ? "tabela_inexistente" : error.message);
+          }
+        } else if (data) {
+          listaRemota = data as AvaliacaoRow[];
+          if (ativo) setErroTabela(null);
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error("Erro ao carregar avaliações:", e);
-      } finally {
-        if (ativo) setCarregando(false);
+        if (ativo) setErroTabela(e?.message || "erro_conexao");
+      }
+
+      // Lê registros do cache local no navegador para mesclagem imediata
+      let listaLocal: AvaliacaoRow[] = [];
+      try {
+        const salvas = JSON.parse(localStorage.getItem("tisenai_avaliacoes_locais") || "[]");
+        if (Array.isArray(salvas)) {
+          listaLocal = salvas.map((s, idx) => ({
+            id: s.id || (100000 + idx),
+            ticket_id: Number(s.ticket_id),
+            user_id: s.user_id || null,
+            nota: Number(s.nota),
+            comentario: s.comentario || null,
+            created_at: s.created_at || s.data || new Date().toISOString(),
+          }));
+        }
+      } catch {
+        // ignore
+      }
+
+      // Mescla sem duplicar ticket_id, priorizando remota
+      const ticketsVistos = new Set<number>();
+      const unificadas: AvaliacaoRow[] = [];
+
+      for (const r of listaRemota) {
+        ticketsVistos.add(r.ticket_id);
+        unificadas.push(r);
+      }
+      for (const l of listaLocal) {
+        if (!ticketsVistos.has(l.ticket_id)) {
+          ticketsVistos.add(l.ticket_id);
+          unificadas.push(l);
+        }
+      }
+
+      if (ativo) {
+        setAvaliacoes(unificadas);
+        setCarregando(false);
       }
     }
+
     carregar();
+
+    const ch = supabase
+      .channel("dash-avaliacoes-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "avaliacoes_chamados" }, () => {
+        carregar();
+      })
+      .subscribe();
+
     return () => {
       ativo = false;
+      supabase.removeChannel(ch);
     };
   }, []);
 
@@ -295,21 +349,40 @@ function PaginaAvaliacoes() {
         </div>
       </div>
 
+      {erroTabela === "tabela_inexistente" && (
+        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-3">
+          <ShieldAlert className="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-bold">Aviso de Gestão: Tabela de avaliações pendente no Supabase.</p>
+            <p className="text-muted-foreground leading-relaxed">
+              O banco de dados retornou que a tabela <code className="font-mono bg-muted/60 px-1 py-0.5 rounded">avaliacoes_chamados</code> ainda não foi criada. A migration <code className="font-mono bg-muted/60 px-1 py-0.5 rounded">20261005050000_avaliacoes_completas_e_resumo_publico.sql</code> já está preparada no repositório. Enquanto isso, o painel exibe as avaliações registradas localmente.
+            </p>
+          </div>
+        </div>
+      )}
+
       {carregando ? (
         <div className="py-20 text-center text-sm text-muted-foreground">Carregando métricas de satisfação...</div>
       ) : totalAvaliacoes === 0 ? (
         <Card className="rounded-2xl border-dashed p-10 text-center space-y-3">
           <Star className="size-12 text-muted-foreground/30 mx-auto" />
-          <h3 className="text-lg font-bold text-foreground">Nenhuma avaliação encontrada no período</h3>
+          <h3 className="text-lg font-bold text-foreground">
+            {periodo === "todos"
+              ? "Nenhuma avaliação encontrada no sistema"
+              : "Nenhuma avaliação encontrada no período selecionado"}
+          </h3>
           <p className="text-xs text-muted-foreground max-w-md mx-auto">
-            Assim que os usuários abrirem chamados e responderem à pesquisa pós-envio, as métricas e gráficos serão
-            processados automaticamente nesta página.
+            {periodo === "todos"
+              ? "Assim que os usuários responderem à pesquisa pós-abertura ou avaliarem em Meus Chamados, as métricas e gráficos serão processados automaticamente nesta página."
+              : "Não há registros de avaliação dentro da janela de tempo selecionada. Experimente expandir o filtro para 'Tudo'."}
           </p>
-          <div className="pt-2">
-            <Button variant="outline" size="sm" onClick={() => setPeriodo("todos")}>
-              Ver todo o histórico
-            </Button>
-          </div>
+          {periodo !== "todos" && (
+            <div className="pt-2">
+              <Button variant="outline" size="sm" onClick={() => setPeriodo("todos")}>
+                Ver todo o histórico
+              </Button>
+            </div>
+          )}
         </Card>
       ) : (
         <>
