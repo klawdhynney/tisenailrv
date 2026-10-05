@@ -162,6 +162,13 @@
       "when": 1791400000000,
       "tag": "0022_sla_chat_usuarios",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791500000000,
+      "tag": "0023_busca_chamados_resolvidos",
+      "breakpoints": true
     }
   ]
 }

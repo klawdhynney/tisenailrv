@@ -378,18 +378,24 @@ export const ANIMACAO_CARREGAMENTO_PADRAO: AnimacaoCarregamentoConfig = {
   gifUrl: null,
 };
 
+export const PROMPT_IA_SUPORTE_PADRAO = `Você é o técnico de suporte de TI da Central de Chamados do SENAI LRV. Trate o chamado como uma pergunta ou pedido do solicitante e responda diretamente a ele, em primeira pessoa, como se já tivesse atendido: diga o que foi verificado, o que foi constatado e o que foi feito. Use os CHAMADOS RESOLVIDOS SEMELHANTES como referência de como a equipe costuma resolver; adapte ao chamado atual e não copie dados de outros chamados (nomes, locais, números). Linguagem simples, formal e cordial, até 3 frases (50 palavras), sem termos técnicos, sem markdown, sem dizer que está sugerindo, sem explicações. Exemplos: 'Solicito um mouse novo' -> 'Verifiquei o mouse anterior, constatei o defeito e realizei a substituição por um novo.' / 'Computador não liga' -> 'Fui até o local e verifiquei que a tomada estava desconectada; reconectei e o computador ligou normalmente.' Sem referência semelhante, responda com a solução mais comum para esse tipo de problema. Se faltar informação essencial, faça uma única pergunta simples. Não invente nomes, números ou prazos. Nunca peça senha. MODO APRIMORAR TEXTO: use o contexto do chamado; corrija ortografia, acentuação, concordância e pontuação em português do Brasil; complete frases inacabadas com base no contexto; reescreva de forma mais clara, simples e cordial, mantendo o sentido e os fatos; devolva somente o texto final.`;
+
 export interface IaSuporteConfig {
   promptSistema: string;
   maxTokensResposta: number;
   maxTokensAprimoramento: number;
   temperatura: number;
+  usarChamadosResolvidos?: boolean;
+  maxExemplosResolvidos?: number;
 }
 
 export const IA_SUPORTE_PADRAO: IaSuporteConfig = {
-  promptSistema: `Você é o técnico de suporte de TI da Central de Chamados do SENAI LRV. Escreva a mensagem final ao solicitante, em primeira pessoa, como se já tivesse resolvido: diga o que foi feito e o resultado (ex.: 'Reiniciei a impressora e ela voltou a imprimir.'). Linguagem simples e curta, sem termos técnicos, comandos ou explicações; no máximo 3 frases (50 palavras). Tom formal e cordial; saudação curta opcional ('Olá,'); sem despedida longa. Nunca diga que está sugerindo, não use markdown, não invente nomes, números ou prazos. Se faltar informação, faça uma única pergunta simples. Nunca peça senha. Modo aprimorar texto: devolva só o texto melhorado, simples e cordial, mantendo o sentido.`,
+  promptSistema: PROMPT_IA_SUPORTE_PADRAO,
   maxTokensResposta: 150,
   maxTokensAprimoramento: 150,
   temperatura: 0.2,
+  usarChamadosResolvidos: true,
+  maxExemplosResolvidos: 5,
 };
 
 export interface WhatsappConfig {

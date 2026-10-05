@@ -31,19 +31,33 @@ const vocabulario = [
   "login",
 ];
 
+export interface TextoAssistidoProps {
+  value: string;
+  onChange: (value: string) => void;
+  rows?: number;
+  placeholder?: string;
+  ocultarIa?: boolean;
+  ticketId?: number;
+  titulo?: string;
+  categoria?: string;
+  local?: string;
+  descricao?: string;
+  mensagens?: string[];
+}
+
 export function TextoAssistido({
   value,
   onChange,
   rows = 5,
   placeholder,
   ocultarIa = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  rows?: number;
-  placeholder?: string;
-  ocultarIa?: boolean;
-}) {
+  ticketId,
+  titulo,
+  categoria,
+  local,
+  descricao,
+  mensagens,
+}: TextoAssistidoProps) {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [textoAprimorado, setTextoAprimorado] = useState<string | null>(null);
@@ -66,7 +80,17 @@ export function TextoAssistido({
     setLoading(true);
     setErro(null);
     try {
-      const res = await revisarTexto({ data: { texto: value } });
+      const res = await revisarTexto({
+        data: {
+          texto: value,
+          ticketId,
+          titulo,
+          categoria,
+          local,
+          descricao,
+          mensagens,
+        },
+      });
       const resultado = res.texto || res.versao1 || "";
       setTextoAprimorado(resultado);
       setEdicaoTexto(resultado);

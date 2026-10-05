@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, useMemo } from "react";
-import { MessageSquare, Send, RefreshCw, Shield, User, Bot, Clock } from "lucide-react";
+import { MessageSquare, Send, RefreshCw, Shield, User, Bot, Clock, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/UserAvatar";
 import type { TicketMensagem } from "@/lib/types";
+import { revisarTexto } from "@/lib/revisar-texto.functions";
 
 interface TicketChatProps {
   ticketId: number;
@@ -40,8 +41,32 @@ export function TicketChat({
   const [carregando, setCarregando] = useState(true);
   const [novoTexto, setNovoTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [aprimorando, setAprimorando] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollEndRef = useRef<HTMLDivElement>(null);
+
+  const aprimorarMensagem = async () => {
+    if (!novoTexto.trim() || aprimorando) return;
+    setAprimorando(true);
+    try {
+      const res = await revisarTexto({
+        data: {
+          texto: novoTexto,
+          ticketId,
+          descricao: ticketDescricao,
+        },
+      });
+      const melhorado = res.texto || res.versao1 || "";
+      if (melhorado) {
+        setNovoTexto(melhorado);
+        toast.success("Texto aprimorado com sucesso!");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível aprimorar o texto.");
+    } finally {
+      setAprimorando(false);
+    }
+  };
 
   // Rolagem suave até a última mensagem
   const rolarAteFinal = (suave = true) => {
@@ -425,6 +450,21 @@ export function TicketChat({
           }
           className="text-xs sm:text-sm min-h-[50px] max-h-[120px] resize-none rounded-xl bg-background"
         />
+
+        {isGestorOrAdmin && novoTexto.trim().length >= 2 && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={aprimorarMensagem}
+            disabled={disabled || enviando || aprimorando}
+            className="h-10 px-2.5 text-xs text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 border-purple-300 dark:border-purple-800 gap-1.5 shrink-0"
+            title="Aprimorar texto com IA baseado no contexto do chamado"
+          >
+            <Sparkles className="size-3.5" />
+            <span className="hidden md:inline">{aprimorando ? "Aprimorando..." : "Aprimorar"}</span>
+          </Button>
+        )}
 
         <Button
           type="submit"

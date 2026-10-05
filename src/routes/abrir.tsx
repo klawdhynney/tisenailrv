@@ -653,7 +653,14 @@ function AbrirChamado() {
 
             {isCampoAtivo("descricao") && (
               <Campo label={getCampoLabel("descricao", configAbrir?.rotuloDescricao || "Descreva o problema*")} obrigatorio={isCampoObrigatorio("descricao")} erro={erros.descricao}>
-                <TextoAssistido rows={5} value={form.descricao} onChange={(value) => set("descricao", value)} placeholder={configAbrir?.placeholderDescricao || "Ex.: Computador sem internet na sala 1"} />
+                <TextoAssistido
+                  rows={5}
+                  value={form.descricao}
+                  onChange={(value) => set("descricao", value)}
+                  placeholder={configAbrir?.placeholderDescricao || "Ex.: Computador sem internet na sala 1"}
+                  categoria={form.categoria}
+                  local={form.local}
+                />
               </Campo>
             )}
 

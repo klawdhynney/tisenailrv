@@ -38,10 +38,11 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     paginaInicialSalva.bannerUrl = "";
   }
 
-  // Atualiza IA de suporte se estiver com a versão antiga anterior
+  // Atualiza IA de suporte se estiver com a versão antiga anterior ou sem referências de chamados semelhantes
   const iaSuporteSalva = { ...regrasSalvas.iaSuporte };
   if (
     !iaSuporteSalva.promptSistema ||
+    !iaSuporteSalva.promptSistema.includes("CHAMADOS RESOLVIDOS SEMELHANTES") ||
     iaSuporteSalva.promptSistema.includes("assistente técnico da Central de Chamados") ||
     iaSuporteSalva.maxTokensResposta === 400
   ) {
@@ -49,6 +50,12 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     iaSuporteSalva.maxTokensResposta = 150;
     iaSuporteSalva.maxTokensAprimoramento = 150;
     iaSuporteSalva.temperatura = 0.2;
+  }
+  if (iaSuporteSalva.usarChamadosResolvidos === undefined) {
+    iaSuporteSalva.usarChamadosResolvidos = true;
+  }
+  if (!iaSuporteSalva.maxExemplosResolvidos) {
+    iaSuporteSalva.maxExemplosResolvidos = 5;
   }
 
   return {

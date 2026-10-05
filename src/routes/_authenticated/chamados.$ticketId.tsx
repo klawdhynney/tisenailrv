@@ -302,13 +302,12 @@ function TicketEditor({
       const res = await sugerirRespostasAtendimento({
         data: {
           ticketId: ticket.id,
-          titulo: `Chamado #${ticket.id}`,
+          titulo: draft.categoria ? `${draft.categoria} (Chamado #${ticket.id})` : `Chamado #${ticket.id}`,
           categoria: draft.categoria,
           prioridade: draft.prioridade,
           local: draft.local,
           descricao: draft.descricao,
           procedimentoAtual: draft.procedimento ?? undefined,
-          mensagens: draft.procedimento ? [draft.procedimento] : [],
         },
       });
       const respostaFinal = res.texto || res.opcao1 || "";
@@ -689,6 +688,11 @@ function TicketEditor({
         <TextoAssistido
           value={draft.procedimento ?? ""}
           onChange={(value) => field("procedimento", value || null)}
+          ticketId={ticket.id}
+          titulo={draft.categoria ? `${draft.categoria} (Chamado #${ticket.id})` : `Chamado #${ticket.id}`}
+          categoria={draft.categoria}
+          local={draft.local}
+          descricao={draft.descricao}
         />
         {ticket.fechadoEm && (
           <p className="text-xs text-muted-foreground pt-1">

@@ -2233,6 +2233,51 @@ function Regras() {
                     </p>
                   </div>
                 </div>
+
+                <div className="pt-4 border-t border-border space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-muted/20">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="ia-usar-resolvidos" className="text-sm font-semibold cursor-pointer">
+                          Usar chamados resolvidos como referência
+                        </Label>
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                          Base Histórica
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Busca no servidor até 5 chamados resolvidos semelhantes da mesma categoria para orientar a IA com soluções já validadas pela equipe (sem nomes ou dados pessoais).
+                      </p>
+                    </div>
+                    <Switch
+                      id="ia-usar-resolvidos"
+                      checked={iaConf.usarChamadosResolvidos ?? true}
+                      onCheckedChange={(checked) => salvarIa({ usarChamadosResolvidos: checked })}
+                    />
+                  </div>
+
+                  {(iaConf.usarChamadosResolvidos ?? true) && (
+                    <div className="space-y-2 max-w-sm pl-1">
+                      <Label htmlFor="ia-max-exemplos" className="text-xs font-semibold">
+                        Número de exemplos semelhantes (1 a 5)
+                      </Label>
+                      <Input
+                        id="ia-max-exemplos"
+                        type="number"
+                        min={1}
+                        max={5}
+                        value={iaConf.maxExemplosResolvidos ?? 5}
+                        onChange={(e) => {
+                          const val = Math.min(5, Math.max(1, Number(e.target.value) || 5));
+                          salvarIa({ maxExemplosResolvidos: val });
+                        }}
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Quantidade de chamados resolvidos enviados como referência de solução (padrão: 5).
+                      </p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
