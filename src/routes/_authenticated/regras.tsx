@@ -72,6 +72,7 @@ import {
   CORES_PRIORIDADE,
   AVALIACAO_PADRAO,
   IA_SUPORTE_PADRAO,
+  WHATSAPP_PADRAO,
   type CampoAbertura,
   type ParametroCor,
   type Periodo,
@@ -401,6 +402,11 @@ function Regras() {
   const iaConf = regras.iaSuporte ?? IA_SUPORTE_PADRAO;
   const salvarIa = (patch: Partial<typeof iaConf>) =>
     salvar({ iaSuporte: { ...iaConf, ...patch } });
+
+  // WhatsApp Notificação
+  const whatsappConf = regras.whatsapp ?? WHATSAPP_PADRAO;
+  const salvarWhatsapp = (patch: Partial<typeof whatsappConf>) =>
+    salvar({ whatsapp: { ...whatsappConf, ...patch } });
 
   // 9. Horários, SLA e Atendimento
   const horariosPorDia = regras.expediente.horariosPorDia ?? {
@@ -988,6 +994,86 @@ function Regras() {
                     placeholder="Obrigado pela sua avaliação!"
                   />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Integração WhatsApp Pós-Registro */}
+          <Card className="border-t-4 border-[#25D366] shadow-xs">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-[#25D366]">
+                <MessageCircle className="size-5" />
+                Envio de Chamado pelo WhatsApp
+              </CardTitle>
+              <CardDescription>
+                Configure o número de suporte de destino (com DDI) e o modelo da mensagem pré-formatada.
+                Após registrar o chamado, o solicitante verá o botão na tela de confirmação para abrir o WhatsApp diretamente no wa.me. Sem número configurado, o botão fica oculto.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between rounded-xl bg-muted/30 p-3.5 border border-border">
+                <div>
+                  <p className="text-sm font-semibold">Exibir botão de envio pelo WhatsApp na tela de confirmação</p>
+                  <p className="text-xs text-muted-foreground">
+                    Permite ao solicitante encaminhar o chamado registrado ao suporte com um clique.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={whatsappConf.ativo}
+                    onChange={(e) => salvarWhatsapp({ ativo: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#25D366]"></div>
+                </label>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">Número de Destino do WhatsApp (com DDI)</Label>
+                  <Input
+                    value={whatsappConf.numeroDestino}
+                    onChange={(e) => salvarWhatsapp({ numeroDestino: sanitizeInput(e.target.value) })}
+                    placeholder="Ex.: 5566996444461"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Informe com DDI e DDD (ex.: <code>5566996444461</code>). Se este campo estiver em branco, o botão será ocultado automaticamente. Não solicita o número do usuário.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">Tags dinâmicas disponíveis</Label>
+                  <div className="rounded-xl border border-border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1 font-mono">
+                    <p>• <strong>&#123;numero&#125;</strong> : Número do chamado (#123)</p>
+                    <p>• <strong>&#123;titulo&#125;</strong> : Categoria ou demanda</p>
+                    <p>• <strong>&#123;local&#125;</strong> : Local do problema</p>
+                    <p>• <strong>&#123;descricao&#125;</strong> : Resumo da descrição</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Modelo da Mensagem Pré-formatada</Label>
+                <Textarea
+                  rows={5}
+                  value={whatsappConf.modeloMensagem}
+                  onChange={(e) => salvarWhatsapp({ modeloMensagem: e.target.value })}
+                  placeholder="Modelo da mensagem enviada via WhatsApp..."
+                  className="font-mono text-xs bg-background/80"
+                />
+              </div>
+
+              {/* Prévia da mensagem */}
+              <div className="rounded-xl border border-border/80 bg-muted/20 p-3.5 space-y-1.5">
+                <p className="text-xs font-bold text-foreground">Prévia da mensagem que abrirá no WhatsApp (wa.me):</p>
+                <pre className="text-xs bg-card p-3 rounded-lg border border-border/60 text-foreground whitespace-pre-wrap font-sans">
+                  {(whatsappConf.modeloMensagem || "")
+                    .replace(/\{numero\}|\{id\}/g, "1042")
+                    .replace(/\{titulo\}/g, "Computadores e Periféricos")
+                    .replace(/\{local\}/g, "Laboratório de Informática 01")
+                    .replace(/\{descricao\}/g, "Computador não liga após queda de energia.")}
+                </pre>
               </div>
             </CardContent>
           </Card>
@@ -2058,7 +2144,7 @@ function Regras() {
                   </div>
                   <ConfirmAction
                     title="Restaurar prompt e configurações padrão da IA?"
-                    description="O prompt do sistema será redefinido para o padrão técnico e direto da Central TI SENAI LRV, com limite de 400 tokens e temperatura 0.2."
+                    description="O prompt do sistema será redefinido para o padrão ágil e cordial da Central TI SENAI LRV, com limite de 150 tokens e temperatura 0.2."
                     confirmLabel="Restaurar padrão"
                     variant="destructive"
                     onConfirm={() => {
@@ -2083,10 +2169,10 @@ function Regras() {
                     </span>
                   </div>
                   <Textarea
-                    rows={16}
+                    rows={12}
                     value={iaConf.promptSistema}
                     onChange={(e) => salvarIa({ promptSistema: e.target.value })}
-                    className="font-mono text-xs leading-relaxed bg-background/80 min-h-[320px]"
+                    className="font-mono text-xs leading-relaxed bg-background/80 min-h-[220px]"
                     placeholder="Instruções e diretrizes técnicas do assistente..."
                   />
                   <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
@@ -2106,16 +2192,16 @@ function Regras() {
                     </Label>
                     <Input
                       type="number"
-                      min={100}
-                      max={2000}
-                      value={iaConf.maxTokensResposta || 400}
+                      min={50}
+                      max={1000}
+                      value={iaConf.maxTokensResposta || 150}
                       onChange={(e) => {
-                        const val = Number(e.target.value) || 400;
+                        const val = Number(e.target.value) || 150;
                         salvarIa({ maxTokensResposta: val, maxTokensAprimoramento: val });
                       }}
                     />
                     <p className="text-[11px] text-muted-foreground">
-                      Padrão: 400 tokens nos dois modos. Respostas curtas, técnicas e diretas.
+                      Padrão: 150 tokens nos dois modos. Respostas rápidas e objetivas em até 3 frases (50 palavras).
                     </p>
                   </div>
 

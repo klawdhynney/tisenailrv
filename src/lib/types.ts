@@ -358,19 +358,26 @@ export interface IaSuporteConfig {
 }
 
 export const IA_SUPORTE_PADRAO: IaSuporteConfig = {
-  promptSistema: `Você é o assistente técnico da Central de Chamados de TI do SENAI LRV. Sua saída é o texto final que será enviado diretamente ao solicitante no chamado.
-Regras:
-- Escreva a resposta pronta para uso. Nunca diga que está sugerindo ou recomendando. Proibido usar: 'sugiro', 'recomendo', 'poderia', 'talvez', 'aqui está', 'segue', 'espero ter ajudado', 'fico à disposição' e frases semelhantes.
-- Sem introduções, explicações sobre a própria resposta, agradecimentos repetidos ou despedidas longas.
-- Tom formal e cordial, técnico e objetivo. Saudação curta opcional ('Prezado(a),') e, se necessário, fechamento em uma linha ('Atenciosamente, Equipe de TI').
-- Tamanho: até 5 linhas ou 80 palavras. Quando houver procedimento, use passos numerados curtos, uma ação por passo, no máximo 7 passos.
-- Use terminologia técnica correta. Informe a causa provável e a ação a executar, em frases afirmativas e diretas (ex.: 'Reinicie o serviço de impressão.', 'Foi identificado falha de autenticação.').
-- Se faltar informação essencial, faça uma única pergunta objetiva ou liste até 3 dados necessários.
-- Não invente informações nem prometa prazos que não constem no chamado.
-- Ao aprimorar um texto escrito pelo técnico: devolva somente o texto aprimorado, mais direto, técnico, formal e cordial, mantendo o sentido original, sem comentários.`,
-  maxTokensResposta: 400,
-  maxTokensAprimoramento: 400,
+  promptSistema: `Você é o técnico de suporte de TI da Central de Chamados do SENAI LRV. Escreva a mensagem final ao solicitante, em primeira pessoa, como se já tivesse resolvido: diga o que foi feito e o resultado (ex.: 'Reiniciei a impressora e ela voltou a imprimir.'). Linguagem simples e curta, sem termos técnicos, comandos ou explicações; no máximo 3 frases (50 palavras). Tom formal e cordial; saudação curta opcional ('Olá,'); sem despedida longa. Nunca diga que está sugerindo, não use markdown, não invente nomes, números ou prazos. Se faltar informação, faça uma única pergunta simples. Nunca peça senha. Modo aprimorar texto: devolva só o texto melhorado, simples e cordial, mantendo o sentido.`,
+  maxTokensResposta: 150,
+  maxTokensAprimoramento: 150,
   temperatura: 0.2,
+};
+
+export interface WhatsappConfig {
+  ativo: boolean;
+  numeroDestino: string;
+  modeloMensagem: string;
+}
+
+export const WHATSAPP_PADRAO: WhatsappConfig = {
+  ativo: true,
+  numeroDestino: "5566996444461",
+  modeloMensagem: `Olá, equipe de TI do SENAI LRV! Registrei um novo chamado:
+*Chamado:* #{numero}
+*Título:* {titulo}
+*Local:* {local}
+*Descrição:* {descricao}`,
 };
 
 export interface Regras {
@@ -404,6 +411,7 @@ export interface Regras {
   avaliacoes?: AvaliacaoConfig | undefined;
   animacaoCarregamento?: AnimacaoCarregamentoConfig | undefined;
   iaSuporte?: IaSuporteConfig | undefined;
+  whatsapp?: WhatsappConfig | undefined;
 }
 
 export const FILTROS_PLANILHA = ["Mês", "Busca", "Por página", "Categoria", "Setor", "SLA"] as const;
@@ -584,5 +592,6 @@ export const REGRAS_PADRAO: Regras = {
   avaliacoes: { ...AVALIACAO_PADRAO },
   animacaoCarregamento: { ...ANIMACAO_CARREGAMENTO_PADRAO },
   iaSuporte: { ...IA_SUPORTE_PADRAO },
+  whatsapp: { ...WHATSAPP_PADRAO },
 };
 

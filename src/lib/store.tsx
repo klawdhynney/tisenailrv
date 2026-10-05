@@ -15,6 +15,7 @@ import {
   LGPD_PADRAO,
   AVALIACAO_PADRAO,
   IA_SUPORTE_PADRAO,
+  WHATSAPP_PADRAO,
   type Regras,
   type Ticket,
   type Prioridade,
@@ -30,13 +31,32 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     ? "kpi"
     : dashSalvo.tipoGraficoPadrao || DASHBOARD_PADRAO.tipoGraficoPadrao;
 
+  // Sanitiza capa legada se contiver base64 antigo que gerava bug de persistência
+  const paginaInicialSalva = { ...regrasSalvas.paginaInicial };
+  if (paginaInicialSalva.bannerUrl && paginaInicialSalva.bannerUrl.includes("iVBORw0KGgoAAAANSUhEUgAACAAAAAMACAIAAAA/whCdA")) {
+    paginaInicialSalva.bannerUrl = "";
+  }
+
+  // Atualiza IA de suporte se estiver com a versão antiga anterior
+  const iaSuporteSalva = { ...regrasSalvas.iaSuporte };
+  if (
+    !iaSuporteSalva.promptSistema ||
+    iaSuporteSalva.promptSistema.includes("assistente técnico da Central de Chamados") ||
+    iaSuporteSalva.maxTokensResposta === 400
+  ) {
+    iaSuporteSalva.promptSistema = IA_SUPORTE_PADRAO.promptSistema;
+    iaSuporteSalva.maxTokensResposta = 150;
+    iaSuporteSalva.maxTokensAprimoramento = 150;
+    iaSuporteSalva.temperatura = 0.2;
+  }
+
   return {
     ...REGRAS_PADRAO,
     ...regrasSalvas,
     prazos: { ...REGRAS_PADRAO.prazos, ...(regrasSalvas.prazos || {}) },
     expediente: { ...REGRAS_PADRAO.expediente, ...(regrasSalvas.expediente || {}) },
     identidadeVisual: { ...IDENTIDADE_VISUAL_PADRAO, ...(regrasSalvas.identidadeVisual || {}) },
-    paginaInicial: { ...PAGINA_INICIAL_PADRAO, ...(regrasSalvas.paginaInicial || {}) },
+    paginaInicial: { ...PAGINA_INICIAL_PADRAO, ...paginaInicialSalva },
     indicadores: {
       total: { ...INDICADORES_PADRAO.total, ...(regrasSalvas.indicadores?.total || {}) },
       atendimento: { ...INDICADORES_PADRAO.atendimento, ...(regrasSalvas.indicadores?.atendimento || {}) },
@@ -53,7 +73,8 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     rodape: { ...RODAPE_PADRAO, ...(regrasSalvas.rodape || {}) },
     lgpd: { ...LGPD_PADRAO, ...(regrasSalvas.lgpd || {}) },
     avaliacoes: { ...AVALIACAO_PADRAO, ...(regrasSalvas.avaliacoes || {}) },
-    iaSuporte: { ...IA_SUPORTE_PADRAO, ...(regrasSalvas.iaSuporte || {}) },
+    iaSuporte: { ...IA_SUPORTE_PADRAO, ...iaSuporteSalva },
+    whatsapp: { ...WHATSAPP_PADRAO, ...(regrasSalvas.whatsapp || {}) },
   };
 }
 

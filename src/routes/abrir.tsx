@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Cpu, MapPin, CheckCircle2, ArrowLeft, SendHorizontal, Mail, Star, FileText } from "lucide-react";
+import { Cpu, MapPin, CheckCircle2, ArrowLeft, SendHorizontal, Mail, Star, FileText, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -384,6 +384,50 @@ function AbrirChamado() {
               <span className="font-mono text-xs text-muted-foreground">{session?.user?.email || form.email}</span>
             </div>
           </div>
+
+          {/* Botão de Envio pelo WhatsApp */}
+          {(() => {
+            const whatsappCfg = regras.whatsapp;
+            const rawNumero = whatsappCfg?.numeroDestino || "";
+            const numeroLimpo = rawNumero.replace(/\D/g, "");
+            const exibirBotaoWhatsapp = Boolean(numeroLimpo.length >= 8 && (whatsappCfg?.ativo ?? true));
+            if (!exibirBotaoWhatsapp) return null;
+
+            const modelo = whatsappCfg?.modeloMensagem || "Olá, equipe de TI do SENAI LRV! Registrei um novo chamado:\n*Chamado:* #{numero}\n*Título:* {titulo}\n*Local:* {local}\n*Descrição:* {descricao}";
+            const resumoDescricao = form.descricao
+              ? (form.descricao.length > 140 ? `${form.descricao.slice(0, 137)}...` : form.descricao)
+              : "Não detalhada";
+            const tituloChamado = form.categoria || (form.setor ? `Atendimento - ${form.setor}` : "Suporte de TI");
+            const localChamado = form.local || "Não informado";
+
+            const mensagemPronta = modelo
+              .replace(/\{numero\}|\{id\}/gi, String(sucessoId))
+              .replace(/\{titulo\}/gi, tituloChamado)
+              .replace(/\{local\}/gi, localChamado)
+              .replace(/\{descricao\}/gi, resumoDescricao);
+
+            const whatsappUrl = `https://wa.me/${numeroLimpo}?text=${encodeURIComponent(mensagemPronta)}`;
+
+            return (
+              <div className="pt-1">
+                <Button
+                  asChild
+                  size="lg"
+                  className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold text-sm sm:text-base shadow-md hover:shadow-lg transition-all duration-200 gap-2.5 rounded-2xl py-6 cursor-pointer border-0"
+                >
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Encaminhar chamado para o WhatsApp do suporte"
+                  >
+                    <MessageCircle className="size-5 shrink-0 fill-current" />
+                    <span>Enviar chamado pelo WhatsApp</span>
+                  </a>
+                </Button>
+              </div>
+            );
+          })()}
 
           {/* AJUSTE 6: Bloco de Avaliação da Facilidade */}
           {!avaliacaoEnviada && !avaliacaoPulada && (

@@ -14,7 +14,7 @@ import {
 import { UserAvatar } from "@/components/UserAvatar";
 import { useStore } from "@/lib/store-context";
 import senaiIcone from "@/assets/senai-icone.png";
-import senaiHero from "@/assets/senai-hero.png";
+import senaiHero from "@/assets/senai-hero-20261005.png";
 
 const navPublico = [
   { to: "/", label: "Início", icon: Home },
@@ -60,8 +60,16 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const showBanner = (pathname === "/" || pathname === "/abrir") && (regras.paginaInicial?.mostrarBanner ?? true);
-  const bannerImgSrc = regras.paginaInicial?.bannerUrl || senaiHero;
-  const bannerAltText = regras.paginaInicial?.bannerAlt || "SENAI Lucas do Rio Verde - Ambiente Tecnológico de Inovação e Educação Profissional";
+  const bannerUrlSalva = regras.paginaInicial?.bannerUrl?.trim() || "";
+  // Descarta base64 legado de imagem anterior que possa ter ficado no banco e aplica parâmetro de versão
+  const bannerUrlValida =
+    bannerUrlSalva && !bannerUrlSalva.includes("iVBORw0KGgoAAAANSUhEUgAACAAAAAMACAIAAAA/whCdA")
+      ? (bannerUrlSalva.startsWith("data:")
+          ? bannerUrlSalva
+          : `${bannerUrlSalva}${bannerUrlSalva.includes("?") ? "&" : "?"}v=20261005`)
+      : "";
+  const bannerImgSrc = bannerUrlValida || `${senaiHero}?v=20261005`;
+  const bannerAltText = regras.paginaInicial?.bannerAlt || "SENAI Lucas do Rio Verde - Central de Tecnologia da Informação";
   const logoSrc = regras.identidadeVisual?.logoUrl || senaiIcone;
   const tituloSite = regras.identidadeVisual?.tituloSite || "TI SENAI LRV";
   const textoRodape = regras.rodape?.textoDireitos || "© 2026 TI SENAI LRV • Todos os direitos reservados • Criado por Claudinei Lima";
@@ -294,7 +302,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 alt={bannerAltText}
                 width={2048}
                 height={768}
-                loading="lazy"
+                loading="eager"
                 decoding="async"
                 className="aspect-[21/9] sm:aspect-[24/8] min-h-[140px] sm:min-h-[200px] max-h-[320px] w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.015]"
               />

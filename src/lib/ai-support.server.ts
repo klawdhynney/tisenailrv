@@ -123,13 +123,13 @@ export async function askSupportAI(system: string, prompt: string, options: AskA
       : undefined,
   });
 
-  const maxTokens = options.maxTokens ?? 400;
+  const maxTokens = options.maxTokens ?? 150;
   const temperature = options.temperature ?? 0.2;
-  const timeoutMs = options.timeoutMs ?? 20000;
+  const timeoutMs = options.timeoutMs ?? 12000;
 
   const abortController = new AbortController();
   const timeoutId = setTimeout(() => {
-    abortController.abort(new Error("Tempo limite de 20 segundos excedido"));
+    abortController.abort(new Error("Tempo limite de 12 segundos excedido"));
   }, timeoutMs);
 
   try {
@@ -143,11 +143,11 @@ export async function askSupportAI(system: string, prompt: string, options: AskA
       abortSignal: abortController.signal,
     });
 
-    // Se foi cortada pelo limite de tokens, não entregamos texto incompleto: refazemos uma vez com síntese
+    // Se foi cortada pelo limite de tokens, não entregamos texto incompleto: refazemos uma vez com síntese estrita
     if (result.finishReason === "length") {
       console.warn("[IA Suporte] Resposta cortada pelo limite de tokens. Refazendo chamada uma vez com síntese estrita...");
-      const promptSintetico = `${prompt}\n\nInstrução estrita: Escreva a resposta completa em no máximo 4 linhas, sem exceder 400 tokens.`;
-      
+      const promptSintetico = `${prompt}\n\nInstrução estrita: Escreva a resposta completa em no máximo 2 ou 3 frases simples e curtas (até 50 palavras), sem exceder 150 tokens.`;
+
       const retryResult = await generateText({
         model: provider(modelName),
         system,
@@ -158,7 +158,7 @@ export async function askSupportAI(system: string, prompt: string, options: AskA
       });
 
       if (retryResult.finishReason === "length") {
-        throw new Error("A resposta ultrapassou o limite de 400 tokens e não pôde ser concluída. Resuma o chamado e tente novamente.");
+        throw new Error("A resposta ultrapassou o limite de 150 tokens e não pôde ser concluída. Resuma o chamado e tente novamente.");
       }
 
       const textoRetry = retryResult.text.trim();
@@ -183,7 +183,7 @@ export async function askSupportAI(system: string, prompt: string, options: AskA
 
 /**
  * Motor heurístico técnico local:
- * Mantém consistência dos dois modos quando não houver conexão de API disponível.
+ * Mantém primeira pessoa, até 3 frases, linguagem simples e cordial.
  */
 function gerarFallbackLocal(_system: string, prompt: string): string {
   const isAprimoramento = prompt.startsWith("MODO: APRIMORAR TEXTO");
@@ -191,23 +191,37 @@ function gerarFallbackLocal(_system: string, prompt: string): string {
 
   if (isAprimoramento) {
     const rawTexto = prompt.replace(/^MODO:\s*APRIMORAR TEXTO\s*/i, "").trim();
-    const textoLimpo = rawTexto.replace(/[^\w\sÀ-ÿ.,!?:;-]/g, "").trim();
-    const primeiraLetra = textoLimpo.charAt(0).toUpperCase() + textoLimpo.slice(1);
-    
-    const resposta = `Solicitação técnica de TI: ${primeiraLetra}. Procedimento preventivo e corretivo acionado junto à equipe técnica local para averiguação operacional e restabelecimento imediato dos serviços.`;
-    return limparSaidaIa(resposta);
+    let limpo = rawTexto.replace(/^["']|["']$/g, "").trim();
+    if (!limpo) return "Verifiquei a solicitação e o atendimento foi concluído.";
+    limpo = limpo.charAt(0).toUpperCase() + limpo.slice(1);
+    if (!/[.!?]$/.test(limpo)) limpo += ".";
+    return limparSaidaIa(limpo);
   }
 
   if (isRespostaAtendimento) {
     const descMatch = /Descrição:\s*([^\n]+)/i.exec(prompt);
-    const desc = descMatch ? descMatch[1].trim() : "demanda técnica informada";
+    const desc = descMatch ? descMatch[1].trim().toLowerCase() : "";
     const locMatch = /Local:\s*([^\n]+)/i.exec(prompt);
     const local = locMatch ? locMatch[1].trim() : "";
     const localTexto = local && local !== "Não informado" ? ` no ${local}` : "";
 
-    const resposta = `1. Chamado analisado pela equipe técnica de TI para atendimento${localTexto}.\n2. Realizado diagnóstico da infraestrutura, conexões e credenciais operacionais.\n3. Procedimento técnico executado e serviços liberados em pleno funcionamento.`;
-    return limparSaidaIa(resposta);
+    let acao = "Verifiquei o equipamento e o serviço já voltou a funcionar normalmente.";
+    if (desc.includes("impressora") || desc.includes("imprimir")) {
+      acao = `Reiniciei a impressora${localTexto} e ela voltou a imprimir normalmente.`;
+    } else if (desc.includes("internet") || desc.includes("rede") || desc.includes("conexão") || desc.includes("wifi")) {
+      acao = `Ajustei a conexão de rede${localTexto} e o acesso à internet foi restabelecido.`;
+    } else if (desc.includes("computador") || desc.includes("notebook") || desc.includes("pc")) {
+      acao = `Realizei a manutenção no computador${localTexto} e o sistema está funcionando corretamente.`;
+    } else if (desc.includes("senha") || desc.includes("login") || desc.includes("acesso") || desc.includes("email")) {
+      acao = "Atualizei o acesso solicitado e o login já está liberado.";
+    } else if (desc.includes("projetor") || desc.includes("monitor") || desc.includes("tela")) {
+      acao = `Ajustei os cabos e a configuração de vídeo${localTexto} e a projeção está funcionando.`;
+    } else {
+      acao = `Atendi a solicitação${localTexto} e o problema foi resolvido com sucesso.`;
+    }
+
+    return limparSaidaIa(`Olá, ${acao}`);
   }
 
-  return "Atendimento técnico registrado e encaminhado para resolução operacional da equipe de TI.";
+  return "Olá, verifiquei o equipamento e o serviço já voltou a funcionar normalmente.";
 }

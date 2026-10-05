@@ -11,9 +11,9 @@ async function obterConfigIa(): Promise<IaSuporteConfig> {
     if (regrasSalvas.iaSuporte && typeof regrasSalvas.iaSuporte === "object") {
       return {
         promptSistema: regrasSalvas.iaSuporte.promptSistema || IA_SUPORTE_PADRAO.promptSistema,
-        maxTokensResposta: 400,
-        maxTokensAprimoramento: 400,
-        temperatura: 0.2,
+        maxTokensResposta: Number(regrasSalvas.iaSuporte.maxTokensResposta) || 150,
+        maxTokensAprimoramento: Number(regrasSalvas.iaSuporte.maxTokensAprimoramento) || 150,
+        temperatura: typeof regrasSalvas.iaSuporte.temperatura === "number" ? regrasSalvas.iaSuporte.temperatura : 0.2,
       };
     }
   } catch (err) {
@@ -32,17 +32,16 @@ export const revisarTexto = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const config = await obterConfigIa();
 
-    // MODO: APRIMORAR TEXTO - envia estritamente o texto digitado pelo técnico, sem dados pessoais
+    // MODO: APRIMORAR TEXTO - envia estritamente o texto essencial digitado pelo técnico
     const userMessage = [
       "MODO: APRIMORAR TEXTO",
       data.texto.trim(),
     ].join("\n");
 
-    // Usa estritamente o prompt do sistema salvo no painel, sem prompts fixos divergentes
     const raw = await askSupportAI(config.promptSistema, userMessage, {
-      maxTokens: 400,
-      temperature: 0.2,
-      timeoutMs: 20000,
+      maxTokens: config.maxTokensAprimoramento || 150,
+      temperature: config.temperatura ?? 0.2,
+      timeoutMs: 12000,
     });
 
     const textoFinal = limparSaidaIa(raw);
@@ -70,38 +69,21 @@ export const sugerirRespostasAtendimento = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const config = await obterConfigIa();
 
-    // Obtém até as 5 últimas mensagens anteriores registradas (sem e-mail, telefone, foto ou dados pessoais)
-    let ultimasMensagens: string[] = [];
-    if (Array.isArray(data.mensagens) && data.mensagens.length > 0) {
-      ultimasMensagens = data.mensagens.map((m) => String(m).trim()).filter(Boolean).slice(-5);
-    } else if (data.procedimentoAtual && data.procedimentoAtual.trim()) {
-      ultimasMensagens = [data.procedimentoAtual.trim()];
-    }
-
-    const blocoMensagens =
-      ultimasMensagens.length > 0
-        ? ultimasMensagens.map((m, idx) => `- Mensagem ${idx + 1}: ${m}`).join("\n")
-        : "Nenhuma mensagem anterior registrada.";
-
     const titulo = data.titulo || (data.ticketId ? `Chamado #${data.ticketId}` : "Chamado Técnico");
+    const localInfo = data.local && data.local !== "Não informado" ? ` (${data.local})` : "";
 
-    // MODO: RESPONDER CHAMADO - envia dados técnicos contextuais sem qualquer dado pessoal
+    // MODO: RESPONDER CHAMADO - envia somente o contexto essencial para manter a resposta ultra rápida
     const userMessage = [
       "MODO: RESPONDER CHAMADO",
-      `Título: ${titulo}`,
+      `Título: ${titulo}${localInfo}`,
       `Descrição: ${data.descricao}`,
-      `Categoria: ${data.categoria || "Geral"}`,
-      `Prioridade: ${data.prioridade || "Média"}`,
-      `Local: ${data.local || "Não informado"}`,
-      `Últimas mensagens do chamado:`,
-      blocoMensagens,
+      ...(data.procedimentoAtual?.trim() ? [`Última anotação: ${data.procedimentoAtual.trim()}`] : []),
     ].join("\n");
 
-    // Usa estritamente o prompt do sistema salvo no painel, sem prompts fixos divergentes
     const raw = await askSupportAI(config.promptSistema, userMessage, {
-      maxTokens: 400,
-      temperature: 0.2,
-      timeoutMs: 20000,
+      maxTokens: config.maxTokensResposta || 150,
+      temperature: config.temperatura ?? 0.2,
+      timeoutMs: 12000,
     });
 
     const textoFinal = limparSaidaIa(raw);
