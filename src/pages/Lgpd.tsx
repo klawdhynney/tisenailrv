@@ -32,7 +32,7 @@ export function LgpdPage() {
           const l = linha.trim();
           if (!l) return <div key={idx} className="h-1.5" />;
           if (l.startsWith("•") || l.startsWith("-")) {
-            const conteudo = l.replace(/^[•\-]\s*/, "");
+            const conteudo = l.replace(/^[•-]\s*/, "");
             return (
               <div key={idx} className="flex items-start gap-2.5 pl-1">
                 <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />

@@ -87,7 +87,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
          { property: "og:title", content: "TI SENAI LRV" },
        { property: "og:description", content: "Abertura e acompanhamento de chamados de TI SENAI LRV." },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/favicon.jpg" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/favicon.jpg" },
       { name: "twitter:site", content: "@Lovable" },
     ],
     links: [

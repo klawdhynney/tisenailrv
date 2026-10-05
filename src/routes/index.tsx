@@ -13,7 +13,9 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "TI SENAI LRV" },
       { property: "og:description", content: "Central de Chamados de TI e indicadores públicos." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:image", content: "/favicon.jpg" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/favicon.jpg" },
     ],
   }),
   component: Inicio,
@@ -46,6 +48,8 @@ function Inicio() {
           alt="Ambiente de tecnologia e atendimento de TI"
           width={1536}
           height={768}
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-25 dark:opacity-15"
         />
         <div className="absolute inset-0 -z-10 bg-card/85 backdrop-blur-[1px]" />

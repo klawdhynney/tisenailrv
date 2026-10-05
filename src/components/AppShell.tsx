@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useStore } from "@/lib/store-context";
-import senaiIcone from "@/assets/senai-icone.png";
 import senaiHero from "@/assets/senai-hero-20261005.png";
 
 const navPublico = [
@@ -74,7 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       : "";
   const bannerImgSrc = bannerUrlValida || `${senaiHero}?v=20261005`;
   const bannerAltText = regras.paginaInicial?.bannerAlt || "SENAI Lucas do Rio Verde - Central de Tecnologia da Informação";
-  const logoSrc = regras.identidadeVisual?.logoUrl || senaiIcone;
+  const logoSrc = regras.identidadeVisual?.logoUrl?.trim() || "/favicon.jpg";
   const tituloSite = regras.identidadeVisual?.tituloSite || "TI SENAI LRV";
   const textoRodape = regras.rodape?.textoDireitos || "© 2026 TI SENAI LRV • Todos os direitos reservados • Criado por Claudinei Lima";
   const mostrarLgpd = regras.rodape?.mostrarLgpd ?? true;
@@ -231,11 +230,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen max-w-full overflow-x-hidden flex flex-col justify-between">
       <header className="sticky top-0 z-40 border-b-2 border-border bg-card/90 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 sm:px-6 lg:px-8 py-3">
            <Link to="/" className="flex shrink-0 items-center gap-2.5 group">
-               <img src={logoSrc} alt={tituloSite} width={38} height={38} className="size-9.5 rounded-full object-cover shadow-sm scale-105 transition-transform duration-200" />
+               <img src={logoSrc} alt={tituloSite} width={38} height={38} decoding="async" className="size-9.5 rounded-full object-cover shadow-sm scale-105 transition-transform duration-200" />
               <span className="text-sm font-extrabold text-foreground sm:text-base">{tituloSite}</span>
           </Link>
           <nav className="ml-auto hidden items-center gap-2 lg:flex">
@@ -293,7 +292,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         )}
       </header>
-      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex-1">
         {showBanner && (
           <div className="mb-6 sm:mb-8 w-full">
             <Link
@@ -315,7 +314,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
         {children}
       </main>
-      <footer className="mt-12 border-t border-border py-6 text-center text-xs text-muted-foreground">
+      <footer className="mt-auto border-t border-border py-6 text-center text-xs text-muted-foreground">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 sm:px-6 lg:px-8">
           <span>{textoRodape}</span>
           {mostrarLgpd && (

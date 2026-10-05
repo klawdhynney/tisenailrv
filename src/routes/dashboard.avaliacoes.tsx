@@ -386,7 +386,7 @@ function PaginaAvaliacoes() {
           <div className="space-y-1">
             <p className="font-bold">Aviso de Gestão: Tabela de avaliações pendente no Supabase.</p>
             <p className="text-muted-foreground leading-relaxed">
-              O banco de dados retornou que a tabela <code className="font-mono bg-muted/60 px-1 py-0.5 rounded">avaliacoes_chamados</code> ainda não foi criada. A migration <code className="font-mono bg-muted/60 px-1 py-0.5 rounded">20261005050000_avaliacoes_completas_e_resumo_publico.sql</code> já está preparada no repositório. Enquanto isso, o painel exibe as avaliações registradas localmente.
+              O banco de dados retornou que a tabela <code className="font-mono bg-muted/60 px-1 py-0.5 rounded">avaliacoes_chamados</code> ainda não foi criada. O script consolidado <code className="font-mono bg-muted/60 px-1 py-0.5 rounded">docs/aplicar-no-banco.sql</code> já está preparado no repositório. Enquanto isso, o painel exibe as avaliações registradas localmente.
             </p>
           </div>
         </div>

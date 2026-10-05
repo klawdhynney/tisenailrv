@@ -363,7 +363,7 @@ export async function askSupportAI(system: string, prompt: string, options: AskA
 
   // Remove caracteres de controle nulos e sanitiza
   cleanSystem = cleanSystem.replace(/\0/g, "").slice(0, 4000);
-  let cleanPrompt = (prompt || "").trim().replace(/\0/g, "").slice(0, 8000);
+  const cleanPrompt = (prompt || "").trim().replace(/\0/g, "").slice(0, 8000);
 
   if (!cleanPrompt) {
     throw new AiSupportError(
@@ -469,7 +469,7 @@ export async function askSupportAI(system: string, prompt: string, options: AskA
     }
   }
 
-  let textoFinal = response.content.trim();
+  const textoFinal = response.content.trim();
   if (!textoFinal) {
     throw new AiSupportError(
       "A IA não conseguiu responder agora. Tente novamente.",

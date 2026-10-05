@@ -166,6 +166,8 @@ function ImageUploadInput({
             <img
               src={value}
               alt="Pré-visualização"
+              loading="lazy"
+              decoding="async"
               className="max-h-36 w-auto rounded-lg object-contain mx-auto"
             />
             <Button
@@ -666,6 +668,8 @@ function Regras() {
                           <img
                             src={ident.faviconUrl || "/favicon.jpg"}
                             alt="Favicon"
+                            loading="lazy"
+                            decoding="async"
                             className="size-4 object-contain rounded-xs shrink-0"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = "/favicon.jpg";
@@ -2316,7 +2320,10 @@ function Regras() {
                           min={0}
                           max={1}
                           value={iaResposta.temperatura ?? 0.2}
-                          onChange={(e) => salvarIaResposta({ temperatura: Number(e.target.value) ?? 0.2 })}
+                          onChange={(e) => {
+                            const v = parseFloat(e.target.value);
+                            salvarIaResposta({ temperatura: isNaN(v) ? 0.2 : v });
+                          }}
                         />
                         <p className="text-[11px] text-muted-foreground">
                           Padrão: 0.2 para precisão, foco e rigor técnico.
@@ -2438,7 +2445,10 @@ function Regras() {
                           min={0}
                           max={1}
                           value={iaAprimorar.temperatura ?? 0.2}
-                          onChange={(e) => salvarIaAprimorar({ temperatura: Number(e.target.value) ?? 0.2 })}
+                          onChange={(e) => {
+                            const v = parseFloat(e.target.value);
+                            salvarIaAprimorar({ temperatura: isNaN(v) ? 0.2 : v });
+                          }}
                         />
                         <p className="text-[11px] text-muted-foreground">Padrão: 0.2.</p>
                       </div>
@@ -2521,7 +2531,10 @@ function Regras() {
                           min={0}
                           max={1}
                           value={iaAbertura.temperatura ?? 0.2}
-                          onChange={(e) => salvarIaSugerirAbertura({ temperatura: Number(e.target.value) ?? 0.2 })}
+                          onChange={(e) => {
+                            const v = parseFloat(e.target.value);
+                            salvarIaSugerirAbertura({ temperatura: isNaN(v) ? 0.2 : v });
+                          }}
                         />
                         <p className="text-[11px] text-muted-foreground">Padrão: 0.2.</p>
                       </div>
