@@ -1018,6 +1018,43 @@ function Regras() {
                   />
                 </div>
               </div>
+
+              {/* Controles de Resumo das Avaliações na Página Inicial */}
+              <div className="pt-4 border-t border-border/60 space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <Label className="text-xs font-semibold">Exibir resumo de avaliações na página inicial</Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Mostra os indicadores agregados (nota média, total e índice de satisfação) antes do rodapé da tela inicial.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={regras.avaliacoes?.exibirResumoInicio ?? AVALIACAO_PADRAO.exibirResumoInicio}
+                    onCheckedChange={(checked) => salvarAvaliacoes({ exibirResumoInicio: checked })}
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold">Título da seção na página inicial</Label>
+                    <Input
+                      value={regras.avaliacoes?.tituloResumoInicio ?? AVALIACAO_PADRAO.tituloResumoInicio}
+                      onChange={(e) => salvarAvaliacoes({ tituloResumoInicio: sanitizeInput(e.target.value) })}
+                      placeholder="Ex.: Avaliações dos usuários"
+                      disabled={!(regras.avaliacoes?.exibirResumoInicio ?? AVALIACAO_PADRAO.exibirResumoInicio)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold">Descrição curta da seção</Label>
+                    <Input
+                      value={regras.avaliacoes?.descricaoResumoInicio ?? AVALIACAO_PADRAO.descricaoResumoInicio}
+                      onChange={(e) => salvarAvaliacoes({ descricaoResumoInicio: sanitizeInput(e.target.value) })}
+                      placeholder="Ex.: Satisfação com a facilidade de abrir chamados."
+                      disabled={!(regras.avaliacoes?.exibirResumoInicio ?? AVALIACAO_PADRAO.exibirResumoInicio)}
+                    />
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

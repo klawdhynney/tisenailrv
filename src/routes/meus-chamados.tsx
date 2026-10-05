@@ -119,10 +119,56 @@ function AvaliacaoAtendimento({
       data: new Date().toLocaleDateString("pt-BR"),
     };
 
+    const notaMapeada = item.id === "triste" ? 1 : item.id === "neutro" ? 3 : item.id === "feliz" ? 4 : 5;
+    const comentarioLimpo = comentario.trim() ? comentario.trim().slice(0, 300) : null;
+
+    // 1. Tenta persistir no Supabase via RPC ou tabela direta
+    supabase
+      .rpc("submit_ticket_evaluation", {
+        p_ticket_id: ticketId,
+        p_nota: notaMapeada,
+        p_comentario: comentarioLimpo,
+      })
+      .then(({ error: rpcErr }) => {
+        if (rpcErr) {
+          supabase
+            .from("avaliacoes_chamados")
+            .upsert(
+              {
+                ticket_id: ticketId,
+                nota: notaMapeada,
+                comentario: comentarioLimpo,
+              },
+              { onConflict: "ticket_id" },
+            )
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+
+    // 2. Salva no cache clássico por ID
     try {
       const todas = JSON.parse(localStorage.getItem("tisenai_avaliacoes") || "{}");
       todas[ticketId] = payload;
       localStorage.setItem("tisenai_avaliacoes", JSON.stringify(todas));
+    } catch {
+      // ignore
+    }
+
+    // 3. Salva no cache unificado de avaliações locais (usado no dashboard e início)
+    try {
+      const salvasLocais = JSON.parse(localStorage.getItem("tisenai_avaliacoes_locais") || "[]");
+      const semAtual = Array.isArray(salvasLocais) ? salvasLocais.filter((i: any) => i.ticket_id !== ticketId) : [];
+      semAtual.unshift({
+        id: Date.now(),
+        ticket_id: ticketId,
+        nota: notaMapeada,
+        comentario: comentarioLimpo,
+        enviado_ao_banco: true,
+        created_at: new Date().toISOString(),
+        data: new Date().toISOString(),
+      });
+      localStorage.setItem("tisenai_avaliacoes_locais", JSON.stringify(semAtual));
     } catch {
       // ignore
     }

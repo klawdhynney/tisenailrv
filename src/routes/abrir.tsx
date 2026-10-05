@@ -54,7 +54,7 @@ interface FormValues {
 }
 
 function AbrirChamado() {
-  const { session, authPronto, regras, addTicket } = useStore();
+  const { session, authPronto, regras, addTicket, recarregarEvaluationStats } = useStore();
   const { wrapAsync, isLoading } = useLoading();
   const navigate = useNavigate();
   const campos = regras.camposAbertura ?? CAMPOS_ABERTURA_PADRAO;
@@ -379,45 +379,58 @@ function AbrirChamado() {
       let gravado = false;
       const comentarioLimpo = comentarioAvaliacao.trim() ? comentarioAvaliacao.trim().slice(0, 300) : null;
 
-      // 1. Tenta inserção direta na tabela avaliacoes_chamados
-      const { error: insertErr } = await supabase.from("avaliacoes_chamados").insert({
-        ticket_id: sucessoId,
-        user_id: session?.user?.id || null,
-        user_email: session?.user?.email || null,
-        nota: notaAvaliacao,
-        comentario: comentarioLimpo,
+      // 1. Tenta via RPC segura de avaliação (SECURITY DEFINER)
+      const { data: rpcData, error: rpcErr } = await supabase.rpc("submit_ticket_evaluation", {
+        p_ticket_id: sucessoId,
+        p_nota: notaAvaliacao,
+        p_comentario: comentarioLimpo,
       });
 
-      if (!insertErr) {
+      if (!rpcErr && rpcData) {
         gravado = true;
       } else {
-        console.warn("Inserção direta de avaliação pendente, tentando RPC de suporte:", insertErr.message);
+        // 2. Se a RPC falhou, tenta inserção direta na tabela avaliacoes_chamados
+        const { error: insertErr } = await supabase.from("avaliacoes_chamados").upsert(
+          {
+            ticket_id: sucessoId,
+            user_id: session?.user?.id || null,
+            user_email: session?.user?.email || null,
+            nota: notaAvaliacao,
+            comentario: comentarioLimpo,
+          },
+          { onConflict: "ticket_id" },
+        );
 
-        // 2. Tenta via RPC segura de avaliação
-        const { error: rpcErr } = await supabase.rpc("submit_ticket_evaluation", {
-          p_ticket_id: sucessoId,
-          p_nota: notaAvaliacao,
-          p_comentario: comentarioLimpo,
-        });
-
-        if (!rpcErr) {
+        if (!insertErr) {
           gravado = true;
         } else {
-          console.warn("RPC submit_ticket_evaluation:", rpcErr.message);
+          console.warn("Gravação de avaliação no banco remota pendente:", insertErr.message);
         }
       }
 
-      // 3. Salva no cache local do solicitante
+      // 3. Salva no cache local do solicitante com created_at e sem duplicatas
       try {
         const salvas = JSON.parse(localStorage.getItem("tisenai_avaliacoes_locais") || "[]");
-        salvas.push({
+        const semAtual = Array.isArray(salvas) ? salvas.filter((item: any) => item.ticket_id !== sucessoId) : [];
+        semAtual.unshift({
+          id: Date.now(),
           ticket_id: sucessoId,
+          user_id: session?.user?.id || null,
+          user_email: session?.user?.email || null,
           nota: notaAvaliacao,
           comentario: comentarioLimpo,
           enviado_ao_banco: gravado,
+          created_at: new Date().toISOString(),
           data: new Date().toISOString(),
         });
-        localStorage.setItem("tisenai_avaliacoes_locais", JSON.stringify(salvas));
+        localStorage.setItem("tisenai_avaliacoes_locais", JSON.stringify(semAtual));
+      } catch {
+        // ignore
+      }
+
+      // 4. Recarrega as estatísticas agregadas
+      try {
+        await recarregarEvaluationStats();
       } catch {
         // ignore
       }

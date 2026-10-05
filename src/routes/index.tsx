@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, FilePlus2, Activity, ClipboardList, CheckCircle2 } from "lucide-react";
+import { ArrowRight, FilePlus2, Activity, ClipboardList, CheckCircle2, Star, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
+import { AVALIACAO_PADRAO } from "@/lib/types";
 import labImage from "@/assets/technology-lab.jpg";
 
 export const Route = createFileRoute("/")({
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Inicio() {
-  const { publicStats, regras } = useStore();
+  const { publicStats, evaluationStats, regras, isGestor, isAdmin } = useStore();
   const total = publicStats.reduce((n, r) => n + r.total, 0);
   const andamento = publicStats
     .filter((r) => !["Resolvido", "Cancelado"].includes(r.status))
@@ -166,6 +167,151 @@ function Inicio() {
           </div>
         </div>
       </section>
+
+      {/* Seção Resumo de Avaliações dos Usuários (Dados Agregados com Estrito Sigilo) */}
+      {(regras.avaliacoes?.exibirResumoInicio ?? AVALIACAO_PADRAO.exibirResumoInicio) && (
+        <section className="space-y-4 pt-2">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1">
+                <Star className="size-4 fill-amber-400 text-amber-500" />
+                <span>Opinião e Satisfação</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-foreground">
+                {regras.avaliacoes?.tituloResumoInicio || AVALIACAO_PADRAO.tituloResumoInicio}
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                {regras.avaliacoes?.descricaoResumoInicio || AVALIACAO_PADRAO.descricaoResumoInicio}
+              </p>
+            </div>
+
+            {(isGestor || isAdmin) && (
+              <Button asChild variant="outline" size="sm" className="h-8 text-xs font-semibold gap-1.5 shrink-0 self-start sm:self-auto">
+                <Link to="/dashboard/avaliacoes">
+                  Ver avaliações completas <ExternalLink className="size-3.5" />
+                </Link>
+              </Button>
+            )}
+          </div>
+
+          {evaluationStats.total === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border/80 bg-card/60 p-8 text-center space-y-2">
+              <Star className="size-8 text-muted-foreground/30 mx-auto" />
+              <p className="text-sm font-bold text-foreground">Ainda não há avaliações.</p>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                As métricas consolidadas aparecerão automaticamente assim que os usuários abrirem chamados e avaliarem a facilidade de atendimento.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {/* Card 1: Nota Média Geral com Estrelas */}
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-amber-500 bg-card p-5 shadow-xs">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Nota Média Geral
+                  </span>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <strong className="text-3xl font-black text-foreground">
+                      {evaluationStats.media.toFixed(1)}
+                    </strong>
+                    <span className="text-xs text-muted-foreground font-semibold">/ 5.0</span>
+                  </div>
+                  <div className="mt-2 flex items-center gap-1 text-amber-500">
+                    {[1, 2, 3, 4, 5].map((val) => {
+                      const fill = evaluationStats.media >= val;
+                      const half = !fill && evaluationStats.media >= val - 0.5;
+                      return (
+                        <Star
+                          key={val}
+                          className={`size-4 ${
+                            fill
+                              ? "fill-amber-400 text-amber-500"
+                              : half
+                              ? "fill-amber-400/50 text-amber-500"
+                              : "text-muted-foreground/30"
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+                <p className="mt-3 text-[11px] text-muted-foreground leading-snug">
+                  Média geral baseada na facilidade de registrar os chamados.
+                </p>
+              </div>
+
+              {/* Card 2: Total de Avaliações */}
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-blue bg-card p-5 shadow-xs">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Total de Avaliações
+                  </span>
+                  <div className="mt-1 flex items-baseline gap-1">
+                    <strong className="text-3xl font-black text-g-blue">
+                      {evaluationStats.total}
+                    </strong>
+                    <span className="text-xs text-muted-foreground font-semibold">respostas</span>
+                  </div>
+                </div>
+                <p className="mt-3 text-[11px] text-muted-foreground leading-snug">
+                  Quantidade total de feedbacks voluntários coletados.
+                </p>
+              </div>
+
+              {/* Card 3: Percentual de Satisfação (Notas 4 e 5) */}
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-green bg-card p-5 shadow-xs">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Índice de Satisfação
+                  </span>
+                  <div className="mt-1 flex items-baseline gap-1">
+                    <strong className="text-3xl font-black text-g-green">
+                      {evaluationStats.satisfacao_pct}%
+                    </strong>
+                    <span className="text-xs text-muted-foreground font-semibold">aprovação</span>
+                  </div>
+                </div>
+                <p className="mt-3 text-[11px] text-muted-foreground leading-snug">
+                  Percentual de solicitantes que avaliaram com notas 4 ou 5.
+                </p>
+              </div>
+
+              {/* Card 4: Distribuição de 1 a 5 em Barras Pequenas */}
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-purple-500 bg-card p-5 shadow-xs">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2">
+                    Distribuição (1 a 5)
+                  </span>
+                  <div className="space-y-1.5">
+                    {([5, 4, 3, 2, 1] as const).map((n) => {
+                      const count = evaluationStats.distribuicao[n] || 0;
+                      const pct = evaluationStats.total > 0 ? Math.round((count / evaluationStats.total) * 100) : 0;
+                      return (
+                        <div key={n} className="flex items-center gap-2 text-[11px]">
+                          <span className="w-5 font-semibold text-muted-foreground flex items-center gap-0.5 shrink-0">
+                            {n}<Star className="size-2.5 fill-amber-400 text-amber-500 inline" />
+                          </span>
+                          <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                n >= 4 ? "bg-g-green" : n === 3 ? "bg-amber-400" : "bg-g-red"
+                              }`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="w-7 text-right font-mono text-muted-foreground text-[10px] shrink-0">
+                            {count}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }
