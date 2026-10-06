@@ -16,7 +16,7 @@ import { useStore } from "@/lib/store-context";
 import defaultIcone from "@/assets/icone.png";
 import defaultCapa from "@/assets/capa.png";
 
-const ASSET_VERSION = "20261005_v3";
+const ASSET_VERSION = "20261005_v4";
 
 const navPublico = [
   { to: "/", label: "Início", icon: Home },
@@ -82,6 +82,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       : "";
   const bannerImgSrc = bannerUrlValida || `${defaultCapa}?v=${ASSET_VERSION}`;
   const bannerAltText = regras.paginaInicial?.bannerAlt || "TI SENAI Lucas do Rio Verde";
+  const posicaoCapa = regras.paginaInicial?.posicaoCapa || "centro";
+  const posicaoCapaClass =
+    posicaoCapa === "topo"
+      ? "object-top"
+      : posicaoCapa === "base"
+      ? "object-bottom"
+      : "object-center";
 
   const rawLogo = regras.identidadeVisual?.logoUrl?.trim() || "";
   const logoSrc =
@@ -321,18 +328,24 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="mb-6 sm:mb-8 w-full">
             <Link
               to="/"
-              className="group block w-full overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:scale-[1.006] hover:border-g-blue/60 hover:shadow-md active:scale-[0.995]"
+              className="group block w-full overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs transition-all duration-300 hover:scale-[1.006] hover:border-g-blue/60 hover:shadow-md active:scale-[0.995]"
               title="Voltar para a página inicial"
             >
-              <img
-                src={bannerImgSrc}
-                alt={bannerAltText}
-                width={2048}
-                height={768}
-                loading="eager"
-                decoding="async"
-                className="w-full aspect-[21/9] sm:aspect-[8/3] max-h-[340px] object-cover object-center transition-transform duration-500 group-hover:scale-[1.01]"
-              />
+              <picture className="w-full block">
+                <source
+                  type="image/webp"
+                  srcSet={`/capa.webp?v=${ASSET_VERSION} 1x, /capa@2x.webp?v=${ASSET_VERSION} 2x`}
+                />
+                <img
+                  src={bannerImgSrc}
+                  alt={bannerAltText}
+                  width={1024}
+                  height={384}
+                  loading="eager"
+                  decoding="async"
+                  className={`w-full aspect-[16/10] max-h-[220px] sm:aspect-[16/9] sm:max-h-[300px] lg:aspect-[21/9] lg:max-h-[360px] object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
+                />
+              </picture>
             </Link>
           </div>
         )}

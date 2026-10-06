@@ -153,6 +153,7 @@ export interface PaginaInicialConfig {
   exibirBanner?: boolean;
   bannerUrl?: string;
   bannerAlt?: string;
+  posicaoCapa?: "topo" | "centro" | "base";
 }
 
 export const PAGINA_INICIAL_PADRAO: PaginaInicialConfig = {
@@ -163,6 +164,7 @@ export const PAGINA_INICIAL_PADRAO: PaginaInicialConfig = {
   exibirBanner: true,
   bannerUrl: "/capa.png",
   bannerAlt: "TI SENAI Lucas do Rio Verde",
+  posicaoCapa: "centro",
 };
 
 export interface IndicadorItemConfig {

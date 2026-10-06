@@ -16,16 +16,16 @@ assert.ok(
   "A capa deve usar object-cover e object-center para não esticar nem deixar barras pretas",
 );
 assert.ok(
-  appShellCode.includes("rounded-2xl sm:rounded-3xl"),
-  "A capa deve manter os cantos arredondados (rounded-2xl sm:rounded-3xl)",
+  appShellCode.includes("rounded-2xl"),
+  "A capa deve manter os cantos arredondados (rounded-2xl)",
 );
 assert.ok(
   appShellCode.includes("max-w-6xl"),
   "A capa deve acompanhar a largura máxima do corpo (max-w-6xl)",
 );
 assert.ok(
-  appShellCode.includes("aspect-[21/9] sm:aspect-[8/3]"),
-  "A capa deve preservar a proporção de aspecto ideal para mobile e desktop",
+  appShellCode.includes("aspect-[16/10]") && appShellCode.includes("lg:aspect-[21/9]"),
+  "A capa deve preservar a proporção por tela (16:10 no celular, 16:9 no tablet, 21:9 no desktop)",
 );
 console.log("✓ Banner de capa aprovado: Enquadramento perfeito, proporção, cantos arredondados e largura correta!\n");
 
