@@ -28,10 +28,10 @@ const buttonVariants = cva(
           "border border-transparent bg-g-purple text-white font-bold shadow-md hover:brightness-110 active:scale-[0.98] transition-all",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-xl px-3 text-xs",
-        lg: "h-10 rounded-xl px-8",
-        icon: "h-9 w-9",
+        default: "min-h-[44px] sm:min-h-[36px] h-11 sm:h-9 px-4 py-2",
+        sm: "min-h-[40px] sm:min-h-[32px] h-10 sm:h-8 rounded-xl px-3 text-xs",
+        lg: "min-h-[48px] h-12 sm:h-10 rounded-xl px-8",
+        icon: "min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] h-11 w-11 sm:h-9 sm:w-9",
       },
     },
     defaultVariants: {

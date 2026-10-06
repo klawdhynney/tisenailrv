@@ -541,6 +541,7 @@ export interface Regras {
   parametrosStatus?: ParametroCor[] | undefined;
   parametrosSla?: ParametroCor[] | undefined;
   lgpd?: LgpdConfig | undefined;
+  sobre?: SobreConfig | undefined;
   // Painel Gerenciável
   identidadeVisual?: IdentidadeVisualConfig | undefined;
   paginaInicial?: PaginaInicialConfig | undefined;
@@ -681,6 +682,32 @@ export const LGPD_PADRAO: LgpdConfig = {
     "Podemos atualizar este texto quando o sistema ou a legislação mudarem. A data da última revisão aparece no topo da página.",
 };
 
+export interface SobreConfig {
+  secao1Titulo: string;
+  secao1Texto: string;
+  secao2Titulo: string;
+  secao2Texto: string;
+  secao3Titulo: string;
+  secao3Texto: string;
+  secao4Titulo: string;
+  secao4Texto: string;
+}
+
+export const SOBRE_PADRAO: SobreConfig = {
+  secao1Titulo: "💻 Sobre o Sistema de Suporte de TI",
+  secao1Texto:
+    "Nosso sistema foi desenvolvido para tornar a abertura de chamados mais simples e eficiente, garantindo que cada solicitação seja registrada de forma clara e organizada. As informações enviadas pelos usuários são fundamentais para que o suporte possa atuar com precisão e rapidez, além de alimentar o dashboard com dados relevantes para análises estratégicas.",
+  secao2Titulo: "📊 Inteligência e Gestão",
+  secao2Texto:
+    "Com um painel moderno e interativo, gestores têm acesso a gráficos e indicadores que facilitam a tomada de decisão, permitindo identificar tendências, acompanhar desempenho e otimizar processos.",
+  secao3Titulo: "🤖 Tecnologia Moderna com IA",
+  secao3Texto:
+    "A plataforma utiliza inteligência artificial para agilizar fluxos de trabalho, automatizar etapas e reduzir o tempo de resposta, proporcionando uma experiência mais eficiente tanto para usuários quanto para gestores.",
+  secao4Titulo: "🔒 Privacidade e Conformidade com a LGPD",
+  secao4Texto:
+    "A segurança das informações é prioridade. Todos os dados são tratados com responsabilidade, seguindo as diretrizes da Lei Geral de Proteção de Dados (LGPD), garantindo privacidade e transparência no uso das informações.",
+};
+
 export const REGRAS_PADRAO: Regras = {
   prazos: { Crítica: 2, Alta: 8, Média: 72, Baixa: 168 },
   expediente: { inicio: "08:00", fim: "18:00", dias: [1, 2, 3, 4, 5] },
@@ -746,5 +773,6 @@ export const REGRAS_PADRAO: Regras = {
   animacaoCarregamento: { ...ANIMACAO_CARREGAMENTO_PADRAO },
   iaSuporte: { ...IA_SUPORTE_PADRAO },
   whatsapp: { ...WHATSAPP_PADRAO },
+  sobre: { ...SOBRE_PADRAO },
 };
 

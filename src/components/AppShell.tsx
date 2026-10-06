@@ -16,6 +16,7 @@ import { useStore } from "@/lib/store-context";
 import defaultIcone from "@/assets/icone.png";
 import defaultCapaWebp from "@/assets/capa.webp";
 import defaultCapaJpg from "@/assets/capa.jpg";
+import { BotaoRetornar } from "@/components/BotaoRetornar";
 
 const ASSET_VERSION = "20261005_v5";
 
@@ -71,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [regras.identidadeVisual?.faviconUrl]);
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const showBanner = (pathname === "/" || pathname === "/abrir") && (regras.paginaInicial?.mostrarBanner ?? true);
+  const showBanner = pathname === "/" && (regras.paginaInicial?.mostrarBanner ?? true);
   const bannerUrlSalva = regras.paginaInicial?.bannerUrl?.trim() || "";
 
   useEffect(() => {
@@ -274,9 +275,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen max-w-full overflow-x-hidden flex flex-col justify-between">
-      <header className="sticky top-0 z-40 border-b-2 border-border bg-card/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 sm:px-6 lg:px-8 py-3">
-          <Link to="/" className="flex shrink-0 items-center gap-2 sm:gap-2.5 group" title={`${tituloSite} - Início`}>
+      <header className="fixed top-0 left-0 right-0 z-50 border-b-2 border-border bg-card/95 backdrop-blur pt-[env(safe-area-inset-top)] shadow-2xs">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3">
+          <Link to="/" className="flex shrink-0 items-center gap-2 sm:gap-2.5 group min-h-[44px]" title={`${tituloSite} - Início`}>
             <img
               src={logoSrc}
               alt="Ícone TI SENAI LRV"
@@ -284,9 +285,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               height={38}
               decoding="async"
               onError={() => setLogoErro(true)}
-              className="size-9 sm:size-9.5 rounded-full object-cover shadow-sm scale-105 transition-transform duration-200 group-hover:scale-110 shrink-0"
+              className="size-8.5 sm:size-9.5 rounded-full object-cover shadow-sm scale-105 transition-transform duration-200 group-hover:scale-110 shrink-0"
             />
-            <span className="font-extrabold text-lg sm:text-xl tracking-tight text-foreground group-hover:text-g-blue transition-colors select-none">
+            <span className="font-extrabold text-base sm:text-xl tracking-tight text-foreground group-hover:text-g-blue transition-colors select-none">
               TI SENAI LRV
             </span>
           </Link>
@@ -295,16 +296,19 @@ export function AppShell({ children }: { children: ReactNode }) {
             {botaoConta}
             {botaoAlternarTema(false)}
           </nav>
-           <Button variant="outline" size="icon" className="ml-auto lg:hidden"
+          <Button
+            variant="outline"
+            size="icon"
+            className="ml-auto lg:hidden min-h-[44px] min-w-[44px] h-11 w-11"
             onClick={() => setAberto((v) => !v)}
-            aria-label="Abrir menu"
+            aria-label="Abrir menu de navegação"
           >
             <Menu className="h-5 w-5" />
-           </Button>
+          </Button>
         </div>
         <div className="h-1 w-full bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
         {aberto && (
-          <nav className="flex flex-col gap-2.5 border-t border-border bg-card p-4 lg:hidden animate-in slide-in-from-top-2 duration-200">
+          <nav className="flex flex-col gap-2.5 border-t border-border bg-card p-4 lg:hidden animate-in slide-in-from-top-2 duration-200 max-h-[calc(100dvh-5rem)] overflow-y-auto">
             {session && (
               <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-2.5 border border-border/60">
                 <UserAvatar session={session} sizeClassName="size-9" />
@@ -345,7 +349,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         )}
       </header>
-      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex-1">
+      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 pt-[calc(4.5rem+env(safe-area-inset-top))] sm:pt-[calc(5rem+env(safe-area-inset-top))] pb-6 sm:pb-8 flex-1">
         {showBanner && (
           <div className="mb-6 sm:mb-8 w-full">
             <Link
@@ -389,16 +393,24 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         )}
         {children}
+        {pathname !== "/" && <BotaoRetornar />}
       </main>
-      <footer className="mt-auto border-t border-border py-6 text-center text-xs text-muted-foreground">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-2 gap-y-1.5 px-4 sm:px-6 lg:px-8">
+      <footer className="mt-auto border-t border-border py-6 text-center text-xs text-muted-foreground pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 px-4 sm:px-6 lg:px-8">
           <span>{textoRodape}</span>
+          <span>•</span>
+          <Link
+            to="/sobre"
+            className="font-medium text-foreground/80 hover:text-primary hover:underline underline-offset-2 transition-colors py-1 inline-block"
+          >
+            Sobre
+          </Link>
           {mostrarLgpd && (
             <>
               <span>•</span>
               <Link
                 to="/lgpd"
-                className="font-medium text-foreground/80 hover:text-primary hover:underline underline-offset-2 transition-colors"
+                className="font-medium text-foreground/80 hover:text-primary hover:underline underline-offset-2 transition-colors py-1 inline-block"
               >
                 {rotuloLgpd}
               </Link>

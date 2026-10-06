@@ -146,26 +146,115 @@ export function TicketSheet({ attendance = false }: { attendance?: boolean }) {
         </div>
       )}
     </div>
-    <div ref={topRef} className="overflow-x-auto" onScroll={() => sync("top")} aria-label="Rolagem horizontal superior"><div className="h-px" /></div>
-    <div ref={bottomRef} className="overflow-x-auto rounded-xl border-2 border-g-blue/30 bg-card shadow-md" onScroll={() => sync("bottom")}>
-       <table className="w-full min-w-[1850px] border-separate border-spacing-0 text-sm">
-         <thead>
-           <tr className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white font-bold tracking-wide shadow-sm">
-             {colunas.map(h => (
-               <th key={h} className="whitespace-nowrap px-3.5 py-3.5 text-xs font-bold uppercase tracking-wider text-white border-r border-white/10 last:border-r-0">
-                 {h}
-               </th>
-             ))}
-           </tr>
-         </thead>
-         <tbody>
-           {visible.map(t => <TicketRow key={t.id} ticket={t} colunas={colunas} attendance={attendance} />)}
-           {!visible.length && <tr><td colSpan={Math.max(1, colunas.length)} className="px-4 py-8 text-center text-muted-foreground">{hidratado ? "Nenhum chamado encontrado." : "Carregando chamados..."}</td></tr>}
-         </tbody>
-       </table>
+    {/* Visão Mobile: Cards Interativos (360px a 768px) */}
+    <div className="grid gap-3.5 md:hidden">
+      {visible.map((t) => (
+        <TicketCard key={t.id} ticket={t} attendance={attendance} />
+      ))}
+      {!visible.length && (
+        <div className="rounded-2xl border-2 border-dashed border-border py-10 text-center text-muted-foreground text-sm">
+          {hidratado ? "Nenhum chamado encontrado." : "Carregando chamados..."}
+        </div>
+      )}
+    </div>
+
+    {/* Visão Desktop: Tabela de Planilha Completa */}
+    <div className="hidden md:block space-y-1">
+      <div ref={topRef} className="overflow-x-auto" onScroll={() => sync("top")} aria-label="Rolagem horizontal superior"><div className="h-px" /></div>
+      <div ref={bottomRef} className="overflow-x-auto rounded-xl border-2 border-g-blue/30 bg-card shadow-md" onScroll={() => sync("bottom")}>
+         <table className="w-full min-w-[1850px] border-separate border-spacing-0 text-sm">
+           <thead>
+             <tr className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white font-bold tracking-wide shadow-sm">
+               {colunas.map(h => (
+                 <th key={h} className="whitespace-nowrap px-3.5 py-3.5 text-xs font-bold uppercase tracking-wider text-white border-r border-white/10 last:border-r-0">
+                   {h}
+                 </th>
+               ))}
+             </tr>
+           </thead>
+           <tbody>
+             {visible.map(t => <TicketRow key={t.id} ticket={t} colunas={colunas} attendance={attendance} />)}
+             {!visible.length && <tr><td colSpan={Math.max(1, colunas.length)} className="px-4 py-8 text-center text-muted-foreground">{hidratado ? "Nenhum chamado encontrado." : "Carregando chamados..."}</td></tr>}
+           </tbody>
+         </table>
+      </div>
     </div>
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm"><span className="text-muted-foreground">{rows.length} chamados · página {Math.min(page, pages)} de {pages}</span><div className="flex gap-2"><Button type="button" variant="outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Anterior</Button><Button type="button" variant="outline" disabled={page >= pages} onClick={() => setPage(p => p + 1)}>Próxima</Button></div></div>
   </section>;
+}
+
+function TicketCard({ ticket: t, attendance = false }: { ticket: Ticket; attendance?: boolean }) {
+  const { regras } = useStore();
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    if (!attendance) return;
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, [attendance]);
+
+  const sla = calcularSla(t, regras, now);
+  const atrasado = Boolean(sla.prazo && now > sla.prazo && !t.slaPausado);
+  const restanteSeg = t.slaPausado
+    ? (sla.restanteMin !== null ? Math.max(0, sla.restanteMin * 60) : null)
+    : sla.prazo ? (atrasado ? segundosUteis(sla.prazo, now, regras) : segundosUteis(now, sla.prazo, regras)) : null;
+  const relogio = restanteSeg === null ? "—" : `${atrasado ? "−" : ""}${String(Math.floor(restanteSeg / 3600)).padStart(2, "0")}:${String(Math.floor((restanteSeg % 3600) / 60)).padStart(2, "0")}:${String(restanteSeg % 60).padStart(2, "0")}${t.slaPausado ? " (pausado)" : ""}`;
+
+  return (
+    <div className="rounded-2xl border-2 border-border/80 bg-card p-4 shadow-2xs space-y-3 transition-all hover:border-g-blue/50">
+      <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2.5">
+        <div className="flex items-center gap-2">
+          <strong className="font-mono text-base font-black text-g-blue">#{t.id}</strong>
+          <span className="text-xs text-muted-foreground">{formatarData(t.abertoEm, t.hora)}</span>
+        </div>
+        <StatusChip valor={t.status} />
+      </div>
+
+      <div className="space-y-1.5">
+        <div className="flex items-baseline justify-between text-xs">
+          <span className="text-muted-foreground">Solicitante:</span>
+          <span className="font-bold text-foreground text-right">{t.solicitante}</span>
+        </div>
+        <div className="flex items-baseline justify-between text-xs">
+          <span className="text-muted-foreground">Setor / Local:</span>
+          <span className="font-medium text-foreground text-right">{t.setor}{t.local ? ` · ${t.local}` : ""}</span>
+        </div>
+        {t.categoria && (
+          <div className="flex items-baseline justify-between text-xs">
+            <span className="text-muted-foreground">Categoria:</span>
+            <span className="rounded-md bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">{t.categoria}</span>
+          </div>
+        )}
+      </div>
+
+      <p className="text-xs text-muted-foreground line-clamp-2 bg-muted/30 p-2 rounded-xl border border-border/40">
+        {t.descricao}
+      </p>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/50 text-xs">
+        <div className="flex items-center gap-2">
+          <PrioridadeChip valor={t.prioridade} />
+          <SlaChip valor={sla.situacao} />
+        </div>
+        {attendance && !["Resolvido", "Cancelado"].includes(t.status) && (
+          <span className="font-mono text-xs tabular-nums text-g-blue font-bold">
+            {relogio}
+          </span>
+        )}
+      </div>
+
+      <Button
+        asChild
+        size="sm"
+        variant={attendance ? "google-green" : "google-blue"}
+        className="w-full min-h-[44px] font-bold text-xs shadow-xs gap-1.5"
+      >
+        <Link to="/chamados/$ticketId" params={{ ticketId: String(t.id) }}>
+          {attendance ? <Headset className="size-4" /> : <Eye className="size-4" />}
+          {attendance ? "Atender chamado" : "Ver chamado"}
+        </Link>
+      </Button>
+    </div>
+  );
 }
 
 function TicketRow({ ticket: t, colunas, attendance = false }: { ticket: Ticket; colunas: string[]; attendance?: boolean }) {

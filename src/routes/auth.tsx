@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, useNavigate, useRouter, Link } from "@tanstack/react-router";
+import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, LogOut, ShieldCheck, ArrowRight, UserCheck } from "lucide-react";
 import { lovable } from "@/integrations/lovable";
@@ -12,6 +12,7 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>) => ({
     redirectTo: typeof search.redirectTo === "string" ? search.redirectTo : undefined,
+    returnTo: typeof search.returnTo === "string" ? search.returnTo : undefined,
     error: typeof search.error === "string" ? search.error : undefined,
     error_description: typeof search.error_description === "string" ? search.error_description : undefined,
   }),
@@ -39,10 +40,35 @@ function AuthPage() {
   const { wrapAsync, resetLoading } = useLoading();
   const search = Route.useSearch();
   const navigate = useNavigate();
+  const router = useRouter();
 
   const [carregandoOAuth, setCarregandoOAuth] = useState<"google" | "microsoft" | null>(null);
 
-  const destino = search.redirectTo && search.redirectTo.startsWith("/") ? search.redirectTo : null;
+  // Lê returnTo ou redirectTo da busca ou do sessionStorage persistido antes do OAuth
+  const destino = useMemo(() => {
+    const fromSearch =
+      (typeof search.returnTo === "string" && search.returnTo) ||
+      (typeof search.redirectTo === "string" && search.redirectTo) ||
+      "";
+    if (fromSearch && fromSearch.startsWith("/")) return fromSearch;
+
+    if (typeof window !== "undefined") {
+      try {
+        const fromStorage = sessionStorage.getItem("auth_return_to");
+        if (fromStorage && fromStorage.startsWith("/")) return fromStorage;
+      } catch {}
+    }
+    return null;
+  }, [search.returnTo, search.redirectTo]);
+
+  // Pré-carrega o código JS da rota de destino imediatamente na montagem
+  useEffect(() => {
+    if (destino) {
+      try {
+        router.preloadRoute({ to: destino as any }).catch(() => {});
+      } catch {}
+    }
+  }, [destino, router]);
 
   // Trata redirecionamento e erros de OAuth da URL
   useEffect(() => {
@@ -56,16 +82,14 @@ function AuthPage() {
     }
   }, [search.error, search.error_description, resetLoading]);
 
-  // Se já estiver logado, redireciona para a página de destino pretendida
+  // Se já estiver logado ou logo após o retorno do OAuth, redireciona imediatamente sem esperas artificiais
   useEffect(() => {
     if (session && authPronto) {
-      if (destino) {
-        navigate({ to: destino });
-      } else if (isGestor) {
-        navigate({ to: "/atendimento" });
-      } else {
-        navigate({ to: "/meus-chamados" });
-      }
+      try {
+        sessionStorage.removeItem("auth_return_to");
+      } catch {}
+      const rotaFinal = destino || (isGestor ? "/atendimento" : "/meus-chamados");
+      navigate({ to: rotaFinal as any, replace: true });
     }
   }, [session, authPronto, isGestor, destino, navigate]);
 
@@ -77,6 +101,10 @@ function AuthPage() {
       try {
         const callbackUrl = new URL("/auth", window.location.origin);
         if (destino) {
+          try {
+            sessionStorage.setItem("auth_return_to", destino);
+          } catch {}
+          callbackUrl.searchParams.set("returnTo", destino);
           callbackUrl.searchParams.set("redirectTo", destino);
         }
 

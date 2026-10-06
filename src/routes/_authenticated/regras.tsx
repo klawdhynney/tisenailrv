@@ -16,6 +16,7 @@ import {
   FileText,
   Filter,
   Image as ImageIcon,
+  Info,
   Layers,
   Layout,
   Lock,
@@ -56,6 +57,7 @@ import {
   COLUNAS_PLANILHA,
   FILTROS_PLANILHA,
   LGPD_PADRAO,
+  SOBRE_PADRAO,
   MOTIVOS_PAUSA_SLA_PADRAO,
   PARAMETROS_PRIORIDADE_PADRAO,
   PARAMETROS_SLA_PADRAO,
@@ -397,6 +399,11 @@ function Regras() {
   const salvarLgpd = (patch: Partial<typeof lgpdConf>) =>
     salvar({ lgpd: { ...lgpdConf, ...patch } });
 
+  // 7.1. Página Sobre
+  const sobreConf = regras.sobre ?? SOBRE_PADRAO;
+  const salvarSobre = (patch: Partial<typeof sobreConf>) =>
+    salvar({ sobre: { ...sobreConf, ...patch } });
+
   // 8. Rodapé
   const rodapeConf = regras.rodape ?? RODAPE_PADRAO;
   const salvarRodape = (patch: Partial<typeof rodapeConf>) =>
@@ -544,6 +551,9 @@ function Regras() {
           </TabsTrigger>
           <TabsTrigger value="lgpd" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
             <ShieldCheck className="size-4 text-g-blue" /> Privacidade & LGPD
+          </TabsTrigger>
+          <TabsTrigger value="sobre" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
+            <Info className="size-4 text-g-blue" /> Página Sobre
           </TabsTrigger>
           <TabsTrigger value="rodape" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
             <MessageCircle className="size-4 text-g-green" /> Rodapé & Contato
@@ -1824,6 +1834,126 @@ function Regras() {
                     rows={3}
                     value={lgpdConf.mudancas}
                     onChange={(e) => salvarLgpd({ mudancas: sanitizeInput(e.target.value) })}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 7.1. ABA PÁGINA SOBRE */}
+        <TabsContent value="sobre" className="space-y-6 focus-visible:outline-none">
+          <Card className="border-t-4 border-g-blue shadow-xs">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-g-blue dark:text-blue-400">
+                  <Info className="size-5" />
+                  Textos da Página Sobre (/sobre)
+                </CardTitle>
+                <CardDescription>
+                  Personalize os títulos e conteúdos descritivos exibidos na página pública institucional Sobre.
+                </CardDescription>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <ConfirmAction
+                  title="Restaurar textos padrão da página Sobre?"
+                  description="Todos os 4 tópicos da página Sobre voltarão ao texto institucional original pré-definido."
+                  confirmLabel="Sim, restaurar padrão"
+                  variant="outline"
+                  onConfirm={() => {
+                    salvarSobre({ ...SOBRE_PADRAO });
+                    toast.info("Textos da página Sobre restaurados para o padrão institucional.");
+                  }}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" /> Restaurar padrão
+                </ConfirmAction>
+                <Button asChild variant="outline" size="sm" className="gap-1.5">
+                  <Link to="/sobre">
+                    <ExternalLink className="size-3.5" /> Visualizar página Sobre
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {/* Seção 1 */}
+              <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-foreground">Título da Seção 1</Label>
+                  <Input
+                    value={sobreConf.secao1Titulo}
+                    onChange={(e) => salvarSobre({ secao1Titulo: sanitizeInput(e.target.value) })}
+                    placeholder="Ex.: 💻 Sobre o Sistema de Suporte de TI"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-foreground">Conteúdo da Seção 1</Label>
+                  <Textarea
+                    rows={4}
+                    value={sobreConf.secao1Texto}
+                    onChange={(e) => salvarSobre({ secao1Texto: sanitizeInput(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              {/* Seção 2 */}
+              <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-foreground">Título da Seção 2</Label>
+                  <Input
+                    value={sobreConf.secao2Titulo}
+                    onChange={(e) => salvarSobre({ secao2Titulo: sanitizeInput(e.target.value) })}
+                    placeholder="Ex.: 📊 Inteligência e Gestão"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-foreground">Conteúdo da Seção 2</Label>
+                  <Textarea
+                    rows={4}
+                    value={sobreConf.secao2Texto}
+                    onChange={(e) => salvarSobre({ secao2Texto: sanitizeInput(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              {/* Seção 3 */}
+              <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-foreground">Título da Seção 3</Label>
+                  <Input
+                    value={sobreConf.secao3Titulo}
+                    onChange={(e) => salvarSobre({ secao3Titulo: sanitizeInput(e.target.value) })}
+                    placeholder="Ex.: 🤖 Tecnologia Moderna com IA"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-foreground">Conteúdo da Seção 3</Label>
+                  <Textarea
+                    rows={4}
+                    value={sobreConf.secao3Texto}
+                    onChange={(e) => salvarSobre({ secao3Texto: sanitizeInput(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              {/* Seção 4 */}
+              <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-foreground">Título da Seção 4 (Privacidade e LGPD)</Label>
+                  <Input
+                    value={sobreConf.secao4Titulo}
+                    onChange={(e) => salvarSobre({ secao4Titulo: sanitizeInput(e.target.value) })}
+                    placeholder="Ex.: 🔒 Privacidade e Conformidade com a LGPD"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Na página pública, o título possui link direto apontando para a rota de Privacidade e LGPD (/lgpd).
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-foreground">Conteúdo da Seção 4</Label>
+                  <Textarea
+                    rows={4}
+                    value={sobreConf.secao4Texto}
+                    onChange={(e) => salvarSobre({ secao4Texto: sanitizeInput(e.target.value) })}
                   />
                 </div>
               </div>

@@ -13,6 +13,7 @@ import {
   DASHBOARD_PADRAO,
   RODAPE_PADRAO,
   LGPD_PADRAO,
+  SOBRE_PADRAO,
   AVALIACAO_PADRAO,
   AVALIACAO_RESUMO_PUBLICO_PADRAO,
   type AvaliacaoResumoPublico,
@@ -137,6 +138,7 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     avaliacoes: { ...AVALIACAO_PADRAO, ...(regrasSalvas.avaliacoes || {}) },
     iaSuporte: { ...IA_SUPORTE_PADRAO, ...iaSuporteFinal },
     whatsapp: { ...WHATSAPP_PADRAO, ...(regrasSalvas.whatsapp || {}) },
+    sobre: { ...SOBRE_PADRAO, ...(regrasSalvas.sobre || {}) },
   };
 }
 
@@ -210,7 +212,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  // Papel e sincronização do usuário
+  // Papel e sincronização do usuário com paralelismo total e cache rápido
   useEffect(() => {
     let ativo = true;
     const uid = session?.user.id;
@@ -222,20 +224,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setAuthPronto(true);
       return;
     }
-    setAuthPronto(false);
-    (async () => {
-      try {
-        await supabase.rpc("sync_user_profile");
-      } catch (err) {
-        console.warn("sync_user_profile:", err);
-      }
-      try {
-        await supabase.rpc("claim_manager_access");
-      } catch (err) {
-        console.warn("claim_manager_access:", err);
-      }
 
-      const [adminRes, gestorRes, profileRes] = await Promise.all([
+    const cacheChave = `auth_perm_cache_${uid}`;
+    // Restauração imediata de cache para carregamento instantâneo
+    try {
+      const salvo = sessionStorage.getItem(cacheChave);
+      if (salvo) {
+        const p = JSON.parse(salvo);
+        if (p && typeof p === "object") {
+          setIsAdmin(Boolean(p.isAdmin));
+          setIsGestor(Boolean(p.isGestor));
+          setUserRole(p.userRole || "usuario");
+          setUserBlocked(Boolean(p.userBlocked));
+          setAuthPronto(true);
+        }
+      }
+    } catch {}
+
+    (async () => {
+      // Executa todas as checagens e sincronizações em paralelo absoluto
+      const [, , adminRes, gestorRes, profileRes] = await Promise.allSettled([
+        supabase.rpc("sync_user_profile"),
+        supabase.rpc("claim_manager_access"),
         supabase.rpc("is_admin"),
         supabase.rpc("is_named_manager"),
         supabase.from("user_profiles").select("bloqueado").eq("id", uid).maybeSingle(),
@@ -243,13 +253,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       if (!ativo) return;
 
-      const bloqueado = profileRes.data?.bloqueado === true;
+      const profileData = profileRes.status === "fulfilled" ? profileRes.value.data : null;
+      const bloqueado = profileData?.bloqueado === true;
       if (bloqueado) {
         setUserBlocked(true);
         setIsAdmin(false);
         setIsGestor(false);
         setUserRole("usuario");
         setAuthPronto(true);
+        try { sessionStorage.removeItem(cacheChave); } catch {}
         await supabase.auth.signOut();
         return;
       }
@@ -263,14 +275,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const emailNormalizado = (session?.user.email || "").toLowerCase().trim();
       const eAdminAutorizado = ADMINS_INICIAIS.includes(emailNormalizado);
 
-      setUserBlocked(false);
-      const eAdmin = adminRes.data === true || eAdminAutorizado;
-      const eGestor = eAdmin || gestorRes.data === true;
+      const adminVal = adminRes.status === "fulfilled" ? adminRes.value.data : false;
+      const gestorVal = gestorRes.status === "fulfilled" ? gestorRes.value.data : false;
 
+      const eAdmin = adminVal === true || eAdminAutorizado;
+      const eGestor = eAdmin || gestorVal === true;
+      const papelFinal: PapelUsuario = eAdmin ? "admin" : eGestor ? "gestor" : "usuario";
+
+      setUserBlocked(false);
       setIsAdmin(eAdmin);
       setIsGestor(eGestor);
-      setUserRole(eAdmin ? "admin" : eGestor ? "gestor" : "usuario");
+      setUserRole(papelFinal);
       setAuthPronto(true);
+
+      try {
+        sessionStorage.setItem(
+          cacheChave,
+          JSON.stringify({ isAdmin: eAdmin, isGestor: eGestor, userRole: papelFinal, userBlocked: false })
+        );
+      } catch {}
     })();
 
     return () => {
@@ -571,6 +594,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    }, []);
 
   const sair = useCallback(async () => {
+    try {
+      sessionStorage.clear();
+    } catch {}
     await supabase.auth.signOut();
   }, []);
 
