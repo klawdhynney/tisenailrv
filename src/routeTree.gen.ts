@@ -27,6 +27,7 @@ import { Route as DashboardAvaliacoesRouteImport } from './routes/dashboard.aval
 import { Route as DashboardSerieHistoricaRouteImport } from './routes/dashboard.serie-historica'
 import { Route as AuthenticatedChamadosTicketIdRouteImport } from './routes/_authenticated/chamados.$ticketId'
 import { Route as AuthenticatedRegrasUsuariosRouteImport } from './routes/_authenticated/regras.usuarios'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -120,6 +121,12 @@ const AuthenticatedRegrasUsuariosRoute =
     path: '/usuarios',
     getParentRoute: () => AuthenticatedRegrasRoute,
   } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof DashboardIndexRoute
   '/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
   '/regras/usuarios': typeof AuthenticatedRegrasUsuariosRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -157,6 +165,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardIndexRoute
   '/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
   '/regras/usuarios': typeof AuthenticatedRegrasUsuariosRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -178,6 +187,7 @@ export interface FileRoutesById {
   '/dashboard/': typeof DashboardIndexRoute
   '/_authenticated/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
   '/_authenticated/regras/usuarios': typeof AuthenticatedRegrasUsuariosRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -199,6 +209,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/chamados/$ticketId'
     | '/regras/usuarios'
+    | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/chamados/$ticketId'
     | '/regras/usuarios'
+    | '/lovable/email/transactional/preview'
   id:
     | '__root__'
     | '/'
@@ -237,6 +249,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/_authenticated/chamados/$ticketId'
     | '/_authenticated/regras/usuarios'
+    | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -249,6 +262,7 @@ export interface RootRouteChildren {
   MeusChamadosRoute: typeof MeusChamadosRoute
   PreferenciasEmailRoute: typeof PreferenciasEmailRoute
   SobreRoute: typeof SobreRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -379,6 +393,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRegrasUsuariosRouteImport
       parentRoute: typeof AuthenticatedRegrasRoute
     }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -449,6 +470,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeusChamadosRoute: MeusChamadosRoute,
   PreferenciasEmailRoute: PreferenciasEmailRoute,
   SobreRoute: SobreRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

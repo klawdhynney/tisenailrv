@@ -105,7 +105,7 @@ export function ConfirmAction({
               try {
                 await wrapAsync(async () => {
                   await onConfirm();
-                }, loadingText);
+                }, { text: loadingText });
                 setOpen(false);
               } catch (err) {
                 console.error(err);
