@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import {
   Area,
@@ -7,6 +7,7 @@ import {
   CartesianGrid,
   Cell,
   ComposedChart,
+  LabelList,
   Line,
   Pie,
   PieChart,
@@ -20,6 +21,8 @@ import {
   BarChart3,
   Calendar,
   ClipboardList,
+  Clock,
+  CheckCheck,
   FileSpreadsheet,
   FileText,
   LayoutGrid,
@@ -35,20 +38,31 @@ import { calcularSla } from "@/lib/sla";
 import { useStore } from "@/lib/store-context";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { CORES_SLA, MESES_DISPONIVEIS, type Ticket, type TipoGrafico } from "@/lib/types";
+import { CORES_SLA, MESES_DISPONIVEIS, type Ticket, type TipoGrafico, obterDataHojeCuiaba } from "@/lib/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLoading } from "@/lib/loading-context";
 
 export const Route = createFileRoute("/dashboard/")({
+  ssr: false,
+  beforeLoad: async ({ location }) => {
+    const { data } = await supabase.auth.getUser();
+    if (!data?.user) {
+      throw redirect({
+        to: "/auth",
+        search: { redirectTo: location.pathname + (location.searchStr || "") },
+      });
+    }
+    return { user: data.user };
+  },
   validateSearch: (search: Record<string, unknown>) => ({
     tipo: typeof search.tipo === "string" ? search.tipo : undefined,
   }),
   head: () => ({
     meta: [
-      { title: "Dashboard público | TI Senai LRV" },
-      { name: "description", content: "Gráficos interativos e indicadores públicos dos chamados de TI Senai LRV." },
-      { property: "og:title", content: "Dashboard de chamados | TI Senai LRV" },
-      { property: "og:description", content: "Acompanhe os indicadores públicos dos chamados de TI." },
+      { title: "Dashboard de Chamados | TI SENAI LRV" },
+      { name: "description", content: "Gráficos interativos e indicadores de atendimento de TI SENAI LRV." },
+      { property: "og:title", content: "Dashboard de Chamados | TI SENAI LRV" },
+      { property: "og:description", content: "Acompanhe os indicadores dos chamados de TI." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -110,10 +124,20 @@ const mesAtualPadrao = () => {
 };
 
 function Dashboard() {
-  const { publicStats, isGestor, regras } = useStore();
+  const { publicStats, dailyStats, isGestor, regras, session, authPronto } = useStore();
   const { wrapAsync, isLoading } = useLoading();
   const search = Route.useSearch();
+  const navigate = useNavigate();
   const tipoQuery = search?.tipo;
+
+  useEffect(() => {
+    if (authPronto && !session) {
+      navigate({
+        to: "/auth",
+        search: { redirectTo: window.location.pathname + window.location.search },
+      });
+    }
+  }, [authPronto, session, navigate]);
 
   const [progress, setProgress] = useState<Database["public"]["Functions"]["public_ticket_sla_progress"]["Returns"]>([]);
   const [now, setNow] = useState(() => new Date());
@@ -326,7 +350,7 @@ function Dashboard() {
 
       {/* Cartões de Indicadores Gerais do Topo */}
       {indConf?.mostrarCards !== false && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {[
             {
               label: indConf?.totalLabel || "Total de chamados",
@@ -348,6 +372,28 @@ function Dashboard() {
               border: "border-g-green",
               color: "text-g-green",
               desc: indConf?.resolvidosDesc || "Chamados que já foram concluídos.",
+            },
+            {
+              label: indConf?.chamadosDiaLabel || "Chamados do dia",
+              count: Math.max(
+                progress.filter((t) => t.aberto_em === obterDataHojeCuiaba()).length,
+                dailyStats?.chamadosDoDia ?? 0
+              ),
+              border: "border-sky-500",
+              color: "text-sky-600 dark:text-sky-400",
+              desc: indConf?.chamadosDiaDesc || "Chamados abertos hoje.",
+            },
+            {
+              label: indConf?.atendidosDiaLabel || "Atendidos no dia",
+              count: Math.max(
+                progress.filter(
+                  (t) => (t.status === "Resolvido" || t.status === "Concluído") && t.fechado_em === obterDataHojeCuiaba()
+                ).length,
+                dailyStats?.atendidosNoDia ?? 0
+              ),
+              border: "border-teal-500",
+              color: "text-teal-600 dark:text-teal-400",
+              desc: indConf?.atendidosDiaDesc || "Chamados concluídos hoje.",
             },
           ].map((item) => (
             <div
@@ -632,8 +678,8 @@ function Grafico({
         layout="vertical"
         margin={
           isMobile
-            ? { left: 4, right: 16, top: 5, bottom: 5 }
-            : { left: 20, right: 30 }
+            ? { left: 4, right: 70, top: 5, bottom: 5 }
+            : { left: 20, right: 100, top: 5, bottom: 5 }
         }
       >
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
@@ -655,11 +701,21 @@ function Grafico({
           name="Chamados"
           isAnimationActive={!prefersReducedMotion}
           animationDuration={prefersReducedMotion ? 0 : 650}
-          radius={[0, 4, 4, 0]}
+          radius={[0, 5, 5, 0]}
         >
           {dados.map((d, i) => (
             <Cell key={d.name} fill={cor(d.name, i)} />
           ))}
+          <LabelList
+            dataKey="value"
+            position="right"
+            formatter={(val: any) => {
+              const num = Number(val ?? 0);
+              const pct = totalVal > 0 ? ((num / totalVal) * 100).toFixed(1) : "0";
+              return isMobile ? `${num} (${pct}%)` : `${num} (${pct}%)`;
+            }}
+            className="text-[10px] sm:text-[11px] font-bold fill-foreground"
+          />
         </Bar>
       </BarChart>
     );
@@ -1133,110 +1189,214 @@ function GraficoSerieHistorica() {
         </div>
       </div>
 
-      {/* Área Ampla do Gráfico + Séries */}
+      {/* Área Ampla do Gráfico + Séries (Visual Oceano) */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-        <div className="lg:col-span-3 h-[380px] sm:h-[440px] w-full min-h-[360px] rounded-xl border border-border/80 bg-background/50 p-2 sm:p-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart
-              data={mesesFiltrados}
-              margin={
-                isMobile
-                  ? { left: -15, right: 10, top: 15, bottom: 10 }
-                  : { left: 10, right: 30, top: 15, bottom: 10 }
-              }
+        <div className="relative lg:col-span-3 h-[400px] sm:h-[470px] w-full min-h-[360px] rounded-2xl border-2 border-cyan-800/30 dark:border-cyan-500/25 bg-gradient-to-b from-sky-500/10 via-cyan-900/15 to-blue-950/35 dark:from-sky-950/40 dark:via-slate-950/60 dark:to-cyan-950/70 p-2 sm:p-4 shadow-inner overflow-hidden flex flex-col justify-between">
+          {/* Camadas de ondas translúcidas atrás da curva com animação suave GPU */}
+          <div className="pointer-events-none absolute inset-0 w-full h-full overflow-hidden opacity-35 dark:opacity-25 select-none" aria-hidden="true">
+            <svg
+              className={`absolute -bottom-2 -left-12 w-[130%] h-48 sm:h-64 ${prefersReducedMotion ? "" : "ocean-wave-layer-1"}`}
+              viewBox="0 0 1200 320"
+              preserveAspectRatio="none"
             >
-              <defs>
-                <linearGradient id="hist-blue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#1a73e8" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#1a73e8" stopOpacity={0.0} />
-                </linearGradient>
-                <linearGradient id="hist-green" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#34a853" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#34a853" stopOpacity={0.0} />
-                </linearGradient>
-                <linearGradient id="hist-yellow" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f9ab00" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#f9ab00" stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
+              <path
+                fill="url(#wave-grad-1)"
+                d="M0,160 C180,100 380,220 540,160 C700,100 900,220 1060,160 C1140,130 1180,180 1200,160 L1200,320 L0,320 Z"
+              />
+            </svg>
+            <svg
+              className={`absolute -bottom-4 -left-8 w-[125%] h-40 sm:h-56 ${prefersReducedMotion ? "" : "ocean-wave-layer-2"}`}
+              viewBox="0 0 1200 320"
+              preserveAspectRatio="none"
+            >
+              <path
+                fill="url(#wave-grad-2)"
+                d="M0,200 C200,250 340,140 540,190 C740,240 890,150 1080,200 C1150,220 1180,190 1200,200 L1200,320 L0,320 Z"
+              />
+            </svg>
+            <svg
+              className={`absolute -bottom-6 -left-4 w-[120%] h-32 sm:h-48 ${prefersReducedMotion ? "" : "ocean-wave-layer-3"}`}
+              viewBox="0 0 1200 320"
+              preserveAspectRatio="none"
+            >
+              <path
+                fill="url(#wave-grad-3)"
+                d="M0,230 C220,190 410,260 630,220 C830,180 990,250 1200,220 L1200,320 L0,320 Z"
+              />
+            </svg>
+          </div>
 
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
-              <XAxis dataKey="labelCurto" tick={{ fill: "var(--foreground)", fontSize: 11, fontWeight: 700 }} />
-              <YAxis allowDecimals={false} tick={{ fill: "var(--foreground)", fontSize: 11 }} />
-              <Tooltip content={<HistoricoCustomTooltip />} />
+          <div className="flex-1 w-full min-h-0 relative z-10">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart
+                data={mesesFiltrados}
+                margin={
+                  isMobile
+                    ? { left: -18, right: 10, top: 18, bottom: 5 }
+                    : { left: 8, right: 28, top: 18, bottom: 5 }
+                }
+              >
+                <defs>
+                  {/* Gradiente vertical oceânico: turquesa claro na superfície a azul-marinho profundo no fundo */}
+                  <linearGradient id="ocean-surface-to-deep" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.78} />
+                    <stop offset="28%" stopColor="#06b6d4" stopOpacity={0.65} />
+                    <stop offset="58%" stopColor="#0284c7" stopOpacity={0.52} />
+                    <stop offset="85%" stopColor="#0369a1" stopOpacity={0.42} />
+                    <stop offset="100%" stopColor="#0f172a" stopOpacity={0.28} />
+                  </linearGradient>
 
-              {visivel.Total && (
-                <Area
-                  type="monotone"
-                  dataKey="Total"
-                  fill="url(#hist-blue)"
-                  stroke="none"
-                  isAnimationActive={!prefersReducedMotion}
-                  animationDuration={prefersReducedMotion ? 0 : 650}
-                />
-              )}
-              {visivel.Resolvidos && (
-                <Area
-                  type="monotone"
-                  dataKey="Resolvidos"
-                  fill="url(#hist-green)"
-                  stroke="none"
-                  isAnimationActive={!prefersReducedMotion}
-                  animationDuration={prefersReducedMotion ? 0 : 650}
-                />
-              )}
-              {visivel["Em atendimento"] && (
-                <Area
-                  type="monotone"
-                  dataKey="Em atendimento"
-                  fill="url(#hist-yellow)"
-                  stroke="none"
-                  isAnimationActive={!prefersReducedMotion}
-                  animationDuration={prefersReducedMotion ? 0 : 650}
-                />
-              )}
+                  <linearGradient id="wave-grad-1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#0284c7" stopOpacity={0.05} />
+                  </linearGradient>
+                  <linearGradient id="wave-grad-2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#0369a1" stopOpacity={0.05} />
+                  </linearGradient>
+                  <linearGradient id="wave-grad-3" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0284c7" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#0f172a" stopOpacity={0.05} />
+                  </linearGradient>
 
-              {visivel.Total && (
-                <Line
-                  type="monotone"
-                  dataKey="Total"
-                  name="Total de Chamados"
-                  stroke="#1a73e8"
-                  strokeWidth={3}
-                  dot={{ r: 5, fill: "#1a73e8", stroke: "#ffffff", strokeWidth: 2 }}
-                  activeDot={{ r: 8, stroke: "#1a73e8", strokeWidth: 3, fill: "#ffffff" }}
-                  isAnimationActive={!prefersReducedMotion}
-                  animationDuration={prefersReducedMotion ? 0 : 650}
-                />
-              )}
-              {visivel.Resolvidos && (
-                <Line
-                  type="monotone"
-                  dataKey="Resolvidos"
-                  name="Resolvidos"
-                  stroke="#34a853"
-                  strokeWidth={3}
-                  dot={{ r: 4.5, fill: "#34a853", stroke: "#ffffff", strokeWidth: 2 }}
-                  activeDot={{ r: 7.5, stroke: "#34a853", strokeWidth: 3, fill: "#ffffff" }}
-                  isAnimationActive={!prefersReducedMotion}
-                  animationDuration={prefersReducedMotion ? 0 : 650}
-                />
-              )}
-              {visivel["Em atendimento"] && (
-                <Line
-                  type="monotone"
-                  dataKey="Em atendimento"
-                  name="Em Atendimento"
-                  stroke="#f9ab00"
-                  strokeWidth={3}
-                  dot={{ r: 4.5, fill: "#f9ab00", stroke: "#ffffff", strokeWidth: 2 }}
-                  activeDot={{ r: 7.5, stroke: "#f9ab00", strokeWidth: 3, fill: "#ffffff" }}
-                  isAnimationActive={!prefersReducedMotion}
-                  animationDuration={prefersReducedMotion ? 0 : 650}
-                />
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
+                  <linearGradient id="hist-green" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                  </linearGradient>
+                  <linearGradient id="hist-yellow" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
+                <XAxis dataKey="labelCurto" tick={{ fill: "var(--foreground)", fontSize: 11, fontWeight: 700 }} />
+                <YAxis allowDecimals={false} tick={{ fill: "var(--foreground)", fontSize: 11 }} />
+                <Tooltip content={<HistoricoCustomTooltip totalPeriodo={totalPeriodo} />} />
+
+                {visivel.Total && (
+                  <Area
+                    type="monotone"
+                    dataKey="Total"
+                    fill="url(#ocean-surface-to-deep)"
+                    stroke="none"
+                    isAnimationActive={!prefersReducedMotion}
+                    animationDuration={prefersReducedMotion ? 0 : 700}
+                  />
+                )}
+                {visivel.Resolvidos && (
+                  <Area
+                    type="monotone"
+                    dataKey="Resolvidos"
+                    fill="url(#hist-green)"
+                    stroke="none"
+                    isAnimationActive={!prefersReducedMotion}
+                    animationDuration={prefersReducedMotion ? 0 : 650}
+                  />
+                )}
+                {visivel["Em atendimento"] && (
+                  <Area
+                    type="monotone"
+                    dataKey="Em atendimento"
+                    fill="url(#hist-yellow)"
+                    stroke="none"
+                    isAnimationActive={!prefersReducedMotion}
+                    animationDuration={prefersReducedMotion ? 0 : 650}
+                  />
+                )}
+
+                {visivel.Total && (
+                  <Line
+                    type="monotone"
+                    dataKey="Total"
+                    name="Total de Chamados"
+                    stroke="#06b6d4"
+                    strokeWidth={3.5}
+                    strokeLinecap="round"
+                    dot={(props: any) => {
+                      const { cx, cy, payload } = props;
+                      if (!cx || !cy) return null;
+                      const val = Number(payload?.Total ?? 0);
+                      const pico = mesPico?.Total || 1;
+                      const ratio = val / pico;
+                      const isRaso = ratio < 0.38;
+                      const isMedio = ratio >= 0.38 && ratio < 0.72;
+                      const corFundo = isRaso ? "#38bdf8" : isMedio ? "#0284c7" : "#0c4a6e";
+                      const corBorda = isRaso ? "#fef08a" : isMedio ? "#7dd3fc" : "#22d3ee";
+                      return (
+                        <circle
+                          key={`dot-total-${props.key || cx}`}
+                          cx={cx}
+                          cy={cy}
+                          r={isRaso ? 4.5 : isMedio ? 5.5 : 6.5}
+                          fill={corFundo}
+                          stroke={corBorda}
+                          strokeWidth={2.5}
+                          className="transition-all duration-200 drop-shadow-sm"
+                        />
+                      );
+                    }}
+                    activeDot={{
+                      r: 8.5,
+                      stroke: "#22d3ee",
+                      strokeWidth: 3,
+                      fill: "#082f49",
+                    }}
+                    isAnimationActive={!prefersReducedMotion}
+                    animationDuration={prefersReducedMotion ? 0 : 700}
+                  />
+                )}
+                {visivel.Resolvidos && (
+                  <Line
+                    type="monotone"
+                    dataKey="Resolvidos"
+                    name="Resolvidos"
+                    stroke="#10b981"
+                    strokeWidth={2.8}
+                    dot={{ r: 4, fill: "#10b981", stroke: "#ffffff", strokeWidth: 2 }}
+                    activeDot={{ r: 7, stroke: "#10b981", strokeWidth: 2.5, fill: "#ffffff" }}
+                    isAnimationActive={!prefersReducedMotion}
+                    animationDuration={prefersReducedMotion ? 0 : 650}
+                  />
+                )}
+                {visivel["Em atendimento"] && (
+                  <Line
+                    type="monotone"
+                    dataKey="Em atendimento"
+                    name="Em Atendimento"
+                    stroke="#f59e0b"
+                    strokeWidth={2.8}
+                    dot={{ r: 4, fill: "#f59e0b", stroke: "#ffffff", strokeWidth: 2 }}
+                    activeDot={{ r: 7, stroke: "#f59e0b", strokeWidth: 2.5, fill: "#ffffff" }}
+                    isAnimationActive={!prefersReducedMotion}
+                    animationDuration={prefersReducedMotion ? 0 : 650}
+                  />
+                )}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Legenda de Profundidade do Oceano com escala de raso a profundo */}
+          <div className="relative z-10 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-800/20 dark:border-cyan-500/20 bg-card/90 px-3 py-1.5 text-xs backdrop-blur-xs shadow-2xs">
+            <div className="flex items-center gap-1.5 font-bold text-foreground">
+              <span className="size-2.5 rounded-full bg-cyan-400 animate-pulse" />
+              <span>Profundidade (volume de chamados):</span>
+            </div>
+            <div className="flex items-center gap-2 flex-1 max-w-xs min-w-[190px]">
+              <span className="text-[10px] font-bold text-sky-600 dark:text-sky-300 shrink-0">Raso</span>
+              <div
+                className="h-2.5 flex-1 rounded-full shadow-inner border border-cyan-700/20"
+                style={{
+                  background: "linear-gradient(90deg, #fef08a 0%, #38bdf8 25%, #0284c7 60%, #082f49 100%)",
+                }}
+                title="Escala de profundidade por volume"
+              />
+              <span className="text-[10px] font-bold text-blue-900 dark:text-cyan-300 shrink-0">Profundo</span>
+            </div>
+            <span className="text-[10px] text-muted-foreground hidden md:inline">
+              Águas rasas (tons areia/turquesa) a profundezas abissais (azuis escuros)
+            </span>
+          </div>
         </div>
 
         {/* Painel Lateral com Séries e Controle de Exibição */}
@@ -1278,8 +1438,7 @@ function GraficoSerieHistorica() {
               <TrendingUp className="size-3.5 text-g-blue" /> Dica de análise
             </p>
             <p className="text-[11px] leading-relaxed">
-              Clique nas séries acima para ocultar ou exibir linhas individualmente. Use os botões de período para focar
-              em trimestres ou semestres específicos.
+              A superfície e o relevo ondulado representam a evolução no tempo. A profundidade indica a concentração da demanda.
             </p>
           </div>
         </aside>
@@ -1322,25 +1481,37 @@ function GraficoSerieHistorica() {
   );
 }
 
-function HistoricoCustomTooltip({ active, payload, label }: any) {
+function HistoricoCustomTooltip({ active, payload, label, totalPeriodo }: any) {
   if (!active || !payload || !payload.length) return null;
   const mesData = payload[0]?.payload as MesCompleto | undefined;
 
   return (
-    <div className="rounded-xl border border-border bg-card/95 p-3 shadow-xl backdrop-blur-sm text-xs min-w-44 space-y-2">
-      <div className="border-b border-border/80 pb-1.5 font-bold text-foreground">
-        {mesData?.labelLongo ?? label}
+    <div className="rounded-xl border border-cyan-800/30 dark:border-cyan-500/30 bg-card/95 p-3.5 shadow-2xl backdrop-blur-md text-xs min-w-56 space-y-2.5">
+      <div className="border-b border-border/80 pb-1.5 font-extrabold text-foreground flex items-center justify-between">
+        <span>{mesData?.labelLongo ?? label}</span>
+        {totalPeriodo > 0 && mesData?.Total ? (
+          <span className="text-[11px] font-bold text-cyan-600 dark:text-cyan-400">
+            {((mesData.Total / totalPeriodo) * 100).toFixed(1)}% do período
+          </span>
+        ) : null}
       </div>
-      <div className="space-y-1">
-        {payload.map((entry: any) => (
-          <div key={entry.name} className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5">
-              <span className="size-2 rounded-full" style={{ backgroundColor: entry.color }} />
-              <span className="text-muted-foreground">{entry.name}:</span>
+      <div className="space-y-1.5">
+        {payload.map((entry: any) => {
+          const val = Number(entry.value ?? 0);
+          const pct = totalPeriodo > 0 ? ((val / totalPeriodo) * 100).toFixed(1) : "0.0";
+          return (
+            <div key={entry.name} className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="size-2.5 rounded-full shadow-2xs" style={{ backgroundColor: entry.color }} />
+                <span className="text-muted-foreground font-medium">{entry.name}:</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-mono">
+                <span className="font-extrabold text-foreground">{val}</span>
+                <span className="text-[11px] text-muted-foreground font-semibold">({pct}%)</span>
+              </div>
             </div>
-            <span className="font-mono font-bold text-foreground">{entry.value}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

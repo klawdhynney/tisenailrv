@@ -27,6 +27,7 @@ import {
   type Prioridade,
   type Status,
   type PapelUsuario,
+  obterDataHojeCuiaba,
 } from "./types";
 
 type Row = Database["public"]["Tables"]["tickets"]["Row"];
@@ -168,6 +169,10 @@ function toRow(p: Partial<Ticket>) {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [publicStats, setPublicStats] = useState<Database["public"]["Tables"]["ticket_public_stats"]["Row"][]>([]);
+  const [dailyStats, setDailyStats] = useState<{ chamadosDoDia: number; atendidosNoDia: number }>({
+    chamadosDoDia: 0,
+    atendidosNoDia: 0,
+  });
   const [evaluationStats, setEvaluationStats] = useState<AvaliacaoResumoPublico>(AVALIACAO_RESUMO_PUBLICO_PADRAO);
   const [regras, setRegrasState] = useState<Regras>(REGRAS_PADRAO);
   const [hidratado, setHidratado] = useState(false);
@@ -253,13 +258,62 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
   }, [session?.user.id, session?.user.email, session?.user.app_metadata?.provider]);
 
+  const recarregarDailyStats = useCallback(async () => {
+    const hojeCuiaba = obterDataHojeCuiaba();
+    try {
+      // 1. Tenta a função segura agregada pública get_public_daily_stats
+      const { data, error } = await supabase.rpc("get_public_daily_stats");
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const item = data[0] as any;
+        setDailyStats({
+          chamadosDoDia: Number(item.chamados_do_dia ?? 0),
+          atendidosNoDia: Number(item.atendidos_no_dia ?? 0),
+        });
+        return;
+      }
+    } catch {
+      // continua para o fallback
+    }
+
+    try {
+      // 2. Fallback via public_ticket_progress
+      const { data: progressData, error: progErr } = await supabase.rpc("public_ticket_progress");
+      if (!progErr && Array.isArray(progressData)) {
+        const abertosHoje = progressData.filter((t: any) => t.aberto_em === hojeCuiaba).length;
+        const atendidosHoje = progressData.filter(
+          (t: any) => (t.status === "Resolvido" || t.status === "Concluído") && t.fechado_em === hojeCuiaba
+        ).length;
+        setDailyStats({
+          chamadosDoDia: abertosHoje,
+          atendidosNoDia: atendidosHoje,
+        });
+      }
+    } catch {
+      // silencia erro se não autenticado ou indisponível
+    }
+  }, []);
+
   useEffect(() => {
-    const carregar = () => supabase.from("ticket_public_stats").select("*").then(({ data }) => setPublicStats(data ?? []));
+    const carregar = () => {
+      supabase.from("ticket_public_stats").select("*").then(({ data }) => setPublicStats(data ?? []));
+      recarregarDailyStats();
+    };
     carregar();
     const channel = supabase.channel("public-stats-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "ticket_public_stats" }, carregar).subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
+      .on("postgres_changes", { event: "*", schema: "public", table: "ticket_public_stats" }, carregar)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tickets" }, carregar)
+      .subscribe();
+
+    // Timer de 60 segundos para atualizar em caso de virada de dia no fuso America/Cuiaba
+    const intervaloDia = setInterval(() => {
+      recarregarDailyStats();
+    }, 60000);
+
+    return () => {
+      clearInterval(intervaloDia);
+      supabase.removeChannel(channel);
+    };
+  }, [recarregarDailyStats]);
 
   // Estatísticas agregadas de avaliações (públicas e anônimas)
   const recarregarEvaluationStats = useCallback(async () => {
@@ -504,6 +558,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     () => ({
       tickets,
       publicStats,
+      dailyStats,
+      recarregarDailyStats,
       evaluationStats,
       recarregarEvaluationStats,
       regras,
@@ -523,6 +579,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [
       tickets,
       publicStats,
+      dailyStats,
+      recarregarDailyStats,
       evaluationStats,
       recarregarEvaluationStats,
       regras,

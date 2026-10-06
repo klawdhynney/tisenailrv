@@ -171,6 +171,17 @@ export interface IndicadorItemConfig {
   ativo: boolean;
 }
 
+export function obterDataHojeCuiaba(): string {
+  const d = new Date();
+  const formatador = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Cuiaba",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return formatador.format(d);
+}
+
 export interface IndicadoresConfig {
   mostrar?: boolean;
   totalLabel?: string;
@@ -179,9 +190,15 @@ export interface IndicadoresConfig {
   atendimentoDesc?: string;
   resolvidosLabel?: string;
   resolvidosDesc?: string;
+  chamadosDiaLabel?: string;
+  chamadosDiaDesc?: string;
+  atendidosDiaLabel?: string;
+  atendidosDiaDesc?: string;
   total: IndicadorItemConfig;
   atendimento: IndicadorItemConfig;
   resolvidos: IndicadorItemConfig;
+  chamadosDia?: IndicadorItemConfig;
+  atendidosDia?: IndicadorItemConfig;
 }
 
 export const INDICADORES_PADRAO: IndicadoresConfig = {
@@ -192,6 +209,10 @@ export const INDICADORES_PADRAO: IndicadoresConfig = {
   atendimentoDesc: "Chamados que estão sendo tratados pela equipe de TI.",
   resolvidosLabel: "Resolvidos",
   resolvidosDesc: "Chamados que já foram concluídos.",
+  chamadosDiaLabel: "Chamados do dia",
+  chamadosDiaDesc: "Chamados abertos hoje.",
+  atendidosDiaLabel: "Atendidos no dia",
+  atendidosDiaDesc: "Chamados concluídos hoje.",
   total: {
     titulo: "Total de chamados",
     desc: "Quantidade de chamados registrados.",
@@ -205,6 +226,16 @@ export const INDICADORES_PADRAO: IndicadoresConfig = {
   resolvidos: {
     titulo: "Resolvidos",
     desc: "Chamados que já foram concluídos.",
+    ativo: true,
+  },
+  chamadosDia: {
+    titulo: "Chamados do dia",
+    desc: "Chamados abertos hoje.",
+    ativo: true,
+  },
+  atendidosDia: {
+    titulo: "Atendidos no dia",
+    desc: "Chamados concluídos hoje.",
     ativo: true,
   },
 };

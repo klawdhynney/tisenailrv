@@ -1513,7 +1513,7 @@ function Regras() {
                 Cartões de Indicadores (Métricas do Topo)
               </CardTitle>
               <CardDescription>
-                Configure os 3 cartões de indicadores que aparecem no topo da página inicial e do dashboard.
+                Configure os 5 cartões de indicadores que aparecem no topo da página inicial e do dashboard.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -1534,7 +1534,7 @@ function Regras() {
               </div>
 
               {indConf.mostrar && (
-                <div className="grid gap-5 md:grid-cols-3 pt-2 border-t border-border">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 pt-2 border-t border-border">
                   {/* Cartão 1: Total */}
                   <div className="rounded-xl border-l-4 border-g-blue border bg-card p-4 space-y-3 shadow-2xs">
                     <div className="space-y-1">
@@ -1591,6 +1591,46 @@ function Regras() {
                         value={indConf.resolvidosDesc}
                         onChange={(e) => salvarIndicadores({ resolvidosDesc: sanitizeInput(e.target.value) })}
                         placeholder="Ex.: Chamados que já foram concluídos."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Cartão 4: Chamados do Dia */}
+                  <div className="rounded-xl border-l-4 border-cyan-500 border bg-card p-4 space-y-3 shadow-2xs">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold text-cyan-600 dark:text-cyan-400">Cartão 4 (Ciano)</Label>
+                      <Input
+                        value={indConf.chamadosDiaLabel || ""}
+                        onChange={(e) => salvarIndicadores({ chamadosDiaLabel: sanitizeInput(e.target.value) })}
+                        placeholder="Título: Chamados do dia"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Descrição</Label>
+                      <Input
+                        value={indConf.chamadosDiaDesc || ""}
+                        onChange={(e) => salvarIndicadores({ chamadosDiaDesc: sanitizeInput(e.target.value) })}
+                        placeholder="Ex.: Abertos hoje (00:00 às 23:59 UTC-4)."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Cartão 5: Atendidos no Dia */}
+                  <div className="rounded-xl border-l-4 border-teal-500 border bg-card p-4 space-y-3 shadow-2xs">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold text-teal-600 dark:text-teal-400">Cartão 5 (Teal)</Label>
+                      <Input
+                        value={indConf.atendidosDiaLabel || ""}
+                        onChange={(e) => salvarIndicadores({ atendidosDiaLabel: sanitizeInput(e.target.value) })}
+                        placeholder="Título: Atendidos no dia"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Descrição</Label>
+                      <Input
+                        value={indConf.atendidosDiaDesc || ""}
+                        onChange={(e) => salvarIndicadores({ atendidosDiaDesc: sanitizeInput(e.target.value) })}
+                        placeholder="Ex.: Concluídos hoje (00:00 às 23:59 UTC-4)."
                       />
                     </div>
                   </div>
