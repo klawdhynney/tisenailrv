@@ -96,7 +96,6 @@ export const Route = createFileRoute("/_authenticated/regras")({
   head: () => ({
     meta: [
       { title: "Painel de Ajustes | TI Senai LRV" },
-      { name: "robots", content: "noindex, nofollow" },
       {
         name: "description",
         content:

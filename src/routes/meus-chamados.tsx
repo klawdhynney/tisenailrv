@@ -38,7 +38,6 @@ export const Route = createFileRoute("/meus-chamados")({
   head: () => ({
     meta: [
       { title: "Meus chamados | TI Senai LRV" },
-      { name: "robots", content: "noindex, nofollow" },
       {
         name: "description",
         content: "Acompanhe e complemente os chamados associados à sua conta de usuário.",

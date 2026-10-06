@@ -1,21 +1,14 @@
-# robots.txt para TI SENAI LRV - https://tisenailrv.app
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
 User-agent: *
 Allow: /
-Allow: /sobre
-Allow: /lgpd
-
-# Bloqueio de rotas privadas, administrativas e de autenticação
-Disallow: /abrir
-Disallow: /auth
-Disallow: /dashboard
-Disallow: /meus-chamados
-Disallow: /preferencias-email
-Disallow: /atendimento
-Disallow: /chamados
-Disallow: /regras
-Disallow: /usuarios
-Disallow: /ajustes
-Disallow: /lovable
-
-# Mapa do site indexável
-Sitemap: https://tisenailrv.app/sitemap.xml

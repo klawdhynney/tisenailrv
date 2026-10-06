@@ -34,7 +34,6 @@ export const Route = createFileRoute("/abrir")({
   head: () => ({
     meta: [
       { title: "Abrir chamado | TI Senai LRV" },
-      { name: "robots", content: "noindex, nofollow" },
       { name: "description", content: "Formulário para abrir chamado de TI informando setor, descrição do problema e local." },
       { property: "og:title", content: "Abrir Chamado de TI" },
       { property: "og:description", content: "Registre seu chamado de TI com sua conta institucional." },

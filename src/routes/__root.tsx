@@ -76,25 +76,21 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-// Google Search Console: código de verificação configurado
-export const GOOGLE_SITE_VERIFICATION_CODE = "_0lRR9Pzm3SbCOfQsK7zaGAfGvBqPNvd51z1ze5SFug";
-
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "TI SENAI LRV" },
-      { name: "description", content: "Abertura e acompanhamento de chamados de TI SENAI LRV." },
+         { title: "TI SENAI LRV" },
+       { name: "description", content: "Abertura e acompanhamento de chamados de TI SENAI LRV." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "TI SENAI LRV" },
-      { property: "og:description", content: "Abertura e acompanhamento de chamados de TI SENAI LRV." },
+         { property: "og:title", content: "TI SENAI LRV" },
+       { property: "og:description", content: "Abertura e acompanhamento de chamados de TI SENAI LRV." },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "https://tisenailrv.app/capa.webp" },
+      { property: "og:image", content: "/capa.webp?v=20261005_v5" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "https://tisenailrv.app/capa.webp" },
+      { name: "twitter:image", content: "/capa.webp?v=20261005_v5" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "google-site-verification", content: GOOGLE_SITE_VERIFICATION_CODE },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -121,7 +117,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
+     <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>
