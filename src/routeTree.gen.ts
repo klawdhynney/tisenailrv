@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LgpdRouteImport } from './routes/lgpd'
 import { Route as MeusChamadosRouteImport } from './routes/meus-chamados'
+import { Route as PreferenciasEmailRouteImport } from './routes/preferencias-email'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as AuthenticatedAtendimentoRouteImport } from './routes/_authenticated/atendimento'
 import { Route as AuthenticatedChamadosRouteImport } from './routes/_authenticated/chamados'
@@ -59,6 +60,11 @@ const LgpdRoute = LgpdRouteImport.update({
 const MeusChamadosRoute = MeusChamadosRouteImport.update({
   id: '/meus-chamados',
   path: '/meus-chamados',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreferenciasEmailRoute = PreferenciasEmailRouteImport.update({
+  id: '/preferencias-email',
+  path: '/preferencias-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SobreRoute = SobreRouteImport.update({
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/lgpd': typeof LgpdRoute
   '/meus-chamados': typeof MeusChamadosRoute
+  '/preferencias-email': typeof PreferenciasEmailRoute
   '/sobre': typeof SobreRoute
   '/atendimento': typeof AuthenticatedAtendimentoRoute
   '/chamados': typeof AuthenticatedChamadosRouteWithChildren
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/lgpd': typeof LgpdRoute
   '/meus-chamados': typeof MeusChamadosRoute
+  '/preferencias-email': typeof PreferenciasEmailRoute
   '/sobre': typeof SobreRoute
   '/atendimento': typeof AuthenticatedAtendimentoRoute
   '/chamados': typeof AuthenticatedChamadosRouteWithChildren
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/lgpd': typeof LgpdRoute
   '/meus-chamados': typeof MeusChamadosRoute
+  '/preferencias-email': typeof PreferenciasEmailRoute
   '/sobre': typeof SobreRoute
   '/_authenticated/atendimento': typeof AuthenticatedAtendimentoRoute
   '/_authenticated/chamados': typeof AuthenticatedChamadosRouteWithChildren
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/lgpd'
     | '/meus-chamados'
+    | '/preferencias-email'
     | '/sobre'
     | '/atendimento'
     | '/chamados'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/lgpd'
     | '/meus-chamados'
+    | '/preferencias-email'
     | '/sobre'
     | '/atendimento'
     | '/chamados'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/lgpd'
     | '/meus-chamados'
+    | '/preferencias-email'
     | '/sobre'
     | '/_authenticated/atendimento'
     | '/_authenticated/chamados'
@@ -235,6 +247,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRouteWithChildren
   LgpdRoute: typeof LgpdRoute
   MeusChamadosRoute: typeof MeusChamadosRoute
+  PreferenciasEmailRoute: typeof PreferenciasEmailRoute
   SobreRoute: typeof SobreRoute
 }
 
@@ -287,6 +300,13 @@ declare module '@tanstack/react-router' {
       path: '/meus-chamados'
       fullPath: '/meus-chamados'
       preLoaderRoute: typeof MeusChamadosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/preferencias-email': {
+      id: '/preferencias-email'
+      path: '/preferencias-email'
+      fullPath: '/preferencias-email'
+      preLoaderRoute: typeof PreferenciasEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sobre': {
@@ -427,6 +447,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRouteWithChildren,
   LgpdRoute: LgpdRoute,
   MeusChamadosRoute: MeusChamadosRoute,
+  PreferenciasEmailRoute: PreferenciasEmailRoute,
   SobreRoute: SobreRoute,
 }
 export const routeTree = rootRouteImport

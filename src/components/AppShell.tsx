@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Users } from "lucide-react";
+import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Users, Mail } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,7 @@ import defaultIcone from "@/assets/icone.png";
 import defaultCapaWebp from "@/assets/capa.webp";
 import defaultCapaJpg from "@/assets/capa.jpg";
 import { BotaoRetornar } from "@/components/BotaoRetornar";
+import { ContainerPadrao } from "@/components/ContainerPadrao";
 
 const ASSET_VERSION = "20261005_v5";
 
@@ -49,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     localStorage.setItem("tema-ti", novo);
     setTema(novo);
   };
-  const { isGestor, isAdmin, userRole, session, sair, regras } = useStore();
+  const { isGestor, isAdmin, userRole, session, sair, regras, emailAlertsAtivos, alternarEmailAlertas } = useStore();
   const [bannerErro, setBannerErro] = useState(false);
   const [logoErro, setLogoErro] = useState(false);
 
@@ -234,6 +236,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           </>
         )}
         <DropdownMenuSeparator />
+        <div className="flex items-center justify-between px-2.5 py-1.5 text-xs text-foreground">
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-medium">Alertas por e-mail</span>
+          </div>
+          <Switch
+            checked={emailAlertsAtivos}
+            onCheckedChange={(checked) => alternarEmailAlertas(checked)}
+            aria-label="Receber alertas por e-mail"
+            className="scale-90"
+          />
+        </div>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => sair()}
           className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10 flex items-center gap-2 font-medium"
@@ -276,7 +291,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen max-w-full overflow-x-hidden flex flex-col justify-between">
       <header className="fixed top-0 left-0 right-0 z-50 border-b-2 border-border bg-card/95 backdrop-blur pt-[env(safe-area-inset-top)] shadow-2xs">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3">
+        <ContainerPadrao className="flex items-center justify-between gap-3 py-2.5 sm:py-3">
           <Link to="/" className="flex shrink-0 items-center gap-2 sm:gap-2.5 group min-h-[44px]" title={`${tituloSite} - Início`}>
             <img
               src={logoSrc}
@@ -305,23 +320,37 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <Menu className="h-5 w-5" />
           </Button>
-        </div>
+        </ContainerPadrao>
         <div className="h-1 w-full bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
         {aberto && (
-          <nav className="flex flex-col gap-2.5 border-t border-border bg-card p-4 lg:hidden animate-in slide-in-from-top-2 duration-200 max-h-[calc(100dvh-5rem)] overflow-y-auto">
+          <ContainerPadrao as="nav" className="flex flex-col gap-2.5 border-t border-border bg-card p-4 lg:hidden animate-in slide-in-from-top-2 duration-200 max-h-[calc(100dvh-5rem)] overflow-y-auto">
             {session && (
-              <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-2.5 border border-border/60">
-                <UserAvatar session={session} sizeClassName="size-9" />
-                <div className="overflow-hidden leading-tight flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <p className="text-xs font-bold text-foreground truncate">{nomeUsuario}</p>
-                    <Badge variant={isAdmin ? "default" : isGestor ? "secondary" : "outline"} className="text-[9px] px-1 py-0">
-                      {papelRotulo}
-                    </Badge>
+              <>
+                <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-2.5 border border-border/60">
+                  <UserAvatar session={session} sizeClassName="size-9" />
+                  <div className="overflow-hidden leading-tight flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="text-xs font-bold text-foreground truncate">{nomeUsuario}</p>
+                      <Badge variant={isAdmin ? "default" : isGestor ? "secondary" : "outline"} className="text-[9px] px-1 py-0">
+                        {papelRotulo}
+                      </Badge>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground font-mono truncate">{emailUsuario}</p>
                   </div>
-                  <p className="text-[10px] text-muted-foreground font-mono truncate">{emailUsuario}</p>
                 </div>
-              </div>
+                <div className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2 text-xs text-foreground border border-border/50">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xs font-medium">Alertas por e-mail</span>
+                  </div>
+                  <Switch
+                    checked={emailAlertsAtivos}
+                    onCheckedChange={(checked) => alternarEmailAlertas(checked)}
+                    aria-label="Receber alertas por e-mail"
+                    className="scale-90"
+                  />
+                </div>
+              </>
             )}
             {links(true)}
             <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-2">
@@ -346,15 +375,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               )}
               {botaoAlternarTema(false)}
             </div>
-          </nav>
+          </ContainerPadrao>
         )}
       </header>
-      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 pt-[calc(4.5rem+env(safe-area-inset-top))] sm:pt-[calc(5rem+env(safe-area-inset-top))] pb-6 sm:pb-8 flex-1">
+      <ContainerPadrao as="main" className="pt-[calc(4.5rem+env(safe-area-inset-top))] sm:pt-[calc(5rem+env(safe-area-inset-top))] pb-6 sm:pb-8 flex-1">
         {showBanner && (
-          <div className="mb-6 sm:mb-8 w-full">
+          <div className="mb-6 sm:mb-8 w-full" id="banner-capa-container">
             <Link
               to="/"
-              className="group block w-full overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs transition-all duration-300 hover:scale-[1.006] hover:border-g-blue/60 hover:shadow-md active:scale-[0.995]"
+              className="group block w-full overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs transition-all duration-300 hover:border-g-blue/60 hover:shadow-md"
               title="Voltar para a página inicial"
             >
               <picture className="w-full block">
@@ -394,9 +423,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
         {children}
         {pathname !== "/" && <BotaoRetornar />}
-      </main>
+      </ContainerPadrao>
       <footer className="mt-auto border-t border-border py-6 text-center text-xs text-muted-foreground pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 px-4 sm:px-6 lg:px-8">
+        <ContainerPadrao className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5">
           <span>{textoRodape}</span>
           <span>•</span>
           <Link
@@ -416,7 +445,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             </>
           )}
-        </div>
+        </ContainerPadrao>
       </footer>
     </div>
   );

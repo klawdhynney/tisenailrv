@@ -38,6 +38,9 @@ import {
   Sparkles,
   Star,
   Zap,
+  Mail,
+  Send,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -77,10 +80,17 @@ import {
   AVALIACAO_PADRAO,
   IA_SUPORTE_PADRAO,
   WHATSAPP_PADRAO,
+  ALERTAS_EMAIL_PADRAO,
+  formatarDataHoraCuiaba,
   type CampoAbertura,
   type ParametroCor,
   type Periodo,
+  type AlertasEmailConfig,
 } from "@/lib/types";
+import {
+  enviarEmailTesteServerFn,
+  processarFilaEmailsServerFn,
+} from "@/lib/email-notifications.server";
 
 export const Route = createFileRoute("/_authenticated/regras")({
   head: () => ({
@@ -238,7 +248,7 @@ function ImageUploadInput({
 }
 
 function Regras() {
-  const { regras: regrasSalvas, setRegras, tickets, publicStats, removeTicket, isAdmin } = useStore();
+  const { regras: regrasSalvas, setRegras, tickets, publicStats, removeTicket, isAdmin, session } = useStore();
   const [regras, setDraft] = useState(regrasSalvas);
   const [limpandoBanco, setLimpandoBanco] = useState(false);
   const [statusLimpeza, setStatusLimpeza] = useState<string | null>(null);
@@ -440,6 +450,11 @@ function Regras() {
   const salvarWhatsapp = (patch: Partial<typeof whatsappConf>) =>
     salvar({ whatsapp: { ...whatsappConf, ...patch } });
 
+  // Alertas por E-mail
+  const alertasEmailConf = (regras.alertasEmail ?? ALERTAS_EMAIL_PADRAO) as AlertasEmailConfig;
+  const salvarAlertasEmail = (patch: Partial<AlertasEmailConfig>) =>
+    salvar({ alertasEmail: { ...alertasEmailConf, ...patch } });
+
   // 9. Horários, SLA e Atendimento
   const horariosPorDia = regras.expediente.horariosPorDia ?? {
     0: { ativo: false, inicio: regras.expediente.inicio, fim: regras.expediente.fim },
@@ -563,6 +578,9 @@ function Regras() {
           </TabsTrigger>
           <TabsTrigger value="banco" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
             <Database className="size-4 text-purple-600" /> Banco & Otimização
+          </TabsTrigger>
+          <TabsTrigger value="alertasEmail" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
+            <Mail className="size-4 text-g-blue" /> Alertas por E-mail
           </TabsTrigger>
           {isAdmin && (
             <TabsTrigger value="usuarios" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
@@ -2877,7 +2895,477 @@ function Regras() {
             </Card>
           </TabsContent>
         )}
+
+        {/* ABA: ALERTAS POR E-MAIL */}
+        <TabsContent value="alertasEmail" className="space-y-6 focus-visible:outline-none">
+          <SecaoAlertasEmail
+            config={alertasEmailConf}
+            onChange={salvarAlertasEmail}
+            userEmail={session?.user.email || ""}
+            isAdmin={isAdmin}
+          />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+interface SecaoAlertasEmailProps {
+  config: AlertasEmailConfig;
+  onChange: (patch: Partial<AlertasEmailConfig>) => void;
+  userEmail: string;
+  isAdmin: boolean;
+}
+
+function SecaoAlertasEmail({ config, onChange, userEmail, isAdmin }: SecaoAlertasEmailProps) {
+  const [emailTeste, setEmailTeste] = useState(userEmail);
+  const [enviandoTeste, setEnviandoTeste] = useState(false);
+  const [processandoFila, setProcessandoFila] = useState(false);
+  const [carregandoLogs, setCarregandoLogs] = useState(false);
+  const [logs, setLogs] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!emailTeste && userEmail) {
+      setEmailTeste(userEmail);
+    }
+  }, [userEmail]);
+
+  const carregarLogs = async () => {
+    setCarregandoLogs(true);
+    try {
+      const { data, error } = await supabase.rpc("get_email_notification_logs", { p_limite: 100 });
+      if (!error && Array.isArray(data)) {
+        setLogs(data);
+      } else {
+        const { data: fallback } = await supabase
+          .from("notificacoes_email" as any)
+          .select("*")
+          .order("id", { ascending: false })
+          .limit(100);
+        if (Array.isArray(fallback)) {
+          setLogs(fallback);
+        }
+      }
+    } catch (e) {
+      console.warn("Falha ao carregar logs de e-mail:", e);
+    } finally {
+      setCarregandoLogs(false);
+    }
+  };
+
+  useEffect(() => {
+    carregarLogs();
+  }, []);
+
+  const handleEnviarTeste = async () => {
+    const destino = emailTeste.trim();
+    if (!destino || !destino.includes("@")) {
+      toast.error("Informe um endereço de e-mail válido para o teste.");
+      return;
+    }
+    setEnviandoTeste(true);
+    try {
+      const res = await enviarEmailTesteServerFn({ data: { destinatario: destino } });
+      if (res.sucesso) {
+        toast.success(res.mensagem || "E-mail de teste enviado com sucesso!");
+      } else {
+        toast.error(`Falha no envio de teste: ${res.erro}`);
+      }
+      await carregarLogs();
+    } catch (err) {
+      toast.error(`Erro no disparo de teste: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setEnviandoTeste(false);
+    }
+  };
+
+  const handleProcessarFila = async () => {
+    setProcessandoFila(true);
+    try {
+      const res = await processarFilaEmailsServerFn();
+      if (res.processados > 0) {
+        toast.success(`Fila processada: ${res.enviados} enviado(s), ${res.falhas} falha(s).`);
+      } else {
+        toast.info(res.status || "Nenhuma notificação pendente aguardando processamento.");
+      }
+      await carregarLogs();
+    } catch (err) {
+      toast.error(`Erro ao processar fila: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setProcessandoFila(false);
+    }
+  };
+
+  const restaurarModelosPadrao = () => {
+    onChange({
+      modeloAssunto: ALERTAS_EMAIL_PADRAO.modeloAssunto,
+      modeloCorpo: ALERTAS_EMAIL_PADRAO.modeloCorpo,
+      modeloFinalizadoAssunto: ALERTAS_EMAIL_PADRAO.modeloFinalizadoAssunto,
+      modeloFinalizadoCorpo: ALERTAS_EMAIL_PADRAO.modeloFinalizadoCorpo,
+    });
+    toast.info("Modelos de e-mail restaurados para o padrão oficial no rascunho.");
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* 1. Card de Configuração e Gatilhos */}
+      <Card className="border-t-4 border-g-blue shadow-xs">
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-g-blue dark:text-blue-400">
+                <Mail className="size-5" />
+                Alertas por E-mail (Notificações aos Solicitantes)
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm mt-1">
+                Configure o envio automático de avisos por e-mail aos solicitantes conforme o chamado avança no atendimento.
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-3 bg-muted/50 p-2.5 rounded-xl border border-border/60 self-start sm:self-auto">
+              <Label htmlFor="master-email-switch" className="text-xs font-bold cursor-pointer">
+                {config.ativo ? "Alertas Ativados" : "Alertas Desativados"}
+              </Label>
+              <Switch
+                id="master-email-switch"
+                checked={config.ativo}
+                onCheckedChange={(ativo) => onChange({ ativo })}
+                aria-label="Ativar ou desativar alertas por e-mail"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Seção de Eventos */}
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Eventos que Disparam Notificações</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Escolha quais situações geram notificações automáticas para quem abriu o chamado.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex items-center justify-between rounded-lg border border-border/70 p-3 bg-muted/20">
+                <div className="space-y-0.5 pr-2">
+                  <span className="text-xs font-bold text-foreground">Mudança de Status</span>
+                  <p className="text-[11px] text-muted-foreground">Ex: Aberto para Em atendimento, Aguardando, etc.</p>
+                </div>
+                <Switch
+                  checked={config.eventos.status}
+                  disabled={!config.ativo}
+                  onCheckedChange={(val) =>
+                    onChange({ eventos: { ...config.eventos, status: val } })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border border-border/70 p-3 bg-muted/20">
+                <div className="space-y-0.5 pr-2">
+                  <span className="text-xs font-bold text-foreground">Nova Resposta da Equipe</span>
+                  <p className="text-[11px] text-muted-foreground">Mensagens e respostas técnicas enviadas no chat.</p>
+                </div>
+                <Switch
+                  checked={config.eventos.novaResposta}
+                  disabled={!config.ativo}
+                  onCheckedChange={(val) =>
+                    onChange({ eventos: { ...config.eventos, novaResposta: val } })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border border-border/70 p-3 bg-muted/20">
+                <div className="space-y-0.5 pr-2">
+                  <span className="text-xs font-bold text-foreground">SLA Pausado / Retomado</span>
+                  <p className="text-[11px] text-muted-foreground">Notifica quando o relógio de SLA for pausado ou reiniciado.</p>
+                </div>
+                <Switch
+                  checked={config.eventos.slaPausadoRetomado}
+                  disabled={!config.ativo}
+                  onCheckedChange={(val) =>
+                    onChange({ eventos: { ...config.eventos, slaPausadoRetomado: val } })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border border-border/70 p-3 bg-muted/20">
+                <div className="space-y-0.5 pr-2">
+                  <span className="text-xs font-bold text-foreground">Finalização do Chamado</span>
+                  <p className="text-[11px] text-muted-foreground">Envia resumo completo quando for resolvido ou concluído.</p>
+                </div>
+                <Switch
+                  checked={config.eventos.finalizacao}
+                  disabled={!config.ativo}
+                  onCheckedChange={(val) =>
+                    onChange({ eventos: { ...config.eventos, finalizacao: val } })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Dados do Remetente */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold">Nome do Remetente</Label>
+              <Input
+                value={config.nomeRemetente}
+                disabled={!config.ativo}
+                onChange={(e) => onChange({ nomeRemetente: sanitizeInput(e.target.value) })}
+                placeholder="Ex: TI SENAI LRV"
+              />
+              <p className="text-[11px] text-muted-foreground">Exibido na caixa postal do solicitante.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold">E-mail para Resposta (Reply-To)</Label>
+              <Input
+                value={config.emailResposta}
+                disabled={!config.ativo}
+                onChange={(e) => onChange({ emailResposta: sanitizeInput(e.target.value) })}
+                placeholder="Ex: suporte@tisenailrv.app"
+              />
+              <p className="text-[11px] text-muted-foreground">Endereço caso o usuário responda o e-mail.</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 2. Modelos de E-mail (Templates Editáveis) */}
+      <Card className="border-t-4 border-g-green shadow-xs">
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-g-green dark:text-emerald-400">
+                <FileEdit className="size-5" />
+                Modelos de Assunto e Corpo do E-mail
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm mt-1">
+                Personalize os textos dos e-mails usando variáveis automáticas.
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={restaurarModelosPadrao}
+              className="text-xs gap-1.5 self-start sm:self-auto"
+            >
+              <RotateCcw className="size-3.5" /> Restaurar padrão
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Guia de Variáveis */}
+          <div className="rounded-xl border border-border/80 bg-muted/40 p-3.5 space-y-2">
+            <span className="text-xs font-bold text-foreground">Variáveis dinâmicas aceitas nos modelos:</span>
+            <div className="flex flex-wrap gap-1.5 text-xs">
+              <code className="px-2 py-0.5 rounded bg-card border border-border/80 font-mono text-primary font-bold">{"{numero}"}</code>
+              <code className="px-2 py-0.5 rounded bg-card border border-border/80 font-mono text-primary font-bold">{"{titulo}"}</code>
+              <code className="px-2 py-0.5 rounded bg-card border border-border/80 font-mono text-primary font-bold">{"{status}"}</code>
+              <code className="px-2 py-0.5 rounded bg-card border border-border/80 font-mono text-primary font-bold">{"{prioridade}"}</code>
+              <code className="px-2 py-0.5 rounded bg-card border border-border/80 font-mono text-primary font-bold">{"{prazo}"}</code>
+              <code className="px-2 py-0.5 rounded bg-card border border-border/80 font-mono text-primary font-bold">{"{resposta}"}</code>
+              <code className="px-2 py-0.5 rounded bg-card border border-border/80 font-mono text-primary font-bold">{"{link}"}</code>
+            </div>
+          </div>
+
+          {/* Modelo 1: Em Andamento */}
+          <div className="space-y-3 rounded-xl border border-border p-4 bg-card">
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">
+              1. Notificação de Atualização (Status, Mensagem ou SLA)
+            </span>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Assunto do E-mail</Label>
+              <Input
+                value={config.modeloAssunto}
+                onChange={(e) => onChange({ modeloAssunto: e.target.value })}
+                placeholder="Chamado nº {numero}: {status}"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Corpo do E-mail</Label>
+              <Textarea
+                rows={5}
+                className="font-mono text-xs"
+                value={config.modeloCorpo}
+                onChange={(e) => onChange({ modeloCorpo: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Modelo 2: Finalização */}
+          <div className="space-y-3 rounded-xl border border-border p-4 bg-card">
+            <span className="text-xs font-bold uppercase tracking-wider text-g-green">
+              2. Notificação de Chamado Finalizado (Resumo do Atendimento)
+            </span>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Assunto do E-mail</Label>
+              <Input
+                value={config.modeloFinalizadoAssunto}
+                onChange={(e) => onChange({ modeloFinalizadoAssunto: e.target.value })}
+                placeholder="Chamado nº {numero}: {status} (Concluído)"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Corpo do E-mail (com Resumo do Atendimento)</Label>
+              <Textarea
+                rows={5}
+                className="font-mono text-xs"
+                value={config.modeloFinalizadoCorpo}
+                onChange={(e) => onChange({ modeloFinalizadoCorpo: e.target.value })}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 3. Disparo de Teste */}
+      <Card className="border-t-4 border-amber-500 shadow-xs">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+            <Send className="size-5" />
+            Enviar E-mail de Teste
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
+            Dispare um e-mail de verificação imediato para validar as configurações, a chave de envio e a formatação do template.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 space-y-1">
+              <Input
+                type="email"
+                placeholder="Digite seu e-mail para receber o teste"
+                value={emailTeste}
+                onChange={(e) => setEmailTeste(sanitizeInput(e.target.value))}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Um e-mail formatado será enviado imediatamente ao endereço indicado.
+              </p>
+            </div>
+            <Button
+              type="button"
+              disabled={enviandoTeste}
+              onClick={handleEnviarTeste}
+              className="gap-2 shrink-0 font-bold"
+              variant="google-blue"
+            >
+              <Send className="size-4" />
+              {enviandoTeste ? "Enviando teste..." : "Enviar e-mail de teste"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 4. Histórico da Fila Outbox (Últimos 100 Registros) */}
+      <Card className="border-t-4 border-purple-600 shadow-xs">
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                <Clock className="size-5" />
+                Fila Outbox e Histórico de Envios
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm mt-0.5">
+                Exibição dos últimos 100 registros processados ou pendentes na fila do banco de dados.
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleProcessarFila}
+                disabled={processandoFila}
+                className="text-xs gap-1.5 font-semibold"
+              >
+                <Zap className="size-3.5 text-amber-500" />
+                {processandoFila ? "Processando..." : "Processar fila agora"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={carregarLogs}
+                disabled={carregandoLogs}
+                className="text-xs gap-1.5"
+                title="Atualizar lista"
+              >
+                <RefreshCw className={`size-3.5 ${carregandoLogs ? "animate-spin" : ""}`} />
+                Atualizar
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-xl border border-border overflow-hidden">
+            <div className="overflow-x-auto max-h-[380px]">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/70 text-muted-foreground font-semibold border-b border-border sticky top-0 backdrop-blur-xs">
+                  <tr>
+                    <th className="py-2.5 px-3">Data / Hora (Cuiabá)</th>
+                    <th className="py-2.5 px-3">Chamado</th>
+                    <th className="py-2.5 px-3">Destinatário</th>
+                    <th className="py-2.5 px-3">Tipo</th>
+                    <th className="py-2.5 px-3">Status</th>
+                    <th className="py-2.5 px-3">Tentativas</th>
+                    <th className="py-2.5 px-3">Detalhes / Erro</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {logs.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                        {carregandoLogs ? "Carregando registros..." : "Nenhuma notificação registrada na fila até o momento."}
+                      </td>
+                    </tr>
+                  ) : (
+                    logs.map((log) => {
+                      const statusBadge =
+                        log.status === "enviado"
+                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                          : log.status === "erro"
+                          ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                          : log.status === "processando"
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                          : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300";
+
+                      return (
+                        <tr key={log.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-2 px-3 font-mono text-[11px] whitespace-nowrap text-muted-foreground">
+                            {formatarDataHoraCuiaba(log.created_at || log.enviado_em)}
+                          </td>
+                          <td className="py-2 px-3 font-bold text-foreground">
+                            #{log.ticket_id}
+                          </td>
+                          <td className="py-2 px-3 font-mono text-[11px] text-foreground truncate max-w-[160px]" title={log.destinatario}>
+                            {log.destinatario}
+                          </td>
+                          <td className="py-2 px-3 capitalize text-muted-foreground">
+                            {log.tipo}
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${statusBadge}`}>
+                              {log.status}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 font-mono text-center">
+                            {log.tentativas}
+                          </td>
+                          <td className="py-2 px-3 text-[11px] text-muted-foreground max-w-[200px] truncate" title={log.erro_mensagem || log.dados_evento?.evento_desc || "-"}>
+                            {log.erro_mensagem ? (
+                              <span className="text-destructive font-medium">{log.erro_mensagem}</span>
+                            ) : (
+                              log.dados_evento?.evento_desc || "—"
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -22,6 +22,7 @@ import {
   PROMPT_APRIMORAR_TEXTO_PADRAO,
   PROMPT_SUGERIR_ABERTURA_PADRAO,
   WHATSAPP_PADRAO,
+  ALERTAS_EMAIL_PADRAO,
   MOTIVOS_PAUSA_SLA_PADRAO,
   type Regras,
   type Ticket,
@@ -139,6 +140,14 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     iaSuporte: { ...IA_SUPORTE_PADRAO, ...iaSuporteFinal },
     whatsapp: { ...WHATSAPP_PADRAO, ...(regrasSalvas.whatsapp || {}) },
     sobre: { ...SOBRE_PADRAO, ...(regrasSalvas.sobre || {}) },
+    alertasEmail: {
+      ...ALERTAS_EMAIL_PADRAO,
+      ...(regrasSalvas.alertasEmail || {}),
+      eventos: {
+        ...ALERTAS_EMAIL_PADRAO.eventos,
+        ...(regrasSalvas.alertasEmail?.eventos || {}),
+      },
+    },
   };
 }
 
@@ -204,6 +213,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<PapelUsuario>("usuario");
   const [userBlocked, setUserBlocked] = useState(false);
   const [authPronto, setAuthPronto] = useState(false);
+  const [emailAlertsAtivos, setEmailAlertsAtivos] = useState(true);
 
   // Sessão
   useEffect(() => {
@@ -221,6 +231,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setIsAdmin(false);
       setUserRole("usuario");
       setUserBlocked(false);
+      setEmailAlertsAtivos(true);
       setAuthPronto(true);
       return;
     }
@@ -236,6 +247,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           setIsGestor(Boolean(p.isGestor));
           setUserRole(p.userRole || "usuario");
           setUserBlocked(Boolean(p.userBlocked));
+          if (p.emailAlertsAtivos !== undefined) {
+            setEmailAlertsAtivos(Boolean(p.emailAlertsAtivos));
+          }
           setAuthPronto(true);
         }
       }
@@ -248,12 +262,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         supabase.rpc("claim_manager_access"),
         supabase.rpc("is_admin"),
         supabase.rpc("is_named_manager"),
-        supabase.from("user_profiles").select("bloqueado").eq("id", uid).maybeSingle(),
+        supabase.from("user_profiles").select("bloqueado, notificacoes_email_ativas" as any).eq("id", uid).maybeSingle(),
       ]);
 
       if (!ativo) return;
 
       const profileData = profileRes.status === "fulfilled" ? profileRes.value.data : null;
+      if (profileData && (profileData as any).notificacoes_email_ativas !== undefined) {
+        setEmailAlertsAtivos((profileData as any).notificacoes_email_ativas !== false);
+      }
       const bloqueado = profileData?.bloqueado === true;
       if (bloqueado) {
         setUserBlocked(true);
@@ -593,6 +610,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
      return true;
    }, []);
 
+  const alternarEmailAlertas = useCallback(async (ativo: boolean) => {
+    setEmailAlertsAtivos(ativo);
+    const uid = session?.user.id;
+    if (!uid) return true;
+    try {
+      const { error } = await supabase.from("user_profiles").update({
+        notificacoes_email_ativas: ativo,
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", uid);
+      if (error) {
+        await supabase.rpc("set_user_email_notifications", { p_ativo: ativo } as any);
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }, [session?.user.id]);
+
   const sair = useCallback(async () => {
     try {
       sessionStorage.clear();
@@ -620,6 +655,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateTicket,
       removeTicket,
       setRegras,
+      emailAlertsAtivos,
+      alternarEmailAlertas,
       sair,
     }),
     [
@@ -641,6 +678,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateTicket,
       removeTicket,
       setRegras,
+      emailAlertsAtivos,
+      alternarEmailAlertas,
       sair,
     ],
   );

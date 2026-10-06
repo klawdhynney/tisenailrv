@@ -22,6 +22,8 @@ export interface StoreValue {
   updateTicket: (id: number, patch: Partial<Ticket>) => Promise<boolean>;
   removeTicket: (id: number) => Promise<boolean>;
   setRegras: (r: Regras) => Promise<boolean>;
+  emailAlertsAtivos: boolean;
+  alternarEmailAlertas: (ativo: boolean) => Promise<boolean>;
   sair: () => Promise<void>;
 }
 
