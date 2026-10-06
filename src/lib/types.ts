@@ -162,7 +162,7 @@ export const PAGINA_INICIAL_PADRAO: PaginaInicialConfig = {
   subtitulo: "Central oficial de suporte e serviços de Tecnologia da Informação do SENAI Lucas do Rio Verde.",
   mostrarBanner: true,
   exibirBanner: true,
-  bannerUrl: "/capa.png",
+  bannerUrl: "/capa.webp",
   bannerAlt: "TI SENAI Lucas do Rio Verde",
   posicaoCapa: "centro",
 };

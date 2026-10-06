@@ -38,10 +38,30 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     ? "kpi"
     : dashSalvo.tipoGraficoPadrao || DASHBOARD_PADRAO.tipoGraficoPadrao;
 
-  // Sanitiza capa legada se contiver base64 antigo que gerava bug de persistência
+  // Sanitiza capa legada se contiver base64 antigo ou apontamento desatualizado
   const paginaInicialSalva = { ...regrasSalvas.paginaInicial };
-  if (paginaInicialSalva.bannerUrl && paginaInicialSalva.bannerUrl.includes("iVBORw0KGgoAAAANSUhEUgAACAAAAAMACAIAAAA/whCdA")) {
-    paginaInicialSalva.bannerUrl = "";
+  if (
+    paginaInicialSalva.bannerUrl &&
+    (paginaInicialSalva.bannerUrl.includes("iVBORw0KGgoAAAANSUhEUgAACAAAAAMACAIAAAA/whCdA") ||
+      paginaInicialSalva.bannerUrl.includes("senai-") ||
+      paginaInicialSalva.bannerUrl === "/capa.png")
+  ) {
+    paginaInicialSalva.bannerUrl = "/capa.webp";
+  }
+
+  // Sanitiza identidade visual se apontar para arquivos legados
+  const identSalva = { ...regrasSalvas.identidadeVisual };
+  if (
+    identSalva.logoUrl &&
+    (identSalva.logoUrl.includes("senai-") || identSalva.logoUrl.endsWith(".jpg"))
+  ) {
+    identSalva.logoUrl = "/icone.png";
+  }
+  if (
+    identSalva.faviconUrl &&
+    (identSalva.faviconUrl.includes("senai-") || identSalva.faviconUrl.endsWith(".jpg"))
+  ) {
+    identSalva.faviconUrl = "/favicon.png";
   }
 
   // Atualiza IA de suporte garantindo estrutura em 3 abas e retrocompatibilidade
@@ -97,7 +117,7 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     prazos: { ...REGRAS_PADRAO.prazos, ...(regrasSalvas.prazos || {}) },
     expediente: { ...REGRAS_PADRAO.expediente, ...(regrasSalvas.expediente || {}) },
     motivosPausaSla: regrasSalvas.motivosPausaSla ?? [...MOTIVOS_PAUSA_SLA_PADRAO],
-    identidadeVisual: { ...IDENTIDADE_VISUAL_PADRAO, ...(regrasSalvas.identidadeVisual || {}) },
+    identidadeVisual: { ...IDENTIDADE_VISUAL_PADRAO, ...identSalva },
     paginaInicial: { ...PAGINA_INICIAL_PADRAO, ...paginaInicialSalva },
     indicadores: {
       total: { ...INDICADORES_PADRAO.total, ...(regrasSalvas.indicadores?.total || {}) },
