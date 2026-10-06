@@ -837,7 +837,7 @@ function Regras() {
                           label="Upload ou URL da Imagem de Capa"
                           value={home.bannerUrl || "/capa.png"}
                           onChange={(val) => salvarHome({ bannerUrl: val })}
-                          aspectRatioHint="Panorâmica recomendada (2048x768 ou ~21:9)"
+                          aspectRatioHint="Panorâmica recomendada (1024x384 ou ~21:9)"
                           maxSizeMb={4}
                         />
                       ) : (
@@ -845,10 +845,47 @@ function Regras() {
                           <img
                             src={home.bannerUrl || "/capa.png"}
                             alt="Capa"
-                            className="aspect-[21/9] w-full rounded-lg object-cover"
+                            className={`aspect-[21/9] w-full rounded-lg object-cover ${
+                              home.posicaoCapa === "topo"
+                                ? "object-top"
+                                : home.posicaoCapa === "base"
+                                ? "object-bottom"
+                                : "object-center"
+                            }`}
                           />
                         </div>
                       )}
+                    </div>
+
+                    <div className="space-y-2 rounded-2xl border border-border/80 bg-card p-4 shadow-2xs">
+                      <Label className="text-xs font-bold text-foreground">Posição da imagem da capa</Label>
+                      <p className="text-[11px] text-muted-foreground">
+                        Ajusta o ponto focal vertical (object-position) para focar o conteúdo principal nas diferentes telas sem cortes.
+                      </p>
+                      <div className="grid grid-cols-3 gap-2 pt-1">
+                        {[
+                          { id: "topo", label: "Topo" },
+                          { id: "centro", label: "Centro (Padrão)" },
+                          { id: "base", label: "Base" },
+                        ].map((pos) => {
+                          const selecionado = (home.posicaoCapa || "centro") === pos.id;
+                          return (
+                            <button
+                              key={pos.id}
+                              type="button"
+                              disabled={!isAdmin}
+                              onClick={() => salvarHome({ posicaoCapa: pos.id as any })}
+                              className={`rounded-xl border py-2.5 px-3 text-xs font-semibold transition-all text-center cursor-pointer ${
+                                selecionado
+                                  ? "border-g-blue bg-g-blue/10 text-g-blue font-bold shadow-2xs"
+                                  : "border-border/80 bg-muted/30 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                              } ${!isAdmin ? "opacity-60 cursor-not-allowed" : ""}`}
+                            >
+                              {pos.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     <div className="space-y-3">

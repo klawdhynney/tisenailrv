@@ -13,9 +13,9 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "TI SENAI LRV" },
       { property: "og:description", content: "Central de Chamados de TI e indicadores públicos." },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "/capa.png?v=20261005_v3" },
+      { property: "og:image", content: "/capa.png?v=20261005_v4" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "/capa.png?v=20261005_v3" },
+      { name: "twitter:image", content: "/capa.png?v=20261005_v4" },
     ],
   }),
   component: Inicio,
@@ -38,6 +38,14 @@ function Inicio() {
   const tituloPrincipal = regras.paginaInicial?.titulo || "Bem-vindo à Central de Chamados de TI!";
   const subtituloPrincipal = regras.paginaInicial?.subtitulo || "Central oficial de suporte e serviços de Tecnologia da Informação do SENAI Lucas do Rio Verde.";
 
+  const posicaoCapa = regras.paginaInicial?.posicaoCapa || "centro";
+  const posicaoCapaClass =
+    posicaoCapa === "topo"
+      ? "object-top"
+      : posicaoCapa === "base"
+      ? "object-bottom"
+      : "object-center";
+
   const indTotal = regras.indicadores?.total ?? { titulo: "Total de chamados", desc: "Quantidade de chamados registrados.", ativo: true };
   const indAtend = regras.indicadores?.atendimento ?? { titulo: "Em atendimento", desc: "Chamados que estão sendo tratados pela equipe de TI.", ativo: true };
   const indResolv = regras.indicadores?.resolvidos ?? { titulo: "Resolvidos", desc: "Chamados que já foram concluídos.", ativo: true };
@@ -48,15 +56,18 @@ function Inicio() {
     <div className="space-y-9">
       {/* Hero com Título e Indicadores de Desempenho integrados junto à descrição */}
       <section className="relative isolate overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-        <img
-          src={`${capaImage}?v=20261005_v3`}
-          alt="TI SENAI Lucas do Rio Verde"
-          width={2048}
-          height={768}
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-15 dark:opacity-10"
-        />
+        <picture className="absolute inset-0 -z-20 h-full w-full">
+          <source type="image/webp" srcSet="/capa.webp?v=20261005_v4 1x, /capa@2x.webp?v=20261005_v4 2x" />
+          <img
+            src={`${capaImage}?v=20261005_v4`}
+            alt="TI SENAI Lucas do Rio Verde"
+            width={1024}
+            height={384}
+            loading="lazy"
+            decoding="async"
+            className={`h-full w-full object-cover ${posicaoCapaClass} opacity-15 dark:opacity-10`}
+          />
+        </picture>
         <div className="absolute inset-0 -z-10 bg-card/85 backdrop-blur-[1px]" />
         <div className="flex flex-col items-center text-center px-6 py-8 sm:px-10 sm:py-10 max-w-4xl mx-auto">
           <p className="inline-flex items-center gap-2 rounded-full bg-card/90 px-3.5 py-1 text-xs font-bold uppercase text-primary shadow-xs border border-border/60">
