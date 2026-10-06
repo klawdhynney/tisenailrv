@@ -885,28 +885,28 @@ function Regras() {
                             size="sm"
                             variant="ghost"
                             className="h-6 text-[11px] text-g-blue hover:underline px-1.5"
-                            onClick={() => salvarHome({ bannerUrl: "/capa.webp" })}
+                            onClick={() => salvarHome({ bannerUrl: "/capa.png" })}
                           >
-                            Restaurar padrão (/capa.webp)
+                            Restaurar padrão (/capa.png)
                           </Button>
                         )}
                       </div>
                       {isAdmin ? (
                         <ImageUploadInput
                           label="Upload ou URL da Imagem de Capa"
-                          value={home.bannerUrl || "/capa.webp"}
+                          value={home.bannerUrl || "/capa.png"}
                           onChange={(val) => salvarHome({ bannerUrl: val })}
-                          aspectRatioHint="Panorâmica recomendada (1024x384 ou ~21:9)"
+                          aspectRatioHint="Panorâmica recomendada (2048x768 ou ~21:9)"
                           maxSizeMb={4}
                         />
                       ) : (
                         <div className="p-2 rounded-xl bg-muted/40 border border-border/60">
                           <img
-                            src={home.bannerUrl || "/capa.webp"}
+                            src={home.bannerUrl || "/capa.png"}
                             alt="Capa"
                             onError={(e) => {
-                              if (e.currentTarget.src !== "/capa.webp") {
-                                e.currentTarget.src = "/capa.webp";
+                              if (e.currentTarget.src !== "/capa.png") {
+                                e.currentTarget.src = "/capa.png";
                               }
                             }}
                             className={`aspect-[21/9] w-full rounded-lg object-cover ${

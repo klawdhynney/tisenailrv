@@ -3,8 +3,7 @@ import { ArrowRight, FilePlus2, Activity, ClipboardList, CheckCircle2, Star, Ext
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
 import { AVALIACAO_PADRAO } from "@/lib/types";
-import capaWebp from "@/assets/capa.webp";
-import capaJpg from "@/assets/capa.jpg";
+import capaPng from "@/assets/capa.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -14,9 +13,9 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "TI SENAI LRV" },
       { property: "og:description", content: "Central de Chamados de TI e indicadores públicos." },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "/capa.webp?v=20261005_v5" },
+      { property: "og:image", content: "/capa.png?v=20261006_v6" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "/capa.webp?v=20261005_v5" },
+      { name: "twitter:image", content: "/capa.png?v=20261006_v6" },
     ],
   }),
   component: Inicio,
@@ -57,23 +56,17 @@ function Inicio() {
     <div className="space-y-9">
       {/* Hero com Título e Indicadores de Desempenho integrados junto à descrição */}
       <section className="relative isolate overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-        <picture className="absolute inset-0 -z-20 h-full w-full">
-          <source type="image/webp" srcSet={capaWebp} />
+        <div className="absolute inset-0 -z-20 h-full w-full overflow-hidden">
           <img
-            src={capaJpg}
+            src={capaPng}
             alt="TI SENAI Lucas do Rio Verde"
-            width={1024}
-            height={384}
+            width={2048}
+            height={768}
             loading="lazy"
             decoding="async"
-            onError={(e) => {
-              if (e.currentTarget.src !== capaJpg) {
-                e.currentTarget.src = capaJpg;
-              }
-            }}
             className={`h-full w-full object-cover ${posicaoCapaClass} opacity-15 dark:opacity-10`}
           />
-        </picture>
+        </div>
         <div className="absolute inset-0 -z-10 bg-card/85 backdrop-blur-[1px]" />
         <div className="flex flex-col items-center text-center px-6 py-8 sm:px-10 sm:py-10 max-w-4xl mx-auto">
           <p className="inline-flex items-center gap-2 rounded-full bg-card/90 px-3.5 py-1 text-xs font-bold uppercase text-primary shadow-xs border border-border/60">

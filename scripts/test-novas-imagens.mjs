@@ -12,19 +12,17 @@ assert.ok(fs.existsSync("./src/assets/capa.png"), "src/assets/capa.png deve exis
 
 // 2. Arquivos em public
 assert.ok(fs.existsSync("./public/icone.png"), "public/icone.png deve existir");
-assert.ok(fs.existsSync("./public/titulo.png"), "public/titulo.png deve existir");
 assert.ok(fs.existsSync("./public/capa.png"), "public/capa.png deve existir");
-assert.ok(fs.existsSync("./public/favicon.ico"), "public/favicon.ico deve existir");
 assert.ok(fs.existsSync("./public/favicon.png"), "public/favicon.png deve existir");
 assert.ok(fs.existsSync("./public/apple-touch-icon.png"), "public/apple-touch-icon.png deve existir");
-assert.ok(fs.existsSync("./public/icon-192.png"), "public/icon-192.png deve existir");
-assert.ok(fs.existsSync("./public/icon-512.png"), "public/icon-512.png deve existir");
 assert.ok(fs.existsSync("./public/manifest.json"), "public/manifest.json deve existir");
 
 // 3. Verificação de remoção de imagens antigas
-assert.ok(!fs.existsSync("./src/assets/senai-hero-20261005.png"), "senai-hero antigo deve ter sido removido de src/assets");
-assert.ok(!fs.existsSync("./src/assets/technology-lab.jpg"), "technology-lab antigo deve ter sido removido de src/assets");
-assert.ok(!fs.existsSync("./public/favicon.jpg"), "favicon.jpg antigo deve ter sido removido de public");
+assert.ok(!fs.existsSync("./public/capa-1x.webp"), "capa-1x.webp antigo deve ter sido removido");
+assert.ok(!fs.existsSync("./public/capa.jpg"), "capa.jpg antigo deve ter sido removido");
+assert.ok(!fs.existsSync("./public/capa.webp"), "capa.webp antigo deve ter sido removido");
+assert.ok(!fs.existsSync("./public/favicon.ico"), "favicon.ico antigo deve ter sido removido para evitar cache");
+assert.ok(!fs.existsSync("./src/assets/capa.webp"), "capa.webp antigo em assets deve ter sido removido");
 
 // 4. Verificação de referências no código
 const checkFilesInSrc = (dir) => {

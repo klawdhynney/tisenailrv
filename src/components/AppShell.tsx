@@ -17,12 +17,11 @@ import { useStore } from "@/lib/store-context";
 import { type ModoTema, aplicarTemaNoDocumento, resolverEhEscuro } from "@/lib/tema";
 import { supabase } from "@/integrations/supabase/client";
 import defaultIcone from "@/assets/icone.png";
-import defaultCapaWebp from "@/assets/capa.webp";
-import defaultCapaJpg from "@/assets/capa.jpg";
+import defaultCapaPng from "@/assets/capa.png";
 import { BotaoRetornar } from "@/components/BotaoRetornar";
 import { ContainerPadrao } from "@/components/ContainerPadrao";
 
-const ASSET_VERSION = "20261005_v5";
+const ASSET_VERSION = "20261006_v6";
 
 const navPublico = [
   { to: "/", label: "Início", icon: Home },
@@ -521,33 +520,30 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               <picture className="w-full block">
                 {usarBannerPadrao ? (
-                  <>
-                    <source type="image/webp" srcSet={defaultCapaWebp} />
-                    <img
-                      src={defaultCapaJpg}
-                      alt={bannerAltText}
-                      width={1024}
-                      height={384}
-                      loading="eager"
-                      decoding="async"
-                      onError={(e) => {
-                        if (e.currentTarget.src !== defaultCapaJpg) {
-                          e.currentTarget.src = defaultCapaJpg;
-                        }
-                      }}
-                      className={`w-full aspect-[1024/384] max-h-[384px] object-contain sm:object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
-                    />
-                  </>
+                  <img
+                    src={defaultCapaPng}
+                    alt={bannerAltText}
+                    width={2048}
+                    height={768}
+                    loading="eager"
+                    decoding="async"
+                    onError={(e) => {
+                      if (e.currentTarget.src !== defaultCapaPng) {
+                        e.currentTarget.src = defaultCapaPng;
+                      }
+                    }}
+                    className={`w-full aspect-[2048/768] max-h-[384px] object-contain sm:object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
+                  />
                 ) : (
                   <img
                     src={customBannerSrc}
                     alt={bannerAltText}
-                    width={1024}
-                    height={384}
+                    width={2048}
+                    height={768}
                     loading="eager"
                     decoding="async"
                     onError={() => setBannerErro(true)}
-                    className={`w-full aspect-[1024/384] max-h-[384px] object-contain sm:object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
+                    className={`w-full aspect-[2048/768] max-h-[384px] object-contain sm:object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
                   />
                 )}
               </picture>
