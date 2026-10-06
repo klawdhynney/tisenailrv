@@ -207,7 +207,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     ...navPublico,
     ...(session && !isGestor ? [{ to: "/meus-chamados", label: "Meus Chamados", icon: FilePlus2 }] : []),
     ...(isGestor ? navGestor : []),
-    ...(isAdmin ? [{ to: "/regras/usuarios", label: "Usuários", icon: Users }] : []),
+    ...(isAdmin ? [{ to: "/usuarios", label: "Usuários", icon: Users }] : []),
   ];
 
   const links = (mobile: boolean) =>
@@ -292,7 +292,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </DropdownMenuItem>
             {isAdmin && (
               <DropdownMenuItem asChild className="cursor-pointer">
-                <Link to="/regras/usuarios" className="flex items-center gap-2">
+                <Link to="/usuarios" className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-purple-600" />
                   <span>Gestão de Usuários</span>
                 </Link>

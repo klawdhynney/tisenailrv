@@ -21,6 +21,7 @@ import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as AuthenticatedAtendimentoRouteImport } from './routes/_authenticated/atendimento'
 import { Route as AuthenticatedChamadosRouteImport } from './routes/_authenticated/chamados'
 import { Route as AuthenticatedRegrasRouteImport } from './routes/_authenticated/regras'
+import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardAcompanhamentoRouteImport } from './routes/dashboard.acompanhamento'
 import { Route as DashboardAvaliacoesRouteImport } from './routes/dashboard.avaliacoes'
@@ -91,6 +92,11 @@ const AuthenticatedRegrasRoute = AuthenticatedRegrasRouteImport.update({
   path: '/regras',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/atendimento': typeof AuthenticatedAtendimentoRoute
   '/chamados': typeof AuthenticatedChamadosRouteWithChildren
   '/regras': typeof AuthenticatedRegrasRouteWithChildren
+  '/usuarios': typeof AuthenticatedUsuariosRoute
   '/dashboard/acompanhamento': typeof DashboardAcompanhamentoRoute
   '/dashboard/avaliacoes': typeof DashboardAvaliacoesRoute
   '/dashboard/serie-historica': typeof DashboardSerieHistoricaRoute
@@ -173,6 +180,7 @@ export interface FileRoutesByTo {
   '/atendimento': typeof AuthenticatedAtendimentoRoute
   '/chamados': typeof AuthenticatedChamadosRouteWithChildren
   '/regras': typeof AuthenticatedRegrasRouteWithChildren
+  '/usuarios': typeof AuthenticatedUsuariosRoute
   '/dashboard/acompanhamento': typeof DashboardAcompanhamentoRoute
   '/dashboard/avaliacoes': typeof DashboardAvaliacoesRoute
   '/dashboard/serie-historica': typeof DashboardSerieHistoricaRoute
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/_authenticated/atendimento': typeof AuthenticatedAtendimentoRoute
   '/_authenticated/chamados': typeof AuthenticatedChamadosRouteWithChildren
   '/_authenticated/regras': typeof AuthenticatedRegrasRouteWithChildren
+  '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/dashboard/acompanhamento': typeof DashboardAcompanhamentoRoute
   '/dashboard/avaliacoes': typeof DashboardAvaliacoesRoute
   '/dashboard/serie-historica': typeof DashboardSerieHistoricaRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/atendimento'
     | '/chamados'
     | '/regras'
+    | '/usuarios'
     | '/dashboard/acompanhamento'
     | '/dashboard/avaliacoes'
     | '/dashboard/serie-historica'
@@ -242,6 +252,7 @@ export interface FileRouteTypes {
     | '/atendimento'
     | '/chamados'
     | '/regras'
+    | '/usuarios'
     | '/dashboard/acompanhamento'
     | '/dashboard/avaliacoes'
     | '/dashboard/serie-historica'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/_authenticated/atendimento'
     | '/_authenticated/chamados'
     | '/_authenticated/regras'
+    | '/_authenticated/usuarios'
     | '/dashboard/acompanhamento'
     | '/dashboard/avaliacoes'
     | '/dashboard/serie-historica'
@@ -377,6 +389,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRegrasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/usuarios': {
+      id: '/_authenticated/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/dashboard/': {
       id: '/dashboard/'
       path: '/'
@@ -471,12 +490,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAtendimentoRoute: typeof AuthenticatedAtendimentoRoute
   AuthenticatedChamadosRoute: typeof AuthenticatedChamadosRouteWithChildren
   AuthenticatedRegrasRoute: typeof AuthenticatedRegrasRouteWithChildren
+  AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAtendimentoRoute: AuthenticatedAtendimentoRoute,
   AuthenticatedChamadosRoute: AuthenticatedChamadosRouteWithChildren,
   AuthenticatedRegrasRoute: AuthenticatedRegrasRouteWithChildren,
+  AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
