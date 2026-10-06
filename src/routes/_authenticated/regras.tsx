@@ -647,6 +647,11 @@ function Regras() {
                         <img
                           src={ident.logoUrl || "/icone.png"}
                           alt="Ícone"
+                          onError={(e) => {
+                            if (e.currentTarget.src !== "/icone.png") {
+                              e.currentTarget.src = "/icone.png";
+                            }
+                          }}
                           className="size-12 rounded-full object-cover"
                         />
                         <span className="text-xs text-muted-foreground">Ícone gerenciado por administradores.</span>
@@ -826,16 +831,16 @@ function Regras() {
                             size="sm"
                             variant="ghost"
                             className="h-6 text-[11px] text-g-blue hover:underline px-1.5"
-                            onClick={() => salvarHome({ bannerUrl: "/capa.png" })}
+                            onClick={() => salvarHome({ bannerUrl: "/capa.webp" })}
                           >
-                            Restaurar padrão (/capa.png)
+                            Restaurar padrão (/capa.webp)
                           </Button>
                         )}
                       </div>
                       {isAdmin ? (
                         <ImageUploadInput
                           label="Upload ou URL da Imagem de Capa"
-                          value={home.bannerUrl || "/capa.png"}
+                          value={home.bannerUrl || "/capa.webp"}
                           onChange={(val) => salvarHome({ bannerUrl: val })}
                           aspectRatioHint="Panorâmica recomendada (1024x384 ou ~21:9)"
                           maxSizeMb={4}
@@ -843,8 +848,13 @@ function Regras() {
                       ) : (
                         <div className="p-2 rounded-xl bg-muted/40 border border-border/60">
                           <img
-                            src={home.bannerUrl || "/capa.png"}
+                            src={home.bannerUrl || "/capa.webp"}
                             alt="Capa"
+                            onError={(e) => {
+                              if (e.currentTarget.src !== "/capa.webp") {
+                                e.currentTarget.src = "/capa.webp";
+                              }
+                            }}
                             className={`aspect-[21/9] w-full rounded-lg object-cover ${
                               home.posicaoCapa === "topo"
                                 ? "object-top"

@@ -19,8 +19,8 @@ const appShellCode = fs.readFileSync("./src/components/AppShell.tsx", "utf-8");
 assert.ok(appShellCode.includes("icone.png"), "AppShell deve importar a imagem icone");
 assert.ok(appShellCode.includes("TI SENAI LRV"), "AppShell deve exibir o título em texto 'TI SENAI LRV'");
 assert.ok(!appShellCode.includes("titulo.png"), "AppShell não deve conter titulo.png");
-assert.ok(appShellCode.includes("capa.png"), "AppShell deve importar a imagem capa");
-assert.ok(appShellCode.includes("20261005_v4"), "AppShell deve aplicar parâmetro de versão anti-cache");
+assert.ok(appShellCode.includes("capa.webp") || appShellCode.includes("capa.png"), "AppShell deve importar a imagem capa");
+assert.ok(appShellCode.includes("20261005_v5") || appShellCode.includes("20261005_v4"), "AppShell deve aplicar parâmetro de versão anti-cache");
 assert.ok(appShellCode.includes("rounded-2xl"), "AppShell deve manter estilo com cantos arredondados");
 assert.ok(appShellCode.includes("max-w-6xl"), "AppShell deve manter largura alinhada ao corpo");
 

@@ -29,5 +29,6 @@ dist-ssr
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
 scratch/
+*.tmp
+temp_*.html

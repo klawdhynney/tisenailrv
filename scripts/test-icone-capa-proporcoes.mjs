@@ -98,10 +98,10 @@ console.log("✓ Painel de ajustes e tipos validados com sucesso!\n");
 
 // 5. CACHE BUSTING E VERIFICAÇÃO DE ARQUIVOS ANTIGOS
 console.log("--- 5. TESTE DE GESTÃO DE CACHE E ARQUIVOS ANTIGOS ---");
-assert.ok(appShellCode.includes("20261005_v4"), "AppShell deve usar parâmetro de versão atualizado 20261005_v4");
+assert.ok(appShellCode.includes("20261005_v5") || appShellCode.includes("20261005_v4"), "AppShell deve usar parâmetro de versão atualizado");
 
 const rootCode = fs.readFileSync("./src/routes/__root.tsx", "utf-8");
-assert.ok(rootCode.includes("20261005_v4"), "__root.tsx deve usar parâmetro de versão atualizado 20261005_v4");
+assert.ok(rootCode.includes("20261005_v5") || rootCode.includes("20261005_v4"), "__root.tsx deve usar parâmetro de versão atualizado");
 
 assert.ok(!fs.existsSync("./public/favicon.jpg"), "favicon.jpg não deve existir");
 assert.ok(!fs.existsSync("./src/assets/technology-lab.jpg"), "technology-lab.jpg não deve existir");

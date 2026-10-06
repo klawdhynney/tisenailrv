@@ -14,9 +14,10 @@ import {
 import { UserAvatar } from "@/components/UserAvatar";
 import { useStore } from "@/lib/store-context";
 import defaultIcone from "@/assets/icone.png";
-import defaultCapa from "@/assets/capa.png";
+import defaultCapaWebp from "@/assets/capa.webp";
+import defaultCapaJpg from "@/assets/capa.jpg";
 
-const ASSET_VERSION = "20261005_v4";
+const ASSET_VERSION = "20261005_v5";
 
 const navPublico = [
   { to: "/", label: "Início", icon: Home },
@@ -48,6 +49,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     setTema(novo);
   };
   const { isGestor, isAdmin, userRole, session, sair, regras } = useStore();
+  const [bannerErro, setBannerErro] = useState(false);
+  const [logoErro, setLogoErro] = useState(false);
 
   useEffect(() => {
     const rawFavicon = regras.identidadeVisual?.faviconUrl?.trim();
@@ -70,17 +73,26 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const showBanner = (pathname === "/" || pathname === "/abrir") && (regras.paginaInicial?.mostrarBanner ?? true);
   const bannerUrlSalva = regras.paginaInicial?.bannerUrl?.trim() || "";
-  // Descarta imagens legadas que possam ter ficado gravadas no banco e aplica parâmetro de versão
-  const bannerUrlValida =
-    bannerUrlSalva &&
-    !bannerUrlSalva.includes("iVBORw0KGgoAAAANSUhEUgAACAAAAAMACAIAAAA/whCdA") &&
-    !bannerUrlSalva.includes("senai-") &&
-    !bannerUrlSalva.endsWith(".jpg")
-      ? (bannerUrlSalva.startsWith("data:")
-          ? bannerUrlSalva
-          : `${bannerUrlSalva}${bannerUrlSalva.includes("?") ? "&" : "?"}v=${ASSET_VERSION}`)
-      : "";
-  const bannerImgSrc = bannerUrlValida || `${defaultCapa}?v=${ASSET_VERSION}`;
+
+  useEffect(() => {
+    setBannerErro(false);
+  }, [bannerUrlSalva]);
+
+  // Se bannerUrlSalva for vazia, padrão (/capa.*) ou legada, usamos o pacote importado do projeto
+  const isBannerPadrao =
+    !bannerUrlSalva ||
+    bannerUrlSalva === "/capa.png" ||
+    bannerUrlSalva === "/capa.webp" ||
+    bannerUrlSalva === "/capa.jpg" ||
+    bannerUrlSalva.startsWith("/capa.") ||
+    bannerUrlSalva.includes("iVBORw0KGgoAAASUhEUgAACAAAAAMACAIAAAA/whCdA") ||
+    bannerUrlSalva.includes("senai-");
+
+  const usarBannerPadrao = isBannerPadrao || bannerErro;
+  const customBannerSrc = bannerUrlSalva.startsWith("data:")
+    ? bannerUrlSalva
+    : `${bannerUrlSalva}${bannerUrlSalva.includes("?") ? "&" : "?"}v=${ASSET_VERSION}`;
+
   const bannerAltText = regras.paginaInicial?.bannerAlt || "TI SENAI Lucas do Rio Verde";
   const posicaoCapa = regras.paginaInicial?.posicaoCapa || "centro";
   const posicaoCapaClass =
@@ -91,10 +103,19 @@ export function AppShell({ children }: { children: ReactNode }) {
       : "object-center";
 
   const rawLogo = regras.identidadeVisual?.logoUrl?.trim() || "";
-  const logoSrc =
-    rawLogo && !rawLogo.endsWith(".jpg") && !rawLogo.includes("senai-")
-      ? (rawLogo.startsWith("data:") ? rawLogo : `${rawLogo}${rawLogo.includes("?") ? "&" : "?"}v=${ASSET_VERSION}`)
-      : `${defaultIcone}?v=${ASSET_VERSION}`;
+  useEffect(() => {
+    setLogoErro(false);
+  }, [rawLogo]);
+
+  const isLogoPadrao =
+    !rawLogo ||
+    rawLogo === "/icone.png" ||
+    rawLogo.includes("senai-") ||
+    logoErro;
+
+  const logoSrc = isLogoPadrao
+    ? defaultIcone
+    : (rawLogo.startsWith("data:") ? rawLogo : `${rawLogo}${rawLogo.includes("?") ? "&" : "?"}v=${ASSET_VERSION}`);
 
   const tituloSite = regras.identidadeVisual?.tituloSite || "TI SENAI LRV";
   const textoRodape = regras.rodape?.textoDireitos || "© 2026 TI SENAI LRV • Todos os direitos reservados • Criado por Claudinei Lima";
@@ -262,6 +283,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               width={38}
               height={38}
               decoding="async"
+              onError={() => setLogoErro(true)}
               className="size-9 sm:size-9.5 rounded-full object-cover shadow-sm scale-105 transition-transform duration-200 group-hover:scale-110 shrink-0"
             />
             <span className="font-extrabold text-lg sm:text-xl tracking-tight text-foreground group-hover:text-g-blue transition-colors select-none">
@@ -332,19 +354,36 @@ export function AppShell({ children }: { children: ReactNode }) {
               title="Voltar para a página inicial"
             >
               <picture className="w-full block">
-                <source
-                  type="image/webp"
-                  srcSet={`/capa.webp?v=${ASSET_VERSION} 1x, /capa@2x.webp?v=${ASSET_VERSION} 2x`}
-                />
-                <img
-                  src={bannerImgSrc}
-                  alt={bannerAltText}
-                  width={1024}
-                  height={384}
-                  loading="eager"
-                  decoding="async"
-                  className={`w-full aspect-[16/10] max-h-[220px] sm:aspect-[16/9] sm:max-h-[300px] lg:aspect-[21/9] lg:max-h-[360px] object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
-                />
+                {usarBannerPadrao ? (
+                  <>
+                    <source type="image/webp" srcSet={defaultCapaWebp} />
+                    <img
+                      src={defaultCapaJpg}
+                      alt={bannerAltText}
+                      width={1024}
+                      height={384}
+                      loading="eager"
+                      decoding="async"
+                      onError={(e) => {
+                        if (e.currentTarget.src !== defaultCapaJpg) {
+                          e.currentTarget.src = defaultCapaJpg;
+                        }
+                      }}
+                      className={`w-full aspect-[16/10] max-h-[220px] sm:aspect-[16/9] sm:max-h-[300px] lg:aspect-[21/9] lg:max-h-[360px] object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
+                    />
+                  </>
+                ) : (
+                  <img
+                    src={customBannerSrc}
+                    alt={bannerAltText}
+                    width={1024}
+                    height={384}
+                    loading="eager"
+                    decoding="async"
+                    onError={() => setBannerErro(true)}
+                    className={`w-full aspect-[16/10] max-h-[220px] sm:aspect-[16/9] sm:max-h-[300px] lg:aspect-[21/9] lg:max-h-[360px] object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
+                  />
+                )}
               </picture>
             </Link>
           </div>
