@@ -76,8 +76,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-// Google Search Console: substitua o token abaixo pelo fornecido pelo Google quando disponível
-export const GOOGLE_SITE_VERIFICATION_CODE = "SEU_CODIGO_DE_VERIFICACAO_AQUI";
+// Google Search Console: código de verificação configurado
+export const GOOGLE_SITE_VERIFICATION_CODE = "_0lRR9Pzm3SbCOfQsK7zaGAfGvBqPNvd51z1ze5SFug";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -121,7 +121,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-     <html lang="pt-BR">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>
