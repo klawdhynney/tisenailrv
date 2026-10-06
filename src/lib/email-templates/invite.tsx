@@ -23,28 +23,26 @@ export const InviteEmail = ({
   siteUrl,
   confirmationUrl,
 }: InviteEmailProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="pt-BR" dir="ltr">
     <Head>
       <style>{darkModeCss}</style>
     </Head>
-    <Preview>You've been invited to join {siteName}</Preview>
+    <Preview>Você recebeu um convite para acessar o {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>You've been invited</Heading>
+        <Heading style={h1}>Você recebeu um convite</Heading>
         <Text style={text}>
-          You've been invited to join{' '}
+          Você foi convidado para acessar o{' '}
           <Link href={siteUrl} style={link}>
             <strong>{siteName}</strong>
           </Link>
-          . Click the button below to accept the invitation and create your
-          account.
+          . Clique no botão abaixo para aceitar o convite e criar sua conta.
         </Text>
         <Button className="dm-btn" style={button} href={confirmationUrl}>
-          Accept Invitation
+          Aceitar convite
         </Button>
         <Text style={footer}>
-          If you weren't expecting this invitation, you can safely ignore this
-          email.
+          Se você não esperava este convite, ignore este e-mail com segurança.
         </Text>
       </Container>
     </Body>
@@ -58,7 +56,7 @@ const container = { padding: '20px 25px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  color: '#000080',
   margin: '0 0 20px',
 }
 const text = {
@@ -69,10 +67,10 @@ const text = {
 }
 const link = { color: 'inherit', textDecoration: 'underline' }
 const button = {
-  backgroundColor: '#000000',
+  backgroundColor: '#228B22',
   color: '#ffffff',
   fontSize: '14px',
-  border: '1px solid #000000',
+  border: '1px solid #228B22',
   borderRadius: '8px',
   padding: '12px 20px',
   textDecoration: 'none',

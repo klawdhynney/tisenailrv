@@ -55,5 +55,5 @@ Avisos no Teams e Outlook permanecem adiados para outro upgrade.
 
 ## E-mails de acesso e Apple
 
-- [ ] Criar e personalizar os seis e-mails de acesso do sistema.
-- [ ] Adicionar a opção Entrar com Apple e ativar o provedor gerenciado.
+- [x] Criar e personalizar os seis e-mails de acesso do sistema.
+- [x] Adicionar a opção Entrar com Apple e ativar o provedor gerenciado.

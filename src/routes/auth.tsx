@@ -21,12 +21,12 @@ export const Route = createFileRoute("/auth")({
       { title: "Entrar | TI Senai LRV" },
       {
         name: "description",
-        content: "Acesse seus chamados com autenticação segura via conta Google ou Microsoft.",
+        content: "Acesse seus chamados com autenticação segura via Apple, Google ou Microsoft.",
       },
       { property: "og:title", content: "Entrar | TI Senai LRV" },
       {
         property: "og:description",
-        content: "Acesse e acompanhe seus chamados com autenticação Google ou Microsoft.",
+        content: "Acesse e acompanhe seus chamados com autenticação Apple, Google ou Microsoft.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -42,7 +42,7 @@ function AuthPage() {
   const navigate = useNavigate();
   const router = useRouter();
 
-  const [carregandoOAuth, setCarregandoOAuth] = useState<"google" | "microsoft" | null>(null);
+  const [carregandoOAuth, setCarregandoOAuth] = useState<"apple" | "google" | "microsoft" | null>(null);
 
   // Lê returnTo ou redirectTo da busca ou do sessionStorage persistido antes do OAuth
   const destino = useMemo(() => {
@@ -93,7 +93,10 @@ function AuthPage() {
     }
   }, [session, authPronto, isGestor, destino, navigate]);
 
-  async function entrarComOAuth(provider: "google" | "microsoft") {
+  const nomeProvedor = (provider: "apple" | "google" | "microsoft") =>
+    provider === "apple" ? "Apple" : provider === "google" ? "Google" : "Microsoft";
+
+  async function entrarComOAuth(provider: "apple" | "google" | "microsoft") {
     if (carregandoOAuth) return;
     setCarregandoOAuth(provider);
 
@@ -115,7 +118,7 @@ function AuthPage() {
 
         if (r.error) {
           console.warn("Lovable OAuth fallback para Supabase:", r.error);
-          const sbProvider = provider === "microsoft" ? "azure" : "google";
+          const sbProvider = provider === "microsoft" ? "azure" : provider;
           const { error: sbErr } = await supabase.auth.signInWithOAuth({
             provider: sbProvider,
             options: {
@@ -132,13 +135,13 @@ function AuthPage() {
           toast.info("A tentativa de conexão foi cancelada.");
         } else {
           toast.error(
-            `Não foi possível conectar com ${provider === "google" ? "Google" : "Microsoft"}. Verifique as configurações de login.`
+            `Não foi possível conectar com ${nomeProvedor(provider)}. Verifique as configurações de login.`
           );
         }
       } finally {
         setCarregandoOAuth(null);
       }
-    }, { text: `Conectando com ${provider === "google" ? "Google" : "Microsoft"}...` });
+    }, { text: `Conectando com ${nomeProvedor(provider)}...` });
   }
 
   const desconectar = async () => {
@@ -166,7 +169,7 @@ function AuthPage() {
             Acesso ao Sistema
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
-            Identifique-se com sua conta Google ou Microsoft para abrir chamados e acompanhar atendimentos.
+            Identifique-se com sua conta Apple, Google ou Microsoft para abrir chamados e acompanhar atendimentos.
           </p>
         </div>
 
@@ -205,8 +208,21 @@ function AuthPage() {
             </div>
           </div>
         ) : (
-          /* Dois botões grandes e claros: Google e Microsoft */
+          /* Opções de entrada social */
           <div className="space-y-3.5 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={Boolean(carregandoOAuth)}
+              onClick={() => entrarComOAuth("apple")}
+              className="w-full h-13 rounded-2xl border-2 border-border/80 hover:border-foreground/50 bg-card hover:bg-muted/40 shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-3 text-sm sm:text-base font-bold text-foreground"
+            >
+              <svg className="size-5 shrink-0 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17.05 12.54c-.03-3.1 2.53-4.61 2.65-4.68a5.7 5.7 0 0 0-4.49-2.43c-1.89-.2-3.72 1.13-4.68 1.13-.98 0-2.46-1.11-4.06-1.08a5.96 5.96 0 0 0-5.02 3.06c-2.18 3.77-.55 9.31 1.53 12.36 1.04 1.49 2.25 3.15 3.85 3.09 1.56-.06 2.14-.99 4.02-.99 1.86 0 2.41.99 4.03.95 1.68-.03 2.73-1.49 3.73-2.99a12.3 12.3 0 0 0 1.71-3.48 5.35 5.35 0 0 1-3.27-4.94ZM13.97 3.43A5.41 5.41 0 0 0 15.21 0a5.5 5.5 0 0 0-3.56 1.63 5.16 5.16 0 0 0-1.27 3.29 4.55 4.55 0 0 0 3.59-1.49Z" />
+              </svg>
+              <span>{carregandoOAuth === "apple" ? "Conectando à Apple..." : "Entrar com Apple"}</span>
+            </Button>
+
             {/* Botão Entrar com Google */}
             <Button
               type="button"
