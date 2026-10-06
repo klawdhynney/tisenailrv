@@ -451,7 +451,7 @@ export function TicketChat({
           className="text-xs sm:text-sm min-h-[50px] max-h-[120px] resize-none rounded-xl bg-background"
         />
 
-        {isGestorOrAdmin && novoTexto.trim().length >= 2 && (
+        {novoTexto.trim().length >= 2 && (
           <Button
             type="button"
             variant="outline"
@@ -462,7 +462,7 @@ export function TicketChat({
             title="Aprimorar texto com IA baseado no contexto do chamado"
           >
             <Sparkles className="size-3.5" />
-            <span className="hidden md:inline">{aprimorando ? "Aprimorando..." : "Aprimorar"}</span>
+            <span className="hidden md:inline">{aprimorando ? "Aprimorando..." : "Aprimorar com IA"}</span>
           </Button>
         )}
 

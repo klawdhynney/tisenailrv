@@ -13,6 +13,7 @@ import {
   PlusCircle,
   RefreshCw,
   SendHorizontal,
+  Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
@@ -292,6 +293,9 @@ function MeusChamados() {
   const [rows, setRows] = useState<OwnTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [atualizandoTicketId, setAtualizandoTicketId] = useState<number | null>(null);
+  const [textoAtualizacao, setTextoAtualizacao] = useState<Record<number, string>>({});
+  const [salvandoId, setSalvandoId] = useState<number | null>(null);
   const [emailLocal, setEmailLocal] = useState<string | null>(null);
   const [whatsappLocal, setWhatsappLocal] = useState<string | null>(null);
 
@@ -408,11 +412,11 @@ function MeusChamados() {
     void load();
   }, [activeEmail, activeWhatsapp, session?.user?.id]);
 
-  async function addInformation(id: number, customText?: string) {
+  async function addInformation(id: number, customText?: string): Promise<boolean> {
     const text = (customText ?? drafts[id])?.trim();
     if (!text || text.length < 3) {
       toast.error("Escreva pelo menos 3 caracteres.");
-      return;
+      return false;
     }
 
     if (!session) {
@@ -428,7 +432,7 @@ function MeusChamados() {
         ),
       );
       if (!customText) setDrafts((prev) => ({ ...prev, [id]: "" }));
-      return;
+      return true;
     }
 
     const { error } = await supabase.rpc("add_ticket_information", {
@@ -438,10 +442,50 @@ function MeusChamados() {
 
     if (error) {
       toast.error("Não foi possível enviar as informações.");
+      return false;
     } else {
       if (!customText) toast.success("Informações enviadas com sucesso!");
       if (!customText) setDrafts((prev) => ({ ...prev, [id]: "" }));
       await load();
+      return true;
+    }
+  }
+
+  async function handleSalvarAtualizacao(t: OwnTicket) {
+    const texto = (textoAtualizacao[t.id] || "").trim();
+    if (!texto || texto.length < 3) {
+      toast.error("Escreva pelo menos 3 caracteres para atualizar.");
+      return;
+    }
+    setSalvandoId(t.id);
+    try {
+      const ok = await addInformation(t.id, texto);
+      if (ok) {
+        // Envia também uma mensagem na conversa se autenticado para notificar a equipe de TI
+        if (session?.user?.id) {
+          try {
+            await supabase.from("ticket_mensagens").insert({
+              ticket_id: t.id,
+              user_id: session.user.id,
+              autor_nome: session.user.user_metadata?.full_name || t.solicitante || "Solicitante",
+              autor_email: session.user.email || t.email,
+              autor_tipo: "solicitante",
+              mensagem: `[Atualização do Chamado]: ${texto}`,
+            });
+          } catch (e) {
+            console.warn("Falha ao registrar mensagem complementar no chat:", e);
+          }
+        }
+        setTextoAtualizacao((prev) => ({ ...prev, [t.id]: "" }));
+        setAtualizandoTicketId(null);
+        toast.success("Chamado atualizado com sucesso!");
+        await load();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Ocorreu um erro ao atualizar o chamado.");
+    } finally {
+      setSalvandoId(null);
     }
   }
 
@@ -615,6 +659,75 @@ function MeusChamados() {
               {/* Descrição */}
               <div className="rounded-xl bg-muted/40 p-3.5 text-sm text-foreground/90 border border-border/40 whitespace-pre-wrap leading-relaxed">
                 {t.descricao}
+              </div>
+
+              {/* Atualização e Complemento do Chamado com IA */}
+              <div className="rounded-xl border border-purple-200/80 dark:border-purple-900/50 bg-purple-50/30 dark:bg-purple-950/15 p-3.5 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                    <Sparkles className="size-3.5 text-purple-600 dark:text-purple-400" />
+                    <span>Atualização e Complemento do Chamado</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAtualizandoTicketId(atualizandoTicketId === t.id ? null : t.id)}
+                    className="h-8 text-xs font-semibold text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800 hover:bg-purple-100/60 dark:hover:bg-purple-900/40 gap-1.5 shadow-2xs"
+                  >
+                    <Sparkles className="size-3.5 text-purple-600 dark:text-purple-400" />
+                    <span>{atualizandoTicketId === t.id ? "Fechar atualização" : "Atualizar chamado com IA"}</span>
+                  </Button>
+                </div>
+
+                {atualizandoTicketId === t.id ? (
+                  <div className="pt-2 space-y-3 border-t border-purple-200/60 dark:border-purple-900/50 animate-in fade-in">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Descreva o novo comportamento do problema ou detalhes adicionais. Clique em <strong>Aprimorar com IA</strong> para estruturar sua mensagem antes de salvar.
+                    </p>
+                    <TextoAssistido
+                      value={textoAtualizacao[t.id] || ""}
+                      onChange={(val) => setTextoAtualizacao((prev) => ({ ...prev, [t.id]: val }))}
+                      placeholder="Ex.: O problema voltou a ocorrer por volta das 14h, e agora a máquina exibe uma mensagem de falha ao salvar..."
+                      rows={3}
+                      ticketId={t.id}
+                      titulo={t.setor ? `Chamado #${t.id} - ${t.setor}` : `Chamado #${t.id}`}
+                      descricao={t.descricao}
+                      categoria={t.setor}
+                      local={t.local}
+                    />
+                    <div className="flex flex-wrap justify-end items-center gap-2 pt-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setAtualizandoTicketId(null)}
+                        className="text-xs h-8"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="google-blue"
+                        onClick={() => void handleSalvarAtualizacao(t)}
+                        disabled={salvandoId === t.id || !((textoAtualizacao[t.id] || "").trim().length >= 3)}
+                        className="text-xs font-bold gap-1.5 h-8 shadow-xs"
+                      >
+                        {salvandoId === t.id ? (
+                          <RefreshCw className="size-3.5 animate-spin" />
+                        ) : (
+                          <SendHorizontal className="size-3.5" />
+                        )}
+                        Salvar atualização
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">
+                    O problema mudou ou você tem novas informações? Clique em <strong>Atualizar chamado com IA</strong> para complementar os dados diretamente para os técnicos.
+                  </p>
+                )}
               </div>
 
               {/* Procedimento / Resposta da TI */}

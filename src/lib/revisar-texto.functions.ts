@@ -272,7 +272,7 @@ export const revisarTexto = createServerFn({ method: "POST" })
       partesAprimorar.push("---------------------------");
     }
 
-    partesAprimorar.push("Texto do técnico a aprimorar:", data.texto.trim());
+    partesAprimorar.push("Texto a aprimorar:", data.texto.trim());
 
     const userMessage = partesAprimorar.join("\n");
 

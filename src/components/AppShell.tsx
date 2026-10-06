@@ -383,7 +383,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="mb-6 sm:mb-8 w-full" id="banner-capa-container">
             <Link
               to="/"
-              className="group block w-full overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs transition-all duration-300 hover:border-g-blue/60 hover:shadow-md"
+              className="group block w-full overflow-hidden rounded-2xl border border-border/80 bg-[#0353c4] dark:bg-card shadow-xs transition-all duration-300 hover:border-g-blue/60 hover:shadow-md"
               title="Voltar para a página inicial"
             >
               <picture className="w-full block">
@@ -402,7 +402,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                           e.currentTarget.src = defaultCapaJpg;
                         }
                       }}
-                      className={`w-full aspect-[16/10] max-h-[220px] sm:aspect-[16/9] sm:max-h-[300px] lg:aspect-[21/9] lg:max-h-[360px] object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
+                      className={`w-full aspect-[1024/384] max-h-[384px] object-contain sm:object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
                     />
                   </>
                 ) : (
@@ -414,7 +414,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     loading="eager"
                     decoding="async"
                     onError={() => setBannerErro(true)}
-                    className={`w-full aspect-[16/10] max-h-[220px] sm:aspect-[16/9] sm:max-h-[300px] lg:aspect-[21/9] lg:max-h-[360px] object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
+                    className={`w-full aspect-[1024/384] max-h-[384px] object-contain sm:object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
                   />
                 )}
               </picture>
