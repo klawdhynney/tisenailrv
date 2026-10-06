@@ -76,6 +76,9 @@ function formatarDetalhesAuditoria(det: any): string {
 
 export function GestaoUsuarios() {
   const { session, isAdmin } = useStore();
+  // A estrutura administrativa já existe no banco, mas ainda não faz parte dos
+  // tipos gerados neste checkout. Restrinja este escape ao painel autenticado.
+  const adminDb = supabase as any;
   const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([]);
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [preRegistros, setPreRegistros] = useState<PreRegistered[]>([]);
@@ -106,23 +109,23 @@ export function GestaoUsuarios() {
       let listaUsuarios: UsuarioAdmin[] = [];
 
       // Carregar contagem de chamados por e-mail para garantir total de chamados sempre atualizado
-      const { data: ticketsEmail } = await supabase.from("tickets").select("email");
+      const { data: ticketsEmail } = await supabase.from("tickets").select("solicitante_email");
       const contagemChamados = new Map<string, number>();
       if (ticketsEmail && Array.isArray(ticketsEmail)) {
         for (const t of ticketsEmail) {
-          if (t.email) {
-            const em = t.email.toLowerCase().trim();
+          if (t.solicitante_email) {
+            const em = t.solicitante_email.toLowerCase().trim();
             contagemChamados.set(em, (contagemChamados.get(em) ?? 0) + 1);
           }
         }
       }
 
       // 1. Carregar lista de usuários via RPC segura
-      const { data: usersData, error: usersErr } = await supabase.rpc("admin_get_users");
+      const { data: usersData, error: usersErr } = await adminDb.rpc("admin_get_users");
       if (usersErr) {
         console.warn("RPC admin_get_users:", usersErr.message);
         // Fallback: carregar perfis caso a RPC ainda esteja sincronizando
-        const { data: fallbackProfiles } = await supabase.from("user_profiles").select("*");
+        const { data: fallbackProfiles } = await adminDb.from("user_profiles").select("*");
         if (fallbackProfiles && fallbackProfiles.length > 0) {
           listaUsuarios = fallbackProfiles.map((p) => {
             const emailLimpo = (p.email || "").toLowerCase().trim();
@@ -189,7 +192,7 @@ export function GestaoUsuarios() {
       setUsuarios(listaUsuarios);
 
       // 2. Carregar logs de auditoria
-      const { data: logsData } = await supabase
+      const { data: logsData } = await adminDb
         .from("audit_logs_usuarios")
         .select("*")
         .order("created_at", { ascending: false })
@@ -211,7 +214,7 @@ export function GestaoUsuarios() {
       }
 
       // 3. Carregar pré-cadastros
-      const { data: preData } = await supabase
+      const { data: preData } = await adminDb
         .from("pre_registered_roles")
         .select("*")
         .order("created_at", { ascending: false });
@@ -346,7 +349,7 @@ export function GestaoUsuarios() {
       }
 
       // Registrar histórico de auditoria
-      const { error: errAudit } = await supabase.from("audit_logs_usuarios").insert({
+      const { error: errAudit } = await adminDb.from("audit_logs_usuarios").insert({
         admin_id: session?.user?.id,
         admin_email: session?.user?.email || "admin@senai.br",
         alvo_email: "todos os usuários cadastrados",
@@ -387,7 +390,7 @@ export function GestaoUsuarios() {
     setSalvandoPapel(true);
     try {
       if (usuarioEditar.id.startsWith("pending-")) {
-        const { error } = await supabase.rpc("admin_preregister_role", {
+        const { error } = await adminDb.rpc("admin_preregister_role", {
           p_email: usuarioEditar.email,
           p_role: novoPapel,
         });
@@ -400,7 +403,7 @@ export function GestaoUsuarios() {
           await carregarDados();
         }
       } else {
-        const { error } = await supabase.rpc("admin_set_user_role", {
+        const { error } = await adminDb.rpc("admin_set_user_role", {
           target_user_id: usuarioEditar.id,
           new_role: novoPapel,
         });
@@ -429,7 +432,7 @@ export function GestaoUsuarios() {
 
     const novoStatus = !u.bloqueado;
     try {
-      const { error } = await supabase.rpc("admin_set_user_blocked", {
+      const { error } = await adminDb.rpc("admin_set_user_blocked", {
         target_user_id: u.id,
         should_block: novoStatus,
       });
@@ -459,7 +462,7 @@ export function GestaoUsuarios() {
     }
     setSalvandoPre(true);
     try {
-      const { error } = await supabase.rpc("admin_preregister_role", {
+      const { error } = await adminDb.rpc("admin_preregister_role", {
         p_email: limpo,
         p_role: papelPreCadastro,
       });
@@ -482,7 +485,7 @@ export function GestaoUsuarios() {
   // Remover pré-cadastro
   const handleRemoverPreCadastro = async (email: string) => {
     try {
-      const { error } = await supabase.from("pre_registered_roles").delete().eq("email", email);
+      const { error } = await adminDb.from("pre_registered_roles").delete().eq("email", email);
       if (error) {
         toast.error("Erro ao remover pré-cadastro.");
       } else {
