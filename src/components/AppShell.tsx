@@ -214,7 +214,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="cursor-pointer">
-              <Link to="/dashboard" search={{}} className="flex items-center gap-2">
+              <Link to="/dashboard" search={{ periodo: "todos" }} className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
                 <span>Dashboard</span>
               </Link>
@@ -260,7 +260,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     </DropdownMenu>
   ) : (
     <Button asChild variant="outline" size="sm" className="font-bold text-xs text-muted-foreground hover:text-foreground transition-colors shadow-2xs">
-      <Link to="/auth" search={{}}>
+      <Link to="/auth" search={{ redirectTo: undefined, returnTo: undefined, error: undefined, error_description: undefined }}>
         <LogIn className="h-3.5 w-3.5 mr-1" /> Entrar
       </Link>
     </Button>
@@ -368,7 +368,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </Button>
               ) : (
                 <Button asChild variant="outline" size="sm" onClick={() => setAberto(false)} className="font-bold text-xs">
-                  <Link to="/auth" search={{}}>
+                  <Link to="/auth" search={{ redirectTo: undefined, returnTo: undefined, error: undefined, error_description: undefined }}>
                     <LogIn className="h-3.5 w-3.5 mr-1" /> Entrar
                   </Link>
                 </Button>

@@ -127,7 +127,7 @@ export function GestaoUsuarios() {
         // Fallback: carregar perfis caso a RPC ainda esteja sincronizando
         const { data: fallbackProfiles } = await adminDb.from("user_profiles").select("*");
         if (fallbackProfiles && fallbackProfiles.length > 0) {
-          listaUsuarios = fallbackProfiles.map((p) => {
+          listaUsuarios = fallbackProfiles.map((p: any) => {
             const emailLimpo = (p.email || "").toLowerCase().trim();
             return {
               id: p.id,
@@ -328,7 +328,7 @@ export function GestaoUsuarios() {
           : "Ativo";
 
         return {
-          "Nome": u.nome || u.email.split("@")[0],
+          "Nome": u.nome || u.email.split("@")[0] || "Usuário",
           "E-mail": u.email,
           "Provedor": provNome,
           "Perfil": papelNome,
