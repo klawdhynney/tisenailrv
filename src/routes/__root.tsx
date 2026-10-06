@@ -15,6 +15,7 @@ import { StoreProvider } from "@/lib/store";
 import { LoadingProvider } from "@/lib/loading-context";
 import { AppShell } from "@/components/AppShell";
 import { Toaster } from "@/components/ui/sonner";
+import { TEMA_INLINE_SCRIPT } from "@/lib/tema";
 
 function NotFoundComponent() {
   return (
@@ -117,9 +118,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-     <html lang="pt-BR">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: TEMA_INLINE_SCRIPT }} />
       </head>
       <body>
         {children}

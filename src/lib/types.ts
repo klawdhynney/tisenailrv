@@ -117,6 +117,9 @@ export const CAMPOS_EXPORTACAO = [
   { id: "WhatsApp", label: "WhatsApp" },
 ] as const;
 
+export type { ModoTema, PaletaId, PaletaPersonalizadaConfig, TemaConfig } from "./tema";
+import { TEMA_CONFIG_PADRAO } from "./tema";
+
 export interface IdentidadeVisualConfig {
   tituloSite: string;
   nome?: string;
@@ -128,7 +131,7 @@ export interface IdentidadeVisualConfig {
   tituloAlt?: string;
   faviconUrl?: string;
   corPrimaria?: string;
-  temaPadrao: "claro" | "escuro" | "pastel";
+  temaPadrao: "claro" | "escuro" | "pastel" | "auto";
 }
 
 export const IDENTIDADE_VISUAL_PADRAO: IdentidadeVisualConfig = {
@@ -142,7 +145,7 @@ export const IDENTIDADE_VISUAL_PADRAO: IdentidadeVisualConfig = {
   tituloAlt: "TI SENAI LRV",
   faviconUrl: "/favicon.png",
   corPrimaria: "#1a73e8",
-  temaPadrao: "claro",
+  temaPadrao: "auto",
 };
 
 export interface PaginaInicialConfig {
@@ -630,6 +633,7 @@ export interface Regras {
   iaSuporte?: IaSuporteConfig | undefined;
   whatsapp?: WhatsappConfig | undefined;
   alertasEmail?: AlertasEmailConfig | undefined;
+  temaConfig?: TemaConfig | undefined;
 }
 
 export const FILTROS_PLANILHA = ["Mês", "Busca", "Por página", "Categoria", "Setor", "SLA"] as const;
@@ -851,5 +855,6 @@ export const REGRAS_PADRAO: Regras = {
   whatsapp: { ...WHATSAPP_PADRAO },
   sobre: { ...SOBRE_PADRAO },
   alertasEmail: { ...ALERTAS_EMAIL_PADRAO },
+  temaConfig: { ...TEMA_CONFIG_PADRAO },
 };
 

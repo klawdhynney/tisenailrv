@@ -54,6 +54,8 @@ import { ConfirmAction } from "@/components/ConfirmAction";
 import { useStore } from "@/lib/store-context";
 import { supabase } from "@/integrations/supabase/client";
 import { GestaoUsuarios } from "@/components/GestaoUsuarios";
+import { EditorTemaECores } from "@/components/EditorTemaECores";
+import { TEMA_CONFIG_PADRAO } from "@/lib/tema";
 import {
   CAMPOS_ABERTURA_PADRAO,
   CAMPOS_EXPORTACAO,
@@ -592,7 +594,27 @@ function Regras() {
               <Sparkles className="size-4 text-purple-600" /> IA de Suporte
             </TabsTrigger>
           )}
+          <TabsTrigger value="temas" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
+            <Palette className="size-4 text-purple-600" /> Tema & Cores
+          </TabsTrigger>
         </TabsList>
+
+        {/* ABA TEMA E CORES */}
+        <TabsContent value="temas" className="space-y-6 focus-visible:outline-none">
+          <EditorTemaECores
+            temaConfig={regras.temaConfig ?? TEMA_CONFIG_PADRAO}
+            isAdmin={isAdmin}
+            onChange={(novo) => {
+              salvar({ temaConfig: novo });
+              salvarIdentidade({ temaPadrao: novo.modoPadrao });
+            }}
+            onRestaurarPadrao={() => {
+              salvar({ temaConfig: TEMA_CONFIG_PADRAO });
+              salvarIdentidade({ temaPadrao: TEMA_CONFIG_PADRAO.modoPadrao });
+              toast.info("Configurações de tema padrão restauradas no rascunho. Clique em 'Salvar alterações' para persistir.");
+            }}
+          />
+        </TabsContent>
 
         {/* 1. ABA GERAL E IDENTIDADE */}
         <TabsContent value="geral" className="space-y-6 focus-visible:outline-none">
@@ -748,11 +770,15 @@ function Regras() {
                   <Label className="text-xs font-semibold">Tema padrão para novos visitantes</Label>
                   <select
                     className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm font-medium"
-                    value={ident.temaPadrao}
-                    onChange={(e) => salvarIdentidade({ temaPadrao: e.target.value as any })}
+                    value={regras.temaConfig?.modoPadrao ?? ident.temaPadrao ?? "auto"}
+                    onChange={(e) => {
+                      const m = e.target.value as any;
+                      salvarIdentidade({ temaPadrao: m });
+                      salvar({ temaConfig: { ...(regras.temaConfig ?? TEMA_CONFIG_PADRAO), modoPadrao: m } });
+                    }}
                   >
-                    <option value="claro">Tema Claro institucional (Padrão)</option>
-                    <option value="pastel">Tema Pastel suave</option>
+                    <option value="auto">Automático (segue o aparelho do usuário)</option>
+                    <option value="claro">Tema Claro institucional</option>
                     <option value="escuro">Tema Escuro moderno</option>
                   </select>
                 </div>

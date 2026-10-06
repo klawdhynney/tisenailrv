@@ -41,6 +41,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { CORES_SLA, MESES_DISPONIVEIS, type Ticket, type TipoGrafico, obterDataHojeCuiaba } from "@/lib/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLoading } from "@/lib/loading-context";
+import { obterPaletaInfo } from "@/lib/tema";
 
 export const Route = createFileRoute("/dashboard/")({
   ssr: false,
@@ -115,6 +116,25 @@ function usePrefersReducedMotion() {
   }, []);
 
   return reducedMotion;
+}
+
+function useTemaGrafico() {
+  const { regras } = useStore();
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const update = () => setIsDark(document.documentElement.classList.contains("dark"));
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+  const paletaAtiva = regras?.temaConfig?.paletaAtiva || "padrao";
+  const customConfig = regras?.temaConfig?.paletaPersonalizada;
+  const paletaInfo = obterPaletaInfo(paletaAtiva, customConfig);
+  const coresGrafico = isDark ? paletaInfo.coresGraficoEscuro : paletaInfo.coresGraficoClaro;
+  const serieHistorica = isDark ? paletaInfo.serieHistorica.escuro : paletaInfo.serieHistorica.claro;
+  return { isDark, paletaInfo, coresGrafico, serieHistorica };
 }
 
 const mesAtualPadrao = () => {
@@ -254,9 +274,11 @@ function Dashboard() {
           { name: "Outros", value: todosDados.slice(CORES.length - 1).reduce((n, x) => n + x.value, 0) },
         ];
 
+  const { coresGrafico } = useTemaGrafico();
+
   const cor = (nome: string, i: number) => {
     if (visao === "sla" && CORES_SLA[nome]?.bg) return CORES_SLA[nome].bg;
-    return CORES[i] ?? "#FFFFFF";
+    return coresGrafico[i % coresGrafico.length] ?? CORES[i % CORES.length] ?? "#FFFFFF";
   };
 
   const baixarResumo = async () => {
@@ -1041,10 +1063,12 @@ function GraficoSerieHistorica() {
     return [...mesesFiltrados].sort((a, b) => b.Total - a.Total)[0];
   }, [mesesFiltrados]);
 
+  const { serieHistorica: sh } = useTemaGrafico();
+
   const seriesConfig = [
-    { key: "Total", label: "Total de Chamados", cor: "#1a73e8", desc: "Volume total registrado no mês" },
-    { key: "Resolvidos", label: "Resolvidos", cor: "#34a853", desc: "Chamados com atendimento concluído" },
-    { key: "Em atendimento", label: "Em Atendimento", cor: "#f9ab00", desc: "Chamados em andamento pela equipe" },
+    { key: "Total", label: "Total de Chamados", cor: sh.linha, desc: "Volume total registrado no mês" },
+    { key: "Resolvidos", label: "Resolvidos", cor: sh.resolvidos, desc: "Chamados com atendimento concluído" },
+    { key: "Em atendimento", label: "Em Atendimento", cor: sh.emAtendimento, desc: "Chamados em andamento pela equipe" },
   ];
 
   return (
@@ -1237,35 +1261,33 @@ function GraficoSerieHistorica() {
                 }
               >
                 <defs>
-                  {/* Gradiente vertical oceânico: turquesa claro na superfície a azul-marinho profundo no fundo */}
+                  {/* Gradiente vertical oceânico calibrado com a paleta ativa */}
                   <linearGradient id="ocean-surface-to-deep" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.78} />
-                    <stop offset="28%" stopColor="#06b6d4" stopOpacity={0.65} />
-                    <stop offset="58%" stopColor="#0284c7" stopOpacity={0.52} />
-                    <stop offset="85%" stopColor="#0369a1" stopOpacity={0.42} />
-                    <stop offset="100%" stopColor="#0f172a" stopOpacity={0.28} />
+                    <stop offset="0%" stopColor={sh.gradienteOceano[0]} stopOpacity={0.78} />
+                    <stop offset="45%" stopColor={sh.gradienteOceano[1]} stopOpacity={0.52} />
+                    <stop offset="100%" stopColor={sh.gradienteOceano[2]} stopOpacity={0.28} />
                   </linearGradient>
 
                   <linearGradient id="wave-grad-1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#0284c7" stopOpacity={0.05} />
+                    <stop offset="0%" stopColor={sh.gradienteOceano[0]} stopOpacity={0.3} />
+                    <stop offset="100%" stopColor={sh.gradienteOceano[1]} stopOpacity={0.05} />
                   </linearGradient>
                   <linearGradient id="wave-grad-2" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.25} />
-                    <stop offset="100%" stopColor="#0369a1" stopOpacity={0.05} />
+                    <stop offset="0%" stopColor={sh.gradienteOceano[1]} stopOpacity={0.25} />
+                    <stop offset="100%" stopColor={sh.gradienteOceano[2]} stopOpacity={0.05} />
                   </linearGradient>
                   <linearGradient id="wave-grad-3" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0284c7" stopOpacity={0.2} />
-                    <stop offset="100%" stopColor="#0f172a" stopOpacity={0.05} />
+                    <stop offset="0%" stopColor={sh.gradienteOceano[1]} stopOpacity={0.2} />
+                    <stop offset="100%" stopColor={sh.gradienteOceano[2]} stopOpacity={0.05} />
                   </linearGradient>
 
                   <linearGradient id="hist-green" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                    <stop offset="5%" stopColor={sh.resolvidos} stopOpacity={0.35} />
+                    <stop offset="95%" stopColor={sh.resolvidos} stopOpacity={0.0} />
                   </linearGradient>
                   <linearGradient id="hist-yellow" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
+                    <stop offset="5%" stopColor={sh.emAtendimento} stopOpacity={0.35} />
+                    <stop offset="95%" stopColor={sh.emAtendimento} stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
 
@@ -1310,7 +1332,7 @@ function GraficoSerieHistorica() {
                     type="monotone"
                     dataKey="Total"
                     name="Total de Chamados"
-                    stroke="#06b6d4"
+                    stroke={sh.linha}
                     strokeWidth={3.5}
                     strokeLinecap="round"
                     dot={(props: any) => {
@@ -1321,8 +1343,8 @@ function GraficoSerieHistorica() {
                       const ratio = val / pico;
                       const isRaso = ratio < 0.38;
                       const isMedio = ratio >= 0.38 && ratio < 0.72;
-                      const corFundo = isRaso ? "#38bdf8" : isMedio ? "#0284c7" : "#0c4a6e";
-                      const corBorda = isRaso ? "#fef08a" : isMedio ? "#7dd3fc" : "#22d3ee";
+                      const corFundo = isRaso ? sh.gradienteOceano[0] : isMedio ? sh.gradienteOceano[1] : sh.gradienteOceano[2];
+                      const corBorda = isRaso ? "#fef08a" : isMedio ? sh.gradienteOceano[0] : sh.linha;
                       return (
                         <circle
                           key={`dot-total-${props.key || cx}`}
@@ -1338,9 +1360,9 @@ function GraficoSerieHistorica() {
                     }}
                     activeDot={{
                       r: 8.5,
-                      stroke: "#22d3ee",
+                      stroke: sh.linha,
                       strokeWidth: 3,
-                      fill: "#082f49",
+                      fill: sh.gradienteOceano[2],
                     }}
                     isAnimationActive={!prefersReducedMotion}
                     animationDuration={prefersReducedMotion ? 0 : 700}
@@ -1351,10 +1373,10 @@ function GraficoSerieHistorica() {
                     type="monotone"
                     dataKey="Resolvidos"
                     name="Resolvidos"
-                    stroke="#10b981"
+                    stroke={sh.resolvidos}
                     strokeWidth={2.8}
-                    dot={{ r: 4, fill: "#10b981", stroke: "#ffffff", strokeWidth: 2 }}
-                    activeDot={{ r: 7, stroke: "#10b981", strokeWidth: 2.5, fill: "#ffffff" }}
+                    dot={{ r: 4, fill: sh.resolvidos, stroke: "#ffffff", strokeWidth: 2 }}
+                    activeDot={{ r: 7, stroke: sh.resolvidos, strokeWidth: 2.5, fill: "#ffffff" }}
                     isAnimationActive={!prefersReducedMotion}
                     animationDuration={prefersReducedMotion ? 0 : 650}
                   />
@@ -1364,10 +1386,10 @@ function GraficoSerieHistorica() {
                     type="monotone"
                     dataKey="Em atendimento"
                     name="Em Atendimento"
-                    stroke="#f59e0b"
+                    stroke={sh.emAtendimento}
                     strokeWidth={2.8}
-                    dot={{ r: 4, fill: "#f59e0b", stroke: "#ffffff", strokeWidth: 2 }}
-                    activeDot={{ r: 7, stroke: "#f59e0b", strokeWidth: 2.5, fill: "#ffffff" }}
+                    dot={{ r: 4, fill: sh.emAtendimento, stroke: "#ffffff", strokeWidth: 2 }}
+                    activeDot={{ r: 7, stroke: sh.emAtendimento, strokeWidth: 2.5, fill: "#ffffff" }}
                     isAnimationActive={!prefersReducedMotion}
                     animationDuration={prefersReducedMotion ? 0 : 650}
                   />
@@ -1383,18 +1405,18 @@ function GraficoSerieHistorica() {
               <span>Profundidade (volume de chamados):</span>
             </div>
             <div className="flex items-center gap-2 flex-1 max-w-xs min-w-[190px]">
-              <span className="text-[10px] font-bold text-sky-600 dark:text-sky-300 shrink-0">Raso</span>
+              <span className="text-[10px] font-bold text-muted-foreground shrink-0">Raso</span>
               <div
-                className="h-2.5 flex-1 rounded-full shadow-inner border border-cyan-700/20"
+                className="h-2.5 flex-1 rounded-full shadow-inner border border-border/50"
                 style={{
-                  background: "linear-gradient(90deg, #fef08a 0%, #38bdf8 25%, #0284c7 60%, #082f49 100%)",
+                  background: `linear-gradient(90deg, ${sh.gradienteOceano[0]} 0%, ${sh.gradienteOceano[1]} 50%, ${sh.gradienteOceano[2]} 100%)`,
                 }}
-                title="Escala de profundidade por volume"
+                title="Escala de profundidade por volume da paleta"
               />
-              <span className="text-[10px] font-bold text-blue-900 dark:text-cyan-300 shrink-0">Profundo</span>
+              <span className="text-[10px] font-bold text-foreground shrink-0">Profundo</span>
             </div>
             <span className="text-[10px] text-muted-foreground hidden md:inline">
-              Águas rasas (tons areia/turquesa) a profundezas abissais (azuis escuros)
+              Gradiente harmônico calibrado pela paleta ativa
             </span>
           </div>
         </div>

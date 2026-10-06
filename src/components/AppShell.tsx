@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Users, Mail } from "lucide-react";
+import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Laptop, Check, Users, Mail } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useStore } from "@/lib/store-context";
+import { type ModoTema, aplicarTemaNoDocumento, resolverEhEscuro } from "@/lib/tema";
+import { supabase } from "@/integrations/supabase/client";
 import defaultIcone from "@/assets/icone.png";
 import defaultCapaWebp from "@/assets/capa.webp";
 import defaultCapaJpg from "@/assets/capa.jpg";
@@ -33,25 +35,89 @@ const navGestor = [
   { to: "/regras", label: "Painel de Ajustes", icon: Settings2 },
 ] as const;
 
-type Tema = "claro" | "escuro";
-
 export function AppShell({ children }: { children: ReactNode }) {
   const [aberto, setAberto] = useState(false);
-  const [tema, setTema] = useState<Tema>("claro");
-  useEffect(() => {
-    const salvo = localStorage.getItem("tema-ti");
-    const inicial: Tema = salvo === "escuro" ? salvo : "claro";
-    document.documentElement.classList.toggle("dark", inicial === "escuro");
-    document.documentElement.classList.remove("pastel");
-    setTema(inicial);
-  }, []);
-  const escolherTema = (novo: Tema) => {
-    document.documentElement.classList.toggle("dark", novo === "escuro");
-    document.documentElement.classList.remove("pastel");
-    localStorage.setItem("tema-ti", novo);
-    setTema(novo);
-  };
   const { isGestor, isAdmin, userRole, session, sair, regras, emailAlertsAtivos, alternarEmailAlertas } = useStore();
+
+  const [modoTema, setModoTema] = useState<ModoTema>(() => {
+    if (typeof window === "undefined") return "auto";
+    const salvoModo = localStorage.getItem("tema-ti-modo");
+    if (salvoModo && ["claro", "escuro", "auto"].includes(salvoModo)) {
+      return salvoModo as ModoTema;
+    }
+    const salvoLegado = localStorage.getItem("tema-ti");
+    if (salvoLegado === "escuro" || salvoLegado === "claro") {
+      return salvoLegado as ModoTema;
+    }
+    return "auto";
+  });
+
+  // Aplica tema no DOM e meta tag
+  useEffect(() => {
+    const paleta = regras?.temaConfig?.paletaAtiva || "padrao";
+    const custom = regras?.temaConfig?.paletaPersonalizada;
+    aplicarTemaNoDocumento({
+      modo: modoTema,
+      paleta,
+      custom,
+    });
+  }, [modoTema, regras?.temaConfig]);
+
+  // Carrega tema preferido do usuário se logado
+  useEffect(() => {
+    const uid = session?.user?.id;
+    if (!uid) return;
+    supabase
+      .from("user_profiles")
+      .select("tema_preferido")
+      .eq("id", uid)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.tema_preferido && ["claro", "escuro", "auto"].includes(data.tema_preferido)) {
+          const pref = data.tema_preferido as ModoTema;
+          setModoTema(pref);
+        }
+      });
+  }, [session?.user?.id]);
+
+  // Escuta alteração do prefers-color-scheme do sistema no modo automático
+  useEffect(() => {
+    if (modoTema !== "auto" || typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => {
+      const paleta = regras?.temaConfig?.paletaAtiva || "padrao";
+      const custom = regras?.temaConfig?.paletaPersonalizada;
+      aplicarTemaNoDocumento({
+        modo: "auto",
+        paleta,
+        custom,
+      });
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [modoTema, regras?.temaConfig]);
+
+  const escolherModoTema = async (novo: ModoTema) => {
+    setModoTema(novo);
+    const paleta = regras?.temaConfig?.paletaAtiva || "padrao";
+    const custom = regras?.temaConfig?.paletaPersonalizada;
+    aplicarTemaNoDocumento({
+      modo: novo,
+      paleta,
+      custom,
+    });
+    if (session?.user?.id) {
+      try {
+        await supabase
+          .from("user_profiles")
+          .update({
+            tema_preferido: novo,
+            updated_at: new Date().toISOString(),
+          } as any)
+          .eq("id", session.user.id);
+      } catch {}
+    }
+  };
   const [bannerErro, setBannerErro] = useState(false);
   const [logoErro, setLogoErro] = useState(false);
 
@@ -266,26 +332,59 @@ export function AppShell({ children }: { children: ReactNode }) {
     </Button>
   );
 
-  const alternarTema = () => {
-    const novo: Tema = tema === "escuro" ? "claro" : "escuro";
-    document.documentElement.classList.toggle("dark", novo === "escuro");
-    document.documentElement.classList.remove("pastel");
-    localStorage.setItem("tema-ti", novo);
-    setTema(novo);
-  };
-
-  const botaoAlternarTema = (mobile: boolean) => (
-    <Button
-      variant="ghost"
-      size={mobile ? "default" : "icon"}
-      onClick={alternarTema}
-      aria-label={tema === "escuro" ? "Alternar para modo claro" : "Alternar para modo escuro"}
-      title={tema === "escuro" ? "Alternar para modo claro" : "Alternar para modo escuro"}
-      className={mobile ? "justify-start font-medium gap-2 text-muted-foreground hover:text-foreground" : "h-8.5 w-8.5 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"}
-    >
-      {tema === "escuro" ? <Sun className="size-4 text-amber-400" /> : <Moon className="size-4" />}
-      {mobile && (tema === "escuro" ? "Modo Claro" : "Modo Escuro")}
-    </Button>
+  const seletorTemaDropdown = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`Tema visual: ${modoTema === "auto" ? "Automático (sistema)" : modoTema === "escuro" ? "Modo Escuro" : "Modo Claro"}`}
+          title={`Tema visual: ${modoTema === "auto" ? "Automático" : modoTema === "escuro" ? "Modo Escuro" : "Modo Claro"}`}
+          className="h-8.5 w-8.5 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {modoTema === "escuro" ? (
+            <Moon className="size-4 text-sky-400" />
+          ) : modoTema === "claro" ? (
+            <Sun className="size-4 text-amber-500" />
+          ) : (
+            <Laptop className="size-4 text-foreground/80" />
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
+          Tema de exibição
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => escolherModoTema("claro")}
+          className="flex items-center justify-between text-xs cursor-pointer font-medium"
+        >
+          <span className="flex items-center gap-2">
+            <Sun className="size-4 text-amber-500" /> Claro
+          </span>
+          {modoTema === "claro" && <Check className="size-4 text-g-blue" />}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => escolherModoTema("escuro")}
+          className="flex items-center justify-between text-xs cursor-pointer font-medium"
+        >
+          <span className="flex items-center gap-2">
+            <Moon className="size-4 text-sky-400" /> Escuro
+          </span>
+          {modoTema === "escuro" && <Check className="size-4 text-g-blue" />}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => escolherModoTema("auto")}
+          className="flex items-center justify-between text-xs cursor-pointer font-medium"
+        >
+          <span className="flex items-center gap-2">
+            <Laptop className="size-4 text-muted-foreground" /> Automático (sistema)
+          </span>
+          {modoTema === "auto" && <Check className="size-4 text-g-blue" />}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 
   return (
@@ -309,17 +408,20 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="ml-auto hidden items-center gap-2 lg:flex">
             {links(false)}
             {botaoConta}
-            {botaoAlternarTema(false)}
+            {seletorTemaDropdown}
           </nav>
-          <Button
-            variant="outline"
-            size="icon"
-            className="ml-auto lg:hidden min-h-[44px] min-w-[44px] h-11 w-11"
-            onClick={() => setAberto((v) => !v)}
-            aria-label="Abrir menu de navegação"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-1.5 lg:hidden ml-auto">
+            {seletorTemaDropdown}
+            <Button
+              variant="outline"
+              size="icon"
+              className="min-h-[44px] min-w-[44px] h-11 w-11"
+              onClick={() => setAberto((v) => !v)}
+              aria-label="Abrir menu de navegação"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </div>
         </ContainerPadrao>
         <div className="h-1 w-full bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
         {aberto && (
@@ -353,6 +455,38 @@ export function AppShell({ children }: { children: ReactNode }) {
               </>
             )}
             {links(true)}
+            <div className="space-y-1.5 pt-2 border-t border-border/60">
+              <span className="text-xs font-semibold text-muted-foreground">Tema de exibição:</span>
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-muted/60 rounded-xl">
+                <Button
+                  type="button"
+                  variant={modoTema === "claro" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => escolherModoTema("claro")}
+                  className="h-10 text-xs font-bold gap-1.5 cursor-pointer"
+                >
+                  <Sun className="size-3.5 text-amber-500" /> Claro
+                </Button>
+                <Button
+                  type="button"
+                  variant={modoTema === "escuro" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => escolherModoTema("escuro")}
+                  className="h-10 text-xs font-bold gap-1.5 cursor-pointer"
+                >
+                  <Moon className="size-3.5 text-sky-400" /> Escuro
+                </Button>
+                <Button
+                  type="button"
+                  variant={modoTema === "auto" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => escolherModoTema("auto")}
+                  className="h-10 text-xs font-bold gap-1.5 cursor-pointer"
+                >
+                  <Laptop className="size-3.5" /> Auto
+                </Button>
+              </div>
+            </div>
             <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-2">
               {session ? (
                 <Button
@@ -373,7 +507,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </Link>
                 </Button>
               )}
-              {botaoAlternarTema(false)}
             </div>
           </ContainerPadrao>
         )}
@@ -383,7 +516,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="mb-6 sm:mb-8 w-full" id="banner-capa-container">
             <Link
               to="/"
-              className="group block w-full overflow-hidden rounded-2xl border border-border/80 bg-[#0353c4] dark:bg-card shadow-xs transition-all duration-300 hover:border-g-blue/60 hover:shadow-md"
+              className="group block w-full overflow-hidden rounded-2xl border border-border/80 bg-primary dark:bg-card shadow-xs transition-all duration-300 hover:border-g-blue/60 hover:shadow-md"
               title="Voltar para a página inicial"
             >
               <picture className="w-full block">

@@ -148,6 +148,30 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
         ...(regrasSalvas.alertasEmail?.eventos || {}),
       },
     },
+    temaConfig: {
+      ...(REGRAS_PADRAO.temaConfig ?? {
+        modoPadrao: "auto",
+        paletaAtiva: "padrao",
+        paletaPersonalizada: {
+          corPrimaria: "#1A73E8",
+          corSucesso: "#34A853",
+          corAlerta: "#FBBC04",
+          corPerigo: "#EA4335",
+          corNeutra: "#1F2430",
+        },
+      }),
+      ...(regrasSalvas.temaConfig || {}),
+      paletaPersonalizada: {
+        ...(REGRAS_PADRAO.temaConfig?.paletaPersonalizada ?? {
+          corPrimaria: "#1A73E8",
+          corSucesso: "#34A853",
+          corAlerta: "#FBBC04",
+          corPerigo: "#EA4335",
+          corNeutra: "#1F2430",
+        }),
+        ...(regrasSalvas.temaConfig?.paletaPersonalizada || {}),
+      },
+    },
   };
 }
 
