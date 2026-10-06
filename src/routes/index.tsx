@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, FilePlus2, Activity, ClipboardList, CheckCircle2, Star, ExternalLink } from "lucide-react";
+import { ArrowRight, FilePlus2, Activity, ClipboardList, CheckCircle2, Star, ExternalLink, Clock, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
 import { AVALIACAO_PADRAO } from "@/lib/types";
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Inicio() {
-  const { publicStats, evaluationStats, regras, isGestor, isAdmin } = useStore();
+  const { publicStats, dailyStats, evaluationStats, regras, isGestor, isAdmin } = useStore();
   const total = publicStats.reduce((n, r) => n + r.total, 0);
   const andamento = publicStats
     .filter((r) => !["Resolvido", "Cancelado"].includes(r.status))
@@ -31,6 +31,9 @@ function Inicio() {
     .filter((r) => r.status === "Resolvido")
     .reduce((n, r) => n + r.total, 0);
 
+  const chamadosDia = dailyStats?.chamadosDoDia ?? 0;
+  const atendidosDia = dailyStats?.atendidosNoDia ?? 0;
+
   const badgeTexto = regras.paginaInicial?.badgeTexto || "Atendimento de TI · SENAI LRV";
   const tituloPrincipal = regras.paginaInicial?.titulo || "Bem-vindo à Central de Chamados de TI!";
   const subtituloPrincipal = regras.paginaInicial?.subtitulo || "Central oficial de suporte e serviços de Tecnologia da Informação do SENAI Lucas do Rio Verde.";
@@ -38,6 +41,8 @@ function Inicio() {
   const indTotal = regras.indicadores?.total ?? { titulo: "Total de chamados", desc: "Quantidade de chamados registrados.", ativo: true };
   const indAtend = regras.indicadores?.atendimento ?? { titulo: "Em atendimento", desc: "Chamados que estão sendo tratados pela equipe de TI.", ativo: true };
   const indResolv = regras.indicadores?.resolvidos ?? { titulo: "Resolvidos", desc: "Chamados que já foram concluídos.", ativo: true };
+  const indDia = regras.indicadores?.chamadosDia ?? { titulo: "Chamados do dia", desc: "Chamados abertos hoje.", ativo: true };
+  const indAtendDia = regras.indicadores?.atendidosDia ?? { titulo: "Atendidos no dia", desc: "Chamados concluídos hoje.", ativo: true };
 
   return (
     <div className="space-y-9">
@@ -67,9 +72,9 @@ function Inicio() {
           )}
 
           {/* Indicadores de desempenho posicionados junto à descrição */}
-          <div className="mt-8 w-full grid gap-4 sm:grid-cols-3 text-left">
+          <div className="mt-8 w-full grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 text-left">
             {indTotal.ativo && (
-              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-blue bg-card/95 p-5 shadow-sm backdrop-blur-xs">
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-blue bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -77,8 +82,8 @@ function Inicio() {
                     </span>
                     <strong className="mt-1 block text-3xl font-black text-g-blue">{total}</strong>
                   </div>
-                  <div className="flex size-12 items-center justify-center rounded-xl bg-g-blue/10 text-g-blue shrink-0 ml-2">
-                    <ClipboardList className="size-6" />
+                  <div className="flex size-11 items-center justify-center rounded-xl bg-g-blue/10 text-g-blue shrink-0 ml-2">
+                    <ClipboardList className="size-5" />
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
@@ -88,7 +93,7 @@ function Inicio() {
             )}
 
             {indAtend.ativo && (
-              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-yellow bg-card/95 p-5 shadow-sm backdrop-blur-xs">
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-yellow bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -96,8 +101,8 @@ function Inicio() {
                     </span>
                     <strong className="mt-1 block text-3xl font-black text-g-yellow">{andamento}</strong>
                   </div>
-                  <div className="flex size-12 items-center justify-center rounded-xl bg-g-yellow/10 text-amber-700 dark:text-amber-400 shrink-0 ml-2">
-                    <Activity className="size-6" />
+                  <div className="flex size-11 items-center justify-center rounded-xl bg-g-yellow/10 text-amber-700 dark:text-amber-400 shrink-0 ml-2">
+                    <Activity className="size-5" />
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
@@ -107,7 +112,7 @@ function Inicio() {
             )}
 
             {indResolv.ativo && (
-              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-green bg-card/95 p-5 shadow-sm backdrop-blur-xs">
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-green bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -115,12 +120,50 @@ function Inicio() {
                     </span>
                     <strong className="mt-1 block text-3xl font-black text-g-green">{resolvidos}</strong>
                   </div>
-                  <div className="flex size-12 items-center justify-center rounded-xl bg-g-green/10 text-g-green shrink-0 ml-2">
-                    <CheckCircle2 className="size-6" />
+                  <div className="flex size-11 items-center justify-center rounded-xl bg-g-green/10 text-g-green shrink-0 ml-2">
+                    <CheckCircle2 className="size-5" />
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
                   {indResolv.desc}
+                </p>
+              </div>
+            )}
+
+            {indDia.ativo !== false && (
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-sky-500 bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      {indDia.titulo}
+                    </span>
+                    <strong className="mt-1 block text-3xl font-black text-sky-600 dark:text-sky-400">{chamadosDia}</strong>
+                  </div>
+                  <div className="flex size-11 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0 ml-2">
+                    <Clock className="size-5" />
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
+                  {indDia.desc}
+                </p>
+              </div>
+            )}
+
+            {indAtendDia.ativo !== false && (
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-teal-500 bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      {indAtendDia.titulo}
+                    </span>
+                    <strong className="mt-1 block text-3xl font-black text-teal-600 dark:text-teal-400">{atendidosDia}</strong>
+                  </div>
+                  <div className="flex size-11 items-center justify-center rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 shrink-0 ml-2">
+                    <CheckCheck className="size-5" />
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
+                  {indAtendDia.desc}
                 </p>
               </div>
             )}

@@ -14,7 +14,6 @@ import {
 import { UserAvatar } from "@/components/UserAvatar";
 import { useStore } from "@/lib/store-context";
 import defaultIcone from "@/assets/icone.png";
-import defaultTitulo from "@/assets/titulo.png";
 import defaultCapa from "@/assets/capa.png";
 
 const ASSET_VERSION = "20261005_v3";
@@ -89,12 +88,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     rawLogo && !rawLogo.endsWith(".jpg") && !rawLogo.includes("senai-")
       ? (rawLogo.startsWith("data:") ? rawLogo : `${rawLogo}${rawLogo.includes("?") ? "&" : "?"}v=${ASSET_VERSION}`)
       : `${defaultIcone}?v=${ASSET_VERSION}`;
-
-  const rawTitulo = regras.identidadeVisual?.tituloUrl?.trim() || "";
-  const tituloSrc =
-    rawTitulo && !rawTitulo.endsWith(".jpg") && !rawTitulo.includes("senai-")
-      ? (rawTitulo.startsWith("data:") ? rawTitulo : `${rawTitulo}${rawTitulo.includes("?") ? "&" : "?"}v=${ASSET_VERSION}`)
-      : `${defaultTitulo}?v=${ASSET_VERSION}`;
 
   const tituloSite = regras.identidadeVisual?.tituloSite || "TI SENAI LRV";
   const textoRodape = regras.rodape?.textoDireitos || "© 2026 TI SENAI LRV • Todos os direitos reservados • Criado por Claudinei Lima";
@@ -264,14 +257,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               decoding="async"
               className="size-9 sm:size-9.5 rounded-full object-cover shadow-sm scale-105 transition-transform duration-200 group-hover:scale-110 shrink-0"
             />
-            <img
-              src={tituloSrc}
-              alt="TI SENAI LRV"
-              width={160}
-              height={36}
-              decoding="async"
-              className="h-7 sm:h-8.5 w-auto max-w-[155px] sm:max-w-[210px] object-contain transition-transform duration-200 group-hover:opacity-95"
-            />
+            <span className="font-extrabold text-lg sm:text-xl tracking-tight text-foreground group-hover:text-g-blue transition-colors select-none">
+              TI SENAI LRV
+            </span>
           </Link>
           <nav className="ml-auto hidden items-center gap-2 lg:flex">
             {links(false)}
@@ -333,7 +321,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="mb-6 sm:mb-8 w-full">
             <Link
               to="/"
-              className="group block w-full overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:scale-[1.008] hover:border-g-blue/60 hover:shadow-md active:scale-[0.995]"
+              className="group block w-full overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:scale-[1.006] hover:border-g-blue/60 hover:shadow-md active:scale-[0.995]"
               title="Voltar para a página inicial"
             >
               <img
@@ -343,7 +331,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 height={768}
                 loading="eager"
                 decoding="async"
-                className="aspect-[21/9] sm:aspect-[24/8] min-h-[140px] sm:min-h-[200px] max-h-[320px] w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.015]"
+                className="w-full aspect-[21/9] sm:aspect-[8/3] max-h-[340px] object-cover object-center transition-transform duration-500 group-hover:scale-[1.01]"
               />
             </Link>
           </div>
@@ -352,14 +340,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       </main>
       <footer className="mt-auto border-t border-border py-6 text-center text-xs text-muted-foreground">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-2 gap-y-1.5 px-4 sm:px-6 lg:px-8">
-          <img
-            src={logoSrc}
-            alt="Ícone TI SENAI LRV"
-            width={18}
-            height={18}
-            decoding="async"
-            className="size-4.5 rounded-full object-cover inline-block align-middle shrink-0"
-          />
           <span>{textoRodape}</span>
           {mostrarLgpd && (
             <>

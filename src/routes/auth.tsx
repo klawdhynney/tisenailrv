@@ -7,8 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { useLoading } from "@/lib/loading-context";
 import { Button } from "@/components/ui/button";
-import defaultIcone from "@/assets/icone.png";
-import defaultTitulo from "@/assets/titulo.png";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -41,19 +39,6 @@ function AuthPage() {
   const { wrapAsync, resetLoading } = useLoading();
   const search = Route.useSearch();
   const navigate = useNavigate();
-
-  const ASSET_VERSION = "20261005_v3";
-  const rawLogo = regras.identidadeVisual?.logoUrl?.trim() || "";
-  const logoSrc =
-    rawLogo && !rawLogo.endsWith(".jpg") && !rawLogo.includes("senai-")
-      ? (rawLogo.startsWith("data:") ? rawLogo : `${rawLogo}${rawLogo.includes("?") ? "&" : "?"}v=${ASSET_VERSION}`)
-      : `${defaultIcone}?v=${ASSET_VERSION}`;
-
-  const rawTitulo = regras.identidadeVisual?.tituloUrl?.trim() || "";
-  const tituloSrc =
-    rawTitulo && !rawTitulo.endsWith(".jpg") && !rawTitulo.includes("senai-")
-      ? (rawTitulo.startsWith("data:") ? rawTitulo : `${rawTitulo}${rawTitulo.includes("?") ? "&" : "?"}v=${ASSET_VERSION}`)
-      : `${defaultTitulo}?v=${ASSET_VERSION}`;
 
   const [carregandoOAuth, setCarregandoOAuth] = useState<"google" | "microsoft" | null>(null);
 
@@ -144,25 +129,10 @@ function AuthPage() {
   return (
     <div className="mx-auto max-w-md py-10 px-4 min-h-[70vh] flex flex-col justify-center">
       <div className="rounded-3xl border border-border/80 bg-card p-6 sm:p-8 shadow-xl space-y-6 border-t-4 border-t-g-blue">
-        {/* Cabeçalho */}
+        {/* Cabeçalho (somente texto) */}
         <div className="text-center space-y-3">
-          <div className="flex flex-col items-center justify-center gap-2.5">
-            <img
-              src={logoSrc}
-              alt="Ícone TI SENAI LRV"
-              width={64}
-              height={64}
-              decoding="async"
-              className="size-16 rounded-full object-cover shadow-md ring-4 ring-g-blue/15"
-            />
-            <img
-              src={tituloSrc}
-              alt="TI SENAI LRV"
-              width={160}
-              height={40}
-              decoding="async"
-              className="h-8 w-auto object-contain"
-            />
+          <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-g-blue/10 border border-g-blue/30 text-g-blue font-black tracking-tight text-base sm:text-lg shadow-2xs">
+            TI SENAI LRV
           </div>
           <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
             Acesso ao Sistema

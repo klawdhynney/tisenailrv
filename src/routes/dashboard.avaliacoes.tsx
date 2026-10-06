@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Star,
@@ -28,6 +28,7 @@ import {
   CartesianGrid,
   Tooltip,
   Cell,
+  LabelList,
 } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,16 @@ import { useStore } from "@/lib/store-context";
 import { AVALIACAO_PADRAO } from "@/lib/types";
 
 export const Route = createFileRoute("/dashboard/avaliacoes")({
+  ssr: false,
+  beforeLoad: async ({ location }) => {
+    const { data } = await supabase.auth.getUser();
+    if (!data?.user) {
+      throw redirect({
+        to: "/auth",
+        search: { redirectTo: location.pathname + (location.searchStr || "") },
+      });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Métricas de Avaliação e Satisfação | Dashboard | TI SENAI LRV" },
@@ -247,6 +258,11 @@ function PaginaAvaliacoes() {
       cor: CORES_NOTAS[nota] || "#1a73e8",
     }));
   }, [avaliacoesFiltradas, regras.avaliacoes]);
+
+  const totalAvaliacoesDist = useMemo(
+    () => dadosDistribuicao.reduce((acc, d) => acc + d.quantidade, 0),
+    [dadosDistribuicao],
+  );
 
   // Evolução temporal (agrupada por dia)
   const dadosEvolucao = useMemo(() => {
@@ -508,7 +524,7 @@ function PaginaAvaliacoes() {
               <CardContent className="pt-2">
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dadosDistribuicao} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                    <BarChart data={dadosDistribuicao} margin={{ top: 18, right: 10, left: -20, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" />
                       <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
@@ -519,8 +535,24 @@ function PaginaAvaliacoes() {
                           borderRadius: "12px",
                           fontSize: "12px",
                         }}
+                        formatter={(val: any) => {
+                          const num = Number(val) || 0;
+                          const perc = totalAvaliacoesDist > 0 ? ((num / totalAvaliacoesDist) * 100).toFixed(1) : "0";
+                          return [`${num} avaliações (${perc}%)`, "Frequência"];
+                        }}
                       />
                       <Bar dataKey="quantidade" name="Avaliações" radius={[6, 6, 0, 0]}>
+                        <LabelList
+                          dataKey="quantidade"
+                          position="top"
+                          formatter={(val: any) => {
+                            const n = Number(val) || 0;
+                            return totalAvaliacoesDist > 0 && n > 0
+                              ? `${((n / totalAvaliacoesDist) * 100).toFixed(0)}%`
+                              : "";
+                          }}
+                          className="fill-foreground text-[10px] font-semibold"
+                        />
                         {dadosDistribuicao.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.cor} />
                         ))}
