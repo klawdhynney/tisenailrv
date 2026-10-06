@@ -52,3 +52,8 @@ Avisos no Teams e Outlook permanecem adiados para outro upgrade.
 - [x] Abertura com local na descrição, botão verde, lembrança opcional dos dados, sugestões de palavras e resumo do chamado para WhatsApp após registro.
 - [x] Unificar revisão técnica na ação de aprimorar texto; entrada somente Google/Microsoft.
 - [x] Aplicar imagem SENAI enviada como favicon e validar telas e fluxos.
+
+## E-mails de acesso e Apple
+
+- [ ] Criar e personalizar os seis e-mails de acesso do sistema.
+- [ ] Adicionar a opção Entrar com Apple e ativar o provedor gerenciado.
