@@ -9,14 +9,20 @@ import capaJpg from "@/assets/capa.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "TI SENAI LRV | Início" },
-      { name: "description", content: "Central de Chamados de TI do Senai LRV." },
-      { property: "og:title", content: "TI SENAI LRV" },
-      { property: "og:description", content: "Central de Chamados de TI e indicadores públicos." },
+      { title: "TI SENAI LRV | Central de Chamados de TI" },
+      { name: "description", content: "Central de Atendimento e Suporte de TI do SENAI Lucas do Rio Verde. Abertura e acompanhamento de chamados." },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "/capa.webp?v=20261005_v5" },
+      { property: "og:url", content: "https://tisenailrv.app/" },
+      { property: "og:title", content: "TI SENAI LRV | Central de Chamados de TI" },
+      { property: "og:description", content: "Central de Atendimento e Suporte de TI do SENAI Lucas do Rio Verde. Abertura e acompanhamento de chamados." },
+      { property: "og:image", content: "https://tisenailrv.app/capa.webp" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "/capa.webp?v=20261005_v5" },
+      { name: "twitter:title", content: "TI SENAI LRV | Central de Chamados de TI" },
+      { name: "twitter:description", content: "Central de Atendimento e Suporte de TI do SENAI Lucas do Rio Verde. Abertura e acompanhamento de chamados." },
+      { name: "twitter:image", content: "https://tisenailrv.app/capa.webp" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://tisenailrv.app/" },
     ],
   }),
   component: Inicio,

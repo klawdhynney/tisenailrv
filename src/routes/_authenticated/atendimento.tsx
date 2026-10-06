@@ -9,6 +9,7 @@ export const Route = createFileRoute("/_authenticated/atendimento")({
   head: () => ({
     meta: [
       { title: "Atendimento de chamados | TI Senai LRV" },
+      { name: "robots", content: "noindex, nofollow" },
       { name: "description", content: "Fila de chamados recebidos para a equipe de TI assumir, atualizar e resolver." },
       { property: "og:title", content: "Atendimento de Chamados" },
       { property: "og:description", content: "Fila de atendimento da equipe de TI." },

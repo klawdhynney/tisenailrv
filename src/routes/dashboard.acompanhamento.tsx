@@ -35,6 +35,7 @@ export const Route = createFileRoute("/dashboard/acompanhamento")({
   head: () => ({
     meta: [
       { title: "Acompanhar chamados | TI SENAI LRV" },
+      { name: "robots", content: "noindex, nofollow" },
       { name: "description", content: "Acompanhamento dos chamados de TI, status, prioridades e prazos de SLA." },
     ],
   }),

@@ -12,6 +12,7 @@ export const Route = createFileRoute("/preferencias-email")({
   head: () => ({
     meta: [
       { title: "Preferências de E-mail | TI SENAI LRV" },
+      { name: "robots", content: "noindex, nofollow" },
       { name: "description", content: "Gerencie suas preferências de alertas e notificações por e-mail dos chamados de TI." },
     ],
   }),

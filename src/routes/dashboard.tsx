@@ -14,5 +14,8 @@ export const Route = createFileRoute("/dashboard")({
     }
     return { user: data.user };
   },
+  head: () => ({
+    meta: [{ name: "robots", content: "noindex, nofollow" }],
+  }),
   component: Outlet,
 });

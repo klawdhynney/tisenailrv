@@ -15,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/chamados")({
   head: () => ({
     meta: [
       { title: "Planilha de chamados | TI Senai LRV" },
+      { name: "robots", content: "noindex, nofollow" },
       { name: "description", content: "Planilhas mensais de chamados de TI de setembro a dezembro de 2026, com cores automáticas por prioridade e status." },
       { property: "og:title", content: "Planilha de Chamados de TI" },
       { property: "og:description", content: "Controle mensal dos chamados com SLA calculado automaticamente." },

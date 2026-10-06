@@ -18,6 +18,7 @@ import { sugerirRespostasAtendimento } from "@/lib/revisar-texto.functions";
 export const Route = createFileRoute("/_authenticated/chamados/$ticketId")({
   head: () => ({ meta: [
     { title: "Atender chamado | TI Senai LRV" },
+    { name: "robots", content: "noindex, nofollow" },
     { name: "description", content: "Atendimento e atualização de um chamado de TI pela equipe autorizada." },
     { property: "og:title", content: "Atender chamado | TI Senai LRV" },
     { property: "og:description", content: "Detalhes e atualização de chamado para gestores." },

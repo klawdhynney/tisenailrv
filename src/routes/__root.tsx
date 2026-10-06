@@ -76,21 +76,25 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+// Google Search Console: substitua o token abaixo pelo fornecido pelo Google quando disponível
+export const GOOGLE_SITE_VERIFICATION_CODE = "SEU_CODIGO_DE_VERIFICACAO_AQUI";
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-         { title: "TI SENAI LRV" },
-       { name: "description", content: "Abertura e acompanhamento de chamados de TI SENAI LRV." },
+      { title: "TI SENAI LRV" },
+      { name: "description", content: "Abertura e acompanhamento de chamados de TI SENAI LRV." },
       { name: "author", content: "Lovable" },
-         { property: "og:title", content: "TI SENAI LRV" },
-       { property: "og:description", content: "Abertura e acompanhamento de chamados de TI SENAI LRV." },
+      { property: "og:title", content: "TI SENAI LRV" },
+      { property: "og:description", content: "Abertura e acompanhamento de chamados de TI SENAI LRV." },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "/capa.webp?v=20261005_v5" },
+      { property: "og:image", content: "https://tisenailrv.app/capa.webp" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "/capa.webp?v=20261005_v5" },
+      { name: "twitter:image", content: "https://tisenailrv.app/capa.webp" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "google-site-verification", content: GOOGLE_SITE_VERIFICATION_CODE },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },

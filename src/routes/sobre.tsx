@@ -14,14 +14,26 @@ export const Route = createFileRoute("/sobre")({
         content:
           "Conheça o Sistema de Suporte de TI do SENAI LRV: abertura simplificada de chamados, gestão com inteligência, IA moderna e conformidade com a LGPD.",
       },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://tisenailrv.app/sobre" },
       { property: "og:title", content: "Sobre o Sistema de Suporte | TI SENAI LRV" },
       {
         property: "og:description",
         content:
           "Plataforma moderna de atendimento e gestão de chamados de tecnologia com alta eficiência e segurança.",
       },
-      { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://tisenailrv.app/capa.webp" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Sobre o Sistema de Suporte | TI SENAI LRV" },
+      {
+        name: "twitter:description",
+        content:
+          "Plataforma moderna de atendimento e gestão de chamados de tecnologia com alta eficiência e segurança.",
+      },
+      { name: "twitter:image", content: "https://tisenailrv.app/capa.webp" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://tisenailrv.app/sobre" },
     ],
   }),
   component: PaginaSobre,

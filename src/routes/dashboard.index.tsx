@@ -60,6 +60,7 @@ export const Route = createFileRoute("/dashboard/")({
   head: () => ({
     meta: [
       { title: "Dashboard de Chamados | TI SENAI LRV" },
+      { name: "robots", content: "noindex, nofollow" },
       { name: "description", content: "Gráficos interativos e indicadores de atendimento de TI SENAI LRV." },
       { property: "og:title", content: "Dashboard de Chamados | TI SENAI LRV" },
       { property: "og:description", content: "Acompanhe os indicadores dos chamados de TI." },

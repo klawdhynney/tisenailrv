@@ -19,6 +19,7 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Entrar | TI Senai LRV" },
+      { name: "robots", content: "noindex, nofollow" },
       {
         name: "description",
         content: "Acesse seus chamados com autenticação segura via Apple, Google ou Microsoft.",
