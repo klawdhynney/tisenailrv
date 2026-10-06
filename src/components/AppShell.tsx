@@ -214,7 +214,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="cursor-pointer">
-              <Link to="/dashboard" search={{ periodo: "todos" }} className="flex items-center gap-2">
+              <Link to="/dashboard" search={{ tipo: undefined }} className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
                 <span>Dashboard</span>
               </Link>
