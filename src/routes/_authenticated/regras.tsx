@@ -266,6 +266,7 @@ function Regras() {
   const { regras: regrasSalvas, setRegras, tickets, publicStats, removeTicket, isAdmin, session } = useStore();
   const [regras, setDraft] = useState(regrasSalvas);
   const [limpandoBanco, setLimpandoBanco] = useState(false);
+  const [busca, setBusca] = useState("");
   const [statusLimpeza, setStatusLimpeza] = useState<string | null>(null);
 
   useEffect(() => setDraft(regrasSalvas), [regrasSalvas]);
