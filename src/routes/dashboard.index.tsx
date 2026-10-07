@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate, isRedirect } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import {
   Area,
@@ -33,6 +33,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { calcularSla } from "@/lib/sla";
 import { useStore } from "@/lib/store-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,14 +47,19 @@ import { obterPaletaInfo } from "@/lib/tema";
 export const Route = createFileRoute("/dashboard/")({
   ssr: false,
   beforeLoad: async ({ location }) => {
-    const { data } = await supabase.auth.getUser();
-    if (!data?.user) {
-      throw redirect({
-        to: "/auth",
-        search: { redirectTo: location.pathname + (location.searchStr || "") },
-      });
+    try {
+      const { data } = await supabase.auth.getUser();
+      if (!data?.user) {
+        throw redirect({
+          to: "/auth",
+          search: { redirectTo: location.pathname + (location.searchStr || "") },
+        });
+      }
+      return { user: data.user };
+    } catch (err) {
+      if (isRedirect(err)) throw err;
+      return { user: null };
     }
-    return { user: data.user };
   },
   validateSearch: (search: Record<string, unknown>) => ({
     tipo: typeof search.tipo === "string" ? search.tipo : undefined,
@@ -212,14 +219,21 @@ function Dashboard() {
     }
   }, [tipoQuery]);
 
-  const linhas = useMemo(() => publicStats.filter((r) => mes === "todos" || r.mes === mes), [publicStats, mes]);
-  const total = linhas.reduce((n, r) => n + r.total, 0);
-  const resolvidos = linhas.filter((r) => r.status === "Resolvido").reduce((n, r) => n + r.total, 0);
-  const ativos = linhas.filter((r) => !["Resolvido", "Cancelado"].includes(r.status)).reduce((n, r) => n + r.total, 0);
+  const linhas = useMemo(
+    () => (publicStats || []).filter((r) => r && (mes === "todos" || r.mes === mes)),
+    [publicStats, mes]
+  );
+  const total = linhas.reduce((n, r) => n + (r?.total || 0), 0);
+  const resolvidos = linhas.filter((r) => r?.status === "Resolvido").reduce((n, r) => n + (r?.total || 0), 0);
+  const ativos = linhas.filter((r) => r && !["Resolvido", "Cancelado"].includes(r.status)).reduce((n, r) => n + (r?.total || 0), 0);
 
   const contar = (campo: "categoria" | "setor" | "prioridade" | "status") => {
     const mapa = new Map<string, number>();
-    for (const r of linhas) mapa.set(r[campo], (mapa.get(r[campo]) ?? 0) + r.total);
+    for (const r of linhas) {
+      if (!r) continue;
+      const chave = r[campo] || "Não informado";
+      mapa.set(chave, (mapa.get(chave) ?? 0) + (r.total || 0));
+    }
     return [...mapa].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   };
 
@@ -228,26 +242,31 @@ function Dashboard() {
 
   const dadosSla = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const t of progress) {
-      if (mes !== "todos" && !t.aberto_em.startsWith(mes)) continue;
-      const situacao = calcularSla(
-        {
-          abertoEm: t.aberto_em,
-          hora: t.hora,
-          prioridade: t.prioridade as Ticket["prioridade"],
-          status: t.status as Ticket["status"],
-          fechadoEm: t.fechado_em,
-          horario: t.horario,
-          slaReiniciadoEm: t.sla_reiniciado_em,
-          slaPausado: t.sla_pausado,
-          slaPausadoEm: t.sla_pausado_em,
-          slaPausaMotivo: t.sla_pausa_motivo,
-          slaSegundosPausadosAcumulados: t.sla_segundos_pausados_acumulados,
-        } as Ticket,
-        regras,
-        now,
-      ).situacao;
-      counts.set(situacao, (counts.get(situacao) ?? 0) + 1);
+    for (const t of progress || []) {
+      if (!t) continue;
+      if (mes !== "todos" && (!t.aberto_em || typeof t.aberto_em !== "string" || !t.aberto_em.startsWith(mes))) continue;
+      try {
+        const situacao = calcularSla(
+          {
+            abertoEm: t.aberto_em,
+            hora: t.hora,
+            prioridade: t.prioridade as Ticket["prioridade"],
+            status: t.status as Ticket["status"],
+            fechadoEm: t.fechado_em,
+            horario: t.horario,
+            slaReiniciadoEm: t.sla_reiniciado_em,
+            slaPausado: t.sla_pausado,
+            slaPausadoEm: t.sla_pausado_em,
+            slaPausaMotivo: t.sla_pausa_motivo,
+            slaSegundosPausadosAcumulados: t.sla_segundos_pausados_acumulados,
+          } as Ticket,
+          regras,
+          now,
+        ).situacao;
+        counts.set(situacao, (counts.get(situacao) ?? 0) + 1);
+      } catch (err) {
+        counts.set("—", (counts.get("—") ?? 0) + 1);
+      }
     }
     return ["No prazo", "Estourado", "SLA pausado", "Cancelado", "Aguardando", "—"]
       .filter((name) => counts.has(name))
@@ -359,219 +378,225 @@ function Dashboard() {
       </div>
 
       {/* Cartões de Indicadores Gerais do Topo */}
-      {indConf?.mostrarCards !== false && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {[
-            {
-              label: indConf?.totalLabel || "Total de chamados",
-              count: total,
-              border: "border-g-blue",
-              color: "text-g-blue",
-              desc: indConf?.totalDesc || "Quantidade de chamados registrados.",
-            },
-            {
-              label: indConf?.atendimentoLabel || "Em atendimento",
-              count: ativos,
-              border: "border-g-yellow",
-              color: "text-g-yellow",
-              desc: indConf?.atendimentoDesc || "Chamados que estão sendo tratados pela equipe de TI.",
-            },
-            {
-              label: indConf?.resolvidosLabel || "Resolvidos",
-              count: resolvidos,
-              border: "border-g-green",
-              color: "text-g-green",
-              desc: indConf?.resolvidosDesc || "Chamados que já foram concluídos.",
-            },
-            {
-              label: indConf?.chamadosDiaLabel || "Chamados do dia",
-              count: Math.max(
-                progress.filter((t) => t.aberto_em === obterDataHojeCuiaba()).length,
-                dailyStats?.chamadosDoDia ?? 0
-              ),
-              border: "border-sky-500",
-              color: "text-sky-600 dark:text-sky-400",
-              desc: indConf?.chamadosDiaDesc || "Chamados abertos hoje.",
-            },
-            {
-              label: indConf?.atendidosDiaLabel || "Atendidos no dia",
-              count: Math.max(
-                progress.filter(
-                  (t) => (t.status === "Resolvido" || t.status === "Concluído") && t.fechado_em === obterDataHojeCuiaba()
-                ).length,
-                dailyStats?.atendidosNoDia ?? 0
-              ),
-              border: "border-teal-500",
-              color: "text-teal-600 dark:text-teal-400",
-              desc: indConf?.atendidosDiaDesc || "Chamados concluídos hoje.",
-            },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className={`rounded-xl border-l-4 ${item.border} bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between`}
-            >
-              <div>
-                <p className="text-sm font-semibold text-muted-foreground">{item.label}</p>
-                <p className={`mt-1 text-3xl font-black tracking-tight ${item.color}`}>{item.count}</p>
+      <SectionErrorBoundary title="Indicadores Gerais do Topo">
+        {indConf?.mostrarCards !== false && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {[
+              {
+                label: indConf?.totalLabel || "Total de chamados",
+                count: total,
+                border: "border-g-blue",
+                color: "text-g-blue",
+                desc: indConf?.totalDesc || "Quantidade de chamados registrados.",
+              },
+              {
+                label: indConf?.atendimentoLabel || "Em atendimento",
+                count: ativos,
+                border: "border-g-yellow",
+                color: "text-g-yellow",
+                desc: indConf?.atendimentoDesc || "Chamados que estão sendo tratados pela equipe de TI.",
+              },
+              {
+                label: indConf?.resolvidosLabel || "Resolvidos",
+                count: resolvidos,
+                border: "border-g-green",
+                color: "text-g-green",
+                desc: indConf?.resolvidosDesc || "Chamados que já foram concluídos.",
+              },
+              {
+                label: indConf?.chamadosDiaLabel || "Chamados do dia",
+                count: Math.max(
+                  (progress || []).filter((t) => t?.aberto_em === obterDataHojeCuiaba()).length,
+                  dailyStats?.chamadosDoDia ?? 0
+                ),
+                border: "border-sky-500",
+                color: "text-sky-600 dark:text-sky-400",
+                desc: indConf?.chamadosDiaDesc || "Chamados abertos hoje.",
+              },
+              {
+                label: indConf?.atendidosDiaLabel || "Atendidos no dia",
+                count: Math.max(
+                  (progress || []).filter(
+                    (t) => (t?.status === "Resolvido" || t?.status === "Concluído") && t?.fechado_em === obterDataHojeCuiaba()
+                  ).length,
+                  dailyStats?.atendidosNoDia ?? 0
+                ),
+                border: "border-teal-500",
+                color: "text-teal-600 dark:text-teal-400",
+                desc: indConf?.atendidosDiaDesc || "Chamados concluídos hoje.",
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className={`rounded-xl border-l-4 ${item.border} bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between`}
+              >
+                <div>
+                  <p className="text-sm font-semibold text-muted-foreground">{item.label}</p>
+                  <p className={`mt-1 text-3xl font-black tracking-tight ${item.color}`}>{item.count}</p>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground/80 leading-snug">{item.desc}</p>
               </div>
-              <p className="mt-2 text-xs text-muted-foreground/80 leading-snug">{item.desc}</p>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </SectionErrorBoundary>
 
       {/* Seção Categórica e Filtros Unificados no mesmo Bloco */}
       <div className="border-t-2 border-border/80 pt-6 space-y-4">
-        <div className="no-print rounded-2xl border-2 border-g-blue/50 bg-card p-4 sm:p-5 shadow-xs transition-all space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-black text-foreground tracking-tight">Análise Categórica</h2>
-                <Badge variant="outline" className="text-[10px] text-g-blue border-g-blue/30 font-bold">
-                  Dimensões & Filtros
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Navegue pelas dimensões dos chamados e acompanhe a distribuição e proporção dos registros.
-              </p>
-            </div>
-
-            {/* Linha de Filtros integrada no mesmo bloco */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-xl border border-border/60">
-                <span className="text-xs font-black uppercase tracking-wider text-g-blue">Filtrar:</span>
-                <label className="flex items-center gap-2 text-xs font-bold text-foreground">
-                  <span>Mês</span>
-                  <select
-                    aria-label="Mês"
-                    className="h-8 min-w-36 rounded-lg border border-border bg-background px-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-g-blue cursor-pointer"
-                    value={mes}
-                    onChange={(e) => setMes(e.target.value)}
-                  >
-                    {MESES_DISPONIVEIS.map((m) => (
-                      <option key={m.key} value={m.key}>
-                        {m.label}
-                      </option>
-                    ))}
-                    <option value="todos">Todos os meses</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <Button asChild size="sm" variant="google-green" className="h-8 font-semibold shadow-xs text-xs">
-                  <Link to="/dashboard/acompanhamento">
-                    <ClipboardList className="size-3.5 mr-1" /> Acompanhar chamados
-                  </Link>
-                </Button>
-
-                <Button
-                  asChild
-                  size="sm"
-                  variant="outline"
-                  className="h-8 font-bold shadow-xs text-amber-600 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/10 text-xs"
-                >
-                  <Link to="/dashboard/avaliacoes">
-                    <Star className="size-3.5 mr-1 fill-amber-400 text-amber-500" /> Avaliações
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {tipoGrafico !== "historico" && (
-            <nav aria-label="Dimensões do dashboard" className="grid grid-cols-2 gap-2 md:grid-cols-5 pt-1">
-              {VISOES.map((v) => (
-                <Button
-                  key={v.id}
-                  variant={
-                    `google-${v.color}` as
-                      | "google-blue"
-                      | "google-red"
-                      | "google-yellow"
-                      | "google-green"
-                      | "google-purple"
-                  }
-                  aria-current={visao === v.id ? "page" : undefined}
-                  className={`h-auto min-h-11 whitespace-normal py-2 text-center text-xs sm:text-sm font-bold tracking-tight ${
-                    visao === v.id
-                      ? "ring-2 ring-white ring-offset-2 ring-offset-background shadow-md scale-[1.01]"
-                      : "opacity-85 hover:opacity-100"
-                  }`}
-                  onClick={() => setVisao(v.id)}
-                >
-                  {v.label}
-                </Button>
-              ))}
-            </nav>
-          )}
-        </div>
-
-        {/* Painel com Seletor de Tipo de Gráficos e Visualização */}
-        <div className="w-full">
-          <section
-            className="min-w-0 rounded-2xl border-2 border-border/80 bg-card p-4 sm:p-5 shadow-sm space-y-4"
-            aria-live="polite"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-3">
+        <SectionErrorBoundary title="Análise Categórica e Filtros">
+          <div className="no-print rounded-2xl border-2 border-g-blue/50 bg-card p-4 sm:p-5 shadow-xs transition-all space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div>
-                <h3 className="text-xl font-bold text-foreground">
-                  {tipoGrafico === "historico"
-                    ? "Série Histórica Contínua"
-                    : VISOES.find((v) => v.id === visao)?.label}
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  {tipoGrafico === "historico"
-                    ? "Evolução temporal mês a mês dos atendimentos registrados, resolvidos e em andamento."
-                    : "Distribuição e proporção dos registros filtrados."}
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-black text-foreground tracking-tight">Análise Categórica</h2>
+                  <Badge variant="outline" className="text-[10px] text-g-blue border-g-blue/30 font-bold">
+                    Dimensões & Filtros
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Navegue pelas dimensões dos chamados e acompanhe a distribuição e proporção dos registros.
                 </p>
               </div>
 
-              {/* Menu e Abas dos Gráficos com Cartões KPI em Primeiro e Série Histórica após os demais */}
-              <div className="no-print flex flex-wrap gap-1.5" aria-label="Tipo de gráfico">
-                <Button
-                  size="sm"
-                  variant={tipoGrafico === "kpi" ? "google-blue" : "outline"}
-                  onClick={() => setTipoGrafico("kpi")}
-                  title="Cartões de Indicadores (Big Numbers)"
-                  className="font-bold"
-                >
-                  <LayoutGrid className="size-3.5 mr-1" /> Cartões de Indicadores
-                </Button>
-                <Button
-                  size="sm"
-                  variant={tipoGrafico === "pizza" ? "google-blue" : "outline"}
-                  onClick={() => setTipoGrafico("pizza")}
-                  title="Gráfico de Rosca / Pizza"
-                >
-                  <PieChartIcon className="size-3.5 mr-1" /> Pizza
-                </Button>
-                <Button
-                  size="sm"
-                  variant={tipoGrafico === "barras" ? "google-blue" : "outline"}
-                  onClick={() => setTipoGrafico("barras")}
-                  title="Gráfico de Barras horizontais"
-                >
-                  <BarChart3 className="size-3.5 mr-1" /> Barras
-                </Button>
-                <Button
-                  size="sm"
-                  variant={tipoGrafico === "historico" ? "google-blue" : "outline"}
-                  onClick={() => setTipoGrafico("historico")}
-                  title="Série histórica por chamados"
-                >
-                  <Activity className="size-3.5 mr-1" /> Série Histórica
-                </Button>
+              {/* Linha de Filtros integrada no mesmo bloco */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-xl border border-border/60">
+                  <span className="text-xs font-black uppercase tracking-wider text-g-blue">Filtrar:</span>
+                  <label className="flex items-center gap-2 text-xs font-bold text-foreground">
+                    <span>Mês</span>
+                    <select
+                      aria-label="Mês"
+                      className="h-8 min-w-36 rounded-lg border border-border bg-background px-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-g-blue cursor-pointer"
+                      value={mes}
+                      onChange={(e) => setMes(e.target.value)}
+                    >
+                      {MESES_DISPONIVEIS.map((m) => (
+                        <option key={m.key} value={m.key}>
+                          {m.label}
+                        </option>
+                      ))}
+                      <option value="todos">Todos os meses</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button asChild size="sm" variant="google-green" className="h-8 font-semibold shadow-xs text-xs">
+                    <Link to="/dashboard/acompanhamento">
+                      <ClipboardList className="size-3.5 mr-1" /> Acompanhar chamados
+                    </Link>
+                  </Button>
+
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="outline"
+                    className="h-8 font-bold shadow-xs text-amber-600 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/10 text-xs"
+                  >
+                    <Link to="/dashboard/avaliacoes">
+                      <Star className="size-3.5 mr-1 fill-amber-400 text-amber-500" /> Avaliações
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </div>
 
-            <Grafico
-              key={`${visao}-${tipoGrafico}-${mes}`}
-              dados={dados}
-              tipo={tipoGrafico}
-              cor={cor}
-            />
-          </section>
+            {tipoGrafico !== "historico" && (
+              <nav aria-label="Dimensões do dashboard" className="grid grid-cols-2 gap-2 md:grid-cols-5 pt-1">
+                {VISOES.map((v) => (
+                  <Button
+                    key={v.id}
+                    variant={
+                      `google-${v.color}` as
+                        | "google-blue"
+                        | "google-red"
+                        | "google-yellow"
+                        | "google-green"
+                        | "google-purple"
+                    }
+                    aria-current={visao === v.id ? "page" : undefined}
+                    className={`h-auto min-h-11 whitespace-normal py-2 text-center text-xs sm:text-sm font-bold tracking-tight ${
+                      visao === v.id
+                        ? "ring-2 ring-white ring-offset-2 ring-offset-background shadow-md scale-[1.01]"
+                        : "opacity-85 hover:opacity-100"
+                    }`}
+                    onClick={() => setVisao(v.id)}
+                  >
+                    {v.label}
+                  </Button>
+                ))}
+              </nav>
+            )}
+          </div>
+        </SectionErrorBoundary>
+
+        {/* Painel com Seletor de Tipo de Gráficos e Visualização */}
+        <div className="w-full">
+          <SectionErrorBoundary title="Visualização de Gráficos">
+            <section
+              className="min-w-0 rounded-2xl border-2 border-border/80 bg-card p-4 sm:p-5 shadow-sm space-y-4"
+              aria-live="polite"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-3">
+                <div>
+                  <h3 className="text-xl font-bold text-foreground">
+                    {tipoGrafico === "historico"
+                      ? "Série Histórica Contínua"
+                      : VISOES.find((v) => v.id === visao)?.label}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {tipoGrafico === "historico"
+                      ? "Evolução temporal mês a mês dos atendimentos registrados, resolvidos e em andamento."
+                      : "Distribuição e proporção dos registros filtrados."}
+                  </p>
+                </div>
+
+                {/* Menu e Abas dos Gráficos com Cartões KPI em Primeiro e Série Histórica após os demais */}
+                <div className="no-print flex flex-wrap gap-1.5" aria-label="Tipo de gráfico">
+                  <Button
+                    size="sm"
+                    variant={tipoGrafico === "kpi" ? "google-blue" : "outline"}
+                    onClick={() => setTipoGrafico("kpi")}
+                    title="Cartões de Indicadores (Big Numbers)"
+                    className="font-bold"
+                  >
+                    <LayoutGrid className="size-3.5 mr-1" /> Cartões de Indicadores
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={tipoGrafico === "pizza" ? "google-blue" : "outline"}
+                    onClick={() => setTipoGrafico("pizza")}
+                    title="Gráfico de Rosca / Pizza"
+                  >
+                    <PieChartIcon className="size-3.5 mr-1" /> Pizza
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={tipoGrafico === "barras" ? "google-blue" : "outline"}
+                    onClick={() => setTipoGrafico("barras")}
+                    title="Gráfico de Barras horizontais"
+                  >
+                    <BarChart3 className="size-3.5 mr-1" /> Barras
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={tipoGrafico === "historico" ? "google-blue" : "outline"}
+                    onClick={() => setTipoGrafico("historico")}
+                    title="Série histórica por chamados"
+                  >
+                    <Activity className="size-3.5 mr-1" /> Série Histórica
+                  </Button>
+                </div>
+              </div>
+
+              <Grafico
+                key={`${visao}-${tipoGrafico}-${mes}`}
+                dados={dados}
+                tipo={tipoGrafico}
+                cor={cor}
+              />
+            </section>
+          </SectionErrorBoundary>
         </div>
       </div>
     </div>
