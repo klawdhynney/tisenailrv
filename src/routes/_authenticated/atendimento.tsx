@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FileSpreadsheet, FileText, Headset, Printer } from "lucide-react";
+import { FileSpreadsheet, FileText, Headset } from "lucide-react";
 import { TicketSheet } from "@/components/TicketSheet";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
@@ -49,9 +49,6 @@ function Atendimento() {
             onClick={() => exportarPdf(dadosExportacao(), "Planilha_Atendimento_TI", "Planilha de Atendimento de Chamados")}
           >
             <FileText className="size-4" /> Baixar PDF
-          </Button>
-          <Button variant="outline" onClick={() => window.print()}>
-            <Printer className="size-4" /> Imprimir
           </Button>
         </div>
       </header>

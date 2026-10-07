@@ -12,7 +12,12 @@ function baixarBlob(conteudo: BlobPart, tipo: string, nome: string) {
 }
 
 function escaparXml(valor: string | number) {
-  return String(valor).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+  return String(valor)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
 export function ticketsParaLinhas(tickets: Ticket[], camposSelecionados?: string[]): LinhaExportacao[] {
@@ -52,41 +57,162 @@ export function ticketsParaLinhas(tickets: Ticket[], camposSelecionados?: string
 }
 
 export function exportarCsv(linhas: LinhaExportacao[], nome: string) {
+  if (!linhas || linhas.length === 0) return;
   const colunas = Object.keys(linhas[0] ?? {});
-  const conteudo = [colunas, ...linhas.map((linha) => colunas.map((c) => linha[c] ?? ""))]
-    .map((linha) => linha.map((valor) => `"${String(valor).replace(/"/g, '""')}"`).join(";"))
-    .join("\n");
-  baixarBlob(`\uFEFF${conteudo}`, "text/csv;charset=utf-8", `${nome}.csv`);
+  const conteudo = [
+    colunas.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";"),
+    ...linhas.map((linha) =>
+      colunas
+        .map((c) => {
+          const valor = linha[c] ?? "";
+          return `"${String(valor).replace(/"/g, '""')}"`;
+        })
+        .join(";"),
+    ),
+  ].join("\r\n");
+
+  const nomeFinal = nome.endsWith(".csv") ? nome : `${nome}.csv`;
+  baixarBlob(`\uFEFF${conteudo}`, "text/csv;charset=utf-8", nomeFinal);
 }
 
 export async function exportarXlsx(linhas: LinhaExportacao[], nome: string) {
+  if (!linhas || linhas.length === 0) return;
   const XLSX = await import("xlsx");
   const planilha = XLSX.utils.json_to_sheet(linhas);
+
+  // Organiza largura das colunas baseada no conteúdo
+  const colunas = Object.keys(linhas[0] ?? {});
+  const larguras = colunas.map((col) => {
+    let maxLen = col.length;
+    for (const linha of linhas) {
+      const val = linha[col];
+      if (val !== undefined && val !== null) {
+        const strVal = String(val);
+        const primeiraLinhaLen = strVal.split("\n")[0]?.length ?? strVal.length;
+        if (primeiraLinhaLen > maxLen) maxLen = primeiraLinhaLen;
+      }
+    }
+    // Largura com folga, mínimo 14 e máximo 52
+    return { wch: Math.min(Math.max(maxLen + 4, 14), 52) };
+  });
+  planilha["!cols"] = larguras;
+
+  // Congelar primeira linha (cabeçalho)
+  planilha["!freeze"] = { xSplit: "0", ySplit: "1" };
+  planilha["!views"] = [{ state: "frozen", xSplit: 0, ySplit: 1 }];
+
+  // Configurar fonte tamanho 12, quebra de linha (wrap text) e estilos visuais
+  for (const cellAddress in planilha) {
+    if (cellAddress.startsWith("!")) continue;
+    const isHeader = /^[A-Z]+1$/.test(cellAddress);
+    const existingCell = planilha[cellAddress] || {};
+
+    existingCell.s = isHeader
+      ? {
+          font: { name: "Arial", sz: 12, bold: true, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "1A73E8" } },
+          alignment: { wrapText: true, vertical: "center", horizontal: "center" },
+        }
+      : {
+          font: { name: "Arial", sz: 12 },
+          alignment: { wrapText: true, vertical: "center" },
+        };
+    planilha[cellAddress] = existingCell;
+  }
+
   const arquivo = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(arquivo, planilha, "Chamados");
-  XLSX.writeFile(arquivo, `${nome}.xlsx`);
+  const nomeFinal = nome.endsWith(".xlsx") ? nome : `${nome}.xlsx`;
+  XLSX.writeFile(arquivo, nomeFinal);
 }
 
 export function exportarXml(linhas: LinhaExportacao[], nome: string) {
-  const registros = linhas.map((linha) => `<chamado>${Object.entries(linha).map(([chave, valor]) => `<${chave}>${escaparXml(valor)}</${chave}>`).join("")}</chamado>`).join("");
-  baixarBlob(`<?xml version="1.0" encoding="UTF-8"?><chamados>${registros}</chamados>`, "application/xml;charset=utf-8", `${nome}.xml`);
+  const registros = linhas
+    .map(
+      (linha) =>
+        `<chamado>${Object.entries(linha)
+          .map(([chave, valor]) => `<${chave}>${escaparXml(valor)}</${chave}>`)
+          .join("")}</chamado>`,
+    )
+    .join("");
+  const nomeFinal = nome.endsWith(".xml") ? nome : `${nome}.xml`;
+  baixarBlob(`<?xml version="1.0" encoding="UTF-8"?><chamados>${registros}</chamados>`, "application/xml;charset=utf-8", nomeFinal);
 }
 
 export async function exportarPdf(linhas: LinhaExportacao[], nome: string, titulo: string) {
+  if (!linhas || linhas.length === 0) return;
   const [{ jsPDF }, autoTableModule] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const autoTable = autoTableModule.default;
   const colunas = Object.keys(linhas[0] ?? {});
-  doc.setFontSize(15);
-  doc.text(titulo, 14, 14);
-  autoTableModule.default(doc, {
-    startY: 20,
+
+  // Orientação paisagem para comportar colunas e fonte tamanho 12 com folga
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+  // Banner Cabeçalho com padrão de cores do projeto (Google Blue)
+  doc.setFillColor(26, 115, 232);
+  doc.rect(0, 0, doc.internal.pageSize.getWidth(), 20, "F");
+
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.text(titulo, 12, 10);
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    `TI SENAI LRV · Emitido em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR").slice(0, 5)} · Total de registros: ${linhas.length}`,
+    12,
+    16,
+  );
+
+  autoTable(doc, {
+    startY: 24,
     head: [colunas],
     body: linhas.map((linha) => colunas.map((c) => String(linha[c] ?? ""))),
-    styles: { fontSize: 6, cellPadding: 1.2, overflow: "linebreak" },
-    headStyles: { fillColor: [66, 133, 244] },
-    margin: { left: 8, right: 8 },
+    theme: "striped",
+    styles: {
+      fontSize: 12, // Tamanho 12 em todo o conteúdo
+      cellPadding: 2.5,
+      overflow: "linebreak", // Quebra automática de linha
+      textColor: [32, 33, 36],
+      lineColor: [220, 224, 230],
+      lineWidth: 0.1,
+      valign: "middle",
+    },
+    headStyles: {
+      fillColor: [26, 115, 232], // Azul Google do tema
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 12,
+      cellPadding: 3,
+      halign: "center",
+      valign: "middle",
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252], // Linhas alternadas no padrão de cores do site
+    },
+    margin: { left: 10, right: 10, top: 24, bottom: 15 },
+    rowPageBreak: "avoid",
+    didDrawPage: (data) => {
+      const str = `Página ${data.pageNumber} de ${doc.getNumberOfPages()}`;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(128, 128, 128);
+      doc.text(
+        str,
+        doc.internal.pageSize.getWidth() - 32,
+        doc.internal.pageSize.getHeight() - 8,
+      );
+      doc.text(
+        "TI SENAI LRV · Documento oficial gerado pelo sistema",
+        10,
+        doc.internal.pageSize.getHeight() - 8,
+      );
+    },
   });
-  doc.save(`${nome}.pdf`);
+
+  const nomeFinal = nome.endsWith(".pdf") ? nome : `${nome}.pdf`;
+  doc.save(nomeFinal);
 }
 
 export interface DashboardExportData {
@@ -123,12 +249,12 @@ export async function exportarDashboardCompletoPdf(dados: DashboardExportData, n
   );
 
   doc.setTextColor(33, 33, 33);
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.text("Resumo Geral:", 14, 31);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.text(`Total de chamados: ${dados.total}`, 14, 37);
   doc.text(`Em atendimento / ativos: ${dados.andamento}`, 80, 37);
   doc.text(`Resolvidos: ${dados.resolvidos}`, 150, 37);
@@ -146,13 +272,13 @@ export async function exportarDashboardCompletoPdf(dados: DashboardExportData, n
       return [it.name, String(it.value), pct];
     });
 
-    if (currentY > 235) {
+    if (currentY > 220) {
       doc.addPage();
       currentY = 20;
     }
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.setTextColor(corHeader[0], corHeader[1], corHeader[2]);
     doc.text(titulo, 14, currentY);
     currentY += 2;
@@ -162,18 +288,32 @@ export async function exportarDashboardCompletoPdf(dados: DashboardExportData, n
       head: [["Item / Descrição", "Chamados", "Participação (%)"]],
       body,
       theme: "striped",
-      styles: { fontSize: 8, cellPadding: 1.6 },
-      headStyles: { fillColor: corHeader, textColor: [255, 255, 255], fontStyle: "bold" },
-      columnStyles: {
-        0: { cellWidth: 110 },
-        1: { cellWidth: 36, halign: "center" },
-        2: { cellWidth: 36, halign: "center" },
+      styles: {
+        fontSize: 12,
+        cellPadding: 2.2,
+        overflow: "linebreak",
+        textColor: [32, 33, 36],
       },
-      margin: { left: 14, right: 14 },
+      headStyles: {
+        fillColor: corHeader,
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 12,
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      columnStyles: {
+        0: { cellWidth: 105 },
+        1: { cellWidth: 38, halign: "center" },
+        2: { cellWidth: 38, halign: "center" },
+      },
+      margin: { left: 14, right: 14, bottom: 15 },
+      rowPageBreak: "avoid",
     });
 
     // @ts-expect-error autoTable attaches lastAutoTable to jsPDF instance
-    currentY = (doc.lastAutoTable?.finalY ?? currentY + 30) + 7;
+    currentY = (doc.lastAutoTable?.finalY ?? currentY + 30) + 8;
   };
 
   criarSecao("1. Chamados Recorrentes", dados.recorrentes, [26, 115, 232]);
@@ -182,5 +322,6 @@ export async function exportarDashboardCompletoPdf(dados: DashboardExportData, n
   criarSecao("4. Status dos Chamados", dados.status, [52, 168, 83]);
   criarSecao("5. SLA dos Chamados", dados.sla, [161, 66, 244]);
 
-  doc.save(`${nome}.pdf`);
+  const nomeFinal = nome.endsWith(".pdf") ? nome : `${nome}.pdf`;
+  doc.save(nomeFinal);
 }

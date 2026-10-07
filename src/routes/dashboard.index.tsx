@@ -27,7 +27,6 @@ import {
   FileText,
   LayoutGrid,
   PieChartIcon,
-  Printer,
   RotateCcw,
   Star,
   Table2,
@@ -42,7 +41,6 @@ import { CORES_SLA, MESES_DISPONIVEIS, type Ticket, type TipoGrafico, obterDataH
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLoading } from "@/lib/loading-context";
 import { obterPaletaInfo } from "@/lib/tema";
-import { DashboardSatisfacao } from "@/components/DashboardSatisfacao";
 
 export const Route = createFileRoute("/dashboard/")({
   ssr: false,
@@ -319,8 +317,6 @@ function Dashboard() {
     });
   };
 
-  const imprimir = () => window.print();
-
   const indConf = regras.indicadores;
   const dashConf = regras.dashboard;
 
@@ -358,15 +354,6 @@ function Dashboard() {
             disabled={isLoading}
           >
             <FileText className="size-4 mr-1 text-g-red" /> Exportar PDF
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={imprimir}
-            className="font-semibold shadow-2xs"
-            disabled={isLoading}
-          >
-            <Printer className="size-4 mr-1 text-g-blue" /> Imprimir
           </Button>
         </div>
       </div>
@@ -433,89 +420,92 @@ function Dashboard() {
         </div>
       )}
 
-      {/* Barra de Filtros */}
-      <section className="no-print rounded-xl border-2 border-g-blue/60 bg-card px-4 py-3 shadow-sm transition-all">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-black uppercase tracking-wider text-g-blue">Filtrar:</span>
-            <label className="flex items-center gap-2 text-xs font-bold text-foreground">
-              <span>Mês</span>
-              <select
-                aria-label="Mês"
-                className="h-8.5 min-w-40 rounded-lg border-2 border-g-blue bg-background px-2.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-g-blue"
-                value={mes}
-                onChange={(e) => setMes(e.target.value)}
-              >
-                {MESES_DISPONIVEIS.map((m) => (
-                  <option key={m.key} value={m.key}>
-                    {m.label}
-                  </option>
-                ))}
-                <option value="todos">Todos os meses</option>
-              </select>
-            </label>
+      {/* Seção Categórica e Filtros Unificados no mesmo Bloco */}
+      <div className="border-t-2 border-border/80 pt-6 space-y-4">
+        <div className="no-print rounded-2xl border-2 border-g-blue/50 bg-card p-4 sm:p-5 shadow-xs transition-all space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-black text-foreground tracking-tight">Análise Categórica</h2>
+                <Badge variant="outline" className="text-[10px] text-g-blue border-g-blue/30 font-bold">
+                  Dimensões & Filtros
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Navegue pelas dimensões dos chamados e acompanhe a distribuição e proporção dos registros.
+              </p>
+            </div>
+
+            {/* Linha de Filtros integrada no mesmo bloco */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-xl border border-border/60">
+                <span className="text-xs font-black uppercase tracking-wider text-g-blue">Filtrar:</span>
+                <label className="flex items-center gap-2 text-xs font-bold text-foreground">
+                  <span>Mês</span>
+                  <select
+                    aria-label="Mês"
+                    className="h-8 min-w-36 rounded-lg border border-border bg-background px-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-g-blue cursor-pointer"
+                    value={mes}
+                    onChange={(e) => setMes(e.target.value)}
+                  >
+                    {MESES_DISPONIVEIS.map((m) => (
+                      <option key={m.key} value={m.key}>
+                        {m.label}
+                      </option>
+                    ))}
+                    <option value="todos">Todos os meses</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button asChild size="sm" variant="google-green" className="h-8 font-semibold shadow-xs text-xs">
+                  <Link to="/dashboard/acompanhamento">
+                    <ClipboardList className="size-3.5 mr-1" /> Acompanhar chamados
+                  </Link>
+                </Button>
+
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  className="h-8 font-bold shadow-xs text-amber-600 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/10 text-xs"
+                >
+                  <Link to="/dashboard/avaliacoes">
+                    <Star className="size-3.5 mr-1 fill-amber-400 text-amber-500" /> Avaliações
+                  </Link>
+                </Button>
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 ml-auto">
-            <Button asChild size="sm" variant="google-green" className="font-semibold shadow-xs">
-              <Link to="/dashboard/acompanhamento">
-                <ClipboardList className="size-3.5 mr-1" /> Acompanhar chamados
-              </Link>
-            </Button>
-
-            {isGestor && (
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-                className="font-bold shadow-xs text-amber-600 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/10"
-              >
-                <Link to="/dashboard/avaliacoes">
-                  <Star className="size-3.5 mr-1 fill-amber-400 text-amber-500" /> Avaliações
-                </Link>
-              </Button>
-            )}
-          </div>
+          {tipoGrafico !== "historico" && (
+            <nav aria-label="Dimensões do dashboard" className="grid grid-cols-2 gap-2 md:grid-cols-5 pt-1">
+              {VISOES.map((v) => (
+                <Button
+                  key={v.id}
+                  variant={
+                    `google-${v.color}` as
+                      | "google-blue"
+                      | "google-red"
+                      | "google-yellow"
+                      | "google-green"
+                      | "google-purple"
+                  }
+                  aria-current={visao === v.id ? "page" : undefined}
+                  className={`h-auto min-h-11 whitespace-normal py-2 text-center text-xs sm:text-sm font-bold tracking-tight ${
+                    visao === v.id
+                      ? "ring-2 ring-white ring-offset-2 ring-offset-background shadow-md scale-[1.01]"
+                      : "opacity-85 hover:opacity-100"
+                  }`}
+                  onClick={() => setVisao(v.id)}
+                >
+                  {v.label}
+                </Button>
+              ))}
+            </nav>
+          )}
         </div>
-      </section>
-
-      {/* Seção Categórica e Distribuição em largura total */}
-      <div className="border-t-2 border-border/80 pt-6 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-2xl font-black text-foreground tracking-tight">Análise Categórica</h2>
-            <p className="text-xs text-muted-foreground">
-              Navegue pelas dimensões dos chamados e acompanhe a distribuição e proporção dos registros.
-            </p>
-          </div>
-        </div>
-
-        {tipoGrafico !== "historico" && (
-          <nav aria-label="Dimensões do dashboard" className="no-print grid grid-cols-2 gap-2 md:grid-cols-5">
-            {VISOES.map((v) => (
-              <Button
-                key={v.id}
-                variant={
-                  `google-${v.color}` as
-                    | "google-blue"
-                    | "google-red"
-                    | "google-yellow"
-                    | "google-green"
-                    | "google-purple"
-                }
-                aria-current={visao === v.id ? "page" : undefined}
-                className={`h-auto min-h-12 whitespace-normal py-2 text-center text-sm font-bold tracking-tight ${
-                  visao === v.id
-                    ? "ring-2 ring-white ring-offset-2 ring-offset-background shadow-lg scale-[1.02]"
-                    : "opacity-85 hover:opacity-100"
-                }`}
-                onClick={() => setVisao(v.id)}
-              >
-                {v.label}
-              </Button>
-            ))}
-          </nav>
-        )}
 
         {/* Painel com Seletor de Tipo de Gráficos e Visualização */}
         <div className="w-full">
@@ -584,9 +574,6 @@ function Dashboard() {
           </section>
         </div>
       </div>
-
-      {/* Gráficos Reais de Satisfação e Facilidade de Abertura */}
-      <DashboardSatisfacao mesSelecionado={mes} />
     </div>
   );
 }

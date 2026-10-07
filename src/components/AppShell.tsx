@@ -207,7 +207,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     ...navPublico,
     ...(session && !isGestor ? [{ to: "/meus-chamados", label: "Meus Chamados", icon: FilePlus2 }] : []),
     ...(isGestor ? navGestor : []),
-    ...(isAdmin ? [{ to: "/usuarios", label: "Usuários", icon: Users }] : []),
   ];
 
   const links = (mobile: boolean) =>

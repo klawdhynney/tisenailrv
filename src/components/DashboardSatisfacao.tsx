@@ -61,10 +61,14 @@ const ROTULOS_FACILIDADE = [
 ];
 
 interface DashboardSatisfacaoProps {
-  mesSelecionado?: string; // ex.: "2026-10" ou "todos"
+  mesSelecionado?: string; // ex.: "2026-10", "7d", "30d", "90d" ou "todos"
+  semBordaSuperior?: boolean;
 }
 
-export function DashboardSatisfacao({ mesSelecionado = "todos" }: DashboardSatisfacaoProps) {
+export function DashboardSatisfacao({
+  mesSelecionado = "todos",
+  semBordaSuperior = false,
+}: DashboardSatisfacaoProps) {
   const { tickets, regras } = useStore();
   const isMobile = useIsMobile();
   const [avaliacoes, setAvaliacoes] = useState<AvaliacaoItemDashboard[]>([]);
@@ -229,10 +233,19 @@ export function DashboardSatisfacao({ mesSelecionado = "todos" }: DashboardSatis
     });
   }, [avaliacoes, mapaChamados]);
 
-  // Filtragem conforme o mês selecionado no Dashboard
+  // Filtragem conforme o período ou mês selecionado
   const avaliacoesFiltradas = useMemo(() => {
     if (!mesSelecionado || mesSelecionado === "todos") {
       return avaliacoesEnriquecidas;
+    }
+    if (mesSelecionado === "7d" || mesSelecionado === "30d" || mesSelecionado === "90d") {
+      const dias = mesSelecionado === "7d" ? 7 : mesSelecionado === "30d" ? 30 : 90;
+      const corte = new Date();
+      corte.setDate(corte.getDate() - dias);
+      return avaliacoesEnriquecidas.filter((a) => {
+        const d = new Date(a.created_at || "");
+        return !isNaN(d.getTime()) && d >= corte;
+      });
     }
     return avaliacoesEnriquecidas.filter((a) => {
       const dataStr = a.created_at || "";
@@ -419,7 +432,7 @@ export function DashboardSatisfacao({ mesSelecionado = "todos" }: DashboardSatis
   };
 
   return (
-    <section className="space-y-6 pt-4 border-t-2 border-border/80">
+    <section className={`space-y-6 ${semBordaSuperior ? "" : "pt-4 border-t-2 border-border/80"}`}>
       {/* Cabeçalho da Seção de Satisfação */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>

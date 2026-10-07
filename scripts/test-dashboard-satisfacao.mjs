@@ -21,11 +21,15 @@ assert.ok(dashSatCode.includes("mesSelecionado"), "Deve receber e respeitar o fi
 assert.ok(dashSatCode.includes("tisenai_avaliacoes_locais"), "Deve sincronizar dados do cache local do navegador");
 console.log("✓ Componente DashboardSatisfacao validado com sucesso!");
 
-// 2. Verificando inclusão no Dashboard principal
-console.log("2. Verificando integração no dashboard.index.tsx...");
+// 2. Verificando integração na página de Avaliações e remoção do fim do Dashboard principal
+console.log("2. Verificando integração em dashboard.avaliacoes.tsx e remoção de dashboard.index.tsx...");
+const dashAvaliacoesCode = fs.readFileSync("./src/routes/dashboard.avaliacoes.tsx", "utf-8");
+assert.ok(dashAvaliacoesCode.includes("<DashboardSatisfacao mesSelecionado="), "Página de Avaliações deve renderizar DashboardSatisfacao unificado");
+
 const dashIndexCode = fs.readFileSync("./src/routes/dashboard.index.tsx", "utf-8");
-assert.ok(dashIndexCode.includes("<DashboardSatisfacao mesSelecionado={mes}"), "Dashboard principal deve renderizar DashboardSatisfacao passando mes");
-console.log("✓ Integração no Dashboard confirmada!");
+assert.ok(!dashIndexCode.includes("<DashboardSatisfacao"), "Dashboard principal não deve renderizar DashboardSatisfacao no final da página");
+assert.ok(dashIndexCode.includes('to="/dashboard/avaliacoes"'), "Dashboard principal deve ter link/botão para a página de Avaliações");
+console.log("✓ Integração e unificação na página de Avaliações confirmadas!");
 
 // 3. Verificando formulários de avaliação (abrir.tsx e meus-chamados.tsx)
 console.log("3. Verificando formulários de avaliação...");

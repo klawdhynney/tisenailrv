@@ -68,7 +68,7 @@ function Inicio() {
           />
         </div>
         <div className="absolute inset-0 -z-10 bg-card/85 backdrop-blur-[1px]" />
-        <div className="flex flex-col items-center text-center px-6 py-8 sm:px-10 sm:py-10 max-w-4xl mx-auto">
+        <div className="flex flex-col items-center text-center px-6 pt-8 pb-3 sm:px-10 sm:pt-10 max-w-4xl mx-auto">
           <p className="inline-flex items-center gap-2 rounded-full bg-card/90 px-3.5 py-1 text-xs font-bold uppercase text-primary shadow-xs border border-border/60">
             <Activity className="size-4" /> {badgeTexto}
           </p>
@@ -80,11 +80,13 @@ function Inicio() {
               {subtituloPrincipal}
             </p>
           )}
+        </div>
 
-          {/* Indicadores de desempenho posicionados junto à descrição */}
-          <div className="mt-8 w-full grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 text-left">
+        {/* Indicadores de desempenho ocupando a largura total da página */}
+        <div className="w-full px-4 sm:px-6 md:px-8 pb-8 pt-2">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 text-left w-full">
             {indTotal.ativo && (
-              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-blue bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs">
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-blue bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-md">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -103,7 +105,7 @@ function Inicio() {
             )}
 
             {indAtend.ativo && (
-              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-yellow bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs">
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-yellow bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-md">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -122,7 +124,7 @@ function Inicio() {
             )}
 
             {indResolv.ativo && (
-              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-green bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs">
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-green bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-md">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -141,7 +143,7 @@ function Inicio() {
             )}
 
             {indDia.ativo !== false && (
-              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-sky-500 bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs">
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-sky-500 bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-md">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -160,7 +162,7 @@ function Inicio() {
             )}
 
             {indAtendDia.ativo !== false && (
-              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-teal-500 bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs">
+              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-teal-500 bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-md">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">

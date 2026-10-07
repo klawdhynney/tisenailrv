@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { FileSpreadsheet, FileText, Plus, Printer, SlidersHorizontal, Upload } from "lucide-react";
+import { FileSpreadsheet, FileText, Plus, SlidersHorizontal, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { lerPlanilha } from "@/lib/importarExcel";
 import { importarChamados } from "@/lib/import.functions";
@@ -140,7 +140,6 @@ function Planilha() {
 
         <Button variant="outline" onClick={() => exportarXlsx(dadosExportacao(), "Chamados_TI")}><FileSpreadsheet className="size-4" /> Excel</Button>
         <Button variant="outline" onClick={() => exportarPdf(dadosExportacao(), "Chamados_TI", "Planilha de chamados")}><FileText className="size-4" /> PDF</Button>
-        <Button variant="outline" onClick={() => window.print()}><Printer className="size-4" /> Imprimir</Button>
         <Button asChild>
           <Link to="/abrir">
             <Plus className="size-4" /> Novo chamado

@@ -2,40 +2,17 @@ import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Star,
-  TrendingUp,
-  BarChart3,
-  ThumbsUp,
-  MessageSquare,
-  Percent,
-  Calendar,
-  ShieldAlert,
   ArrowLeft,
-  Activity,
   ClipboardList,
-  Filter,
-  CheckCircle2,
-  Smile,
-  Frown,
+  MessageSquare,
 } from "lucide-react";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Cell,
-  LabelList,
-} from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
-import { AVALIACAO_PADRAO } from "@/lib/types";
+import { MESES_DISPONIVEIS } from "@/lib/types";
+import { DashboardSatisfacao } from "@/components/DashboardSatisfacao";
 
 export const Route = createFileRoute("/dashboard/avaliacoes")({
   ssr: false,
@@ -69,292 +46,70 @@ interface AvaliacaoRow {
   created_at: string;
 }
 
-type PeriodoFiltro = "7d" | "30d" | "90d" | "todos";
-
-const CORES_NOTAS: Record<number, string> = {
-  1: "#ea4335", // Vermelho
-  2: "#fa7b17", // Laranja
-  3: "#f9ab00", // Amarelo
-  4: "#34a853", // Verde
-  5: "#0d652d", // Verde escuro
-};
-
 function PaginaAvaliacoes() {
-  const { isGestor, isAdmin, authPronto, regras, tickets } = useStore();
-  const [avaliacoes, setAvaliacoes] = useState<AvaliacaoRow[]>([]);
-  const [carregando, setCarregando] = useState(true);
-  const [periodo, setPeriodo] = useState<PeriodoFiltro>("30d");
-  const [erroTabela, setErroTabela] = useState<string | null>(null);
+  const { authPronto } = useStore();
+  const [periodo, setPeriodo] = useState<string>("todos");
+  const [comentarios, setComentarios] = useState<AvaliacaoRow[]>([]);
+  const [carregandoComentarios, setCarregandoComentarios] = useState(true);
 
   useEffect(() => {
     let ativo = true;
-    async function carregar() {
-      setCarregando(true);
-      let listaRemota: AvaliacaoRow[] = [];
-      let tabelaDisponivel = false;
 
+    async function carregarComentarios() {
+      setCarregandoComentarios(true);
       try {
         const { data, error } = await (supabase.from("avaliacoes_chamados") as any)
           .select("id, ticket_id, user_id, nota, nota_facilidade, atendente, comentario, created_at")
-          .order("created_at", { ascending: false });
+          .not("comentario", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(30);
 
-        if (error) {
-          console.warn("Falha ao buscar avaliações no Supabase:", error.message);
-          if (ativo) {
-            setErroTabela(error.code === "PGRST205" ? "tabela_inexistente" : error.message);
-          }
-        } else if (data) {
-          listaRemota = data as AvaliacaoRow[];
-          tabelaDisponivel = true;
-          if (ativo) setErroTabela(null);
+        if (!error && data && ativo) {
+          setComentarios(data as AvaliacaoRow[]);
         }
-      } catch (e: any) {
-        console.error("Erro ao carregar avaliações:", e);
-        if (ativo) setErroTabela(e?.message || "erro_conexao");
-      }
-
-      // Lê registros do cache local no navegador para mesclagem imediata
-      let listaLocal: AvaliacaoRow[] = [];
-      try {
-        const salvas = JSON.parse(localStorage.getItem("tisenai_avaliacoes_locais") || "[]");
-        if (Array.isArray(salvas)) {
-          listaLocal = salvas.map((s, idx) => ({
-            id: s.id || (100000 + idx),
-            ticket_id: Number(s.ticket_id),
-            user_id: s.user_id || null,
-            nota: Number(s.nota),
-            nota_facilidade: s.nota_facilidade ? Number(s.nota_facilidade) : null,
-            atendente: s.atendente || null,
-            comentario: s.comentario || null,
-            created_at: s.created_at || s.data || new Date().toISOString(),
-          }));
-        }
-      } catch {
-        // ignore
-      }
-
-      // Se o banco remoto respondeu com sucesso (tabela existe), sincroniza avaliações pendentes do cache local
-      if (tabelaDisponivel) {
-        if (listaLocal.length > 0) {
-          const ticketsNoBanco = new Set(listaRemota.map((r) => r.ticket_id));
-          const pendentesDeEnvio = listaLocal.filter((l) => !ticketsNoBanco.has(l.ticket_id));
-          
-          if (pendentesDeEnvio.length > 0) {
-            for (const item of pendentesDeEnvio) {
-              try {
-                await (supabase.rpc as any)("submit_ticket_evaluation", {
-                  p_ticket_id: item.ticket_id,
-                  p_nota: item.nota,
-                  p_comentario: item.comentario,
-                  p_nota_facilidade: item.nota_facilidade || null,
-                  p_atendente: item.atendente || null,
-                });
-              } catch (errSync) {
-                console.warn("Falha ao sincronizar avaliação pendente com o banco:", errSync);
-              }
-            }
-          }
-
-          // Uma vez sincronizadas ou já presentes no banco, limpa o armazenamento local
-          try {
-            localStorage.removeItem("tisenai_avaliacoes_locais");
-          } catch {
-            // ignore
-          }
-        }
-      }
-
-      // Mescla sem duplicar ticket_id, priorizando remota
-      const ticketsVistos = new Set<number>();
-      const unificadas: AvaliacaoRow[] = [];
-
-      for (const r of listaRemota) {
-        ticketsVistos.add(r.ticket_id);
-        unificadas.push(r);
-      }
-      for (const l of listaLocal) {
-        if (!ticketsVistos.has(l.ticket_id)) {
-          ticketsVistos.add(l.ticket_id);
-          unificadas.push(l);
-        }
-      }
-
-      if (ativo) {
-        setAvaliacoes(unificadas);
-        setCarregando(false);
+      } catch (err) {
+        console.warn("Erro ao buscar comentários:", err);
+      } finally {
+        if (ativo) setCarregandoComentarios(false);
       }
     }
 
-    carregar();
+    void carregarComentarios();
 
-    const ch = supabase
-      .channel("dash-avaliacoes-rt")
+    const channel = supabase
+      .channel("dash-avaliacoes-comments-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "avaliacoes_chamados" }, () => {
-        carregar();
+        void carregarComentarios();
       })
       .subscribe();
 
     return () => {
       ativo = false;
-      supabase.removeChannel(ch);
+      void supabase.removeChannel(channel);
     };
   }, []);
 
-  // Filtragem de período
-  const avaliacoesFiltradas = useMemo(() => {
-    if (periodo === "todos") return avaliacoes;
-    const dias = periodo === "7d" ? 7 : periodo === "30d" ? 30 : 90;
-    const corte = new Date();
-    corte.setDate(corte.getDate() - dias);
-    return avaliacoes.filter((a) => new Date(a.created_at) >= corte);
-  }, [avaliacoes, periodo]);
-
-  // Chamados no mesmo período para calcular taxa de resposta
-  const chamadosNoPeriodo = useMemo(() => {
-    if (!tickets || tickets.length === 0) return 0;
-    if (periodo === "todos") return tickets.length;
-    const dias = periodo === "7d" ? 7 : periodo === "30d" ? 30 : 90;
-    const corte = new Date();
-    corte.setDate(corte.getDate() - dias);
-    return tickets.filter((t) => new Date(t.abertoEm) >= corte).length;
-  }, [tickets, periodo]);
-
-  // Mapa de categoria por ticketId
-  const mapaCategoriasTicket = useMemo(() => {
-    const map = new Map<number, string>();
-    for (const t of tickets) {
-      if (t.id && t.categoria) map.set(t.id, t.categoria);
+  const comentariosFiltrados = useMemo(() => {
+    if (!periodo || periodo === "todos") {
+      return comentarios.filter((c) => c.comentario && c.comentario.trim().length > 0);
     }
-    return map;
-  }, [tickets]);
-
-  // Métricas Consolidadas
-  const totalAvaliacoes = avaliacoesFiltradas.length;
-  const notaMedia = useMemo(() => {
-    if (totalAvaliacoes === 0) return 0;
-    const soma = avaliacoesFiltradas.reduce((acc, a) => acc + (a.nota || 0), 0);
-    return soma / totalAvaliacoes;
-  }, [avaliacoesFiltradas, totalAvaliacoes]);
-
-  const satisfacaoPercent = useMemo(() => {
-    if (totalAvaliacoes === 0) return 0;
-    const positivas = avaliacoesFiltradas.filter((a) => a.nota >= 4).length;
-    return Math.round((positivas / totalAvaliacoes) * 100);
-  }, [avaliacoesFiltradas, totalAvaliacoes]);
-
-  const taxaResposta = useMemo(() => {
-    if (chamadosNoPeriodo === 0) return 0;
-    return Math.min(100, Math.round((totalAvaliacoes / chamadosNoPeriodo) * 100));
-  }, [totalAvaliacoes, chamadosNoPeriodo]);
-
-  const avaliacoesComFacilidade = useMemo(() => {
-    return avaliacoesFiltradas.filter(
-      (a) => a.nota_facilidade !== null && a.nota_facilidade !== undefined && a.nota_facilidade >= 1,
-    );
-  }, [avaliacoesFiltradas]);
-
-  const totalFacilidade = avaliacoesComFacilidade.length;
-
-  const notaMediaFacilidade = useMemo(() => {
-    if (totalFacilidade === 0) return 0;
-    const soma = avaliacoesComFacilidade.reduce((acc, a) => acc + (a.nota_facilidade || 0), 0);
-    return soma / totalFacilidade;
-  }, [avaliacoesComFacilidade, totalFacilidade]);
-
-  // Distribuição de notas (1 a 5)
-  const dadosDistribuicao = useMemo(() => {
-    const contagem: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    for (const a of avaliacoesFiltradas) {
-      if (a.nota >= 1 && a.nota <= 5) {
-        contagem[a.nota] = (contagem[a.nota] || 0) + 1;
-      }
-    }
-    const opcoes = regras.avaliacoes?.opcoes ?? AVALIACAO_PADRAO.opcoes;
-    return [1, 2, 3, 4, 5].map((nota) => ({
-      nota: `Nota ${nota}`,
-      label: opcoes[nota - 1] || `${nota} estrelas`,
-      quantidade: contagem[nota],
-      cor: CORES_NOTAS[nota] || "#1a73e8",
-    }));
-  }, [avaliacoesFiltradas, regras.avaliacoes]);
-
-  const totalAvaliacoesDist = useMemo(
-    () => dadosDistribuicao.reduce((acc, d) => acc + d.quantidade, 0),
-    [dadosDistribuicao],
-  );
-
-  // Evolução temporal (agrupada por dia)
-  const dadosEvolucao = useMemo(() => {
-    const grupos: Record<string, { soma: number; count: number }> = {};
-    const ordenadas = [...avaliacoesFiltradas].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-    );
-
-    for (const a of ordenadas) {
-      const dataStr = new Date(a.created_at).toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
+    if (periodo === "7d" || periodo === "30d" || periodo === "90d") {
+      const dias = periodo === "7d" ? 7 : periodo === "30d" ? 30 : 90;
+      const corte = new Date();
+      corte.setDate(corte.getDate() - dias);
+      return comentarios.filter((c) => {
+        const d = new Date(c.created_at || "");
+        return !isNaN(d.getTime()) && d >= corte && c.comentario && c.comentario.trim().length > 0;
       });
-      if (!grupos[dataStr]) grupos[dataStr] = { soma: 0, count: 0 };
-      grupos[dataStr].soma += a.nota;
-      grupos[dataStr].count += 1;
     }
-
-    return Object.entries(grupos).map(([data, { soma, count }]) => ({
-      data,
-      media: Number((soma / count).toFixed(2)),
-      avaliacoes: count,
-    }));
-  }, [avaliacoesFiltradas]);
-
-  // Satisfação por categoria
-  const dadosPorCategoria = useMemo(() => {
-    const grupos: Record<string, { soma: number; count: number }> = {};
-    for (const a of avaliacoesFiltradas) {
-      const cat = mapaCategoriasTicket.get(a.ticket_id) || "Geral / Outros";
-      if (!grupos[cat]) grupos[cat] = { soma: 0, count: 0 };
-      grupos[cat].soma += a.nota;
-      grupos[cat].count += 1;
-    }
-
-    return Object.entries(grupos)
-      .map(([categoria, { soma, count }]) => ({
-        categoria: categoria.length > 20 ? categoria.slice(0, 18) + "…" : categoria,
-        media: Number((soma / count).toFixed(2)),
-        total: count,
-      }))
-      .sort((a, b) => b.media - a.media)
-      .slice(0, 6);
-  }, [avaliacoesFiltradas, mapaCategoriasTicket]);
-
-  // Comentários mais recentes (apenas anônimos: sem identificação pessoal)
-  const comentariosRecentes = useMemo(() => {
-    return avaliacoesFiltradas
-      .filter((a) => a.comentario && a.comentario.trim().length > 0)
-      .slice(0, 15);
-  }, [avaliacoesFiltradas]);
+    return comentarios.filter((c) => {
+      const dataStr = c.created_at || "";
+      return dataStr.startsWith(periodo) && c.comentario && c.comentario.trim().length > 0;
+    });
+  }, [comentarios, periodo]);
 
   if (!authPronto) {
     return <div className="py-20 text-center text-sm text-muted-foreground">Verificando credenciais...</div>;
-  }
-
-  if (!isGestor && !isAdmin) {
-    return (
-      <div className="mx-auto max-w-lg rounded-2xl border-2 border-destructive/40 bg-card p-8 text-center space-y-4 my-12 shadow-md">
-        <ShieldAlert className="mx-auto h-12 w-12 text-destructive" />
-        <h1 className="text-xl font-bold text-foreground">Acesso Restrito</h1>
-        <p className="text-sm text-muted-foreground">
-          Os dados analíticos de satisfação e avaliações são restritos à equipe de gestão e administração de TI.
-        </p>
-        <div className="pt-2">
-          <Button asChild variant="outline" size="sm">
-            <Link to="/dashboard">
-              <ArrowLeft className="size-4 mr-2" /> Voltar ao Dashboard Público
-            </Link>
-          </Button>
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -368,8 +123,8 @@ function PaginaAvaliacoes() {
                 <ArrowLeft className="size-3.5 mr-1" /> Dashboard Geral
               </Link>
             </Button>
-            <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-400 dark:border-amber-700">
-              Gestão Exclusiva
+            <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-400 dark:border-amber-700 font-semibold">
+              Satisfação & Experiência
             </Badge>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2 mt-1">
@@ -377,12 +132,33 @@ function PaginaAvaliacoes() {
             Avaliações e Satisfação dos Usuários
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Métricas de facilidade de abertura, aprovação e comentários qualitativos coletados nos atendimentos.
+            Métricas unificadas de satisfação do atendimento, facilidade para abertura de chamados e percepção dos solicitantes.
           </p>
         </div>
 
         {/* Filtros de período e navegação rápida */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Seletor de Mês (mesmo do Dashboard) */}
+          <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-xl border border-border/60">
+            <label className="flex items-center gap-1.5 text-xs font-bold text-foreground px-1.5">
+              <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Mês:</span>
+              <select
+                aria-label="Filtrar por Mês"
+                className="h-7 rounded-lg border border-border bg-background px-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-g-blue cursor-pointer"
+                value={periodo}
+                onChange={(e) => setPeriodo(e.target.value)}
+              >
+                <option value="todos">Todos os meses</option>
+                {MESES_DISPONIVEIS.map((m) => (
+                  <option key={m.key} value={m.key}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {/* Atalhos Rápidos */}
           <div className="inline-flex rounded-xl bg-muted/80 p-1 border border-border/60">
             {(
               [
@@ -396,7 +172,7 @@ function PaginaAvaliacoes() {
                 key={item.id}
                 type="button"
                 onClick={() => setPeriodo(item.id)}
-                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   periodo === item.id
                     ? "bg-background text-foreground shadow-xs font-bold"
                     : "text-muted-foreground hover:text-foreground"
@@ -407,7 +183,7 @@ function PaginaAvaliacoes() {
             ))}
           </div>
 
-          <Button asChild size="sm" variant="outline" className="text-xs">
+          <Button asChild size="sm" variant="outline" className="text-xs h-8">
             <Link to="/dashboard/acompanhamento">
               <ClipboardList className="size-3.5 mr-1" /> Acompanhamento
             </Link>
@@ -415,325 +191,62 @@ function PaginaAvaliacoes() {
         </div>
       </div>
 
-      {erroTabela === "tabela_inexistente" && (
-        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-3">
-          <ShieldAlert className="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
-          <div className="space-y-1">
-            <p className="font-bold">Aviso de Gestão: Tabela de avaliações pendente no Supabase.</p>
-            <p className="text-muted-foreground leading-relaxed">
-              O banco de dados retornou que a tabela <code className="font-mono bg-muted/60 px-1 py-0.5 rounded">avaliacoes_chamados</code> ainda não foi criada. O script consolidado <code className="font-mono bg-muted/60 px-1 py-0.5 rounded">docs/aplicar-no-banco.sql</code> já está preparado no repositório. Enquanto isso, o painel exibe as avaliações registradas localmente.
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Seção Unificada de Gráficos de Satisfação e Facilidade de Abertura */}
+      <DashboardSatisfacao mesSelecionado={periodo} semBordaSuperior={true} />
 
-      {carregando ? (
-        <div className="py-20 text-center text-sm text-muted-foreground">Carregando métricas de satisfação...</div>
-      ) : totalAvaliacoes === 0 ? (
-        <Card className="rounded-2xl border-dashed p-10 text-center space-y-3">
-          <Star className="size-12 text-muted-foreground/30 mx-auto" />
-          <h3 className="text-lg font-bold text-foreground">
-            {periodo === "todos"
-              ? "Nenhuma avaliação encontrada no sistema"
-              : "Nenhuma avaliação encontrada no período selecionado"}
-          </h3>
-          <p className="text-xs text-muted-foreground max-w-md mx-auto">
-            {periodo === "todos"
-              ? "Assim que os usuários responderem à pesquisa pós-abertura ou avaliarem em Meus Chamados, as métricas e gráficos serão processados automaticamente nesta página."
-              : "Não há registros de avaliação dentro da janela de tempo selecionada. Experimente expandir o filtro para 'Tudo'."}
-          </p>
-          {periodo !== "todos" && (
-            <div className="pt-2">
-              <Button variant="outline" size="sm" onClick={() => setPeriodo("todos")}>
-                Ver todo o histórico
-              </Button>
+      {/* Lista de Comentários Qualitativos (Anônimos: apenas nota, chamado e data) */}
+      <Card className="rounded-2xl border-border/80 shadow-xs mt-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
+            <MessageSquare className="size-5 text-primary" /> Comentários Recentes dos Solicitantes
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground">
+            Feedbacks qualitativos enviados voluntariamente após a conclusão ou abertura dos atendimentos.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {carregandoComentarios ? (
+            <div className="py-6 text-center text-xs text-muted-foreground">Carregando comentários...</div>
+          ) : comentariosFiltrados.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-4 text-center">
+              Nenhum comentário em texto registrado no período selecionado.
+            </p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {comentariosFiltrados.slice(0, 15).map((c) => (
+                <div
+                  key={c.id}
+                  className="rounded-2xl border border-border/80 bg-card p-4 shadow-2xs space-y-2 flex flex-col justify-between"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-0.5 text-amber-500">
+                        {[1, 2, 3, 4, 5].map((v) => (
+                          <Star
+                            key={v}
+                            className={`size-3.5 ${v <= c.nota ? "fill-amber-400 text-amber-500" : "text-muted-foreground/30"}`}
+                          />
+                        ))}
+                      </div>
+                      <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0">
+                        Chamado #{c.ticket_id}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-foreground/90 leading-relaxed italic line-clamp-4">
+                      "{c.comentario}"
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-border/40 text-[10px] text-muted-foreground flex items-center justify-between">
+                    <span>Anônimo</span>
+                    <span>{new Date(c.created_at).toLocaleDateString("pt-BR")}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-        </Card>
-      ) : (
-        <>
-          {/* Cartões de KPI (Big Numbers) com descrições técnicas curtas */}
-          <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-            {/* Total */}
-            <Card className="rounded-2xl border-t-4 border-g-blue shadow-2xs">
-              <CardHeader className="p-4 pb-2">
-                <CardDescription className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
-                  <span>Total de Avaliações</span>
-                  <MessageSquare className="size-4 text-g-blue" />
-                </CardDescription>
-                <CardTitle className="text-2xl sm:text-3xl font-black text-foreground pt-1">
-                  {totalAvaliacoes}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                <p className="text-[11px] text-muted-foreground leading-tight">
-                  Volume consolidado de avaliações submetidas voluntariamente pelos usuários.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Média */}
-            <Card className="rounded-2xl border-t-4 border-amber-500 shadow-2xs">
-              <CardHeader className="p-4 pb-2">
-                <CardDescription className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
-                  <span>Nota Média Geral</span>
-                  <Star className="size-4 text-amber-500 fill-amber-400" />
-                </CardDescription>
-                <CardTitle className="text-2xl sm:text-3xl font-black text-foreground pt-1 flex items-baseline gap-1">
-                  {notaMedia.toFixed(2)}
-                  <span className="text-xs font-normal text-muted-foreground">/ 5.0</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                <p className="text-[11px] text-muted-foreground leading-tight">
-                  Média aritmética das notas atribuídas pelos solicitantes (escala de 1 a 5).
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Facilidade de Abertura */}
-            <Card className="rounded-2xl border-t-4 border-sky-500 shadow-2xs">
-              <CardHeader className="p-4 pb-2">
-                <CardDescription className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
-                  <span>Facilidade de Abertura</span>
-                  <Smile className="size-4 text-sky-500" />
-                </CardDescription>
-                <CardTitle className="text-2xl sm:text-3xl font-black text-foreground pt-1 flex items-baseline gap-1">
-                  {totalFacilidade > 0 ? notaMediaFacilidade.toFixed(2) : "—"}
-                  {totalFacilidade > 0 && <span className="text-xs font-normal text-muted-foreground">/ 5.0</span>}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                <p className="text-[11px] text-muted-foreground leading-tight">
-                  {totalFacilidade > 0 ? `${totalFacilidade} respostas com média de facilidade.` : "Aguardando respostas."}
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Satisfação */}
-            <Card className="rounded-2xl border-t-4 border-g-green shadow-2xs">
-              <CardHeader className="p-4 pb-2">
-                <CardDescription className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
-                  <span>Índice de Satisfação</span>
-                  <ThumbsUp className="size-4 text-g-green" />
-                </CardDescription>
-                <CardTitle className="text-2xl sm:text-3xl font-black text-foreground pt-1">
-                  {satisfacaoPercent}%
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                <p className="text-[11px] text-muted-foreground leading-tight">
-                  Percentual de solicitantes que avaliaram a experiência com notas 4 ou 5.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Taxa de Resposta */}
-            <Card className="rounded-2xl border-t-4 border-purple-500 shadow-2xs">
-              <CardHeader className="p-4 pb-2">
-                <CardDescription className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
-                  <span>Taxa de Resposta</span>
-                  <Percent className="size-4 text-purple-600" />
-                </CardDescription>
-                <CardTitle className="text-2xl sm:text-3xl font-black text-foreground pt-1">
-                  {taxaResposta}%
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                <p className="text-[11px] text-muted-foreground leading-tight">
-                  Proporção de tickets com pesquisa preenchida em relação ao total de chamados abertos.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Gráficos Principais */}
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Gráfico de Barras: Distribuição das notas */}
-            <Card className="rounded-2xl border-border/80 shadow-xs">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
-                  <BarChart3 className="size-5 text-g-blue" /> Distribuição das Notas (1 a 5)
-                </CardTitle>
-                <CardDescription className="text-xs text-muted-foreground">
-                  Frequência absoluta de registros para cada faixa de pontuação de 1 a 5 estrelas.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dadosDistribuicao} margin={{ top: 18, right: 10, left: -20, bottom: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                      <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          borderColor: "hsl(var(--border))",
-                          borderRadius: "12px",
-                          fontSize: "12px",
-                        }}
-                        formatter={(val: any) => {
-                          const num = Number(val) || 0;
-                          const perc = totalAvaliacoesDist > 0 ? ((num / totalAvaliacoesDist) * 100).toFixed(1) : "0";
-                          return [`${num} avaliações (${perc}%)`, "Frequência"];
-                        }}
-                      />
-                      <Bar dataKey="quantidade" name="Avaliações" radius={[6, 6, 0, 0]}>
-                        <LabelList
-                          dataKey="quantidade"
-                          position="top"
-                          formatter={(val: any) => {
-                            const n = Number(val) || 0;
-                            return totalAvaliacoesDist > 0 && n > 0
-                              ? `${((n / totalAvaliacoesDist) * 100).toFixed(0)}%`
-                              : "";
-                          }}
-                          className="fill-foreground text-[10px] font-semibold"
-                        />
-                        {dadosDistribuicao.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.cor} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Gráfico de Linha: Evolução temporal da média */}
-            <Card className="rounded-2xl border-border/80 shadow-xs">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
-                  <TrendingUp className="size-5 text-g-green" /> Evolução da Nota Média
-                </CardTitle>
-                <CardDescription className="text-xs text-muted-foreground">
-                  Tendência histórica da pontuação média calculada ao longo do período selecionado.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="h-64 w-full">
-                  {dadosEvolucao.length === 0 ? (
-                    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                      Dados temporais insuficientes no recorte selecionado.
-                    </div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={dadosEvolucao} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                        <XAxis dataKey="data" tick={{ fontSize: 11 }} />
-                        <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} tick={{ fontSize: 11 }} />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "hsl(var(--card))",
-                            borderColor: "hsl(var(--border))",
-                            borderRadius: "12px",
-                            fontSize: "12px",
-                          }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="media"
-                          name="Nota Média"
-                          stroke="#34a853"
-                          strokeWidth={3}
-                          dot={{ r: 4, fill: "#34a853" }}
-                          activeDot={{ r: 6 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Média por Categoria de Chamado */}
-          {dadosPorCategoria.length > 0 && (
-            <Card className="rounded-2xl border-border/80 shadow-xs">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
-                  <Activity className="size-5 text-purple-600" /> Satisfação por Categoria de Serviço
-                </CardTitle>
-                <CardDescription className="text-xs text-muted-foreground">
-                  Média de avaliação segregada por tipo de demanda e sistema atendido.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-                  {dadosPorCategoria.map((cat, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-xl border border-border/70 bg-muted/30 p-3 flex items-center justify-between"
-                    >
-                      <div className="min-w-0 pr-2">
-                        <p className="text-xs font-bold text-foreground truncate">{cat.categoria}</p>
-                        <p className="text-[10px] text-muted-foreground">{cat.total} feedback(s)</p>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0 bg-background px-2 py-1 rounded-lg border border-border/80">
-                        <Star className="size-3 text-amber-500 fill-amber-400" />
-                        <span className="text-xs font-bold text-foreground">{cat.media.toFixed(1)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Lista de Comentários Mais Recentes (Anônima - sem exibir nome da pessoa) */}
-          <Card className="rounded-2xl border-border/80 shadow-xs">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
-                <MessageSquare className="size-5 text-primary" /> Comentários Recentes dos Solicitantes
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
-                Feedback qualitativo anônimo enviado voluntariamente após o registro do chamado.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {comentariosRecentes.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-4 text-center">
-                  Nenhum comentário em texto registrado no período.
-                </p>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {comentariosRecentes.map((c) => (
-                    <div
-                      key={c.id}
-                      className="rounded-2xl border border-border/80 bg-card p-4 shadow-2xs space-y-2 flex flex-col justify-between"
-                    >
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-0.5 text-amber-500">
-                            {[1, 2, 3, 4, 5].map((v) => (
-                              <Star
-                                key={v}
-                                className={`size-3.5 ${v <= c.nota ? "fill-amber-400 text-amber-500" : "text-muted-foreground/30"}`}
-                              />
-                            ))}
-                          </div>
-                          <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0">
-                            Chamado #{c.ticket_id}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-foreground/90 leading-relaxed italic line-clamp-4">
-                          "{c.comentario}"
-                        </p>
-                      </div>
-
-                      <div className="pt-2 border-t border-border/40 text-[10px] text-muted-foreground flex items-center justify-between">
-                        <span>Anônimo</span>
-                        <span>{new Date(c.created_at).toLocaleDateString("pt-BR")}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
