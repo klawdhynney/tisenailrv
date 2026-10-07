@@ -267,6 +267,7 @@ function Regras() {
   const [regras, setDraft] = useState(regrasSalvas);
   const [limpandoBanco, setLimpandoBanco] = useState(false);
   const [busca, setBusca] = useState("");
+  const [tabAtiva, setTabAtiva] = useState("geral");
   const [statusLimpeza, setStatusLimpeza] = useState<string | null>(null);
 
   useEffect(() => setDraft(regrasSalvas), [regrasSalvas]);
