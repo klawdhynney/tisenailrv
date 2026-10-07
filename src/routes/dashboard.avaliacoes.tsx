@@ -16,30 +16,6 @@ import { DashboardSatisfacao } from "@/components/DashboardSatisfacao";
 
 export const Route = createFileRoute("/dashboard/avaliacoes")({
   ssr: false,
-  beforeLoad: async ({ location }) => {
-    try {
-      const testUser =
-        typeof window !== "undefined"
-          ? (window as any).__TEST_USER__ ||
-            (localStorage.getItem("sb-mock-user")
-              ? JSON.parse(localStorage.getItem("sb-mock-user") || "null")
-              : null)
-          : null;
-      if (testUser) return { user: testUser };
-
-      const { data } = await supabase.auth.getUser();
-      if (!data?.user) {
-        throw redirect({
-          to: "/auth",
-          search: { redirectTo: location.pathname + (location.searchStr || "") },
-        });
-      }
-      return { user: data.user };
-    } catch (err) {
-      if (isRedirect(err)) throw err;
-      return { user: null };
-    }
-  },
   head: () => ({
     meta: [
       { title: "Métricas de Avaliação e Satisfação | Dashboard | TI SENAI LRV" },

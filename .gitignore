@@ -32,3 +32,6 @@ dist-ssr
 scratch/
 *.tmp
 temp_*.html
+test-results/
+playwright-report/
+

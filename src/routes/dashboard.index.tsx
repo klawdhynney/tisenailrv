@@ -50,30 +50,6 @@ import { obterPaletaInfo } from "@/lib/tema";
 
 export const Route = createFileRoute("/dashboard/")({
   ssr: false,
-  beforeLoad: async ({ location }) => {
-    try {
-      const testUser =
-        typeof window !== "undefined"
-          ? (window as any).__TEST_USER__ ||
-            (localStorage.getItem("sb-mock-user")
-              ? JSON.parse(localStorage.getItem("sb-mock-user") || "null")
-              : null)
-          : null;
-      if (testUser) return { user: testUser };
-
-      const { data } = await supabase.auth.getUser();
-      if (!data?.user) {
-        throw redirect({
-          to: "/auth",
-          search: { redirectTo: location.pathname + (location.searchStr || "") },
-        });
-      }
-      return { user: data.user };
-    } catch (err) {
-      if (isRedirect(err)) throw err;
-      return { user: null };
-    }
-  },
   validateSearch: (search: Record<string, unknown>) => ({
     tipo: typeof search.tipo === "string" ? search.tipo : undefined,
   }),
@@ -169,17 +145,6 @@ function Dashboard() {
   const navigate = useNavigate();
   const tipoQuery = search?.tipo;
 
-  useEffect(() => {
-    const isTestMode =
-      typeof window !== "undefined" &&
-      Boolean((window as any).__TEST_USER__ || localStorage.getItem("sb-mock-user"));
-    if (authPronto && !session && !isTestMode) {
-      navigate({
-        to: "/auth",
-        search: { redirectTo: window.location.pathname + window.location.search },
-      });
-    }
-  }, [authPronto, session, navigate]);
 
   const [progress, setProgress] = useState<Database["public"]["Functions"]["public_ticket_sla_progress"]["Returns"]>([]);
   const [now, setNow] = useState(() => new Date());

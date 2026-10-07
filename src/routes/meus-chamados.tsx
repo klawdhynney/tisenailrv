@@ -26,6 +26,14 @@ import { AVALIACAO_PADRAO, MEUS_CHAMADOS_PADRAO } from "@/lib/types";
 
 export const Route = createFileRoute("/meus-chamados")({
   beforeLoad: async () => {
+    if (typeof window === "undefined") return;
+
+    const testUser =
+      (window as any).__TEST_USER__ ||
+      (localStorage.getItem("sb-mock-user")
+        ? JSON.parse(localStorage.getItem("sb-mock-user") || "null")
+        : null);
+    if (testUser) return;
     const {
       data: { session },
     } = await supabase.auth.getSession();

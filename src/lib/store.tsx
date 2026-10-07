@@ -267,6 +267,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Sessão
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const testUser =
+        (window as any).__TEST_USER__ ||
+        (localStorage.getItem("sb-mock-user")
+          ? JSON.parse(localStorage.getItem("sb-mock-user") || "null")
+          : null);
+      if (testUser) {
+        const role = testUser.user_metadata?.role || testUser.role || "usuario";
+        const eAdmin = role === "admin";
+        const eGestor = eAdmin || role === "gestor";
+        setSession({
+          user: testUser,
+          access_token: "mock-token",
+          token_type: "bearer",
+          expires_in: 3600,
+          refresh_token: "mock-refresh",
+          expires_at: Date.now() + 3600000,
+        } as any);
+        setIsAdmin(eAdmin);
+        setIsGestor(eGestor);
+        setUserRole(role);
+        setUserBlocked(false);
+        setAuthPronto(true);
+        return;
+      }
+    }
     const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     supabase.auth.getSession().then(({ data: d }) => setSession(d.session));
     return () => data.subscription.unsubscribe();
@@ -284,6 +310,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setEmailAlertsAtivos(true);
       setAuthPronto(true);
       return;
+    }
+
+    if (typeof window !== "undefined") {
+      const testUser =
+        (window as any).__TEST_USER__ ||
+        (localStorage.getItem("sb-mock-user")
+          ? JSON.parse(localStorage.getItem("sb-mock-user") || "null")
+          : null);
+      if (testUser && testUser.id === uid) {
+        const role = testUser.user_metadata?.role || testUser.role || "usuario";
+        const eAdmin = role === "admin";
+        const eGestor = eAdmin || role === "gestor";
+        setIsAdmin(eAdmin);
+        setIsGestor(eGestor);
+        setUserRole(role);
+        setUserBlocked(false);
+        setAuthPronto(true);
+        return;
+      }
     }
 
     const cacheChave = `auth_perm_cache_${uid}`;

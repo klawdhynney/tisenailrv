@@ -52,12 +52,12 @@ function AuthPage() {
       (typeof search.returnTo === "string" && search.returnTo) ||
       (typeof search.redirectTo === "string" && search.redirectTo) ||
       "";
-    if (fromSearch && fromSearch.startsWith("/")) return fromSearch;
+    if (fromSearch && fromSearch.startsWith("/") && !fromSearch.startsWith("/auth")) return fromSearch;
 
     if (typeof window !== "undefined") {
       try {
         const fromStorage = sessionStorage.getItem("auth_return_to");
-        if (fromStorage && fromStorage.startsWith("/")) return fromStorage;
+        if (fromStorage && fromStorage.startsWith("/") && !fromStorage.startsWith("/auth")) return fromStorage;
       } catch {}
     }
     return null;

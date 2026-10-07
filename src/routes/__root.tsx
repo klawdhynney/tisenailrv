@@ -20,20 +20,31 @@ import { TEMA_INLINE_SCRIPT } from "@/lib/tema";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+    <div className="flex min-h-[70vh] items-center justify-center bg-background px-4 py-16">
+      <div className="max-w-md text-center space-y-4">
+        <span className="inline-block rounded-2xl bg-primary/10 px-4 py-1 text-sm font-bold text-primary">
+          Erro 404
+        </span>
+        <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+          Página não encontrada
+        </h1>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          O endereço digitado não existe, foi alterado ou a página foi movida para outro local.
         </p>
-        <div className="mt-6">
+        <div className="pt-4 flex flex-wrap justify-center gap-3">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
           >
-            Go home
+            Voltar ao Início
           </Link>
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            className="inline-flex items-center justify-center rounded-xl border border-input bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+          >
+            Página anterior
+          </button>
         </div>
       </div>
     </div>
@@ -44,36 +55,64 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   if (isRedirect(error)) {
     throw error;
   }
-  console.error(error);
+  console.error("[TanStackRootError]", error);
   const router = useRouter();
+
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+
+    // Recuperação automática de erro de chunk desatualizado pós-deploy
+    const isChunkError = /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i.test(
+      error?.message || ""
+    );
+    if (isChunkError && typeof window !== "undefined") {
+      const recarregado = sessionStorage.getItem("chunk_reload_attempted");
+      if (!recarregado) {
+        sessionStorage.setItem("chunk_reload_attempted", "true");
+        window.location.reload();
+      }
+    }
   }, [error]);
 
+  const isChunk = /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i.test(
+    error?.message || ""
+  );
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+    <div className="flex min-h-[70vh] items-center justify-center bg-background px-4 py-16">
+      <div className="max-w-md text-center space-y-4">
+        <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+          <span className="text-2xl font-bold">!</span>
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          {isChunk ? "Atualização disponível" : "Não foi possível carregar a página"}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {isChunk
+            ? "Uma nova versão do sistema foi publicada. Clique em recarregar para atualizar os arquivos em cache."
+            : "Ocorreu uma instabilidade inesperada ao exibir esta tela. Você pode tentar novamente ou retornar ao início."}
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <div className="pt-4 flex flex-wrap justify-center gap-2">
           <button
+            type="button"
             onClick={() => {
-              router.invalidate();
-              reset();
+              if (isChunk) {
+                sessionStorage.removeItem("chunk_reload_attempted");
+                window.location.reload();
+              } else {
+                router.invalidate();
+                reset();
+              }
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
           >
-            Try again
+            {isChunk ? "Recarregar página" : "Tentar novamente"}
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="inline-flex items-center justify-center rounded-xl border border-input bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            Página Inicial
           </a>
         </div>
       </div>
@@ -121,12 +160,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: TEMA_INLINE_SCRIPT }} />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         {children}
         <Scripts />
       </body>

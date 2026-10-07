@@ -92,11 +92,6 @@ const AuthenticatedRegrasRoute = AuthenticatedRegrasRouteImport.update({
   path: '/regras',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedRegrasRoute = AuthenticatedRegrasRouteImport.update({
-  id: '/regras',
-  path: '/regras',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
@@ -394,13 +389,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRegrasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/regras': {
-      id: '/_authenticated/regras'
-      path: '/regras'
-      fullPath: '/regras'
-      preLoaderRoute: typeof AuthenticatedRegrasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/usuarios': {
       id: '/_authenticated/usuarios'
       path: '/usuarios'
@@ -501,7 +489,6 @@ const AuthenticatedRegrasRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAtendimentoRoute: typeof AuthenticatedAtendimentoRoute
   AuthenticatedChamadosRoute: typeof AuthenticatedChamadosRouteWithChildren
-  AuthenticatedRegrasRoute: typeof AuthenticatedRegrasRoute
   AuthenticatedRegrasRoute: typeof AuthenticatedRegrasRouteWithChildren
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
 }
@@ -509,7 +496,6 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAtendimentoRoute: AuthenticatedAtendimentoRoute,
   AuthenticatedChamadosRoute: AuthenticatedChamadosRouteWithChildren,
-  AuthenticatedRegrasRoute: AuthenticatedRegrasRoute,
   AuthenticatedRegrasRoute: AuthenticatedRegrasRouteWithChildren,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
 }

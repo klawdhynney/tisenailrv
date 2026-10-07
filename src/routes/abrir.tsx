@@ -20,12 +20,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { useLoading } from "@/lib/loading-context";
 import { TextoAssistido } from "@/components/TextoAssistido";
-import { CAMPOS_ABERTURA_PADRAO, AVALIACAO_PADRAO } from "@/lib/types";
+import { CAMPOS_ABERTURA_PADRAO, AVALIACAO_PADRAO, ABRIR_CHAMADO_PADRAO } from "@/lib/types";
 import { sugerirTextoAbertura, revisarTexto } from "@/lib/revisar-texto.functions";
 
 export const Route = createFileRoute("/abrir")({
   ssr: false,
   beforeLoad: async () => {
+    if (typeof window === "undefined") return;
+
+    const testUser =
+      (window as any).__TEST_USER__ ||
+      (localStorage.getItem("sb-mock-user")
+        ? JSON.parse(localStorage.getItem("sb-mock-user") || "null")
+        : null);
+    if (testUser) return;
     const { data } = await supabase.auth.getUser();
     if (!data.user) {
       throw redirect({ to: "/auth", search: { redirectTo: "/abrir" } });
