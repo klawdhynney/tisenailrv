@@ -37,6 +37,240 @@ export const TEMA_CONFIG_PADRAO: TemaConfig = {
 };
 
 // ==========================================
+// CONFIGURAÇÕES DE CORES DOS BOTÕES DO SISTEMA
+// ==========================================
+
+export interface CorBotaoItem {
+  bg: string;
+  text: string;
+  hover: string;
+  border?: string;
+  hoverText?: string;
+}
+
+export interface CoresBotoesConfig {
+  primario: CorBotaoItem;
+  secundario: CorBotaoItem;
+  outline: CorBotaoItem;
+  destaque: CorBotaoItem;
+  sucesso: CorBotaoItem;
+  perigo: CorBotaoItem;
+  topoDashboard: CorBotaoItem;
+  exportacao: CorBotaoItem;
+  abasGraficoAtiva: CorBotaoItem;
+  abasGraficoInativa: CorBotaoItem;
+  abaRecorrentes: CorBotaoItem;
+  abaSetores: CorBotaoItem;
+  abaPrioridades: CorBotaoItem;
+  abaStatus: CorBotaoItem;
+  abaSla: CorBotaoItem;
+}
+
+export interface CoresBotoesPorTemaConfig {
+  claro: CoresBotoesConfig;
+  escuro: CoresBotoesConfig;
+}
+
+export interface CategoriaBotaoMeta {
+  id: keyof CoresBotoesConfig;
+  nome: string;
+  descricao: string;
+  ondeEUsado: string;
+  temBorda?: boolean;
+}
+
+export const CATEGORIAS_BOTOES: CategoriaBotaoMeta[] = [
+  {
+    id: "primario",
+    nome: "Botão Primário (Principal)",
+    descricao: "Ação de confirmação principal e envio.",
+    ondeEUsado: "Formulários de chamado, modais, diálogos de salvar e telas principais.",
+  },
+  {
+    id: "secundario",
+    nome: "Botão Secundário",
+    descricao: "Ações complementares de apoio com fundo neutro suave.",
+    ondeEUsado: "Ações secundárias em formulários e diálogos.",
+  },
+  {
+    id: "outline",
+    nome: "Botão de Contorno (Outline)",
+    descricao: "Botões vazados com borda sutil e fundo transparente ou card.",
+    ondeEUsado: "Botões de navegação, 'Cancelar', 'Voltar' e ações neutras.",
+    temBorda: true,
+  },
+  {
+    id: "destaque",
+    nome: "Botão de Destaque (Google Azul)",
+    descricao: "Botão de chamada de atenção prioritária institucional.",
+    ondeEUsado: "Botão 'Dashboard' na Home, login Google/Microsoft, ações de destaque.",
+  },
+  {
+    id: "sucesso",
+    nome: "Botão de Sucesso (Google Verde)",
+    descricao: "Botão verde institucional para abertura e confirmação positiva.",
+    ondeEUsado: "Botão 'Abrir Chamado' na Home, submissão de chamados e ações de sucesso.",
+  },
+  {
+    id: "perigo",
+    nome: "Botão de Perigo / Excluir (Destrutivo)",
+    descricao: "Botão vermelho de alerta para ações destrutivas ou cancelamento.",
+    ondeEUsado: "Exclusão de registros, cancelar chamado, confirmações irreversíveis.",
+  },
+  {
+    id: "topoDashboard",
+    nome: "Botões do Topo do Dashboard",
+    descricao: "Botões superiores de filtros e navegação do Dashboard.",
+    ondeEUsado: "Botões 'Mês', 'Acompanhar chamados' e 'Avaliações' no topo de /dashboard.",
+    temBorda: true,
+  },
+  {
+    id: "exportacao",
+    nome: "Botões de Exportação do Dashboard",
+    descricao: "Botões de download de dados do Dashboard.",
+    ondeEUsado: "Botões 'Exportar planilha' e 'Exportar PDF' no Dashboard.",
+    temBorda: true,
+  },
+  {
+    id: "abasGraficoAtiva",
+    nome: "Abas Secundárias de Gráficos (Ativa)",
+    descricao: "Aba atualmente selecionada entre as visualizações de gráficos.",
+    ondeEUsado: "Abas 'Indicadores Principais', 'Distribuição', 'Volume', 'Série Histórica' (quando ativa).",
+  },
+  {
+    id: "abasGraficoInativa",
+    nome: "Abas Secundárias de Gráficos (Inativa)",
+    descricao: "Abas de visualização de gráficos quando não estão selecionadas.",
+    ondeEUsado: "Abas secundárias do Dashboard em estado de repouso.",
+    temBorda: true,
+  },
+  {
+    id: "abaRecorrentes",
+    nome: "Aba: Chamados recorrentes",
+    descricao: "Primeira dimensão colorida da Análise Categórica no Dashboard.",
+    ondeEUsado: "Botão 'Chamados recorrentes' no painel 'Análise Categórica' do Dashboard.",
+  },
+  {
+    id: "abaSetores",
+    nome: "Aba: Chamados por setores",
+    descricao: "Segunda dimensão colorida da Análise Categórica no Dashboard.",
+    ondeEUsado: "Botão 'Chamados por setores' no painel 'Análise Categórica' do Dashboard.",
+  },
+  {
+    id: "abaPrioridades",
+    nome: "Aba: Prioridades dos chamados",
+    descricao: "Terceira dimensão colorida da Análise Categórica no Dashboard.",
+    ondeEUsado: "Botão 'Prioridades dos chamados' no painel 'Análise Categórica' do Dashboard.",
+  },
+  {
+    id: "abaStatus",
+    nome: "Aba: Status dos chamados",
+    descricao: "Quarta dimensão colorida da Análise Categórica no Dashboard.",
+    ondeEUsado: "Botão 'Status dos chamados' no painel 'Análise Categórica' do Dashboard.",
+  },
+  {
+    id: "abaSla",
+    nome: "Aba: SLA dos chamados",
+    descricao: "Quinta dimensão colorida da Análise Categórica no Dashboard.",
+    ondeEUsado: "Botão 'SLA dos chamados' no painel 'Análise Categórica' do Dashboard.",
+  },
+];
+
+export const CORES_BOTOES_CLARO_PADRAO: CoresBotoesConfig = {
+  primario: { bg: "#1a73e8", text: "#ffffff", hover: "#1557b0" },
+  secundario: { bg: "#f1f3f4", text: "#202124", hover: "#e8eaed" },
+  outline: { bg: "#ffffff", text: "#202124", border: "#dadce0", hover: "#f1f3f4", hoverText: "#202124" },
+  destaque: { bg: "#1a73e8", text: "#ffffff", hover: "#1557b0" },
+  sucesso: { bg: "#34a853", text: "#ffffff", hover: "#2d9249" },
+  perigo: { bg: "#ea4335", text: "#ffffff", hover: "#d93025" },
+  topoDashboard: { bg: "#ffffff", text: "#202124", border: "#dadce0", hover: "#f8f9fa", hoverText: "#1a73e8" },
+  exportacao: { bg: "#ffffff", text: "#202124", border: "#dadce0", hover: "#f8f9fa", hoverText: "#202124" },
+  abasGraficoAtiva: { bg: "#1a73e8", text: "#ffffff", hover: "#1557b0" },
+  abasGraficoInativa: { bg: "#ffffff", text: "#202124", border: "#dadce0", hover: "#f1f3f4", hoverText: "#202124" },
+  abaRecorrentes: { bg: "#1a73e8", text: "#ffffff", hover: "#1557b0" },
+  abaSetores: { bg: "#ea4335", text: "#ffffff", hover: "#d93025" },
+  abaPrioridades: { bg: "#fbbc04", text: "#09090b", hover: "#f29900" },
+  abaStatus: { bg: "#34a853", text: "#ffffff", hover: "#2d9249" },
+  abaSla: { bg: "#a142f4", text: "#ffffff", hover: "#8e24aa" },
+};
+
+export const CORES_BOTOES_ESCURO_PADRAO: CoresBotoesConfig = {
+  primario: { bg: "#3b82f6", text: "#ffffff", hover: "#2563eb" },
+  secundario: { bg: "#27272a", text: "#f4f4f5", hover: "#3f3f46" },
+  outline: { bg: "#18181b", text: "#f4f4f5", border: "#3f3f46", hover: "#27272a", hoverText: "#ffffff" },
+  destaque: { bg: "#3b82f6", text: "#ffffff", hover: "#2563eb" },
+  sucesso: { bg: "#10b981", text: "#ffffff", hover: "#059669" },
+  perigo: { bg: "#ef4444", text: "#ffffff", hover: "#dc2626" },
+  topoDashboard: { bg: "#18181b", text: "#f4f4f5", border: "#3f3f46", hover: "#27272a", hoverText: "#60a5fa" },
+  exportacao: { bg: "#18181b", text: "#f4f4f5", border: "#3f3f46", hover: "#27272a", hoverText: "#ffffff" },
+  abasGraficoAtiva: { bg: "#3b82f6", text: "#ffffff", hover: "#2563eb" },
+  abasGraficoInativa: { bg: "#18181b", text: "#f4f4f5", border: "#3f3f46", hover: "#27272a", hoverText: "#ffffff" },
+  abaRecorrentes: { bg: "#3b82f6", text: "#ffffff", hover: "#2563eb" },
+  abaSetores: { bg: "#ef4444", text: "#ffffff", hover: "#dc2626" },
+  abaPrioridades: { bg: "#f59e0b", text: "#18181b", hover: "#d97706" },
+  abaStatus: { bg: "#10b981", text: "#ffffff", hover: "#059669" },
+  abaSla: { bg: "#a855f7", text: "#ffffff", hover: "#9333ea" },
+};
+
+export const CORES_BOTOES_PADRAO: CoresBotoesPorTemaConfig = {
+  claro: CORES_BOTOES_CLARO_PADRAO,
+  escuro: CORES_BOTOES_ESCURO_PADRAO,
+};
+
+// ==========================================
+// CONFIGURAÇÕES DE CORES GERAIS DO SITE
+// ==========================================
+
+export interface CoresSiteModoConfig {
+  fundo: string;
+  card: string;
+  textoTitulo: string;
+  textoComum: string;
+  textoMuted: string;
+  borda: string;
+  faixaHeader1: string;
+  faixaHeader2: string;
+  faixaHeader3: string;
+  faixaHeader4: string;
+}
+
+export interface CoresSiteConfig {
+  claro: CoresSiteModoConfig;
+  escuro: CoresSiteModoConfig;
+}
+
+export const CORES_SITE_CLARO_PADRAO: CoresSiteModoConfig = {
+  fundo: "#f8f9fa",
+  card: "#ffffff",
+  textoTitulo: "#1f2937",
+  textoComum: "#374151",
+  textoMuted: "#6b7280",
+  borda: "#e5e7eb",
+  faixaHeader1: "#1a73e8",
+  faixaHeader2: "#ea4335",
+  faixaHeader3: "#fbbc04",
+  faixaHeader4: "#34a853",
+};
+
+export const CORES_SITE_ESCURO_PADRAO: CoresSiteModoConfig = {
+  fundo: "#0f172a",
+  card: "#1e293b",
+  textoTitulo: "#f8fafc",
+  textoComum: "#e2e8f0",
+  textoMuted: "#94a3b8",
+  borda: "#334155",
+  faixaHeader1: "#3b82f6",
+  faixaHeader2: "#ef4444",
+  faixaHeader3: "#f59e0b",
+  faixaHeader4: "#10b981",
+};
+
+export const CORES_SITE_PADRAO: CoresSiteConfig = {
+  claro: CORES_SITE_CLARO_PADRAO,
+  escuro: CORES_SITE_ESCURO_PADRAO,
+};
+
+// ==========================================
 // CÁLCULO DE LUMINÂNCIA E CONTRASTE WCAG 2.1
 // ==========================================
 
@@ -450,6 +684,176 @@ export interface AplicarTemaParams {
   modo: ModoTema;
   paleta: PaletaId;
   custom?: PaletaPersonalizadaConfig;
+  coresBotoes?: CoresBotoesPorTemaConfig;
+  coresSite?: CoresSiteConfig;
+}
+
+/**
+ * Aplica variáveis CSS dos botões e do site no elemento raiz
+ */
+export function aplicarCoresCustomizadasNoDocumento(
+  root: HTMLElement,
+  isDark: boolean,
+  coresBotoesParam?: CoresBotoesPorTemaConfig,
+  coresSiteParam?: CoresSiteConfig
+) {
+  let coresBotoes = coresBotoesParam;
+  let coresSite = coresSiteParam;
+
+  if (!coresBotoes || !coresSite) {
+    try {
+      const cached = localStorage.getItem("tisenai_regras_cache");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (!coresBotoes && parsed.coresBotoes) coresBotoes = parsed.coresBotoes;
+        if (!coresSite && parsed.coresSite) coresSite = parsed.coresSite;
+      }
+    } catch {}
+  }
+
+  // 1. Injeta cores de botões conforme o modo ativo (claro ou escuro)
+  const configBotoesAtiva = isDark
+    ? (coresBotoes?.escuro ?? CORES_BOTOES_ESCURO_PADRAO)
+    : (coresBotoes?.claro ?? CORES_BOTOES_CLARO_PADRAO);
+
+  if (configBotoesAtiva) {
+    // Primário
+    if (configBotoesAtiva.primario) {
+      root.style.setProperty("--btn-primary-bg", configBotoesAtiva.primario.bg);
+      root.style.setProperty("--btn-primary-text", configBotoesAtiva.primario.text);
+      root.style.setProperty("--btn-primary-hover", configBotoesAtiva.primario.hover);
+    }
+    // Secundário
+    if (configBotoesAtiva.secundario) {
+      root.style.setProperty("--btn-secondary-bg", configBotoesAtiva.secundario.bg);
+      root.style.setProperty("--btn-secondary-text", configBotoesAtiva.secundario.text);
+      root.style.setProperty("--btn-secondary-hover", configBotoesAtiva.secundario.hover);
+    }
+    // Outline
+    if (configBotoesAtiva.outline) {
+      root.style.setProperty("--btn-outline-bg", configBotoesAtiva.outline.bg);
+      root.style.setProperty("--btn-outline-text", configBotoesAtiva.outline.text);
+      root.style.setProperty("--btn-outline-border", configBotoesAtiva.outline.border || "var(--border)");
+      root.style.setProperty("--btn-outline-hover-bg", configBotoesAtiva.outline.hover);
+      root.style.setProperty("--btn-outline-hover-text", configBotoesAtiva.outline.hoverText || configBotoesAtiva.outline.text);
+    }
+    // Destaque (Google Azul)
+    if (configBotoesAtiva.destaque) {
+      root.style.setProperty("--btn-destaque-bg", configBotoesAtiva.destaque.bg);
+      root.style.setProperty("--btn-destaque-text", configBotoesAtiva.destaque.text);
+      root.style.setProperty("--btn-destaque-hover", configBotoesAtiva.destaque.hover);
+    }
+    // Sucesso (Google Verde)
+    if (configBotoesAtiva.sucesso) {
+      root.style.setProperty("--btn-sucesso-bg", configBotoesAtiva.sucesso.bg);
+      root.style.setProperty("--btn-sucesso-text", configBotoesAtiva.sucesso.text);
+      root.style.setProperty("--btn-sucesso-hover", configBotoesAtiva.sucesso.hover);
+    }
+    // Perigo (Destrutivo)
+    if (configBotoesAtiva.perigo) {
+      root.style.setProperty("--btn-perigo-bg", configBotoesAtiva.perigo.bg);
+      root.style.setProperty("--btn-perigo-text", configBotoesAtiva.perigo.text);
+      root.style.setProperty("--btn-perigo-hover", configBotoesAtiva.perigo.hover);
+    }
+    // Topo Dashboard
+    if (configBotoesAtiva.topoDashboard) {
+      root.style.setProperty("--btn-dash-top-bg", configBotoesAtiva.topoDashboard.bg);
+      root.style.setProperty("--btn-dash-top-text", configBotoesAtiva.topoDashboard.text);
+      root.style.setProperty("--btn-dash-top-border", configBotoesAtiva.topoDashboard.border || "var(--border)");
+      root.style.setProperty("--btn-dash-top-hover-bg", configBotoesAtiva.topoDashboard.hover);
+      root.style.setProperty("--btn-dash-top-hover-text", configBotoesAtiva.topoDashboard.hoverText || configBotoesAtiva.topoDashboard.text);
+    }
+    // Exportação
+    if (configBotoesAtiva.exportacao) {
+      root.style.setProperty("--btn-export-bg", configBotoesAtiva.exportacao.bg);
+      root.style.setProperty("--btn-export-text", configBotoesAtiva.exportacao.text);
+      root.style.setProperty("--btn-export-border", configBotoesAtiva.exportacao.border || "var(--border)");
+      root.style.setProperty("--btn-export-hover-bg", configBotoesAtiva.exportacao.hover);
+      root.style.setProperty("--btn-export-hover-text", configBotoesAtiva.exportacao.hoverText || configBotoesAtiva.exportacao.text);
+    }
+    // Abas de Gráficos
+    if (configBotoesAtiva.abasGraficoAtiva) {
+      root.style.setProperty("--btn-chart-tab-active-bg", configBotoesAtiva.abasGraficoAtiva.bg);
+      root.style.setProperty("--btn-chart-tab-active-text", configBotoesAtiva.abasGraficoAtiva.text);
+      root.style.setProperty("--btn-chart-tab-hover-bg", configBotoesAtiva.abasGraficoAtiva.hover);
+    }
+    if (configBotoesAtiva.abasGraficoInativa) {
+      root.style.setProperty("--btn-chart-tab-inactive-bg", configBotoesAtiva.abasGraficoInativa.bg);
+      root.style.setProperty("--btn-chart-tab-inactive-text", configBotoesAtiva.abasGraficoInativa.text);
+      root.style.setProperty("--btn-chart-tab-inactive-border", configBotoesAtiva.abasGraficoInativa.border || "var(--border)");
+    }
+    // 5 Abas da Análise Categórica
+    if (configBotoesAtiva.abaRecorrentes) {
+      root.style.setProperty("--btn-cat-recorrentes-bg", configBotoesAtiva.abaRecorrentes.bg);
+      root.style.setProperty("--btn-cat-recorrentes-text", configBotoesAtiva.abaRecorrentes.text);
+      root.style.setProperty("--btn-cat-recorrentes-hover", configBotoesAtiva.abaRecorrentes.hover);
+    }
+    if (configBotoesAtiva.abaSetores) {
+      root.style.setProperty("--btn-cat-setores-bg", configBotoesAtiva.abaSetores.bg);
+      root.style.setProperty("--btn-cat-setores-text", configBotoesAtiva.abaSetores.text);
+      root.style.setProperty("--btn-cat-setores-hover", configBotoesAtiva.abaSetores.hover);
+    }
+    if (configBotoesAtiva.abaPrioridades) {
+      root.style.setProperty("--btn-cat-prioridades-bg", configBotoesAtiva.abaPrioridades.bg);
+      root.style.setProperty("--btn-cat-prioridades-text", configBotoesAtiva.abaPrioridades.text);
+      root.style.setProperty("--btn-cat-prioridades-hover", configBotoesAtiva.abaPrioridades.hover);
+    }
+    if (configBotoesAtiva.abaStatus) {
+      root.style.setProperty("--btn-cat-status-bg", configBotoesAtiva.abaStatus.bg);
+      root.style.setProperty("--btn-cat-status-text", configBotoesAtiva.abaStatus.text);
+      root.style.setProperty("--btn-cat-status-hover", configBotoesAtiva.abaStatus.hover);
+    }
+    if (configBotoesAtiva.abaSla) {
+      root.style.setProperty("--btn-cat-sla-bg", configBotoesAtiva.abaSla.bg);
+      root.style.setProperty("--btn-cat-sla-text", configBotoesAtiva.abaSla.text);
+      root.style.setProperty("--btn-cat-sla-hover", configBotoesAtiva.abaSla.hover);
+    }
+  }
+
+  // 2. Injeta cores gerais do site se customizadas
+  const configSiteAtiva = isDark
+    ? (coresSite?.escuro ?? CORES_SITE_ESCURO_PADRAO)
+    : (coresSite?.claro ?? CORES_SITE_CLARO_PADRAO);
+
+  if (configSiteAtiva) {
+    if (configSiteAtiva.fundo) {
+      root.style.setProperty("--site-bg", configSiteAtiva.fundo);
+      root.style.setProperty("--background", configSiteAtiva.fundo);
+    }
+    if (configSiteAtiva.card) {
+      root.style.setProperty("--site-card-bg", configSiteAtiva.card);
+      root.style.setProperty("--card", configSiteAtiva.card);
+      root.style.setProperty("--popover", configSiteAtiva.card);
+    }
+    if (configSiteAtiva.textoTitulo) {
+      root.style.setProperty("--site-title-color", configSiteAtiva.textoTitulo);
+    }
+    if (configSiteAtiva.textoComum) {
+      root.style.setProperty("--site-text-color", configSiteAtiva.textoComum);
+      root.style.setProperty("--foreground", configSiteAtiva.textoComum);
+    }
+    if (configSiteAtiva.textoMuted) {
+      root.style.setProperty("--site-muted-color", configSiteAtiva.textoMuted);
+      root.style.setProperty("--muted-foreground", configSiteAtiva.textoMuted);
+    }
+    if (configSiteAtiva.borda) {
+      root.style.setProperty("--site-border-color", configSiteAtiva.borda);
+      root.style.setProperty("--border", configSiteAtiva.borda);
+      root.style.setProperty("--input", configSiteAtiva.borda);
+    }
+    if (configSiteAtiva.faixaHeader1) {
+      root.style.setProperty("--header-stripe-1", configSiteAtiva.faixaHeader1);
+    }
+    if (configSiteAtiva.faixaHeader2) {
+      root.style.setProperty("--header-stripe-2", configSiteAtiva.faixaHeader2);
+    }
+    if (configSiteAtiva.faixaHeader3) {
+      root.style.setProperty("--header-stripe-3", configSiteAtiva.faixaHeader3);
+    }
+    if (configSiteAtiva.faixaHeader4) {
+      root.style.setProperty("--header-stripe-4", configSiteAtiva.faixaHeader4);
+    }
+  }
 }
 
 /**
@@ -467,7 +871,13 @@ export function resolverEhEscuro(modo: ModoTema): boolean {
 /**
  * Aplica os tokens CSS, atributos e meta tag no documento
  */
-export function aplicarTemaNoDocumento({ modo, paleta, custom }: AplicarTemaParams): boolean {
+export function aplicarTemaNoDocumento({
+  modo,
+  paleta,
+  custom,
+  coresBotoes,
+  coresSite,
+}: AplicarTemaParams): boolean {
   if (typeof document === "undefined") return false;
 
   const isDark = resolverEhEscuro(modo);
@@ -531,7 +941,10 @@ export function aplicarTemaNoDocumento({ modo, paleta, custom }: AplicarTemaPara
     root.style.setProperty(`--chart-${idx + 1}`, cor);
   });
 
-  // 6. Atualiza meta theme-color
+  // 6. Injeta botões e cores do site customizadas
+  aplicarCoresCustomizadasNoDocumento(root, isDark, coresBotoes, coresSite);
+
+  // 7. Atualiza meta theme-color
   try {
     let metaThemeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     if (!metaThemeColor) {
@@ -542,7 +955,7 @@ export function aplicarTemaNoDocumento({ modo, paleta, custom }: AplicarTemaPara
     metaThemeColor.content = cores.fundo;
   } catch {}
 
-  // 7. Persiste no localStorage
+  // 8. Persiste no localStorage
   try {
     localStorage.setItem("tema-ti-modo", modo);
     localStorage.setItem("tema-ti-paleta", paleta);
@@ -587,6 +1000,32 @@ export const TEMA_INLINE_SCRIPT = `
       document.head.appendChild(meta);
     }
     meta.setAttribute('content', bg);
+
+    // Carrega cache de regras para Zero FOUC de cores customizadas
+    var cachedRegras = localStorage.getItem('tisenai_regras_cache');
+    if (cachedRegras) {
+      try {
+        var r = JSON.parse(cachedRegras);
+        var b = isDark ? r.coresBotoes && r.coresBotoes.escuro : r.coresBotoes && r.coresBotoes.claro;
+        if (b) {
+          if (b.primario) { root.style.setProperty('--btn-primary-bg', b.primario.bg); root.style.setProperty('--btn-primary-text', b.primario.text); }
+          if (b.sucesso) { root.style.setProperty('--btn-sucesso-bg', b.sucesso.bg); root.style.setProperty('--btn-sucesso-text', b.sucesso.text); }
+          if (b.destaque) { root.style.setProperty('--btn-destaque-bg', b.destaque.bg); root.style.setProperty('--btn-destaque-text', b.destaque.text); }
+          if (b.perigo) { root.style.setProperty('--btn-perigo-bg', b.perigo.bg); root.style.setProperty('--btn-perigo-text', b.perigo.text); }
+        }
+        var s = isDark ? r.coresSite && r.coresSite.escuro : r.coresSite && r.coresSite.claro;
+        if (s) {
+          if (s.fundo) { root.style.setProperty('--site-bg', s.fundo); root.style.setProperty('--background', s.fundo); }
+          if (s.card) { root.style.setProperty('--site-card-bg', s.card); root.style.setProperty('--card', s.card); }
+          if (s.textoComum) { root.style.setProperty('--site-text-color', s.textoComum); root.style.setProperty('--foreground', s.textoComum); }
+          if (s.borda) { root.style.setProperty('--site-border-color', s.borda); root.style.setProperty('--border', s.borda); }
+          if (s.faixaHeader1) root.style.setProperty('--header-stripe-1', s.faixaHeader1);
+          if (s.faixaHeader2) root.style.setProperty('--header-stripe-2', s.faixaHeader2);
+          if (s.faixaHeader3) root.style.setProperty('--header-stripe-3', s.faixaHeader3);
+          if (s.faixaHeader4) root.style.setProperty('--header-stripe-4', s.faixaHeader4);
+        }
+      } catch(err){}
+    }
   } catch(e) {}
 })();
 `.trim();

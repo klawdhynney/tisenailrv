@@ -361,7 +361,7 @@ function Dashboard() {
                 <Button
                   variant="outline"
                   className={cn(
-                    "min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer",
+                    "min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer",
                     mes !== "todos" && "border-g-blue/60 bg-g-blue/5 text-g-blue font-bold"
                   )}
                   title={
@@ -447,7 +447,7 @@ function Dashboard() {
             <Button
               asChild
               variant="outline"
-              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
+              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
               title="Acompanhar chamados"
               aria-label="Acompanhar chamados"
             >
@@ -461,7 +461,7 @@ function Dashboard() {
             <Button
               asChild
               variant="outline"
-              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
+              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
               title="Avaliações de satisfação"
               aria-label="Avaliações"
             >
@@ -477,7 +477,7 @@ function Dashboard() {
             <Button
               variant="outline"
               onClick={baixarResumo}
-              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
+              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-export-border,var(--border)/80)] bg-[var(--btn-export-bg,var(--card))] hover:bg-[var(--btn-export-hover-bg,var(--accent))] hover:text-[var(--btn-export-hover-text,var(--accent-foreground))] text-[var(--btn-export-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
               disabled={isLoading}
               title="Exportar planilha"
               aria-label="Exportar planilha"
@@ -488,7 +488,7 @@ function Dashboard() {
             <Button
               variant="outline"
               onClick={baixarPdf}
-              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
+              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-export-border,var(--border)/80)] bg-[var(--btn-export-bg,var(--card))] hover:bg-[var(--btn-export-hover-bg,var(--accent))] hover:text-[var(--btn-export-hover-text,var(--accent-foreground))] text-[var(--btn-export-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
               disabled={isLoading}
               title="Exportar PDF"
               aria-label="Exportar PDF"
@@ -582,30 +582,33 @@ function Dashboard() {
 
             {tipoGrafico !== "historico" && (
               <nav aria-label="Dimensões do dashboard" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 pt-1">
-                {VISOES.map((v) => (
-                  <Button
-                    key={v.id}
-                    variant={
-                      `google-${v.color}` as
-                        | "google-blue"
-                        | "google-red"
-                        | "google-yellow"
-                        | "google-green"
-                        | "google-purple"
-                    }
-                    aria-current={visao === v.id ? "page" : undefined}
-                    className={cn(
-                      "min-h-[44px] h-11 sm:h-10 px-2.5 sm:px-3 rounded-xl text-xs lg:text-[13px] xl:text-sm font-bold tracking-tight transition-all cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis flex items-center justify-center last:col-span-2 sm:last:col-span-1",
-                      visao === v.id
-                        ? "ring-2 ring-foreground/40 ring-offset-2 ring-offset-background shadow-md opacity-100"
-                        : "opacity-90 hover:opacity-100 hover:shadow-xs"
-                    )}
-                    onClick={() => setVisao(v.id)}
-                    title={v.label}
-                  >
-                    <span className="truncate">{v.label}</span>
-                  </Button>
-                ))}
+                {VISOES.map((v) => {
+                  const classeCorCustomizada: Record<string, string> = {
+                    recorrentes: "bg-[var(--btn-cat-recorrentes-bg,var(--g-blue))] text-[var(--btn-cat-recorrentes-text,#ffffff)] hover:bg-[var(--btn-cat-recorrentes-hover,var(--g-blue))]",
+                    setores: "bg-[var(--btn-cat-setores-bg,var(--g-red))] text-[var(--btn-cat-setores-text,#ffffff)] hover:bg-[var(--btn-cat-setores-hover,var(--g-red))]",
+                    prioridades: "bg-[var(--btn-cat-prioridades-bg,var(--g-yellow))] text-[var(--btn-cat-prioridades-text,#09090b)] hover:bg-[var(--btn-cat-prioridades-hover,var(--g-yellow))]",
+                    status: "bg-[var(--btn-cat-status-bg,var(--g-green))] text-[var(--btn-cat-status-text,#ffffff)] hover:bg-[var(--btn-cat-status-hover,var(--g-green))]",
+                    sla: "bg-[var(--btn-cat-sla-bg,var(--g-purple))] text-[var(--btn-cat-sla-text,#ffffff)] hover:bg-[var(--btn-cat-sla-hover,var(--g-purple))]",
+                  };
+
+                  return (
+                    <Button
+                      key={v.id}
+                      aria-current={visao === v.id ? "page" : undefined}
+                      className={cn(
+                        "min-h-[44px] h-11 sm:h-10 px-2.5 sm:px-3 rounded-xl text-xs lg:text-[13px] xl:text-sm font-bold tracking-tight transition-all cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis flex items-center justify-center last:col-span-2 sm:last:col-span-1 border border-transparent shadow-md",
+                        classeCorCustomizada[v.id] || "bg-g-blue text-white",
+                        visao === v.id
+                          ? "ring-2 ring-foreground/40 ring-offset-2 ring-offset-background shadow-md opacity-100"
+                          : "opacity-90 hover:opacity-100 hover:shadow-xs"
+                      )}
+                      onClick={() => setVisao(v.id)}
+                      title={v.label}
+                    >
+                      <span className="truncate">{v.label}</span>
+                    </Button>
+                  );
+                })}
               </nav>
             )}
           </div>
@@ -653,13 +656,18 @@ function Dashboard() {
 
                     return (filtrados.length > 0 ? filtrados : graficosDisponiveis).map((g) => {
                       const IconComp = g.icon;
+                      const ativo = tipoGrafico === g.id;
                       return (
                         <Button
                           key={g.id}
-                          variant={tipoGrafico === g.id ? "google-blue" : "outline"}
                           onClick={() => setTipoGrafico(g.id as TipoGrafico)}
                           title={g.title}
-                          className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-bold gap-1.5 shrink-0 transition-colors cursor-pointer"
+                          className={cn(
+                            "min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-bold gap-1.5 shrink-0 transition-colors cursor-pointer",
+                            ativo
+                              ? "bg-[var(--btn-chart-tab-active-bg,var(--g-blue))] text-[var(--btn-chart-tab-active-text,#ffffff)] hover:bg-[var(--btn-chart-tab-hover-bg,var(--g-blue))] border border-transparent shadow-xs"
+                              : "bg-[var(--btn-chart-tab-inactive-bg,var(--card))] text-[var(--btn-chart-tab-inactive-text,var(--foreground))] border border-[var(--btn-chart-tab-inactive-border,var(--border)/80)] hover:bg-[var(--btn-chart-tab-hover-bg,var(--accent))]"
+                          )}
                         >
                           <IconComp className="size-4 shrink-0" /> {g.label}
                         </Button>

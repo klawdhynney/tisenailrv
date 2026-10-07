@@ -121,6 +121,71 @@
   --sidebar-accent-foreground: oklch(0.18 0.02 260);
   --sidebar-border: oklch(0.91 0.008 240);
   --sidebar-ring: oklch(0.575 0.198 255.5);
+
+  /* Variáveis de Botões (Light Padrão) */
+  --btn-primary-bg: #1a73e8;
+  --btn-primary-text: #ffffff;
+  --btn-primary-hover: #1557b0;
+  --btn-secondary-bg: #f1f3f4;
+  --btn-secondary-text: #202124;
+  --btn-secondary-hover: #e8eaed;
+  --btn-outline-bg: #ffffff;
+  --btn-outline-text: #202124;
+  --btn-outline-border: #dadce0;
+  --btn-outline-hover-bg: #f1f3f4;
+  --btn-outline-hover-text: #202124;
+  --btn-destaque-bg: #1a73e8;
+  --btn-destaque-text: #ffffff;
+  --btn-destaque-hover: #1557b0;
+  --btn-sucesso-bg: #34a853;
+  --btn-sucesso-text: #ffffff;
+  --btn-sucesso-hover: #2d9249;
+  --btn-perigo-bg: #ea4335;
+  --btn-perigo-text: #ffffff;
+  --btn-perigo-hover: #d93025;
+  --btn-dash-top-bg: #ffffff;
+  --btn-dash-top-text: #202124;
+  --btn-dash-top-border: #dadce0;
+  --btn-dash-top-hover-bg: #f8f9fa;
+  --btn-dash-top-hover-text: #1a73e8;
+  --btn-export-bg: #ffffff;
+  --btn-export-text: #202124;
+  --btn-export-border: #dadce0;
+  --btn-export-hover-bg: #f8f9fa;
+  --btn-export-hover-text: #202124;
+  --btn-chart-tab-active-bg: #1a73e8;
+  --btn-chart-tab-active-text: #ffffff;
+  --btn-chart-tab-inactive-bg: #ffffff;
+  --btn-chart-tab-inactive-text: #202124;
+  --btn-chart-tab-inactive-border: #dadce0;
+  --btn-chart-tab-hover-bg: #f1f3f4;
+  --btn-cat-recorrentes-bg: #1a73e8;
+  --btn-cat-recorrentes-text: #ffffff;
+  --btn-cat-recorrentes-hover: #1557b0;
+  --btn-cat-setores-bg: #ea4335;
+  --btn-cat-setores-text: #ffffff;
+  --btn-cat-setores-hover: #d93025;
+  --btn-cat-prioridades-bg: #fbbc04;
+  --btn-cat-prioridades-text: #09090b;
+  --btn-cat-prioridades-hover: #f29900;
+  --btn-cat-status-bg: #34a853;
+  --btn-cat-status-text: #ffffff;
+  --btn-cat-status-hover: #2d9249;
+  --btn-cat-sla-bg: #a142f4;
+  --btn-cat-sla-text: #ffffff;
+  --btn-cat-sla-hover: #8e24aa;
+
+  /* Variáveis do Site (Light Padrão) */
+  --site-bg: #f8f9fa;
+  --site-card-bg: #ffffff;
+  --site-title-color: #1f2937;
+  --site-text-color: #374151;
+  --site-muted-color: #6b7280;
+  --site-border-color: #e5e7eb;
+  --header-stripe-1: #1a73e8;
+  --header-stripe-2: #ea4335;
+  --header-stripe-3: #fbbc04;
+  --header-stripe-4: #34a853;
 }
 
 .pastel {
@@ -202,6 +267,71 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: oklch(0.32 0.015 255);
   --sidebar-ring: #3b82f6;
+
+  /* Variáveis de Botões (Dark Padrão) */
+  --btn-primary-bg: #3b82f6;
+  --btn-primary-text: #ffffff;
+  --btn-primary-hover: #2563eb;
+  --btn-secondary-bg: #27272a;
+  --btn-secondary-text: #f4f4f5;
+  --btn-secondary-hover: #3f3f46;
+  --btn-outline-bg: #18181b;
+  --btn-outline-text: #f4f4f5;
+  --btn-outline-border: #3f3f46;
+  --btn-outline-hover-bg: #27272a;
+  --btn-outline-hover-text: #ffffff;
+  --btn-destaque-bg: #3b82f6;
+  --btn-destaque-text: #ffffff;
+  --btn-destaque-hover: #2563eb;
+  --btn-sucesso-bg: #10b981;
+  --btn-sucesso-text: #ffffff;
+  --btn-sucesso-hover: #059669;
+  --btn-perigo-bg: #ef4444;
+  --btn-perigo-text: #ffffff;
+  --btn-perigo-hover: #dc2626;
+  --btn-dash-top-bg: #18181b;
+  --btn-dash-top-text: #f4f4f5;
+  --btn-dash-top-border: #3f3f46;
+  --btn-dash-top-hover-bg: #27272a;
+  --btn-dash-top-hover-text: #60a5fa;
+  --btn-export-bg: #18181b;
+  --btn-export-text: #f4f4f5;
+  --btn-export-border: #3f3f46;
+  --btn-export-hover-bg: #27272a;
+  --btn-export-hover-text: #ffffff;
+  --btn-chart-tab-active-bg: #3b82f6;
+  --btn-chart-tab-active-text: #ffffff;
+  --btn-chart-tab-inactive-bg: #18181b;
+  --btn-chart-tab-inactive-text: #f4f4f5;
+  --btn-chart-tab-inactive-border: #3f3f46;
+  --btn-chart-tab-hover-bg: #27272a;
+  --btn-cat-recorrentes-bg: #3b82f6;
+  --btn-cat-recorrentes-text: #ffffff;
+  --btn-cat-recorrentes-hover: #2563eb;
+  --btn-cat-setores-bg: #ef4444;
+  --btn-cat-setores-text: #ffffff;
+  --btn-cat-setores-hover: #dc2626;
+  --btn-cat-prioridades-bg: #f59e0b;
+  --btn-cat-prioridades-text: #18181b;
+  --btn-cat-prioridades-hover: #d97706;
+  --btn-cat-status-bg: #10b981;
+  --btn-cat-status-text: #ffffff;
+  --btn-cat-status-hover: #059669;
+  --btn-cat-sla-bg: #a855f7;
+  --btn-cat-sla-text: #ffffff;
+  --btn-cat-sla-hover: #9333ea;
+
+  /* Variáveis do Site (Dark Padrão) */
+  --site-bg: #0f172a;
+  --site-card-bg: #1e293b;
+  --site-title-color: #f8fafc;
+  --site-text-color: #e2e8f0;
+  --site-muted-color: #94a3b8;
+  --site-border-color: #334155;
+  --header-stripe-1: #3b82f6;
+  --header-stripe-2: #ef4444;
+  --header-stripe-3: #f59e0b;
+  --header-stripe-4: #10b981;
 }
 
 /* PALETA BIG TECH (Light) */

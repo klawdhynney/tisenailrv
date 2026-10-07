@@ -45,6 +45,7 @@ import {
   LayoutTemplate,
   History,
   MessageSquare,
+  MousePointerClick,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -59,13 +60,15 @@ import { useStore } from "@/lib/store-context";
 import { supabase } from "@/integrations/supabase/client";
 import { GestaoUsuarios } from "@/components/GestaoUsuarios";
 import { EditorTemaECores } from "@/components/EditorTemaECores";
+import { EditorCoresBotoes } from "@/components/regras/EditorCoresBotoes";
+import { EditorCoresSite } from "@/components/regras/EditorCoresSite";
 import { PainelHistoricoConfig } from "@/components/regras/PainelHistoricoConfig";
 import { PainelMenuNav } from "@/components/regras/PainelMenuNav";
 import { PainelChatChamado } from "@/components/regras/PainelChatChamado";
 import { PainelLoginAuth } from "@/components/regras/PainelLoginAuth";
 import { PainelSeoMeta } from "@/components/regras/PainelSeoMeta";
 
-import { TEMA_CONFIG_PADRAO } from "@/lib/tema";
+import { TEMA_CONFIG_PADRAO, CORES_BOTOES_PADRAO, CORES_SITE_PADRAO } from "@/lib/tema";
 import {
   CAMPOS_ABERTURA_PADRAO,
   CAMPOS_EXPORTACAO,
@@ -606,6 +609,8 @@ function Regras() {
             { id: "banco", label: "Banco & Otimização", icone: Database, cor: "text-purple-600", kw: "banco dados limpeza otimizacao cache" },
             ...(isAdmin ? [{ id: "usuarios", label: "Usuários & Acessos", icone: Users, cor: "text-purple-600", kw: "usuarios cargos papeis admin gestor permissoes acessos" }] : []),
             ...(isAdmin ? [{ id: "ia", label: "IA de Suporte", icone: Sparkles, cor: "text-purple-600", kw: "ia inteligencia artificial prompts tokens gemini suporte" }] : []),
+            { id: "botoes", label: "Cores dos Botões", icone: MousePointerClick, cor: "text-g-blue", kw: "botoes cores aparencia botoes primario secundario contorno destaque sucesso perigo dashboard abas" },
+            { id: "coresSite", label: "Cores do Site", icone: Layout, cor: "text-purple-600", kw: "cores site fundo cards textos bordas faixa cabecalho tema" },
             { id: "temas", label: "Tema & Cores", icone: Palette, cor: "text-purple-600", kw: "tema cores paleta claro escuro pastel design aparencia" },
             { id: "historico", label: "Histórico de Alterações", icone: History, cor: "text-g-blue", kw: "historico auditoria desfazer reverter versao autor data log" },
           ]
@@ -626,17 +631,87 @@ function Regras() {
 
         {/* ABA TEMA E CORES */}
         <TabsContent value="temas" className="space-y-6 focus-visible:outline-none">
-          <EditorTemaECores
-            temaConfig={regras.temaConfig ?? TEMA_CONFIG_PADRAO}
+          <Tabs defaultValue="botoes" className="w-full space-y-6">
+            <TabsList className="bg-muted p-1 rounded-xl h-auto flex flex-wrap gap-1">
+              <TabsTrigger value="botoes" className="gap-1.5 text-xs sm:text-sm font-bold py-2">
+                <MousePointerClick className="size-4 text-g-blue" /> Cores dos Botões
+              </TabsTrigger>
+              <TabsTrigger value="site" className="gap-1.5 text-xs sm:text-sm font-bold py-2">
+                <Layout className="size-4 text-purple-600" /> Cores do Site
+              </TabsTrigger>
+              <TabsTrigger value="paleta" className="gap-1.5 text-xs sm:text-sm font-bold py-2">
+                <Palette className="size-4 text-g-green" /> Paletas & Modos Globais
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="botoes" className="space-y-6 focus-visible:outline-none">
+              <EditorCoresBotoes
+                coresBotoes={regras.coresBotoes ?? CORES_BOTOES_PADRAO}
+                isAdmin={isAdmin}
+                onSalvar={async (novasCores) => {
+                  salvar({ coresBotoes: novasCores });
+                  const novo = { ...regras, coresBotoes: novasCores };
+                  const ok = await setRegras(novo);
+                  return Boolean(ok);
+                }}
+              />
+            </TabsContent>
+
+            <TabsContent value="site" className="space-y-6 focus-visible:outline-none">
+              <EditorCoresSite
+                coresSite={regras.coresSite ?? CORES_SITE_PADRAO}
+                isAdmin={isAdmin}
+                onSalvar={async (novasCores) => {
+                  salvar({ coresSite: novasCores });
+                  const novo = { ...regras, coresSite: novasCores };
+                  const ok = await setRegras(novo);
+                  return Boolean(ok);
+                }}
+              />
+            </TabsContent>
+
+            <TabsContent value="paleta" className="space-y-6 focus-visible:outline-none">
+              <EditorTemaECores
+                temaConfig={regras.temaConfig ?? TEMA_CONFIG_PADRAO}
+                isAdmin={isAdmin}
+                onChange={(novo) => {
+                  salvar({ temaConfig: novo });
+                  salvarIdentidade({ temaPadrao: novo.modoPadrao });
+                }}
+                onRestaurarPadrao={() => {
+                  salvar({ temaConfig: TEMA_CONFIG_PADRAO });
+                  salvarIdentidade({ temaPadrao: TEMA_CONFIG_PADRAO.modoPadrao });
+                  toast.info("Configurações de tema padrão restauradas no rascunho. Clique em 'Salvar alterações' para persistir.");
+                }}
+              />
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        {/* ABA DIRETA: CORES DOS BOTÕES */}
+        <TabsContent value="botoes" className="space-y-6 focus-visible:outline-none">
+          <EditorCoresBotoes
+            coresBotoes={regras.coresBotoes ?? CORES_BOTOES_PADRAO}
             isAdmin={isAdmin}
-            onChange={(novo) => {
-              salvar({ temaConfig: novo });
-              salvarIdentidade({ temaPadrao: novo.modoPadrao });
+            onSalvar={async (novasCores) => {
+              salvar({ coresBotoes: novasCores });
+              const novo = { ...regras, coresBotoes: novasCores };
+              const ok = await setRegras(novo);
+              return Boolean(ok);
             }}
-            onRestaurarPadrao={() => {
-              salvar({ temaConfig: TEMA_CONFIG_PADRAO });
-              salvarIdentidade({ temaPadrao: TEMA_CONFIG_PADRAO.modoPadrao });
-              toast.info("Configurações de tema padrão restauradas no rascunho. Clique em 'Salvar alterações' para persistir.");
+          />
+        </TabsContent>
+
+        {/* ABA DIRETA: CORES DO SITE */}
+        <TabsContent value="coresSite" className="space-y-6 focus-visible:outline-none">
+          <EditorCoresSite
+            coresSite={regras.coresSite ?? CORES_SITE_PADRAO}
+            isAdmin={isAdmin}
+            onSalvar={async (novasCores) => {
+              salvar({ coresSite: novasCores });
+              const novo = { ...regras, coresSite: novasCores };
+              const ok = await setRegras(novo);
+              return Boolean(ok);
             }}
           />
         </TabsContent>

@@ -121,8 +121,28 @@ export const CAMPOS_EXPORTACAO = [
   { id: "WhatsApp", label: "WhatsApp" },
 ] as const;
 
-export type { ModoTema, PaletaId, PaletaPersonalizadaConfig, TemaConfig } from "./tema";
-import { TEMA_CONFIG_PADRAO, type TemaConfig } from "./tema";
+export type {
+  ModoTema,
+  PaletaId,
+  PaletaPersonalizadaConfig,
+  TemaConfig,
+  CorBotaoItem,
+  CoresBotoesConfig,
+  CoresBotoesPorTemaConfig,
+  CoresSiteModoConfig,
+  CoresSiteConfig,
+  CategoriaBotaoMeta,
+} from "./tema";
+import {
+  TEMA_CONFIG_PADRAO,
+  CORES_BOTOES_PADRAO,
+  CORES_SITE_PADRAO,
+  CATEGORIAS_BOTOES,
+  type TemaConfig,
+  type CoresBotoesPorTemaConfig,
+  type CoresSiteConfig,
+} from "./tema";
+export { CATEGORIAS_BOTOES, CORES_BOTOES_PADRAO, CORES_SITE_PADRAO };
 
 export interface IdentidadeVisualConfig {
   tituloSite: string;
@@ -743,6 +763,8 @@ export interface Regras {
   whatsapp?: WhatsappConfig | undefined;
   alertasEmail?: AlertasEmailConfig | undefined;
   temaConfig?: TemaConfig | undefined;
+  coresBotoes?: CoresBotoesPorTemaConfig | undefined;
+  coresSite?: CoresSiteConfig | undefined;
   menu?: MenuItemConfig[] | undefined;
   chat?: ChatConfig | undefined;
   login?: LoginConfig | undefined;
@@ -1153,6 +1175,14 @@ export const REGRAS_PADRAO: Regras = {
   sobre: { ...SOBRE_PADRAO },
   alertasEmail: { ...ALERTAS_EMAIL_PADRAO },
   temaConfig: { ...TEMA_CONFIG_PADRAO },
+  coresBotoes: {
+    claro: { ...CORES_BOTOES_PADRAO.claro },
+    escuro: { ...CORES_BOTOES_PADRAO.escuro },
+  },
+  coresSite: {
+    claro: { ...CORES_SITE_PADRAO.claro },
+    escuro: { ...CORES_SITE_PADRAO.escuro },
+  },
   menu: [...MENU_PADRAO],
   chat: { ...CHAT_PADRAO },
   login: { ...LOGIN_PADRAO },

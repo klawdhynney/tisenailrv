@@ -9,23 +9,26 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+        default:
+          "bg-[var(--btn-primary-bg,var(--primary))] text-[var(--btn-primary-text,var(--primary-foreground))] shadow hover:bg-[var(--btn-primary-hover,var(--primary)/90)]",
+        destructive:
+          "bg-[var(--btn-perigo-bg,var(--destructive))] text-[var(--btn-perigo-text,var(--destructive-foreground))] shadow-sm hover:bg-[var(--btn-perigo-hover,var(--destructive)/90)]",
         outline:
-          "border border-border/80 bg-background/50 text-foreground font-semibold shadow-sm hover:bg-accent hover:text-foreground hover:border-foreground/40",
-        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+          "border border-[var(--btn-outline-border,var(--border)/80)] bg-[var(--btn-outline-bg,var(--background)/50)] text-[var(--btn-outline-text,var(--foreground))] font-semibold shadow-sm hover:bg-[var(--btn-outline-hover-bg,var(--accent))] hover:text-[var(--btn-outline-hover-text,var(--foreground))] hover:border-foreground/40",
+        secondary:
+          "bg-[var(--btn-secondary-bg,var(--secondary))] text-[var(--btn-secondary-text,var(--secondary-foreground))] shadow-sm hover:bg-[var(--btn-secondary-hover,var(--secondary)/80)]",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         "google-blue":
-          "border border-transparent bg-g-blue text-white font-bold shadow-md hover:brightness-110 active:scale-[0.98] transition-all",
+          "border border-transparent bg-[var(--btn-destaque-bg,var(--g-blue))] text-[var(--btn-destaque-text,white)] font-bold shadow-md hover:bg-[var(--btn-destaque-hover,var(--g-blue))] hover:brightness-110 active:scale-[0.98] transition-all",
         "google-red":
-          "border border-transparent bg-g-red text-white font-bold shadow-md hover:brightness-110 active:scale-[0.98] transition-all",
+          "border border-transparent bg-[var(--btn-cat-setores-bg,var(--g-red))] text-[var(--btn-cat-setores-text,white)] font-bold shadow-md hover:bg-[var(--btn-cat-setores-hover,var(--g-red))] hover:brightness-110 active:scale-[0.98] transition-all",
         "google-yellow":
-          "border border-transparent bg-g-yellow text-zinc-950 font-extrabold shadow-md hover:brightness-110 active:scale-[0.98] transition-all",
+          "border border-transparent bg-[var(--btn-cat-prioridades-bg,var(--g-yellow))] text-[var(--btn-cat-prioridades-text,#09090b)] font-extrabold shadow-md hover:bg-[var(--btn-cat-prioridades-hover,var(--g-yellow))] hover:brightness-110 active:scale-[0.98] transition-all",
         "google-green":
-          "border border-transparent bg-g-green text-white font-bold shadow-md hover:brightness-110 active:scale-[0.98] transition-all",
+          "border border-transparent bg-[var(--btn-sucesso-bg,var(--g-green))] text-[var(--btn-sucesso-text,white)] font-bold shadow-md hover:bg-[var(--btn-sucesso-hover,var(--g-green))] hover:brightness-110 active:scale-[0.98] transition-all",
         "google-purple":
-          "border border-transparent bg-g-purple text-white font-bold shadow-md hover:brightness-110 active:scale-[0.98] transition-all",
+          "border border-transparent bg-[var(--btn-cat-sla-bg,var(--g-purple))] text-[var(--btn-cat-sla-text,white)] font-bold shadow-md hover:bg-[var(--btn-cat-sla-hover,var(--g-purple))] hover:brightness-110 active:scale-[0.98] transition-all",
       },
       size: {
         default: "min-h-[44px] sm:min-h-[36px] h-11 sm:h-9 px-4 py-2",

@@ -60,8 +60,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       modo: modoTema,
       paleta,
       custom,
+      coresBotoes: regras?.coresBotoes,
+      coresSite: regras?.coresSite,
     });
-  }, [modoTema, regras?.temaConfig]);
+  }, [modoTema, regras?.temaConfig, regras?.coresBotoes, regras?.coresSite]);
 
   // Carrega tema preferido do usuário se logado
   useEffect(() => {
@@ -91,11 +93,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         modo: "auto",
         paleta,
         custom,
+        coresBotoes: regras?.coresBotoes,
+        coresSite: regras?.coresSite,
       });
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, [modoTema, regras?.temaConfig]);
+  }, [modoTema, regras?.temaConfig, regras?.coresBotoes, regras?.coresSite]);
 
   const escolherModoTema = async (novo: ModoTema) => {
     setModoTema(novo);
@@ -105,6 +109,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       modo: novo,
       paleta,
       custom,
+      coresBotoes: regras?.coresBotoes,
+      coresSite: regras?.coresSite,
     });
     if (session?.user?.id) {
       try {
@@ -469,7 +475,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Button>
           </div>
         </ContainerPadrao>
-        <div className="h-1 w-full bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
+        <div className="h-1 w-full bg-[linear-gradient(90deg,var(--header-stripe-1,var(--g-blue))_0%,var(--header-stripe-1,var(--g-blue))_25%,var(--header-stripe-2,var(--g-red))_25%,var(--header-stripe-2,var(--g-red))_50%,var(--header-stripe-3,var(--g-yellow))_50%,var(--header-stripe-3,var(--g-yellow))_75%,var(--header-stripe-4,var(--g-green))_75%)]" />
         {aberto && (
           <ContainerPadrao as="nav" className="flex flex-col gap-2.5 border-t border-border bg-card p-4 lg:hidden animate-in slide-in-from-top-2 duration-200 max-h-[calc(100dvh-5rem)] overflow-y-auto">
             {session && (

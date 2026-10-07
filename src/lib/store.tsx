@@ -38,6 +38,7 @@ import {
   type PapelUsuario,
   obterDataHojeCuiaba,
 } from "./types";
+import { aplicarCoresCustomizadasNoDocumento } from "./tema";
 
 type Row = Database["public"]["Tables"]["tickets"]["Row"];
 
@@ -186,6 +187,26 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
           corNeutra: "#1F2430",
         }),
         ...(regrasSalvas.temaConfig?.paletaPersonalizada || {}),
+      },
+    },
+    coresBotoes: {
+      claro: {
+        ...(REGRAS_PADRAO.coresBotoes?.claro ?? {}),
+        ...(regrasSalvas.coresBotoes?.claro || {}),
+      },
+      escuro: {
+        ...(REGRAS_PADRAO.coresBotoes?.escuro ?? {}),
+        ...(regrasSalvas.coresBotoes?.escuro || {}),
+      },
+    },
+    coresSite: {
+      claro: {
+        ...(REGRAS_PADRAO.coresSite?.claro ?? {}),
+        ...(regrasSalvas.coresSite?.claro || {}),
+      },
+      escuro: {
+        ...(REGRAS_PADRAO.coresSite?.escuro ?? {}),
+        ...(regrasSalvas.coresSite?.escuro || {}),
       },
     },
   };
@@ -587,6 +608,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (typeof window !== "undefined") {
           try {
             localStorage.setItem("tisenai_regras_cache", JSON.stringify(merged));
+            const isDark = document.documentElement.classList.contains("dark");
+            aplicarCoresCustomizadasNoDocumento(document.documentElement, isDark, merged.coresBotoes, merged.coresSite);
           } catch {}
         }
       });
