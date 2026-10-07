@@ -354,14 +354,14 @@ function Dashboard() {
         {/* Ações do cabeçalho alinhadas à direita */}
         <div className="flex flex-col items-end gap-2 shrink-0 self-end sm:self-center">
           {/* Linha superior: Filtro Mês, Acompanhar chamados, Avaliações */}
-          <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0 flex-nowrap">
+          <div className="flex items-center justify-end gap-2 shrink-0 flex-nowrap">
             {/* Botão Filtrar (com Popover seletor de mês) */}
             <Popover open={filtroAberto} onOpenChange={setFiltroAberto}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "min-h-[44px] h-11 sm:h-10 px-2.5 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer",
+                    "min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer",
                     mes !== "todos" && "border-g-blue/60 bg-g-blue/5 text-g-blue font-bold"
                   )}
                   title={
@@ -447,7 +447,7 @@ function Dashboard() {
             <Button
               asChild
               variant="outline"
-              className="min-h-[44px] h-11 sm:h-10 px-2.5 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors"
+              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
               title="Acompanhar chamados"
               aria-label="Acompanhar chamados"
             >
@@ -461,7 +461,7 @@ function Dashboard() {
             <Button
               asChild
               variant="outline"
-              className="min-h-[44px] h-11 sm:h-10 px-2.5 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors"
+              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
               title="Avaliações de satisfação"
               aria-label="Avaliações"
             >
@@ -473,12 +473,11 @@ function Dashboard() {
           </div>
 
           {/* Linha inferior: Botões de exportação alinhados à direita, na mesma linha entre si */}
-          <div className="no-print flex items-center justify-end gap-1.5 sm:gap-2 shrink-0 flex-wrap">
+          <div className="no-print flex items-center justify-end gap-2 shrink-0 flex-wrap">
             <Button
-              size="sm"
               variant="outline"
               onClick={baixarResumo}
-              className="min-h-[44px] sm:min-h-[36px] h-11 sm:h-9 px-3 rounded-xl text-xs sm:text-sm font-semibold border-border/80 bg-card hover:bg-accent text-foreground shadow-xs gap-1.5 cursor-pointer"
+              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
               disabled={isLoading}
               title="Exportar planilha"
               aria-label="Exportar planilha"
@@ -487,10 +486,9 @@ function Dashboard() {
               <span>Exportar planilha</span>
             </Button>
             <Button
-              size="sm"
               variant="outline"
               onClick={baixarPdf}
-              className="min-h-[44px] sm:min-h-[36px] h-11 sm:h-9 px-3 rounded-xl text-xs sm:text-sm font-semibold border-border/80 bg-card hover:bg-accent text-foreground shadow-xs gap-1.5 cursor-pointer"
+              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
               disabled={isLoading}
               title="Exportar PDF"
               aria-label="Exportar PDF"
@@ -556,8 +554,8 @@ function Dashboard() {
                 className={`rounded-xl border-l-4 ${item.border} bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between`}
               >
                 <div>
-                  <p className="text-sm font-semibold text-muted-foreground">{item.label}</p>
-                  <p className={`mt-1 text-3xl font-black tracking-tight ${item.color}`}>{item.count}</p>
+                  <p className="text-xs sm:text-sm font-semibold text-muted-foreground">{item.label}</p>
+                  <p className={`mt-1 text-2xl sm:text-3xl font-black tracking-tight ${item.color}`}>{item.count}</p>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground/80 leading-snug">{item.desc}</p>
               </div>
@@ -572,18 +570,18 @@ function Dashboard() {
           <div className="rounded-2xl border-2 border-g-blue/50 bg-card p-4 sm:p-5 shadow-xs transition-all space-y-4">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-black text-foreground tracking-tight">Análise Categórica</h2>
+                <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">Análise Categórica</h2>
                 <Badge variant="outline" className="text-[10px] text-g-blue border-g-blue/30 font-bold">
                   Dimensões
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                 Navegue pelas dimensões dos chamados e acompanhe a distribuição e proporção dos registros.
               </p>
             </div>
 
             {tipoGrafico !== "historico" && (
-              <nav aria-label="Dimensões do dashboard" className="grid grid-cols-2 gap-2 md:grid-cols-5 pt-1">
+              <nav aria-label="Dimensões do dashboard" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 pt-1">
                 {VISOES.map((v) => (
                   <Button
                     key={v.id}
@@ -596,14 +594,16 @@ function Dashboard() {
                         | "google-purple"
                     }
                     aria-current={visao === v.id ? "page" : undefined}
-                    className={`h-auto min-h-11 whitespace-normal py-2 text-center text-xs sm:text-sm font-bold tracking-tight ${
+                    className={cn(
+                      "min-h-[44px] h-11 sm:h-10 px-2.5 sm:px-3 rounded-xl text-xs lg:text-[13px] xl:text-sm font-bold tracking-tight transition-all cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis flex items-center justify-center last:col-span-2 sm:last:col-span-1",
                       visao === v.id
-                        ? "ring-2 ring-white ring-offset-2 ring-offset-background shadow-md scale-[1.01]"
-                        : "opacity-85 hover:opacity-100"
-                    }`}
+                        ? "ring-2 ring-foreground/40 ring-offset-2 ring-offset-background shadow-md opacity-100"
+                        : "opacity-90 hover:opacity-100 hover:shadow-xs"
+                    )}
                     onClick={() => setVisao(v.id)}
+                    title={v.label}
                   >
-                    {v.label}
+                    <span className="truncate">{v.label}</span>
                   </Button>
                 ))}
               </nav>
@@ -620,12 +620,12 @@ function Dashboard() {
             >
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-3">
                 <div>
-                  <h3 className="text-xl font-bold text-foreground">
+                  <h3 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
                     {tipoGrafico === "historico"
                       ? (dashConf?.titulosGraficos?.historico || "Série Histórica Contínua")
                       : (dashConf?.titulosGraficos?.[tipoGrafico] || VISOES.find((v) => v.id === visao)?.label)}
                   </h3>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                     {tipoGrafico === "historico"
                       ? (dashConf?.descricoesGraficos?.historico || "Evolução temporal mês a mês dos atendimentos registrados, resolvidos e em andamento.")
                       : (dashConf?.descricoesGraficos?.[tipoGrafico] || "Distribuição e proporção dos registros filtrados.")}
@@ -633,7 +633,7 @@ function Dashboard() {
                 </div>
 
                 {/* Menu e Abas dos Gráficos com Cartões KPI em Primeiro e Série Histórica após os demais */}
-                <div className="no-print flex flex-wrap gap-1.5" aria-label="Tipo de gráfico">
+                <div className="no-print flex flex-wrap gap-2" aria-label="Tipo de gráfico">
                   {(() => {
                     const graficosDisponiveis = [
                       { id: "kpi", label: dashConf?.titulosGraficos?.kpi || "Cartões de Indicadores", icon: LayoutGrid, title: "Cartões de Indicadores (Big Numbers)" },
@@ -656,13 +656,12 @@ function Dashboard() {
                       return (
                         <Button
                           key={g.id}
-                          size="sm"
                           variant={tipoGrafico === g.id ? "google-blue" : "outline"}
                           onClick={() => setTipoGrafico(g.id as TipoGrafico)}
                           title={g.title}
-                          className="font-bold"
+                          className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-bold gap-1.5 shrink-0 transition-colors cursor-pointer"
                         >
-                          <IconComp className="size-3.5 mr-1" /> {g.label}
+                          <IconComp className="size-4 shrink-0" /> {g.label}
                         </Button>
                       );
                     });
