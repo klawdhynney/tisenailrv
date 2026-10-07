@@ -44,6 +44,7 @@ import {
   Search,
   LayoutTemplate,
   History,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
