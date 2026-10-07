@@ -122,7 +122,7 @@ export const CAMPOS_EXPORTACAO = [
 ] as const;
 
 export type { ModoTema, PaletaId, PaletaPersonalizadaConfig, TemaConfig } from "./tema";
-import { TEMA_CONFIG_PADRAO } from "./tema";
+import { TEMA_CONFIG_PADRAO, type TemaConfig } from "./tema";
 
 export interface IdentidadeVisualConfig {
   tituloSite: string;

@@ -44,6 +44,7 @@ import {
   Search,
   LayoutTemplate,
   History,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -1195,7 +1196,7 @@ function Regras() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold">Título da Tela de Confirmação (use {numero})</Label>
+                  <Label className="text-xs font-semibold">Título da Tela de Confirmação (use {"{numero}"})</Label>
                   <Input
                     value={abrirConf.sucessoTitulo || "Chamado #{numero} enviado!"}
                     onChange={(e) => salvarAbrir({ sucessoTitulo: sanitizeInput(e.target.value) })}
