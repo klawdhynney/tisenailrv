@@ -52,6 +52,7 @@ export const Route = createFileRoute("/dashboard/")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>) => ({
     tipo: typeof search.tipo === "string" ? search.tipo : undefined,
+    mes: typeof search.mes === "string" ? search.mes : undefined,
   }),
   head: () => ({
     meta: [
@@ -144,6 +145,7 @@ function Dashboard() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const tipoQuery = search?.tipo;
+  const mesQuery = search?.mes;
 
 
   const [progress, setProgress] = useState<Database["public"]["Functions"]["public_ticket_sla_progress"]["Returns"]>([]);
@@ -180,7 +182,19 @@ function Dashboard() {
     };
   }, []);
 
-  const [mes, setMes] = useState(mesAtualPadrao);
+  const [mes, setMes] = useState(() => {
+    if (mesQuery && (mesQuery === "todos" || MESES_DISPONIVEIS.some((m) => m.key === mesQuery))) {
+      return mesQuery;
+    }
+    return mesAtualPadrao();
+  });
+
+  useEffect(() => {
+    if (mesQuery && (mesQuery === "todos" || MESES_DISPONIVEIS.some((m) => m.key === mesQuery))) {
+      setMes(mesQuery);
+    }
+  }, [mesQuery]);
+
   const [filtroAberto, setFiltroAberto] = useState(false);
   const [visao, setVisao] = useState<Visao>(() => (regras.dashboard?.visaoPadrao as Visao) || "problemas");
 
@@ -337,123 +351,154 @@ function Dashboard() {
           </p>
         </div>
 
-        {/* Botões do dashboard alinhados à direita em uma única linha */}
-        <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0 self-end sm:self-center flex-nowrap">
-          {/* Botão Filtrar (com Popover seletor de mês) */}
-          <Popover open={filtroAberto} onOpenChange={setFiltroAberto}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "min-h-[44px] h-11 sm:h-10 px-2.5 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer",
-                  mes !== "todos" && "border-g-blue/60 bg-g-blue/5 text-g-blue font-bold"
-                )}
-                title={
-                  mes === "todos"
-                    ? "Filtrar por mês"
-                    : `Filtro ativo: ${MESES_DISPONIVEIS.find((m) => m.key === mes)?.label || mes}`
-                }
-                aria-label="Filtrar chamados por mês"
+        {/* Ações do cabeçalho alinhadas à direita */}
+        <div className="flex flex-col items-end gap-2 shrink-0 self-end sm:self-center">
+          {/* Linha superior: Filtro Mês, Acompanhar chamados, Avaliações */}
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0 flex-nowrap">
+            {/* Botão Filtrar (com Popover seletor de mês) */}
+            <Popover open={filtroAberto} onOpenChange={setFiltroAberto}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "min-h-[44px] h-11 sm:h-10 px-2.5 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer",
+                    mes !== "todos" && "border-g-blue/60 bg-g-blue/5 text-g-blue font-bold"
+                  )}
+                  title={
+                    mes === "todos"
+                      ? "Filtrar por mês"
+                      : `Filtro ativo: ${MESES_DISPONIVEIS.find((m) => m.key === mes)?.label || mes}`
+                  }
+                  aria-label="Filtrar chamados por mês"
+                >
+                  <Filter className="size-4 text-g-blue shrink-0" />
+                  <span className="hidden sm:inline">
+                    {mes === "todos"
+                      ? "Filtrar"
+                      : `Mês: ${MESES_DISPONIVEIS.find((m) => m.key === mes)?.label || mes}`}
+                  </span>
+                  {mes !== "todos" && (
+                    <span className="sm:hidden size-2 rounded-full bg-g-blue shrink-0" aria-hidden="true" />
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-64 p-3 space-y-2.5 rounded-xl border border-border bg-popover text-popover-foreground shadow-md"
+                align="end"
               >
-                <Filter className="size-4 text-g-blue shrink-0" />
-                <span className="hidden sm:inline">
-                  {mes === "todos"
-                    ? "Filtrar"
-                    : `Mês: ${MESES_DISPONIVEIS.find((m) => m.key === mes)?.label || mes}`}
-                </span>
-                {mes !== "todos" && (
-                  <span className="sm:hidden size-2 rounded-full bg-g-blue shrink-0" aria-hidden="true" />
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-64 p-3 space-y-2.5 rounded-xl border border-border bg-popover text-popover-foreground shadow-md"
-              align="end"
-            >
-              <div className="flex items-center justify-between pb-2 border-b border-border">
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Filtrar por mês
-                </span>
-                {mes !== "todos" && (
+                <div className="flex items-center justify-between pb-2 border-b border-border">
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Filtrar por mês
+                  </span>
+                  {mes !== "todos" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMes("todos");
+                        setFiltroAberto(false);
+                      }}
+                      className="text-xs text-g-blue hover:underline font-semibold cursor-pointer"
+                    >
+                      Limpar
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
                   <button
                     type="button"
                     onClick={() => {
                       setMes("todos");
                       setFiltroAberto(false);
                     }}
-                    className="text-xs text-g-blue hover:underline font-semibold cursor-pointer"
-                  >
-                    Limpar
-                  </button>
-                )}
-              </div>
-              <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMes("todos");
-                    setFiltroAberto(false);
-                  }}
-                  className={cn(
-                    "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-between",
-                    mes === "todos"
-                      ? "bg-g-blue/10 text-g-blue font-bold"
-                      : "hover:bg-muted text-foreground"
-                  )}
-                >
-                  <span>Todos os meses</span>
-                  {mes === "todos" && <Check className="size-3.5 text-g-blue" />}
-                </button>
-                {MESES_DISPONIVEIS.map((m) => (
-                  <button
-                    key={m.key}
-                    type="button"
-                    onClick={() => {
-                      setMes(m.key);
-                      setFiltroAberto(false);
-                    }}
                     className={cn(
                       "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-between",
-                      mes === m.key
+                      mes === "todos"
                         ? "bg-g-blue/10 text-g-blue font-bold"
                         : "hover:bg-muted text-foreground"
                     )}
                   >
-                    <span>{m.label}</span>
-                    {mes === m.key && <Check className="size-3.5 text-g-blue" />}
+                    <span>Todos os meses</span>
+                    {mes === "todos" && <Check className="size-3.5 text-g-blue" />}
                   </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+                  {MESES_DISPONIVEIS.map((m) => (
+                    <button
+                      key={m.key}
+                      type="button"
+                      onClick={() => {
+                        setMes(m.key);
+                        setFiltroAberto(false);
+                      }}
+                      className={cn(
+                        "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-between",
+                        mes === m.key
+                          ? "bg-g-blue/10 text-g-blue font-bold"
+                          : "hover:bg-muted text-foreground"
+                      )}
+                    >
+                      <span>{m.label}</span>
+                      {mes === m.key && <Check className="size-3.5 text-g-blue" />}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
 
-          {/* Botão Acompanhar chamados */}
-          <Button
-            asChild
-            variant="outline"
-            className="min-h-[44px] h-11 sm:h-10 px-2.5 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors"
-            title="Acompanhar chamados"
-            aria-label="Acompanhar chamados"
-          >
-            <Link to="/dashboard/acompanhamento">
-              <ClipboardList className="size-4 text-g-green shrink-0" />
-              <span className="hidden sm:inline">Acompanhar chamados</span>
-            </Link>
-          </Button>
+            {/* Botão Acompanhar chamados */}
+            <Button
+              asChild
+              variant="outline"
+              className="min-h-[44px] h-11 sm:h-10 px-2.5 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors"
+              title="Acompanhar chamados"
+              aria-label="Acompanhar chamados"
+            >
+              <Link to="/dashboard/acompanhamento">
+                <ClipboardList className="size-4 text-g-green shrink-0" />
+                <span className="hidden sm:inline">Acompanhar chamados</span>
+              </Link>
+            </Button>
 
-          {/* Botão Avaliações */}
-          <Button
-            asChild
-            variant="outline"
-            className="min-h-[44px] h-11 sm:h-10 px-2.5 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors"
-            title="Avaliações de satisfação"
-            aria-label="Avaliações"
-          >
-            <Link to="/dashboard/avaliacoes">
-              <Star className="size-4 text-amber-500 fill-amber-400 shrink-0" />
-              <span className="hidden sm:inline">Avaliações</span>
-            </Link>
-          </Button>
+            {/* Botão Avaliações */}
+            <Button
+              asChild
+              variant="outline"
+              className="min-h-[44px] h-11 sm:h-10 px-2.5 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-border/80 bg-card hover:bg-accent hover:text-accent-foreground text-foreground shadow-xs gap-1.5 shrink-0 transition-colors"
+              title="Avaliações de satisfação"
+              aria-label="Avaliações"
+            >
+              <Link to="/dashboard/avaliacoes" search={{ mes: mes !== "todos" ? mes : undefined }}>
+                <Star className="size-4 text-amber-500 fill-amber-400 shrink-0" />
+                <span className="hidden sm:inline">Avaliações</span>
+              </Link>
+            </Button>
+          </div>
+
+          {/* Linha inferior: Botões de exportação alinhados à direita, na mesma linha entre si */}
+          <div className="no-print flex items-center justify-end gap-1.5 sm:gap-2 shrink-0 flex-wrap">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={baixarResumo}
+              className="min-h-[44px] sm:min-h-[36px] h-11 sm:h-9 px-3 rounded-xl text-xs sm:text-sm font-semibold border-border/80 bg-card hover:bg-accent text-foreground shadow-xs gap-1.5 cursor-pointer"
+              disabled={isLoading}
+              title="Exportar planilha"
+              aria-label="Exportar planilha"
+            >
+              <FileSpreadsheet className="size-4 text-g-green shrink-0" />
+              <span>Exportar planilha</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={baixarPdf}
+              className="min-h-[44px] sm:min-h-[36px] h-11 sm:h-9 px-3 rounded-xl text-xs sm:text-sm font-semibold border-border/80 bg-card hover:bg-accent text-foreground shadow-xs gap-1.5 cursor-pointer"
+              disabled={isLoading}
+              title="Exportar PDF"
+              aria-label="Exportar PDF"
+            >
+              <FileText className="size-4 text-g-red shrink-0" />
+              <span>Exportar PDF</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -521,68 +566,20 @@ function Dashboard() {
         )}
       </SectionErrorBoundary>
 
-      {/* Seção Categórica e Filtros Unificados no mesmo Bloco */}
+      {/* Seção Categórica */}
       <div className="border-t-2 border-border/80 pt-6 space-y-4">
-        <SectionErrorBoundary title="Análise Categórica e Filtros">
-          <div className="no-print rounded-2xl border-2 border-g-blue/50 bg-card p-4 sm:p-5 shadow-xs transition-all space-y-4">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-black text-foreground tracking-tight">Análise Categórica</h2>
-                  <Badge variant="outline" className="text-[10px] text-g-blue border-g-blue/30 font-bold">
-                    Dimensões & Filtros
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Navegue pelas dimensões dos chamados e acompanhe a distribuição e proporção dos registros.
-                </p>
+        <SectionErrorBoundary title="Análise Categórica">
+          <div className="rounded-2xl border-2 border-g-blue/50 bg-card p-4 sm:p-5 shadow-xs transition-all space-y-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-black text-foreground tracking-tight">Análise Categórica</h2>
+                <Badge variant="outline" className="text-[10px] text-g-blue border-g-blue/30 font-bold">
+                  Dimensões
+                </Badge>
               </div>
-
-              {/* Linha de Filtros e Exportação da Análise Categórica */}
-              <div className="flex flex-wrap items-center justify-between gap-2.5">
-                <div className="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-xl border border-border/60">
-                  <span className="text-xs font-black uppercase tracking-wider text-g-blue">Filtrar:</span>
-                  <label className="flex items-center gap-2 text-xs font-bold text-foreground">
-                    <span>Mês</span>
-                    <select
-                      aria-label="Mês da análise"
-                      className="min-h-[36px] h-9 min-w-36 rounded-lg border border-border bg-background px-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-g-blue cursor-pointer"
-                      value={mes}
-                      onChange={(e) => setMes(e.target.value)}
-                    >
-                      {MESES_DISPONIVEIS.map((m) => (
-                        <option key={m.key} value={m.key}>
-                          {m.label}
-                        </option>
-                      ))}
-                      <option value="todos">Todos os meses</option>
-                    </select>
-                  </label>
-                </div>
-
-                <div className="no-print flex flex-wrap items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={baixarResumo}
-                    className="min-h-[44px] sm:min-h-[36px] h-11 sm:h-9 px-3 rounded-xl text-xs font-semibold border-border/80 bg-card hover:bg-accent text-foreground shadow-xs gap-1.5"
-                    disabled={isLoading}
-                  >
-                    <FileSpreadsheet className="size-4 text-g-green shrink-0" />
-                    <span>Exportar planilha</span>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={baixarPdf}
-                    className="min-h-[44px] sm:min-h-[36px] h-11 sm:h-9 px-3 rounded-xl text-xs font-semibold border-border/80 bg-card hover:bg-accent text-foreground shadow-xs gap-1.5"
-                    disabled={isLoading}
-                  >
-                    <FileText className="size-4 text-g-red shrink-0" />
-                    <span>Exportar PDF</span>
-                  </Button>
-                </div>
-              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Navegue pelas dimensões dos chamados e acompanhe a distribuição e proporção dos registros.
+              </p>
             </div>
 
             {tipoGrafico !== "historico" && (
@@ -678,6 +675,7 @@ function Dashboard() {
                 dados={dados}
                 tipo={tipoGrafico}
                 cor={cor}
+                mesSelecionado={mes}
               />
             </section>
           </SectionErrorBoundary>
@@ -691,17 +689,19 @@ function Grafico({
   dados,
   tipo,
   cor,
+  mesSelecionado,
 }: {
   dados: Item[];
   tipo: TipoGrafico;
   cor: (name: string, i: number) => string;
+  mesSelecionado: string;
 }) {
   const isMobile = useIsMobile();
   const prefersReducedMotion = usePrefersReducedMotion();
 
   // 1. Gráfico de Série Histórica por Chamados
   if (tipo === "historico") {
-    return <GraficoSerieHistorica />;
+    return <GraficoSerieHistorica mesSelecionado={mesSelecionado} />;
   }
 
   if (!dados.length) {
@@ -1058,7 +1058,7 @@ function formatarChaveMes(chave: string): { labelCurto: string; labelLongo: stri
   };
 }
 
-function GraficoSerieHistorica() {
+function GraficoSerieHistorica({ mesSelecionado }: { mesSelecionado?: string }) {
   const { publicStats } = useStore();
   const isMobile = useIsMobile();
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -1094,12 +1094,24 @@ function GraficoSerieHistorica() {
   const [presetAtivo, setPresetAtivo] = useState<"todos" | "3m" | "6m" | "custom">("todos");
 
   useEffect(() => {
-    if (mesesCompletos.length > 0) {
+    if (mesesCompletos.length === 0) return;
+    if (!mesSelecionado || mesSelecionado === "todos") {
       setIndiceInicio(0);
       setIndiceFim(mesesCompletos.length - 1);
       setPresetAtivo("todos");
+    } else {
+      const idx = mesesCompletos.findIndex((m) => m.mes === mesSelecionado);
+      if (idx !== -1) {
+        setIndiceInicio(idx);
+        setIndiceFim(idx);
+        setPresetAtivo("custom");
+      } else {
+        setIndiceInicio(0);
+        setIndiceFim(mesesCompletos.length - 1);
+        setPresetAtivo("todos");
+      }
     }
-  }, [mesesCompletos.length]);
+  }, [mesSelecionado, mesesCompletos]);
 
   const aplicarPreset = (tipo: "todos" | "3m" | "6m") => {
     const totalMeses = mesesCompletos.length;

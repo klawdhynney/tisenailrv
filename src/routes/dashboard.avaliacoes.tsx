@@ -16,6 +16,10 @@ import { DashboardSatisfacao } from "@/components/DashboardSatisfacao";
 
 export const Route = createFileRoute("/dashboard/avaliacoes")({
   ssr: false,
+  validateSearch: (search: Record<string, unknown>) => ({
+    mes: typeof search.mes === "string" ? search.mes : undefined,
+    periodo: typeof search.periodo === "string" ? search.periodo : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Métricas de Avaliação e Satisfação | Dashboard | TI SENAI LRV" },
@@ -40,9 +44,18 @@ interface AvaliacaoRow {
 function PaginaAvaliacoes() {
   const { authPronto, regras } = useStore();
   const configAvaliacao = { ...AVALIACAO_PADRAO, ...(regras.avaliacao ?? {}) };
-  const [periodo, setPeriodo] = useState<string>("todos");
+  const search = Route.useSearch();
+  const mesQuery = search?.mes || search?.periodo;
+  const [periodo, setPeriodo] = useState<string>(() => mesQuery || "todos");
   const [comentarios, setComentarios] = useState<AvaliacaoRow[]>([]);
   const [carregandoComentarios, setCarregandoComentarios] = useState(true);
+
+  useEffect(() => {
+    const q = search?.mes || search?.periodo;
+    if (q) {
+      setPeriodo(q);
+    }
+  }, [search?.mes, search?.periodo]);
 
   useEffect(() => {
     let ativo = true;
@@ -111,7 +124,7 @@ function PaginaAvaliacoes() {
         <div>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground">
-              <Link to="/dashboard">
+              <Link to="/dashboard" search={{ mes: periodo !== "todos" ? periodo : undefined }}>
                 <ArrowLeft className="size-3.5 mr-1" /> Dashboard Geral
               </Link>
             </Button>
