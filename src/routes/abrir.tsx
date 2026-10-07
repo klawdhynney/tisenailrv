@@ -57,12 +57,13 @@ function AbrirChamado() {
   const { session, authPronto, regras, addTicket, recarregarEvaluationStats } = useStore();
   const { wrapAsync, isLoading } = useLoading();
   const navigate = useNavigate();
+  const configAbrir = regras.abrirChamado ?? ABRIR_CHAMADO_PADRAO;
   const campos = regras.camposAbertura ?? CAMPOS_ABERTURA_PADRAO;
   const isCampoAtivo = (id: string) => campos.find((c) => c.id === id)?.ativo ?? true;
   const isCampoObrigatorio = (id: string) => campos.find((c) => c.id === id)?.obrigatorio ?? false;
   const getCampoLabel = (id: string, fallback: string) => {
-    if (id === "local") return "Local do problema*";
-    if (id === "descricao") return "Descreva o problema*";
+    if (id === "local") return configAbrir?.rotuloLocal || "Local do problema*";
+    if (id === "descricao") return configAbrir?.rotuloDescricao || "Descreva o problema*";
     return campos.find((c) => c.id === id)?.label ?? fallback;
   };
 
@@ -472,10 +473,10 @@ function AbrirChamado() {
 
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              Chamado #{sucessoId} enviado!
+              {(configAbrir?.sucessoTitulo || "Chamado #{numero} enviado!").replace(/\{numero\}|\{id\}/gi, String(sucessoId))}
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Sua solicitação foi registrada no sistema e encaminhada para a equipe técnica.
+              {configAbrir?.sucessoDescricao || "Sua solicitação foi registrada no sistema e encaminhada para a equipe técnica."}
             </p>
           </div>
 
@@ -539,7 +540,7 @@ function AbrirChamado() {
                     title="Encaminhar chamado para o WhatsApp do suporte"
                   >
                     <MessageCircle className="size-5 shrink-0 fill-current" />
-                    <span>Enviar chamado pelo WhatsApp</span>
+                    <span>{configAbrir?.botaoWhatsappTexto || "Enviar chamado pelo WhatsApp"}</span>
                   </a>
                 </Button>
               </div>
@@ -672,7 +673,6 @@ function AbrirChamado() {
   }
 
   const customFields = campos.filter((c) => !["solicitante", "email", "setor", "categoria", "local", "contato", "descricao"].includes(c.id) && c.ativo);
-  const configAbrir = regras.abrirChamado;
 
   return (
     <div className="w-full space-y-6">

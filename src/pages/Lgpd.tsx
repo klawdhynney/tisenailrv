@@ -13,6 +13,8 @@ import {
   Clock,
   FilePlus2,
   CheckCircle2,
+  Building2,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,6 +85,74 @@ export function LgpdPage() {
 
       {/* Seções com conteúdo detalhado */}
       <div className="space-y-6">
+        {/* Painel de Identificação Legal e DPO */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          <Card className="rounded-xl border border-border/70 bg-card/60 p-4 shadow-2xs">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-g-blue/15 text-g-blue">
+                <Building2 className="size-4" />
+              </span>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Controlador</p>
+                <p className="text-xs sm:text-sm font-bold text-foreground mt-0.5">{config.controlador || "SENAI Lucas do Rio Verde - MT"}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="rounded-xl border border-border/70 bg-card/60 p-4 shadow-2xs">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-g-green/15 text-g-green">
+                <ShieldCheck className="size-4" />
+              </span>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Encarregado (DPO)</p>
+                <p className="text-xs sm:text-sm font-bold text-foreground mt-0.5">{config.encarregado || "Encarregado de Proteção de Dados (DPO) SENAI-MT"}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="rounded-xl border border-border/70 bg-card/60 p-4 shadow-2xs">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-g-yellow/15 text-amber-600 dark:text-amber-400">
+                <Mail className="size-4" />
+              </span>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">E-mail do DPO</p>
+                <a
+                  href={`mailto:${config.emailEncarregado || "dpo@sfiemt.ind.br"}`}
+                  className="text-xs sm:text-sm font-bold text-g-blue hover:underline mt-0.5 block break-all"
+                >
+                  {config.emailEncarregado || "dpo@sfiemt.ind.br"}
+                </a>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="rounded-xl border border-border/70 bg-card/60 p-4 shadow-2xs">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-purple-500/15 text-purple-600 dark:text-purple-400">
+                <Scale className="size-4" />
+              </span>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Base Legal Principal</p>
+                <p className="text-xs sm:text-sm font-bold text-foreground mt-0.5">{config.baseLegal || "Execução de contrato e legítimo interesse institucional (Art. 7º, V e IX da LGPD)"}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="rounded-xl border border-border/70 bg-card/60 p-4 shadow-2xs sm:col-span-2">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-g-red/15 text-g-red">
+                <Clock className="size-4" />
+              </span>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Prazo de Guarda</p>
+                <p className="text-xs sm:text-sm font-bold text-foreground mt-0.5">{config.prazoGuarda || "5 anos após encerramento do chamado para auditoria de SLA e conformidade"}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
         {/* 1. Quem é o responsável pelos dados */}
         <Card className="rounded-2xl border-l-4 border-g-blue shadow-sm">
           <CardHeader className="pb-3">

@@ -192,15 +192,17 @@ function Inicio() {
               <div className="flex size-14 items-center justify-center rounded-2xl bg-g-green/15 text-g-green">
                 <FilePlus2 className="size-7" />
               </div>
-              <h2 className="mt-4 text-xl font-bold text-foreground">Abrir Chamado</h2>
+              <h2 className="mt-4 text-xl font-bold text-foreground">
+                {regras.paginaInicial?.cardAbrirTitulo || "Abrir Chamado"}
+              </h2>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                Registre solicitações de suporte, incidentes e demandas técnicas para triagem e atendimento imediato.
+                {regras.paginaInicial?.cardAbrirDesc || "Registre solicitações de suporte, incidentes e demandas técnicas para triagem e atendimento imediato."}
               </p>
             </div>
             <div className="mt-6 pt-2">
               <Button asChild size="lg" variant="google-green" className="w-full text-base font-bold shadow-md">
                 <Link to="/abrir">
-                  Abrir chamado agora <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+                  {regras.paginaInicial?.cardAbrirBotao || "Abrir chamado agora"} <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
             </div>
@@ -211,15 +213,17 @@ function Inicio() {
               <div className="flex size-14 items-center justify-center rounded-2xl bg-g-blue/15 text-g-blue">
                 <ClipboardList className="size-7" />
               </div>
-              <h2 className="mt-4 text-xl font-bold text-foreground">Acompanhar Chamados</h2>
+              <h2 className="mt-4 text-xl font-bold text-foreground">
+                {regras.paginaInicial?.cardAcompTitulo || "Acompanhar Chamados"}
+              </h2>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                Consulte o status operacional, prazos de SLA e histórico detalhado das solicitações registradas.
+                {regras.paginaInicial?.cardAcompDesc || "Consulte o status operacional, prazos de SLA e histórico detalhado das solicitações registradas."}
               </p>
             </div>
             <div className="mt-6 pt-2">
               <Button asChild size="lg" variant="google-blue" className="w-full text-base font-bold shadow-md">
                 <Link to="/dashboard/acompanhamento">
-                  Acompanhar chamados <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+                  {regras.paginaInicial?.cardAcompBotao || "Acompanhar chamados"} <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
             </div>

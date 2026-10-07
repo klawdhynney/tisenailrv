@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
-import { MESES_DISPONIVEIS } from "@/lib/types";
+import { MESES_DISPONIVEIS, AVALIACAO_PADRAO } from "@/lib/types";
 import { DashboardSatisfacao } from "@/components/DashboardSatisfacao";
 
 export const Route = createFileRoute("/dashboard/avaliacoes")({
@@ -62,7 +62,8 @@ interface AvaliacaoRow {
 }
 
 function PaginaAvaliacoes() {
-  const { authPronto } = useStore();
+  const { authPronto, regras } = useStore();
+  const configAvaliacao = { ...AVALIACAO_PADRAO, ...(regras.avaliacao ?? {}) };
   const [periodo, setPeriodo] = useState<string>("todos");
   const [comentarios, setComentarios] = useState<AvaliacaoRow[]>([]);
   const [carregandoComentarios, setCarregandoComentarios] = useState(true);
@@ -144,10 +145,10 @@ function PaginaAvaliacoes() {
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2 mt-1">
             <Star className="size-6 text-amber-500 fill-amber-400" />
-            Avaliações e Satisfação dos Usuários
+            {configAvaliacao.tituloDashboard || "Avaliações e Satisfação dos Usuários"}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Métricas unificadas de satisfação do atendimento, facilidade para abertura de chamados e percepção dos solicitantes.
+            {configAvaliacao.subtituloDashboard || "Métricas unificadas de satisfação do atendimento, facilidade para abertura de chamados e percepção dos solicitantes."}
           </p>
         </div>
 

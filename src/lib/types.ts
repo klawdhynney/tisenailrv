@@ -161,6 +161,12 @@ export interface PaginaInicialConfig {
   bannerUrl?: string;
   bannerAlt?: string;
   posicaoCapa?: "topo" | "centro" | "base";
+  cardAbrirTitulo?: string;
+  cardAbrirDesc?: string;
+  cardAbrirBotao?: string;
+  cardAcompTitulo?: string;
+  cardAcompDesc?: string;
+  cardAcompBotao?: string;
 }
 
 export const PAGINA_INICIAL_PADRAO: PaginaInicialConfig = {
@@ -172,6 +178,12 @@ export const PAGINA_INICIAL_PADRAO: PaginaInicialConfig = {
   bannerUrl: "/capa.png",
   bannerAlt: "TI SENAI Lucas do Rio Verde",
   posicaoCapa: "centro",
+  cardAbrirTitulo: "Abrir Chamado",
+  cardAbrirDesc: "Registre solicitações de suporte, incidentes e demandas técnicas para triagem e atendimento imediato.",
+  cardAbrirBotao: "Abrir chamado agora",
+  cardAcompTitulo: "Acompanhar Chamados",
+  cardAcompDesc: "Consulte o status operacional, prazos de SLA e histórico detalhado das solicitações registradas.",
+  cardAcompBotao: "Acompanhar chamados",
 };
 
 export interface IndicadorItemConfig {
@@ -277,6 +289,9 @@ export interface AbrirChamadoConfig {
   textoBotao: string;
   textoConsentimento: string;
   locaisSugeridos?: string[];
+  sucessoTitulo?: string;
+  sucessoDescricao?: string;
+  botaoWhatsappTexto?: string;
 }
 
 export const ABRIR_CHAMADO_PADRAO: AbrirChamadoConfig = {
@@ -297,6 +312,9 @@ export const ABRIR_CHAMADO_PADRAO: AbrirChamadoConfig = {
     "Área Técnica - Oficina",
     "Gerência / Administrativo",
   ],
+  sucessoTitulo: "Chamado #{numero} enviado!",
+  sucessoDescricao: "Sua solicitação foi registrada no sistema e encaminhada para a equipe técnica.",
+  botaoWhatsappTexto: "Enviar chamado pelo WhatsApp",
 };
 
 export interface AcompanhamentoConfig {
@@ -340,6 +358,7 @@ export type TipoGrafico = "kpi" | "pizza" | "barras" | "historico";
 export interface DashboardConfig {
   titulo: string;
   subtitulo: string;
+  descricao?: string;
   visaoPadrao: string;
   tipoGraficoPadrao: TipoGrafico;
   graficosAtivos: {
@@ -351,11 +370,25 @@ export interface DashboardConfig {
     combinado?: boolean;
     serieHistorica?: boolean;
   };
+  ordemGraficos?: string[];
+  titulosGraficos?: {
+    kpi?: string;
+    pizza?: string;
+    barras?: string;
+    historico?: string;
+  };
+  descricoesGraficos?: {
+    kpi?: string;
+    pizza?: string;
+    barras?: string;
+    historico?: string;
+  };
 }
 
 export const DASHBOARD_PADRAO: DashboardConfig = {
   titulo: "Dashboard de chamados",
   subtitulo: "Indicadores públicos",
+  descricao: "Métricas de transparência dos atendimentos de TI SENAI LRV.",
   visaoPadrao: "problemas",
   tipoGraficoPadrao: "kpi",
   graficosAtivos: {
@@ -363,6 +396,19 @@ export const DASHBOARD_PADRAO: DashboardConfig = {
     pizza: true,
     barras: true,
     historico: true,
+  },
+  ordemGraficos: ["kpi", "pizza", "barras", "historico"],
+  titulosGraficos: {
+    kpi: "Indicadores Principais",
+    pizza: "Distribuição por Categoria",
+    barras: "Volume por Categoria",
+    historico: "Série Histórica Mensal",
+  },
+  descricoesGraficos: {
+    kpi: "Resumo dos chamados abertos, em atendimento e resolvidos.",
+    pizza: "Participação percentual de cada categoria de atendimento.",
+    barras: "Comparativo quantitativo de chamados por categoria.",
+    historico: "Evolução do volume de chamados mês a mês.",
   },
 };
 
@@ -420,6 +466,8 @@ export interface AvaliacaoConfig {
   exibirResumoInicio?: boolean;
   tituloResumoInicio?: string;
   descricaoResumoInicio?: string;
+  tituloDashboard?: string;
+  subtituloDashboard?: string;
 }
 
 export const OPCOES_FACILIDADE_PADRAO: [string, string, string, string, string] = [
@@ -448,6 +496,8 @@ export const AVALIACAO_PADRAO: AvaliacaoConfig = {
   exibirResumoInicio: true,
   tituloResumoInicio: "Avaliações dos usuários",
   descricaoResumoInicio: "Satisfação com a facilidade de abrir chamados.",
+  tituloDashboard: "Métricas de Avaliação e Satisfação",
+  subtituloDashboard: "Indicadores consolidados sobre a experiência do usuário e a qualidade dos atendimentos de TI.",
 };
 
 export interface AvaliacaoResumoPublico {
@@ -682,6 +732,12 @@ export interface Regras {
   whatsapp?: WhatsappConfig | undefined;
   alertasEmail?: AlertasEmailConfig | undefined;
   temaConfig?: TemaConfig | undefined;
+  menu?: MenuItemConfig[] | undefined;
+  chat?: ChatConfig | undefined;
+  login?: LoginConfig | undefined;
+  seo?: SeoConfig | undefined;
+  atendimento?: AtendimentoConfig | undefined;
+  meusChamados?: MeusChamadosConfig | undefined;
 }
 
 export const FILTROS_PLANILHA = ["Mês", "Busca", "Por página", "Categoria", "Setor", "SLA"] as const;
@@ -787,6 +843,11 @@ export interface LgpdConfig {
   seguranca: string;
   direitos: string;
   mudancas: string;
+  controlador?: string;
+  encarregado?: string;
+  emailEncarregado?: string;
+  baseLegal?: string;
+  prazoGuarda?: string;
 }
 
 export const LGPD_PADRAO: LgpdConfig = {
@@ -808,9 +869,17 @@ export const LGPD_PADRAO: LgpdConfig = {
     "Você pode pedir, a qualquer momento e sem custo:\n• Confirmar que tratamos seus dados e acessá-los\n• Corrigir dados incompletos, inexatos ou desatualizados\n• Pedir anonimização, bloqueio ou eliminação de dados desnecessários ou tratados fora da lei\n• Pedir a portabilidade dos dados, conforme regulamentação da ANPD\n• Saber com quais entidades públicas e privadas compartilhamos seus dados\n• Saber que pode não fornecer consentimento e quais as consequências\n• Revogar o consentimento, quando ele for a base do tratamento\n• Pedir a eliminação dos dados tratados com base no consentimento",
   mudancas:
     "Podemos atualizar este texto quando o sistema ou a legislação mudarem. A data da última revisão aparece no topo da página.",
+  controlador: "SENAI Lucas do Rio Verde / Claudinei Lima",
+  encarregado: "Encarregado de Proteção de Dados (DPO) - TI SENAI LRV",
+  emailEncarregado: "privacidade@tisenailrv.app",
+  baseLegal: "Execução de contrato e legítimo interesse na prestação de serviços de tecnologia da informação.",
+  prazoGuarda: "5 anos após a conclusão do atendimento para fins de auditoria e conformidade legal.",
 };
 
 export interface SobreConfig {
+  badge?: string;
+  titulo?: string;
+  subtitulo?: string;
   secao1Titulo: string;
   secao1Texto: string;
   secao2Titulo: string;
@@ -822,6 +891,9 @@ export interface SobreConfig {
 }
 
 export const SOBRE_PADRAO: SobreConfig = {
+  badge: "Informações Institucionais",
+  titulo: "Central de Suporte e Atendimento de TI",
+  subtitulo: "Conheça o propósito, a arquitetura e os pilares de tecnologia que impulsionam o suporte no SENAI Lucas do Rio Verde.",
   secao1Titulo: "💻 Sobre o Sistema de Suporte de TI",
   secao1Texto:
     "Nosso sistema foi desenvolvido para tornar a abertura de chamados mais simples e eficiente, garantindo que cada solicitação seja registrada de forma clara e organizada. As informações enviadas pelos usuários são fundamentais para que o suporte possa atuar com precisão e rapidez, além de alimentar o dashboard com dados relevantes para análises estratégicas.",
@@ -835,6 +907,162 @@ export const SOBRE_PADRAO: SobreConfig = {
   secao4Texto:
     "A segurança das informações é prioridade. Todos os dados são tratados com responsabilidade, seguindo as diretrizes da Lei Geral de Proteção de Dados (LGPD), garantindo privacidade e transparência no uso das informações.",
 };
+
+export interface MenuItemConfig {
+  id: string;
+  label: string;
+  to: string;
+  visivel: boolean;
+  ordem: number;
+}
+
+export interface MenuConfig {
+  itens: MenuItemConfig[];
+}
+
+export const MENU_PADRAO: MenuItemConfig[] = [
+  { id: "inicio", label: "Início", to: "/", visivel: true, ordem: 1 },
+  { id: "abrir", label: "Abrir Chamado", to: "/abrir", visivel: true, ordem: 2 },
+  { id: "dashboard", label: "Dashboard", to: "/dashboard", visivel: true, ordem: 3 },
+  { id: "meusChamados", label: "Meus Chamados", to: "/meus-chamados", visivel: true, ordem: 4 },
+  { id: "atendimento", label: "Atendimento", to: "/atendimento", visivel: true, ordem: 5 },
+  { id: "painel", label: "Painel de Ajustes", to: "/regras", visivel: true, ordem: 6 },
+];
+
+export interface ChatConfig {
+  titulo: string;
+  subtitulo: string;
+  placeholderUsuario: string;
+  placeholderEquipe: string;
+  textoBotaoEnviar: string;
+  textoCarregarAnteriores: string;
+  textoVazio: string;
+  avisoResolvido: string;
+}
+
+export const CHAT_PADRAO: ChatConfig = {
+  titulo: "Conversa e Histórico do Chamado",
+  subtitulo: "Histórico permanente e interação em tempo real entre solicitante e suporte",
+  placeholderUsuario: "Escreva mais detalhes ou esclareça dúvidas com a equipe de TI... (Enter para enviar)",
+  placeholderEquipe: "Escreva uma resposta ou orientação técnica para o solicitante... (Enter para enviar)",
+  textoBotaoEnviar: "Enviar",
+  textoCarregarAnteriores: "Carregar mensagens anteriores",
+  textoVazio: "Nenhuma mensagem registrada ainda. Envie a primeira mensagem abaixo!",
+  avisoResolvido: "Este chamado foi finalizado. O histórico completo de mensagens e eventos do sistema permanece salvo e auditável.",
+};
+
+export interface LoginConfig {
+  badge: string;
+  titulo: string;
+  subtitulo: string;
+  botaoApple: string;
+  botaoGoogle: string;
+  botaoMicrosoft: string;
+  textoLgpd: string;
+}
+
+export const LOGIN_PADRAO: LoginConfig = {
+  badge: "TI SENAI LRV",
+  titulo: "Acesso ao Sistema",
+  subtitulo: "Identifique-se com sua conta Apple, Google ou Microsoft para abrir chamados e acompanhar atendimentos.",
+  botaoApple: "Entrar com Apple",
+  botaoGoogle: "Entrar com Google",
+  botaoMicrosoft: "Entrar com Microsoft",
+  textoLgpd: "O acesso ao suporte técnico de TI é restrito aos colaboradores e alunos autenticados. Seus dados são protegidos conforme nossa Política de Privacidade e LGPD.",
+};
+
+export interface PaginaSeoItem {
+  titulo: string;
+  descricao: string;
+}
+
+export interface SeoConfig {
+  inicio: PaginaSeoItem;
+  abrir: PaginaSeoItem;
+  dashboard: PaginaSeoItem;
+  acompanhamento: PaginaSeoItem;
+  avaliacoes: PaginaSeoItem;
+  sobre: PaginaSeoItem;
+  lgpd: PaginaSeoItem;
+  login: PaginaSeoItem;
+}
+
+export const SEO_PADRAO: SeoConfig = {
+  inicio: {
+    titulo: "TI SENAI LRV | Início",
+    descricao: "Central de Chamados de TI do SENAI LRV e indicadores de transparência.",
+  },
+  abrir: {
+    titulo: "Abrir Chamado | TI SENAI LRV",
+    descricao: "Formulário para abrir chamado de TI informando setor, descrição do problema e local.",
+  },
+  dashboard: {
+    titulo: "Dashboard de Chamados | TI SENAI LRV",
+    descricao: "Gráficos interativos e indicadores de atendimento de TI SENAI LRV.",
+  },
+  acompanhamento: {
+    titulo: "Acompanhar Chamados | TI SENAI LRV",
+    descricao: "Acompanhamento dos chamados de TI, status, prioridades e prazos de SLA.",
+  },
+  avaliacoes: {
+    titulo: "Métricas de Avaliação e Satisfação | TI SENAI LRV",
+    descricao: "Avaliações consolidadas dos usuários sobre a facilidade e qualidade do atendimento.",
+  },
+  sobre: {
+    titulo: "Sobre o Sistema de Suporte | TI SENAI LRV",
+    descricao: "Conheça o Sistema de Suporte de TI do SENAI LRV: gestão inteligente e conformidade LGPD.",
+  },
+  lgpd: {
+    titulo: "Privacidade e Proteção de Dados (LGPD) | TI SENAI LRV",
+    descricao: "Política de privacidade e proteção de dados pessoais da Central de Chamados de TI.",
+  },
+  login: {
+    titulo: "Entrar | TI SENAI LRV",
+    descricao: "Acesse seus chamados com autenticação segura institucional.",
+  },
+};
+
+export interface AtendimentoConfig {
+  titulo: string;
+  subtitulo: string;
+  placeholderBusca: string;
+  itensPorPaginaPadrao: number;
+}
+
+export const ATENDIMENTO_PADRAO: AtendimentoConfig = {
+  titulo: "Central de Atendimento ao Usuário",
+  subtitulo: "Gerencie chamados, atualize status, registre procedimentos e acompanhe os prazos de SLA.",
+  placeholderBusca: "Buscar por número, solicitante, setor, descrição...",
+  itensPorPaginaPadrao: 20,
+};
+
+export interface MeusChamadosConfig {
+  titulo: string;
+  subtitulo: string;
+  placeholderBusca: string;
+  textoSemChamados: string;
+  botaoAbrirNovo: string;
+}
+
+export const MEUS_CHAMADOS_PADRAO: MeusChamadosConfig = {
+  titulo: "Meus Chamados",
+  subtitulo: "Acompanhe suas solicitações, visualize prazos e interaja com a equipe de suporte.",
+  placeholderBusca: "Buscar chamado por número ou assunto...",
+  textoSemChamados: "Você ainda não possui chamados registrados.",
+  botaoAbrirNovo: "Abrir novo chamado",
+};
+
+export interface ConfiguracaoHistoricoItem {
+  id: number;
+  secao: string;
+  chave: string;
+  descricao?: string | null;
+  valorAnterior: any;
+  valorNovo: any;
+  alteradoPorEmail?: string | null;
+  alteradoPorNome?: string | null;
+  criadoEm: string;
+}
 
 export const REGRAS_PADRAO: Regras = {
   prazos: { Crítica: 2, Alta: 8, Média: 72, Baixa: 168 },
@@ -904,5 +1132,11 @@ export const REGRAS_PADRAO: Regras = {
   sobre: { ...SOBRE_PADRAO },
   alertasEmail: { ...ALERTAS_EMAIL_PADRAO },
   temaConfig: { ...TEMA_CONFIG_PADRAO },
+  menu: [...MENU_PADRAO],
+  chat: { ...CHAT_PADRAO },
+  login: { ...LOGIN_PADRAO },
+  seo: { ...SEO_PADRAO },
+  atendimento: { ...ATENDIMENTO_PADRAO },
+  meusChamados: { ...MEUS_CHAMADOS_PADRAO },
 };
 

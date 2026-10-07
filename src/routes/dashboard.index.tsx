@@ -368,7 +368,7 @@ function Dashboard() {
             {dashConf?.titulo || "Dashboard de chamados"}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Métricas de transparência dos atendimentos de TI SENAI LRV.
+            {dashConf?.descricao || "Métricas de transparência dos atendimentos de TI SENAI LRV."}
           </p>
         </div>
 
@@ -660,51 +660,51 @@ function Dashboard() {
                 <div>
                   <h3 className="text-xl font-bold text-foreground">
                     {tipoGrafico === "historico"
-                      ? "Série Histórica Contínua"
-                      : VISOES.find((v) => v.id === visao)?.label}
+                      ? (dashConf?.titulosGraficos?.historico || "Série Histórica Contínua")
+                      : (dashConf?.titulosGraficos?.[tipoGrafico] || VISOES.find((v) => v.id === visao)?.label)}
                   </h3>
                   <p className="text-xs text-muted-foreground">
                     {tipoGrafico === "historico"
-                      ? "Evolução temporal mês a mês dos atendimentos registrados, resolvidos e em andamento."
-                      : "Distribuição e proporção dos registros filtrados."}
+                      ? (dashConf?.descricoesGraficos?.historico || "Evolução temporal mês a mês dos atendimentos registrados, resolvidos e em andamento.")
+                      : (dashConf?.descricoesGraficos?.[tipoGrafico] || "Distribuição e proporção dos registros filtrados.")}
                   </p>
                 </div>
 
                 {/* Menu e Abas dos Gráficos com Cartões KPI em Primeiro e Série Histórica após os demais */}
                 <div className="no-print flex flex-wrap gap-1.5" aria-label="Tipo de gráfico">
-                  <Button
-                    size="sm"
-                    variant={tipoGrafico === "kpi" ? "google-blue" : "outline"}
-                    onClick={() => setTipoGrafico("kpi")}
-                    title="Cartões de Indicadores (Big Numbers)"
-                    className="font-bold"
-                  >
-                    <LayoutGrid className="size-3.5 mr-1" /> Cartões de Indicadores
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={tipoGrafico === "pizza" ? "google-blue" : "outline"}
-                    onClick={() => setTipoGrafico("pizza")}
-                    title="Gráfico de Rosca / Pizza"
-                  >
-                    <PieChartIcon className="size-3.5 mr-1" /> Pizza
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={tipoGrafico === "barras" ? "google-blue" : "outline"}
-                    onClick={() => setTipoGrafico("barras")}
-                    title="Gráfico de Barras horizontais"
-                  >
-                    <BarChart3 className="size-3.5 mr-1" /> Barras
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={tipoGrafico === "historico" ? "google-blue" : "outline"}
-                    onClick={() => setTipoGrafico("historico")}
-                    title="Série histórica por chamados"
-                  >
-                    <Activity className="size-3.5 mr-1" /> Série Histórica
-                  </Button>
+                  {(() => {
+                    const graficosDisponiveis = [
+                      { id: "kpi", label: dashConf?.titulosGraficos?.kpi || "Cartões de Indicadores", icon: LayoutGrid, title: "Cartões de Indicadores (Big Numbers)" },
+                      { id: "pizza", label: dashConf?.titulosGraficos?.pizza || "Pizza", icon: PieChartIcon, title: "Gráfico de Rosca / Pizza" },
+                      { id: "barras", label: dashConf?.titulosGraficos?.barras || "Barras", icon: BarChart3, title: "Gráfico de Barras horizontais" },
+                      { id: "historico", label: dashConf?.titulosGraficos?.historico || "Série Histórica", icon: Activity, title: "Série histórica por chamados" },
+                    ];
+                    const ordem = dashConf?.ordemGraficos && dashConf.ordemGraficos.length > 0
+                      ? dashConf.ordemGraficos
+                      : ["kpi", "pizza", "barras", "historico"];
+                    const visiveis = dashConf?.graficos && dashConf.graficos.length > 0
+                      ? dashConf.graficos
+                      : ["kpi", "pizza", "barras", "historico"];
+                    const filtrados = ordem
+                      .map((id) => graficosDisponiveis.find((g) => g.id === id))
+                      .filter((g) => Boolean(g && visiveis.includes(g.id)));
+
+                    return (filtrados.length > 0 ? filtrados : graficosDisponiveis).map((g) => {
+                      const IconComp = g.icon;
+                      return (
+                        <Button
+                          key={g.id}
+                          size="sm"
+                          variant={tipoGrafico === g.id ? "google-blue" : "outline"}
+                          onClick={() => setTipoGrafico(g.id as TipoGrafico)}
+                          title={g.title}
+                          className="font-bold"
+                        >
+                          <IconComp className="size-3.5 mr-1" /> {g.label}
+                        </Button>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 

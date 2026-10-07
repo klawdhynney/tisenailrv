@@ -22,6 +22,7 @@ import { ConfirmAction } from "@/components/ConfirmAction";
 import { TextoAssistido } from "@/components/TextoAssistido";
 import { PrioridadeChip, StatusChip } from "@/components/Chips";
 import { TicketChat } from "@/components/TicketChat";
+import { AVALIACAO_PADRAO, MEUS_CHAMADOS_PADRAO } from "@/lib/types";
 
 export const Route = createFileRoute("/meus-chamados")({
   beforeLoad: async () => {
@@ -98,6 +99,8 @@ function AvaliacaoAtendimento({
   ticketId: number;
   onAvaliar?: (avaliacao: { emoji: string; label: string; comentario: string; nota_facilidade?: number | null }) => void;
 }) {
+  const { regras } = useStore();
+  const configAvaliacao = { ...AVALIACAO_PADRAO, ...(regras.avaliacao ?? {}) };
   const [salva, setSalva] = useState<{
     emoji: string;
     label: string;
@@ -215,7 +218,7 @@ function AvaliacaoAtendimento({
 
     setSalva(payload);
     setEditando(false);
-    toast.success("Obrigado pela sua avaliação! Seu feedback foi registrado.");
+    toast.success(configAvaliacao.agradecimento || "Obrigado pela sua avaliação! Seu feedback foi registrado.");
     onAvaliar?.(payload);
   }
 
@@ -262,7 +265,7 @@ function AvaliacaoAtendimento({
       <div>
         <div className="flex flex-wrap items-center justify-between gap-1 mb-2">
           <span className="text-xs font-black uppercase tracking-wider text-foreground">
-            1. Satisfação com o Atendimento
+            {configAvaliacao.pergunta || "1. Satisfação com o Atendimento"}
           </span>
           <span className="text-[11px] font-semibold text-muted-foreground">Como foi seu suporte?</span>
         </div>
@@ -351,7 +354,8 @@ function AvaliacaoAtendimento({
 }
 
 function MeusChamados() {
-  const { session, sair, authPronto } = useStore();
+  const { session, sair, authPronto, regras } = useStore();
+  const configMeus = { ...MEUS_CHAMADOS_PADRAO, ...(regras.meusChamados ?? {}) };
   const navigate = useNavigate();
   const [rows, setRows] = useState<OwnTicket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -574,10 +578,10 @@ function MeusChamados() {
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/80 pb-5">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
-            Meus chamados
+            {configMeus.titulo || "Meus chamados"}
           </h1>
           <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
-            Histórico pessoal, andamento operacional de SLA e inclusão de dados adicionais aos seus tickets.
+            {configMeus.subtitulo || "Histórico pessoal, andamento operacional de SLA e inclusão de dados adicionais aos seus tickets."}
           </p>
           {activeEmail && (
             <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1.5 font-mono">
@@ -591,7 +595,7 @@ function MeusChamados() {
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="google-green" size="sm" className="font-semibold shadow-xs">
             <Link to="/abrir">
-              <PlusCircle className="mr-1.5 size-4" /> Abrir novo chamado
+              <PlusCircle className="mr-1.5 size-4" /> {configMeus.botaoNovoChamado || "Abrir novo chamado"}
             </Link>
           </Button>
 
@@ -645,11 +649,9 @@ function MeusChamados() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
             <FileText className="size-6" />
           </div>
-          <h2 className="text-lg font-bold">Nenhum chamado encontrado</h2>
+          <h2 className="text-lg font-bold">{configMeus.vazioTitulo || "Nenhum chamado encontrado"}</h2>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Nenhum chamado foi registrado ainda para{" "}
-            <strong>{activeWhatsapp ? `o WhatsApp ${activeWhatsapp}` : activeEmail}</strong> neste
-            navegador.
+            {configMeus.vazioTexto || "Nenhum chamado foi registrado ainda para este e-mail ou contato."}
           </p>
           <div className="pt-2 flex justify-center gap-3">
             <Button asChild variant="google-blue">

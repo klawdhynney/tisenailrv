@@ -41,6 +41,9 @@ import {
   Mail,
   Send,
   RefreshCw,
+  Search,
+  LayoutTemplate,
+  History,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -55,6 +58,12 @@ import { useStore } from "@/lib/store-context";
 import { supabase } from "@/integrations/supabase/client";
 import { GestaoUsuarios } from "@/components/GestaoUsuarios";
 import { EditorTemaECores } from "@/components/EditorTemaECores";
+import { PainelHistoricoConfig } from "@/components/regras/PainelHistoricoConfig";
+import { PainelMenuNav } from "@/components/regras/PainelMenuNav";
+import { PainelChatChamado } from "@/components/regras/PainelChatChamado";
+import { PainelLoginAuth } from "@/components/regras/PainelLoginAuth";
+import { PainelSeoMeta } from "@/components/regras/PainelSeoMeta";
+
 import { TEMA_CONFIG_PADRAO } from "@/lib/tema";
 import {
   CAMPOS_ABERTURA_PADRAO,
@@ -83,6 +92,10 @@ import {
   IA_SUPORTE_PADRAO,
   WHATSAPP_PADRAO,
   ALERTAS_EMAIL_PADRAO,
+  MENU_PADRAO,
+  CHAT_PADRAO,
+  LOGIN_PADRAO,
+  SEO_PADRAO,
   formatarDataHoraCuiaba,
   type CampoAbertura,
   type ParametroCor,
@@ -546,57 +559,66 @@ function Regras() {
       </div>
 
       {/* Abas Organizadas */}
-      <Tabs defaultValue="geral" className="w-full space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 p-1.5 bg-muted/80 rounded-xl h-auto">
-          <TabsTrigger value="geral" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <Sliders className="size-4 text-g-blue" /> Geral & Logo
-          </TabsTrigger>
-          <TabsTrigger value="inicio" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <Layout className="size-4 text-g-green" /> Início & Banner
-          </TabsTrigger>
-          <TabsTrigger value="abrir" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <FileEdit className="size-4 text-purple-600" /> Abrir Chamado
-          </TabsTrigger>
-          <TabsTrigger value="acompanhamento" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <Table className="size-4 text-amber-500" /> Tabela & Acomp.
-          </TabsTrigger>
-          <TabsTrigger value="dashboard" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <BarChart3 className="size-4 text-g-blue" /> Dashboard & Gráficos
-          </TabsTrigger>
-          <TabsTrigger value="indicadores" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <Layers className="size-4 text-g-yellow" /> Indicadores
-          </TabsTrigger>
-          <TabsTrigger value="lgpd" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <ShieldCheck className="size-4 text-g-blue" /> Privacidade & LGPD
-          </TabsTrigger>
-          <TabsTrigger value="sobre" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <Info className="size-4 text-g-blue" /> Página Sobre
-          </TabsTrigger>
-          <TabsTrigger value="rodape" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <MessageCircle className="size-4 text-g-green" /> Rodapé & Contato
-          </TabsTrigger>
-          <TabsTrigger value="atendimento" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <Clock className="size-4 text-g-red" /> Prazos, SLA & Agenda
-          </TabsTrigger>
-          <TabsTrigger value="banco" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <Database className="size-4 text-purple-600" /> Banco & Otimização
-          </TabsTrigger>
-          <TabsTrigger value="alertasEmail" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <Mail className="size-4 text-g-blue" /> Alertas por E-mail
-          </TabsTrigger>
-          {isAdmin && (
-            <TabsTrigger value="usuarios" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-              <Users className="size-4 text-purple-600" /> Usuários & Acessos
-            </TabsTrigger>
-          )}
-          {isAdmin && (
-            <TabsTrigger value="ia" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-              <Sparkles className="size-4 text-purple-600" /> IA de Suporte
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="temas" className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-            <Palette className="size-4 text-purple-600" /> Tema & Cores
-          </TabsTrigger>
+      {/* Barra de Busca e Filtro de Seções */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+        <Input
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="Buscar seção ou parâmetro (ex: menu, chat, login, seo, banner, whatsapp, sla, lgpd, historico)..."
+          className="pl-10 h-11 text-xs sm:text-sm bg-card border-border/80 rounded-xl shadow-2xs"
+        />
+        {busca && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setBusca("")}
+            className="absolute right-2 top-1/2 -translate-y-1/2 h-7 text-xs text-muted-foreground hover:text-foreground"
+          >
+            Limpar
+          </Button>
+        )}
+      </div>
+
+      {/* Abas Organizadas */}
+      <Tabs value={tabAtiva} onValueChange={setTabAtiva} className="w-full space-y-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-1.5 p-1.5 bg-muted/80 rounded-xl h-auto">
+          {[
+            { id: "geral", label: "Geral & Logo", icone: Sliders, cor: "text-g-blue", kw: "geral logo icone titulo favicon identidade tema" },
+            { id: "menu", label: "Menu & Links", icone: LayoutTemplate, cor: "text-g-blue", kw: "menu navegacao links botoes header ordem visibilidade" },
+            { id: "inicio", label: "Início & Banner", icone: Layout, cor: "text-g-green", kw: "inicio banner capa hero cards acoes home" },
+            { id: "abrir", label: "Abrir Chamado", icone: FileEdit, cor: "text-purple-600", kw: "abrir chamado formulario campos local descricao whatsapp confirmacao" },
+            { id: "chat", label: "Chat do Chamado", icone: MessageSquare, cor: "text-g-blue", kw: "chat conversa mensagens tempo real placeholders atendimento" },
+            { id: "login", label: "Login & Acesso", icone: Lock, cor: "text-g-blue", kw: "login autenticacao google microsoft identificacao acesso entrar" },
+            { id: "acompanhamento", label: "Tabela & Acomp.", icone: Table, cor: "text-amber-500", kw: "acompanhamento tabela colunas filtros exportacao planilha" },
+            { id: "dashboard", label: "Dashboard & Gráficos", icone: BarChart3, cor: "text-g-blue", kw: "dashboard graficos pizza barras kpi historico indicadores" },
+            { id: "indicadores", label: "Indicadores Topo", icone: Layers, cor: "text-g-yellow", kw: "indicadores cards topo total atendimento resolvidos dia" },
+            { id: "seo", label: "SEO & Metadados", icone: Search, cor: "text-g-blue", kw: "seo google metadados titulo descricao busca compartilhamento" },
+            { id: "lgpd", label: "Privacidade & LGPD", icone: ShieldCheck, cor: "text-g-blue", kw: "lgpd privacidade controlador encarregado dpo termos dados" },
+            { id: "sobre", label: "Página Sobre", icone: Info, cor: "text-g-blue", kw: "sobre institucional historia equipe missao sistema informacoes" },
+            { id: "rodape", label: "Rodapé & Contato", icone: MessageCircle, cor: "text-g-green", kw: "rodape contato whatsapp direitos links footer" },
+            { id: "atendimento", label: "Prazos, SLA & Agenda", icone: Clock, cor: "text-g-red", kw: "sla prazos horario expediente feriados ferias pausa motivos setores categorias locais" },
+            { id: "alertasEmail", label: "Alertas por E-mail", icone: Mail, cor: "text-g-blue", kw: "email alertas notificacoes fila teste smtp" },
+            { id: "banco", label: "Banco & Otimização", icone: Database, cor: "text-purple-600", kw: "banco dados limpeza otimizacao cache" },
+            ...(isAdmin ? [{ id: "usuarios", label: "Usuários & Acessos", icone: Users, cor: "text-purple-600", kw: "usuarios cargos papeis admin gestor permissoes acessos" }] : []),
+            ...(isAdmin ? [{ id: "ia", label: "IA de Suporte", icone: Sparkles, cor: "text-purple-600", kw: "ia inteligencia artificial prompts tokens gemini suporte" }] : []),
+            { id: "temas", label: "Tema & Cores", icone: Palette, cor: "text-purple-600", kw: "tema cores paleta claro escuro pastel design aparencia" },
+            { id: "historico", label: "Histórico de Alterações", icone: History, cor: "text-g-blue", kw: "historico auditoria desfazer reverter versao autor data log" },
+          ]
+            .filter((aba) => !busca.trim() || aba.label.toLowerCase().includes(busca.toLowerCase()) || aba.kw.toLowerCase().includes(busca.toLowerCase()))
+            .map((aba) => {
+              const IconComp = aba.icone;
+              return (
+                <TabsTrigger
+                  key={aba.id}
+                  value={aba.id}
+                  className="flex items-center gap-1.5 py-2.5 rounded-lg text-xs md:text-sm font-semibold"
+                >
+                  <IconComp className={`size-4 ${aba.cor}`} /> {aba.label}
+                </TabsTrigger>
+              );
+            })}
         </TabsList>
 
         {/* ABA TEMA E CORES */}
@@ -995,6 +1017,95 @@ function Regras() {
                   />
                 </div>
               </div>
+
+              {/* Cards de Acesso Rápido na Home */}
+              <div className="pt-4 border-t border-border space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">Cards de Acesso Rápido da Página Inicial</h3>
+                    <p className="text-xs text-muted-foreground">Personalize os títulos, descrições e botões dos cards de serviço.</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => {
+                      salvarHome({
+                        cardAbrirTitulo: PAGINA_INICIAL_PADRAO.cardAbrirTitulo,
+                        cardAbrirDesc: PAGINA_INICIAL_PADRAO.cardAbrirDesc,
+                        cardAbrirBotao: PAGINA_INICIAL_PADRAO.cardAbrirBotao,
+                        cardAcompTitulo: PAGINA_INICIAL_PADRAO.cardAcompTitulo,
+                        cardAcompDesc: PAGINA_INICIAL_PADRAO.cardAcompDesc,
+                        cardAcompBotao: PAGINA_INICIAL_PADRAO.cardAcompBotao,
+                      });
+                      toast.info("Textos dos cards restaurados para o padrão.");
+                    }}
+                  >
+                    <RotateCcw className="size-3 mr-1" /> Restaurar padrão dos cards
+                  </Button>
+                </div>
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div className="p-4 rounded-xl border border-border/80 bg-muted/20 space-y-3">
+                    <Label className="text-xs font-bold text-g-green">Card 1: Abrir Chamado</Label>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Título do Card</Label>
+                      <Input
+                        value={home.cardAbrirTitulo || "Abrir chamado"}
+                        onChange={(e) => salvarHome({ cardAbrirTitulo: sanitizeInput(e.target.value) })}
+                        className="text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Descrição</Label>
+                      <Textarea
+                        rows={2}
+                        value={home.cardAbrirDesc || "Registre uma nova solicitação técnica com triagem rápida."}
+                        onChange={(e) => salvarHome({ cardAbrirDesc: sanitizeInput(e.target.value) })}
+                        className="text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Texto do Botão</Label>
+                      <Input
+                        value={home.cardAbrirBotao || "Abrir chamado"}
+                        onChange={(e) => salvarHome({ cardAbrirBotao: sanitizeInput(e.target.value) })}
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-border/80 bg-muted/20 space-y-3">
+                    <Label className="text-xs font-bold text-g-blue">Card 2: Acompanhar Chamados</Label>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Título do Card</Label>
+                      <Input
+                        value={home.cardAcompTitulo || "Acompanhar chamados"}
+                        onChange={(e) => salvarHome({ cardAcompTitulo: sanitizeInput(e.target.value) })}
+                        className="text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Descrição</Label>
+                      <Textarea
+                        rows={2}
+                        value={home.cardAcompDesc || "Consulte o andamento dos seus tickets e prazos de SLA."}
+                        onChange={(e) => salvarHome({ cardAcompDesc: sanitizeInput(e.target.value) })}
+                        className="text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Texto do Botão</Label>
+                      <Input
+                        value={home.cardAcompBotao || "Acompanhar"}
+                        onChange={(e) => salvarHome({ cardAcompBotao: sanitizeInput(e.target.value) })}
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1078,6 +1189,33 @@ function Regras() {
                     value={abrirConf.textoConsentimento}
                     onChange={(e) => salvarAbrir({ textoConsentimento: sanitizeInput(e.target.value) })}
                     placeholder="Ex.: Ao enviar, você concorda com o uso dos seus dados conforme nossa"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">Título da Tela de Confirmação (use {numero})</Label>
+                  <Input
+                    value={abrirConf.sucessoTitulo || "Chamado #{numero} enviado!"}
+                    onChange={(e) => salvarAbrir({ sucessoTitulo: sanitizeInput(e.target.value) })}
+                    placeholder="Ex.: Chamado #{numero} enviado!"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">Texto do Botão WhatsApp (Confirmação)</Label>
+                  <Input
+                    value={abrirConf.botaoWhatsappTexto || "Enviar chamado pelo WhatsApp"}
+                    onChange={(e) => salvarAbrir({ botaoWhatsappTexto: sanitizeInput(e.target.value) })}
+                    placeholder="Ex.: Enviar chamado pelo WhatsApp"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-xs font-semibold">Descrição da Tela de Confirmação</Label>
+                  <Input
+                    value={abrirConf.sucessoDescricao || "Sua solicitação foi registrada no sistema e encaminhada para a equipe técnica."}
+                    onChange={(e) => salvarAbrir({ sucessoDescricao: sanitizeInput(e.target.value) })}
+                    placeholder="Ex.: Sua solicitação foi registrada no sistema..."
                   />
                 </div>
               </div>
@@ -1803,6 +1941,57 @@ function Regras() {
                 />
               </div>
 
+              {/* Parâmetros Legais da LGPD */}
+              <div className="rounded-xl border border-border bg-card p-4 space-y-4 shadow-2xs">
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">Identificação Legal e Encarregado (DPO)</h3>
+                  <p className="text-xs text-muted-foreground">Campos institucionais exigidos pela Lei Geral de Proteção de Dados.</p>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">Controlador dos Dados</Label>
+                    <Input
+                      value={lgpdConf.controlador || "SENAI Lucas do Rio Verde - MT"}
+                      onChange={(e) => salvarLgpd({ controlador: sanitizeInput(e.target.value) })}
+                      className="text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">Encarregado (DPO)</Label>
+                    <Input
+                      value={lgpdConf.encarregado || "Encarregado de Proteção de Dados (DPO) SENAI-MT"}
+                      onChange={(e) => salvarLgpd({ encarregado: sanitizeInput(e.target.value) })}
+                      className="text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">E-mail do Encarregado</Label>
+                    <Input
+                      value={lgpdConf.emailEncarregado || "dpo@sfiemt.ind.br"}
+                      onChange={(e) => salvarLgpd({ emailEncarregado: sanitizeInput(e.target.value) })}
+                      className="text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <Label className="text-xs font-semibold">Base Legal Principal</Label>
+                    <Input
+                      value={lgpdConf.baseLegal || "Execução de contrato e legítimo interesse institucional (Art. 7º, V e IX da LGPD)"}
+                      onChange={(e) => salvarLgpd({ baseLegal: sanitizeInput(e.target.value) })}
+                      className="text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1 sm:col-span-2 lg:col-span-1">
+                    <Label className="text-xs font-semibold">Prazo de Guarda dos Registros</Label>
+                    <Input
+                      value={lgpdConf.prazoGuarda || "5 anos após encerramento do chamado para auditoria de SLA e conformidade"}
+                      onChange={(e) => salvarLgpd({ prazoGuarda: sanitizeInput(e.target.value) })}
+                      className="text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-4 pt-2">
                 <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-2">
                   <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
@@ -1919,6 +2108,38 @@ function Regras() {
               </div>
             </CardHeader>
             <CardContent className="space-y-5">
+              {/* Cabeçalho Hero da Página Sobre */}
+              <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
+                <Label className="text-xs font-bold text-g-blue">Cabeçalho Institucional da Página Sobre</Label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">Badge Superior</Label>
+                    <Input
+                      value={sobreConf.badge || "Informações Institucionais"}
+                      onChange={(e) => salvarSobre({ badge: sanitizeInput(e.target.value) })}
+                      className="text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">Título Principal</Label>
+                    <Input
+                      value={sobreConf.titulo || "Central de Suporte e Atendimento de TI"}
+                      onChange={(e) => salvarSobre({ titulo: sanitizeInput(e.target.value) })}
+                      className="text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Subtítulo / Descrição</Label>
+                  <Textarea
+                    rows={2}
+                    value={sobreConf.subtitulo || "Conheça o propósito, a arquitetura e os pilares de tecnologia que impulsionam o suporte no SENAI Lucas do Rio Verde."}
+                    onChange={(e) => salvarSobre({ subtitulo: sanitizeInput(e.target.value) })}
+                    className="text-xs"
+                  />
+                </div>
+              </div>
+
               {/* Seção 1 */}
               <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
                 <div className="space-y-1">
@@ -2407,7 +2628,16 @@ function Regras() {
           </div>
 
           {/* Setores, Categorias, Responsáveis e Motivos de Pausa do SLA */}
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4 pt-2 border-t border-border">
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 pt-2 border-t border-border">
+            <ListaEditavel
+              titulo="Locais e Salas"
+              corTitulo="text-sky-600 dark:text-sky-400"
+              icone={<Building2 className="size-5" />}
+              botaoAdicionarTexto="Adicionar local"
+              itens={regras.locais ?? ["Bloco A", "Bloco B", "Administrativo", "Laboratório 1", "Laboratório 2", "Oficina Mecânica", "Biblioteca", "Auditório"]}
+              onChange={(locais) => salvar({ locais })}
+            />
+
             <ListaEditavel
               titulo="Setores Solicitantes"
               corTitulo="text-g-blue dark:text-blue-400"
@@ -2930,6 +3160,59 @@ function Regras() {
             userEmail={session?.user.email || ""}
             isAdmin={isAdmin}
           />
+        </TabsContent>
+      
+        {/* ABA MENU E NAVEGAÇÃO */}
+        <TabsContent value="menu" className="space-y-6 focus-visible:outline-none">
+          <PainelMenuNav
+            config={regras.menu ?? MENU_PADRAO}
+            onChange={(patch) => salvar({ menu: { ...(regras.menu ?? MENU_PADRAO), ...patch } })}
+            onRestaurarPadrao={() => {
+              salvar({ menu: MENU_PADRAO });
+              toast.info("Menu padrão restaurado no rascunho.");
+            }}
+          />
+        </TabsContent>
+
+        {/* ABA CHAT DO CHAMADO */}
+        <TabsContent value="chat" className="space-y-6 focus-visible:outline-none">
+          <PainelChatChamado
+            config={regras.chat ?? CHAT_PADRAO}
+            onChange={(patch) => salvar({ chat: { ...(regras.chat ?? CHAT_PADRAO), ...patch } })}
+            onRestaurarPadrao={() => {
+              salvar({ chat: CHAT_PADRAO });
+              toast.info("Configuração do chat restaurada para o padrão institucional.");
+            }}
+          />
+        </TabsContent>
+
+        {/* ABA TELA DE LOGIN */}
+        <TabsContent value="login" className="space-y-6 focus-visible:outline-none">
+          <PainelLoginAuth
+            config={regras.login ?? LOGIN_PADRAO}
+            onChange={(patch) => salvar({ login: { ...(regras.login ?? LOGIN_PADRAO), ...patch } })}
+            onRestaurarPadrao={() => {
+              salvar({ login: LOGIN_PADRAO });
+              toast.info("Configuração da tela de login restaurada para o padrão institucional.");
+            }}
+          />
+        </TabsContent>
+
+        {/* ABA SEO E METADADOS */}
+        <TabsContent value="seo" className="space-y-6 focus-visible:outline-none">
+          <PainelSeoMeta
+            config={regras.seo ?? SEO_PADRAO}
+            onChange={(patch) => salvar({ seo: { ...(regras.seo ?? SEO_PADRAO), ...patch } })}
+            onRestaurarPadrao={() => {
+              salvar({ seo: SEO_PADRAO });
+              toast.info("Metadados de SEO restaurados para o padrão institucional.");
+            }}
+          />
+        </TabsContent>
+
+        {/* ABA HISTÓRICO DE ALTERAÇÕES */}
+        <TabsContent value="historico" className="space-y-6 focus-visible:outline-none">
+          <PainelHistoricoConfig />
         </TabsContent>
       </Tabs>
     </div>

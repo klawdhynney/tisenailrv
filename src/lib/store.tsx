@@ -24,6 +24,13 @@ import {
   WHATSAPP_PADRAO,
   ALERTAS_EMAIL_PADRAO,
   MOTIVOS_PAUSA_SLA_PADRAO,
+  MENU_PADRAO,
+  CHAT_PADRAO,
+  LOGIN_PADRAO,
+  SEO_PADRAO,
+  ATENDIMENTO_PADRAO,
+  MEUS_CHAMADOS_PADRAO,
+  type ConfiguracaoHistoricoItem,
   type Regras,
   type Ticket,
   type Prioridade,
@@ -133,6 +140,9 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
       ...dashSalvo,
       tipoGraficoPadrao: tipoPadrao,
       graficosAtivos: { ...DASHBOARD_PADRAO.graficosAtivos, ...(dashSalvo.graficosAtivos || {}) },
+      ordemGraficos: dashSalvo.ordemGraficos || DASHBOARD_PADRAO.ordemGraficos,
+      titulosGraficos: { ...DASHBOARD_PADRAO.titulosGraficos, ...(dashSalvo.titulosGraficos || {}) },
+      descricoesGraficos: { ...DASHBOARD_PADRAO.descricoesGraficos, ...(dashSalvo.descricoesGraficos || {}) },
     },
     rodape: { ...RODAPE_PADRAO, ...(regrasSalvas.rodape || {}) },
     lgpd: { ...LGPD_PADRAO, ...(regrasSalvas.lgpd || {}) },
@@ -140,6 +150,12 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     iaSuporte: { ...IA_SUPORTE_PADRAO, ...iaSuporteFinal },
     whatsapp: { ...WHATSAPP_PADRAO, ...(regrasSalvas.whatsapp || {}) },
     sobre: { ...SOBRE_PADRAO, ...(regrasSalvas.sobre || {}) },
+    menu: Array.isArray(regrasSalvas.menu) ? regrasSalvas.menu : [...MENU_PADRAO],
+    chat: { ...CHAT_PADRAO, ...(regrasSalvas.chat || {}) },
+    login: { ...LOGIN_PADRAO, ...(regrasSalvas.login || {}) },
+    seo: { ...SEO_PADRAO, ...(regrasSalvas.seo || {}) },
+    atendimento: { ...ATENDIMENTO_PADRAO, ...(regrasSalvas.atendimento || {}) },
+    meusChamados: { ...MEUS_CHAMADOS_PADRAO, ...(regrasSalvas.meusChamados || {}) },
     alertasEmail: {
       ...ALERTAS_EMAIL_PADRAO,
       ...(regrasSalvas.alertasEmail || {}),
@@ -229,7 +245,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     atendidosNoDia: 0,
   });
   const [evaluationStats, setEvaluationStats] = useState<AvaliacaoResumoPublico>(AVALIACAO_RESUMO_PUBLICO_PADRAO);
-  const [regras, setRegrasState] = useState<Regras>(REGRAS_PADRAO);
+  const [regras, setRegrasState] = useState<Regras>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("tisenai_regras_cache");
+        if (cached) {
+          return mesclarComPadroes(JSON.parse(cached));
+        }
+      } catch {}
+    }
+    return REGRAS_PADRAO;
+  });
   const [hidratado, setHidratado] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [isGestor, setIsGestor] = useState(false);
@@ -505,14 +531,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
   }, [recarregarEvaluationStats]);
 
-  // Regras (públicas) + tempo real
+  // Regras (públicas) + tempo real com cache local síncrono
   useEffect(() => {
     const carregar = () =>
       supabase.from("configuracoes").select("regras").eq("id", 1).maybeSingle().then(({ data }) => {
-        if (data?.regras && typeof data.regras === "object") {
-          setRegrasState(mesclarComPadroes(data.regras as unknown as Partial<Regras>));
-        } else {
-          setRegrasState(mesclarComPadroes({}));
+        const merged = data?.regras && typeof data.regras === "object"
+          ? mesclarComPadroes(data.regras as unknown as Partial<Regras>)
+          : mesclarComPadroes({});
+        setRegrasState(merged);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("tisenai_regras_cache", JSON.stringify(merged));
+          } catch {}
         }
       });
     carregar();
@@ -624,15 +654,118 @@ export function StoreProvider({ children }: { children: ReactNode }) {
      return true;
   }, []);
 
-   const setRegras = useCallback(async (r: Regras) => {
-     const merged = mesclarComPadroes(r);
-     const { error } = await supabase
-       .from("configuracoes")
-       .upsert({ id: 1, regras: merged as never, updated_at: new Date().toISOString() });
-     if (error) { console.error(error); return false; }
-     setRegrasState(merged);
-     return true;
+   const setRegras = useCallback(
+     async (
+       r: Regras,
+       mudancasHistorico?: { secao: string; chave: string; descricao?: string; anterior: any; novo: any }[],
+     ) => {
+       const merged = mesclarComPadroes(r);
+       const { error } = await supabase
+         .from("configuracoes")
+         .upsert({ id: 1, regras: merged as never, updated_at: new Date().toISOString() });
+       if (error) { console.error(error); return false; }
+       setRegrasState(merged);
+       if (typeof window !== "undefined") {
+         try {
+           localStorage.setItem("tisenai_regras_cache", JSON.stringify(merged));
+         } catch {}
+       }
+
+       // Registrar no histórico de alterações se fornecido
+       if (mudancasHistorico && mudancasHistorico.length > 0) {
+         const userEmail = session?.user?.email || "admin@tisenailrv.app";
+         const userName =
+           session?.user?.user_metadata?.full_name ||
+           session?.user?.user_metadata?.name ||
+           userEmail.split("@")[0];
+
+         for (const m of mudancasHistorico) {
+           try {
+             await supabase.from("configuracao_historico").insert({
+               secao: m.secao,
+               chave: m.chave,
+               descricao: m.descricao || `Alteração em ${m.secao}`,
+               valor_anterior: m.anterior,
+               valor_novo: m.novo,
+               alterado_por_email: userEmail,
+               alterado_por_nome: userName,
+             } as any);
+           } catch (e) {
+             console.warn("Aviso ao registrar histórico de configuração:", e);
+           }
+         }
+       }
+
+       return true;
+     },
+     [session],
+   );
+
+   const carregarHistoricoConfig = useCallback(async (): Promise<ConfiguracaoHistoricoItem[]> => {
+     try {
+       const { data, error } = await supabase
+         .from("configuracao_historico")
+         .select("*")
+         .order("criado_em", { ascending: false })
+         .limit(50);
+       if (error || !data) return [];
+       return data.map((d: any) => ({
+         id: Number(d.id),
+         secao: d.secao,
+         chave: d.chave,
+         descricao: d.descricao,
+         valorAnterior: d.valor_anterior,
+         valorNovo: d.valor_novo,
+         alteradoPorEmail: d.alterado_por_email,
+         alteradoPorNome: d.alterado_por_nome,
+         criadoEm: d.criado_em,
+       }));
+     } catch {
+       return [];
+     }
    }, []);
+
+   const desfazerAlteracaoConfig = useCallback(async (historicoId: number) => {
+     try {
+       const { data: item, error } = await supabase
+         .from("configuracao_historico")
+         .select("*")
+         .eq("id", historicoId)
+         .maybeSingle();
+
+       if (error || !item) {
+         console.error("Histórico não localizado:", error);
+         return false;
+       }
+
+       const secao = item.secao as keyof Regras;
+       const chave = item.chave;
+       const valorAnterior = item.valor_anterior;
+
+       const r = { ...regras };
+       if (chave && secao && typeof (r as any)[secao] === "object" && !Array.isArray((r as any)[secao])) {
+         (r as any)[secao] = {
+           ...(r as any)[secao],
+           [chave]: valorAnterior,
+         };
+       } else if (secao) {
+         (r as any)[secao] = valorAnterior;
+       }
+
+       return await setRegras(r, [
+         {
+           secao: item.secao,
+           chave: item.chave,
+           descricao: `Desfazer alteração #${item.id}`,
+           anterior: item.valor_novo,
+           novo: item.valor_anterior,
+         },
+       ]);
+     } catch (e) {
+       console.error("Erro ao desfazer alteração:", e);
+       return false;
+     }
+   }, [regras, setRegras]);
 
   const alternarEmailAlertas = useCallback(async (ativo: boolean) => {
     setEmailAlertsAtivos(ativo);
@@ -679,6 +812,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateTicket,
       removeTicket,
       setRegras,
+      carregarHistoricoConfig,
+      desfazerAlteracaoConfig,
       emailAlertsAtivos,
       alternarEmailAlertas,
       sair,
@@ -702,6 +837,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateTicket,
       removeTicket,
       setRegras,
+      carregarHistoricoConfig,
+      desfazerAlteracaoConfig,
       emailAlertsAtivos,
       alternarEmailAlertas,
       sair,

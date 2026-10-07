@@ -19,6 +19,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/UserAvatar";
 import { cn } from "@/lib/utils";
 import type { TicketMensagem } from "@/lib/types";
+import { CHAT_PADRAO } from "@/lib/types";
+import { useStore } from "@/lib/store-context";
 import { revisarTexto } from "@/lib/revisar-texto.functions";
 
 interface TicketChatProps {
@@ -62,6 +64,8 @@ export function TicketChat({
   onMensagemEnviada,
   disabled = false,
 }: TicketChatProps) {
+  const { regras } = useStore();
+  const configChat = { ...CHAT_PADRAO, ...(regras.chat ?? {}) };
   const [mensagens, setMensagens] = useState<TicketMensagem[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [novoTexto, setNovoTexto] = useState("");
@@ -435,10 +439,12 @@ export function TicketChat({
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-              Conversa do Chamado #{ticketId}
+              {configChat.titulo.includes("#{id}")
+                ? configChat.titulo.replace("#{id}", `#${ticketId}`)
+                : `${configChat.titulo} #${ticketId}`}
             </h3>
             <p className="text-[11px] text-muted-foreground">
-              Histórico permanente e interação em tempo real entre solicitante e suporte
+              {configChat.subtitulo}
             </p>
           </div>
         </div>
@@ -495,7 +501,7 @@ export function TicketChat({
           </div>
         ) : todasMensagens.length === 0 ? (
           <div className="py-8 text-center text-xs text-muted-foreground">
-            Nenhuma mensagem registrada ainda. Envie a primeira mensagem abaixo!
+            {configChat.vazioTexto}
           </div>
         ) : (
           mensagensExibidas.map((msg, index) => {
@@ -662,7 +668,9 @@ export function TicketChat({
         <div className="px-4 py-2 bg-muted/40 border-t border-border/60 text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
           <CheckCircle2 className="size-3.5 text-g-green shrink-0" />
           <span>
-            Chamado finalizado como <strong>{ticketStatus}</strong> — Histórico de mensagens registrado permanentemente.
+            {configChat.avisoFinalizado.includes("{status}")
+              ? configChat.avisoFinalizado.replace("{status}", ticketStatus || "")
+              : `${configChat.avisoFinalizado} (${ticketStatus})`}
           </span>
         </div>
       )}
@@ -685,10 +693,10 @@ export function TicketChat({
           disabled={disabled || enviando}
           placeholder={
             disabled
-              ? "Envio desabilitado para este chamado."
+              ? configChat.placeholderDesabilitado
               : isGestorOrAdmin
-              ? "Escreva uma resposta ou orientação técnica para o solicitante... (Enter para enviar)"
-              : "Escreva mais detalhes ou esclareça dúvidas com a equipe de TI... (Enter para enviar)"
+              ? configChat.placeholderGestor
+              : configChat.placeholderSolicitante
           }
           className="text-xs sm:text-sm min-h-[50px] max-h-[120px] resize-none rounded-xl bg-background"
         />

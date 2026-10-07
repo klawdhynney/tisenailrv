@@ -21,7 +21,12 @@ export interface StoreValue {
   addTicket: (t: Omit<Ticket, "id">, email: string) => Promise<number | null>;
   updateTicket: (id: number, patch: Partial<Ticket>) => Promise<boolean>;
   removeTicket: (id: number) => Promise<boolean>;
-  setRegras: (r: Regras) => Promise<boolean>;
+  setRegras: (
+    r: Regras,
+    mudancasHistorico?: { secao: string; chave: string; descricao?: string; anterior: any; novo: any }[],
+  ) => Promise<boolean>;
+  carregarHistoricoConfig: () => Promise<import("./types").ConfiguracaoHistoricoItem[]>;
+  desfazerAlteracaoConfig: (id: number) => Promise<boolean>;
   emailAlertsAtivos: boolean;
   alternarEmailAlertas: (ativo: boolean) => Promise<boolean>;
   sair: () => Promise<void>;

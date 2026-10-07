@@ -20,6 +20,7 @@ import defaultIcone from "@/assets/icone.png";
 import defaultCapaPng from "@/assets/capa.png";
 import { BotaoRetornar } from "@/components/BotaoRetornar";
 import { ContainerPadrao } from "@/components/ContainerPadrao";
+import { MENU_PADRAO, SEO_PADRAO } from "@/lib/types";
 
 const ASSET_VERSION = "20261006_v6";
 
@@ -203,11 +204,58 @@ export function AppShell({ children }: { children: ReactNode }) {
     ? "Gestor de TI"
     : "Usuário";
 
-  const itens = [
-    ...navPublico,
-    ...(session && !isGestor ? [{ to: "/meus-chamados", label: "Meus Chamados", icon: FilePlus2 }] : []),
-    ...(isGestor ? navGestor : []),
-  ];
+  // SEO dinâmico por página (Title e Description)
+  useEffect(() => {
+    const seo = regras.seo || SEO_PADRAO;
+    let seoItem = seo.inicio;
+    if (pathname === "/") seoItem = seo.inicio;
+    else if (pathname === "/abrir") seoItem = seo.abrir;
+    else if (pathname === "/dashboard") seoItem = seo.dashboard;
+    else if (pathname.startsWith("/dashboard/acompanhamento")) seoItem = seo.acompanhamento;
+    else if (pathname.startsWith("/dashboard/avaliacoes")) seoItem = seo.avaliacoes;
+    else if (pathname === "/sobre") seoItem = seo.sobre;
+    else if (pathname === "/lgpd") seoItem = seo.lgpd;
+    else if (pathname === "/auth") seoItem = seo.login;
+
+    if (seoItem?.titulo) {
+      document.title = seoItem.titulo;
+    }
+    if (seoItem?.descricao) {
+      let metaDesc = document.querySelector<HTMLMetaElement>("meta[name='description']");
+      if (!metaDesc) {
+        metaDesc = document.createElement("meta");
+        metaDesc.name = "description";
+        document.head.appendChild(metaDesc);
+      }
+      metaDesc.content = seoItem.descricao;
+    }
+  }, [pathname, regras.seo]);
+
+  const menuConfig = regras.menu || MENU_PADRAO;
+  const iconePorId: Record<string, any> = {
+    inicio: Home,
+    abrir: FilePlus2,
+    dashboard: BarChart3,
+    meusChamados: FilePlus2,
+    atendimento: Headset,
+    painel: Settings2,
+  };
+
+  const itens = useMemo(() => {
+    return (menuConfig || MENU_PADRAO)
+      .filter((item) => {
+        if (!item.visivel) return false;
+        if (item.id === "meusChamados") return Boolean(session && !isGestor);
+        if (item.id === "atendimento" || item.id === "painel") return isGestor;
+        return true;
+      })
+      .sort((a, b) => (a.ordem ?? 1) - (b.ordem ?? 1))
+      .map((item) => ({
+        to: item.to,
+        label: item.label,
+        icon: iconePorId[item.id] || Home,
+      }));
+  }, [menuConfig, session, isGestor]);
 
   const links = (mobile: boolean) =>
     itens.map((item) => (

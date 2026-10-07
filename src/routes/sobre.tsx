@@ -38,13 +38,13 @@ function PaginaSobre() {
         <div className="h-2 bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
         <div className="px-5 py-8 sm:px-10 sm:py-10 text-center space-y-3">
           <div className="inline-flex items-center gap-2 rounded-full bg-g-blue/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-g-blue border border-g-blue/20">
-            <Info className="size-4" /> Informações Institucionais
+            <Info className="size-4" /> {config.badge || "Informações Institucionais"}
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-            Central de Suporte e Atendimento de TI
+            {config.titulo || "Central de Suporte e Atendimento de TI"}
           </h1>
           <p className="text-xs sm:text-base text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-            Conheça o propósito, a arquitetura e os pilares de tecnologia que impulsionam o suporte no SENAI Lucas do Rio Verde.
+            {config.subtitulo || "Conheça o propósito, a arquitetura e os pilares de tecnologia que impulsionam o suporte no SENAI Lucas do Rio Verde."}
           </p>
         </div>
       </section>

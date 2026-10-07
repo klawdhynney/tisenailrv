@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { useLoading } from "@/lib/loading-context";
 import { Button } from "@/components/ui/button";
+import { LOGIN_PADRAO } from "@/lib/types";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -37,6 +38,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const { session, isGestor, authPronto, sair, regras } = useStore();
+  const configLogin = regras.login ?? LOGIN_PADRAO;
   const { wrapAsync, resetLoading } = useLoading();
   const search = Route.useSearch();
   const navigate = useNavigate();
@@ -163,13 +165,13 @@ function AuthPage() {
         {/* Cabeçalho (somente texto) */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-g-blue/10 border border-g-blue/30 text-g-blue font-black tracking-tight text-base sm:text-lg shadow-2xs">
-            TI SENAI LRV
+            {configLogin?.badge || "TI SENAI LRV"}
           </div>
           <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
-            Acesso ao Sistema
+            {configLogin?.titulo || "Acesso ao Sistema"}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
-            Identifique-se com sua conta Apple, Google ou Microsoft para abrir chamados e acompanhar atendimentos.
+            {configLogin?.subtitulo || "Identifique-se com sua conta Apple, Google ou Microsoft para abrir chamados e acompanhar atendimentos."}
           </p>
         </div>
 
@@ -220,7 +222,7 @@ function AuthPage() {
               <svg className="size-5 shrink-0 fill-current" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M17.05 12.54c-.03-3.1 2.53-4.61 2.65-4.68a5.7 5.7 0 0 0-4.49-2.43c-1.89-.2-3.72 1.13-4.68 1.13-.98 0-2.46-1.11-4.06-1.08a5.96 5.96 0 0 0-5.02 3.06c-2.18 3.77-.55 9.31 1.53 12.36 1.04 1.49 2.25 3.15 3.85 3.09 1.56-.06 2.14-.99 4.02-.99 1.86 0 2.41.99 4.03.95 1.68-.03 2.73-1.49 3.73-2.99a12.3 12.3 0 0 0 1.71-3.48 5.35 5.35 0 0 1-3.27-4.94ZM13.97 3.43A5.41 5.41 0 0 0 15.21 0a5.5 5.5 0 0 0-3.56 1.63 5.16 5.16 0 0 0-1.27 3.29 4.55 4.55 0 0 0 3.59-1.49Z" />
               </svg>
-              <span>{carregandoOAuth === "apple" ? "Conectando à Apple..." : "Entrar com Apple"}</span>
+              <span>{carregandoOAuth === "apple" ? "Conectando à Apple..." : (configLogin?.botaoApple || "Entrar com Apple")}</span>
             </Button>
 
             {/* Botão Entrar com Google */}
@@ -249,7 +251,7 @@ function AuthPage() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                 />
               </svg>
-              <span>{carregandoOAuth === "google" ? "Conectando ao Google..." : "Entrar com Google"}</span>
+              <span>{carregandoOAuth === "google" ? "Conectando ao Google..." : (configLogin?.botaoGoogle || "Entrar com Google")}</span>
             </Button>
 
             {/* Botão Entrar com Microsoft */}
@@ -266,7 +268,7 @@ function AuthPage() {
                 <path fill="#05a6f0" d="M1 12h10v10H1z" />
                 <path fill="#ffba08" d="M12 12h10v10H12z" />
               </svg>
-              <span>{carregandoOAuth === "microsoft" ? "Conectando à Microsoft..." : "Entrar com Microsoft"}</span>
+              <span>{carregandoOAuth === "microsoft" ? "Conectando à Microsoft..." : (configLogin?.botaoMicrosoft || "Entrar com Microsoft")}</span>
             </Button>
           </div>
         )}
@@ -274,8 +276,7 @@ function AuthPage() {
         {/* Informações de privacidade e LGPD */}
         <div className="pt-2 border-t border-border/60 text-center">
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            O acesso ao suporte técnico de TI é restrito aos colaboradores e alunos autenticados.
-            Seus dados são protegidos conforme nossa{" "}
+            {configLogin?.textoLgpd || "O acesso ao suporte técnico de TI é restrito aos colaboradores e alunos autenticados. Seus dados são protegidos conforme nossa"}{" "}
             <Link to="/lgpd" className="text-g-blue hover:underline font-semibold inline-flex items-center gap-0.5">
               Política de Privacidade e LGPD
             </Link>.
