@@ -34,6 +34,10 @@ export interface TicketMensagem {
   autorTipo: "solicitante" | "equipe" | "sistema";
   mensagem: string;
   criadoEm: string;
+  editadoEm?: string | null;
+  mensagemOriginal?: string | null;
+  excluidoEm?: string | null;
+  eventoTipo?: string | null;
 }
 
 export interface Ticket {

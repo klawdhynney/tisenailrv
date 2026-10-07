@@ -72,6 +72,8 @@ type OwnTicket = {
   sla_pausado_em?: string | null;
   sla_pausa_motivo?: string | null;
   sla_segundos_pausados_acumulados?: number;
+  fechado_em?: string | null;
+  horario?: string | null;
 };
 
 const EMOJIS_AVALIACAO = [
@@ -398,7 +400,7 @@ function MeusChamados() {
       // 1. Tenta carregar pela sessão autenticada do Supabase
       const { data: dbData } = await supabase
         .from("tickets")
-        .select("id,aberto_em,hora,descricao,status,prioridade,solicitante,local,setor,procedimento,contato,solicitante_email,sla_pausado,sla_pausado_em,sla_pausa_motivo,sla_segundos_pausados_acumulados")
+        .select("id,aberto_em,hora,descricao,status,prioridade,solicitante,local,setor,procedimento,contato,solicitante_email,sla_pausado,sla_pausado_em,sla_pausa_motivo,sla_segundos_pausados_acumulados,fechado_em,horario")
         .order("id", { ascending: false });
 
       if (dbData && dbData.length > 0) {
@@ -407,6 +409,8 @@ function MeusChamados() {
             ...d,
             email: d.solicitante_email,
             sla_pausado: Boolean(d.sla_pausado),
+            fechado_em: d.fechado_em,
+            horario: d.horario,
           })),
         );
         setLoading(false);
@@ -827,6 +831,11 @@ function MeusChamados() {
                   ticketAbertoEm={t.aberto_em}
                   ticketHora={t.hora}
                   ticketProcedimento={t.procedimento}
+                  ticketStatus={t.status}
+                  ticketFechadoEm={t.fechado_em}
+                  ticketSlaPausado={t.sla_pausado}
+                  ticketSlaPausadoEm={t.sla_pausado_em}
+                  ticketSlaPausaMotivo={t.sla_pausa_motivo}
                   currentUserEmail={activeEmail}
                   currentUserName={session?.user?.user_metadata?.full_name || t.solicitante}
                   isGestorOrAdmin={false}

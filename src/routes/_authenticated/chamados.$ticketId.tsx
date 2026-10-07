@@ -200,6 +200,18 @@ function TicketEditor({
           toast.success("SLA pausado com sucesso! O relógio foi parado.");
           setModalPausaAberto(false);
           setMotivoCustom("");
+          try {
+            await supabase.from("ticket_mensagens").insert({
+              ticket_id: ticket.id,
+              autor_nome: "Sistema",
+              autor_email: "sistema@senailrv.local",
+              autor_tipo: "sistema",
+              evento_tipo: "sla_pausado",
+              mensagem: `SLA pausado${motivoFinal ? `: ${motivoFinal}` : ""}.`,
+            });
+          } catch {
+            // Trigger do banco assegura persistência
+          }
         } else {
           toast.error("Não foi possível pausar o SLA.");
         }
@@ -238,6 +250,18 @@ function TicketEditor({
         });
         if (ok) {
           toast.success("SLA retomado! O tempo de pausa foi somado ao prazo limite.");
+          try {
+            await supabase.from("ticket_mensagens").insert({
+              ticket_id: ticket.id,
+              autor_nome: "Sistema",
+              autor_email: "sistema@senailrv.local",
+              autor_tipo: "sistema",
+              evento_tipo: "sla_retomado",
+              mensagem: "SLA retomado pela equipe de suporte.",
+            });
+          } catch {
+            // Trigger do banco assegura persistência
+          }
         } else {
           toast.error("Não foi possível retomar o SLA.");
         }
@@ -268,7 +292,28 @@ function TicketEditor({
     try {
       await wrapAsync(async () => {
         const ok = await updateTicket(ticket.id, patch);
-        toast[ok ? "success" : "error"](ok ? "Chamado salvo." : "Não foi possível salvar o chamado.");
+        if (ok) {
+          if (patch.status && patch.status !== ticket.status) {
+            try {
+              const isFin = ["Resolvido", "Concluído"].includes(patch.status);
+              await supabase.from("ticket_mensagens").insert({
+                ticket_id: ticket.id,
+                autor_nome: "Sistema",
+                autor_email: "sistema@senailrv.local",
+                autor_tipo: "sistema",
+                evento_tipo: isFin ? "status_finalizado" : "status_alterado",
+                mensagem: isFin
+                  ? `Chamado finalizado como ${patch.status}.`
+                  : `Status alterado de "${ticket.status}" para "${patch.status}".`,
+              });
+            } catch {
+              // Trigger do banco assegura persistência
+            }
+          }
+          toast.success("Chamado salvo.");
+        } else {
+          toast.error("Não foi possível salvar o chamado.");
+        }
       }, "Salvando chamado...");
     } finally {
       setSaving(false);
@@ -603,6 +648,12 @@ function TicketEditor({
           ticketAbertoEm={ticket.abertoEm}
           ticketHora={ticket.hora}
           ticketProcedimento={draft.procedimento}
+          ticketStatus={draft.status || ticket.status}
+          ticketFechadoEm={draft.fechadoEm || ticket.fechadoEm}
+          ticketSlaPausado={ticket.slaPausado}
+          ticketSlaPausadoEm={ticket.slaPausadoEm}
+          ticketSlaPausaMotivo={ticket.slaPausaMotivo}
+          slaHistoricoPausas={ticket.slaHistoricoPausas}
           currentUserEmail={session?.user?.email}
           currentUserName={session?.user?.user_metadata?.full_name || session?.user?.email?.split("@")[0] || "Claudinei Lima"}
           isGestorOrAdmin={true}
