@@ -58,8 +58,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error("[TanStackRootError]", error);
   const router = useRouter();
 
+  console.error("[TanStack Root Error]", error?.stack || error);
+
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    console.error("[TanStack Root Error Boundary]", error?.stack || error);
 
     // Recuperação automática de erro de chunk desatualizado pós-deploy
     const isChunkError = /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i.test(

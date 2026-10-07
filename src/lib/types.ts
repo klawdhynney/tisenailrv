@@ -203,6 +203,17 @@ export function obterDataHojeCuiaba(): string {
   return formatador.format(d);
 }
 
+export function obterHoraAgoraCuiaba(): string {
+  const d = new Date();
+  const formatador = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Cuiaba",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return formatador.format(d);
+}
+
 export function formatarDataHoraCuiaba(isoOrDate: string | Date | null | undefined): string {
   if (!isoOrDate) return "-";
   try {
@@ -932,23 +943,33 @@ export const MENU_PADRAO: MenuItemConfig[] = [
 export interface ChatConfig {
   titulo: string;
   subtitulo: string;
-  placeholderUsuario: string;
-  placeholderEquipe: string;
-  textoBotaoEnviar: string;
-  textoCarregarAnteriores: string;
-  textoVazio: string;
-  avisoResolvido: string;
+  placeholderUsuario?: string;
+  placeholderEquipe?: string;
+  placeholderSolicitante?: string;
+  placeholderGestor?: string;
+  placeholderDesabilitado?: string;
+  textoBotaoEnviar?: string;
+  textoCarregarAnteriores?: string;
+  textoVazio?: string;
+  vazioTexto?: string;
+  avisoResolvido?: string;
+  avisoFinalizado?: string;
 }
 
 export const CHAT_PADRAO: ChatConfig = {
-  titulo: "Conversa e Histórico do Chamado",
+  titulo: "Conversa e Histórico do Chamado #{id}",
   subtitulo: "Histórico permanente e interação em tempo real entre solicitante e suporte",
   placeholderUsuario: "Escreva mais detalhes ou esclareça dúvidas com a equipe de TI... (Enter para enviar)",
   placeholderEquipe: "Escreva uma resposta ou orientação técnica para o solicitante... (Enter para enviar)",
+  placeholderSolicitante: "Escreva uma mensagem ou dúvida sobre este chamado... (Enter para enviar)",
+  placeholderGestor: "Escreva uma resposta, atualização ou orientação técnica... (Enter para enviar)",
+  placeholderDesabilitado: "Envio desabilitado para este chamado.",
   textoBotaoEnviar: "Enviar",
   textoCarregarAnteriores: "Carregar mensagens anteriores",
   textoVazio: "Nenhuma mensagem registrada ainda. Envie a primeira mensagem abaixo!",
-  avisoResolvido: "Este chamado foi finalizado. O histórico completo de mensagens e eventos do sistema permanece salvo e auditável.",
+  vazioTexto: "Nenhuma mensagem registrada ainda. Envie a primeira mensagem abaixo!",
+  avisoResolvido: "Este chamado foi finalizado ({status}). O histórico completo de mensagens e eventos permanece salvo e auditável.",
+  avisoFinalizado: "Chamado {status}. O histórico e as mensagens continuam disponíveis para consulta.",
 };
 
 export interface LoginConfig {

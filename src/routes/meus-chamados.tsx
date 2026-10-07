@@ -14,6 +14,7 @@ import {
   RefreshCw,
   SendHorizontal,
   Sparkles,
+  X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
@@ -22,7 +23,8 @@ import { ConfirmAction } from "@/components/ConfirmAction";
 import { TextoAssistido } from "@/components/TextoAssistido";
 import { PrioridadeChip, StatusChip } from "@/components/Chips";
 import { TicketChat } from "@/components/TicketChat";
-import { AVALIACAO_PADRAO, MEUS_CHAMADOS_PADRAO } from "@/lib/types";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+import { AVALIACAO_PADRAO, MEUS_CHAMADOS_PADRAO, obterDataHojeCuiaba, obterHoraAgoraCuiaba } from "@/lib/types";
 
 export const Route = createFileRoute("/meus-chamados")({
   beforeLoad: async () => {
@@ -124,12 +126,19 @@ function AvaliacaoAtendimento({
   useEffect(() => {
     try {
       const todas = JSON.parse(localStorage.getItem("tisenai_avaliacoes") || "{}");
-      if (todas[ticketId]) {
-        setSalva(todas[ticketId]);
-        setSelecionado(todas[ticketId].label.toLowerCase());
-        setComentario(todas[ticketId].comentario || "");
-        if (todas[ticketId].nota_facilidade) {
-          setNotaFacilidade(Number(todas[ticketId].nota_facilidade));
+      if (todas && typeof todas === "object" && todas[ticketId]) {
+        const item = todas[ticketId];
+        setSalva(item);
+        if (item.label && typeof item.label === "string") {
+          setSelecionado(item.label.toLowerCase());
+        } else if (item.nota) {
+          const mapEmoji =
+            item.nota === 1 ? "triste" : item.nota <= 3 ? "neutro" : item.nota === 4 ? "feliz" : "surpreso";
+          setSelecionado(mapEmoji);
+        }
+        setComentario(item.comentario || "");
+        if (item.nota_facilidade) {
+          setNotaFacilidade(Number(item.nota_facilidade));
         }
       }
     } catch {
@@ -232,17 +241,17 @@ function AvaliacaoAtendimento({
 
   if (salva && !editando) {
     const rotuloFacilidade = salva.nota_facilidade
-      ? OPCOES_FACILIDADE_CURTAS.find((o) => o.val === salva.nota_facilidade)?.label
+      ? OPCOES_FACILIDADE_CURTAS.find((o) => o.val === Number(salva.nota_facilidade))?.label
       : null;
 
     return (
       <div className="rounded-xl border border-g-green/30 bg-g-green/5 p-3.5 space-y-2 animate-in fade-in">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <span className="text-2xl select-none">{salva.emoji}</span>
+            <span className="text-2xl select-none">{salva.emoji || "⭐"}</span>
             <div>
               <p className="text-xs font-bold text-foreground">
-                Sua avaliação do atendimento: <span className="text-g-green dark:text-green-400 font-extrabold">{salva.label}</span>
+                Sua avaliação do atendimento: <span className="text-g-green dark:text-green-400 font-extrabold">{salva.label || "Registrada"}</span>
               </p>
               {rotuloFacilidade && (
                 <p className="text-[11px] text-muted-foreground">
@@ -362,7 +371,7 @@ function AvaliacaoAtendimento({
 }
 
 function MeusChamados() {
-  const { session, sair, authPronto, regras } = useStore();
+  const { session, sair, authPronto, regras, updateTicket } = useStore();
   const configMeus = { ...MEUS_CHAMADOS_PADRAO, ...(regras.meusChamados ?? {}) };
   const navigate = useNavigate();
   const [rows, setRows] = useState<OwnTicket[]>([]);
@@ -373,6 +382,44 @@ function MeusChamados() {
   const [salvandoId, setSalvandoId] = useState<number | null>(null);
   const [emailLocal, setEmailLocal] = useState<string | null>(null);
   const [whatsappLocal, setWhatsappLocal] = useState<string | null>(null);
+
+  async function handleCancelarMeuChamado(id: number) {
+    setSalvandoId(id);
+    try {
+      const hoje = obterDataHojeCuiaba();
+      const hora = obterHoraAgoraCuiaba();
+      const ok = await updateTicket(id, {
+        status: "Cancelado",
+        fechadoEm: hoje,
+        horario: hora,
+      });
+      if (ok) {
+        if (session?.user?.id) {
+          try {
+            await supabase.from("ticket_mensagens").insert({
+              ticket_id: id,
+              user_id: session.user.id,
+              autor_nome: session.user.user_metadata?.full_name || "Solicitante",
+              autor_email: session.user.email || activeEmail,
+              autor_tipo: "solicitante",
+              mensagem: "[Chamado Cancelado]: O solicitante cancelou esta solicitação.",
+            });
+          } catch {
+            // ignore
+          }
+        }
+        toast.success(`Chamado #${id} cancelado com sucesso.`);
+        await load();
+      } else {
+        toast.error("Não foi possível cancelar o chamado.");
+      }
+    } catch (err) {
+      console.error("Erro ao cancelar chamado:", err);
+      toast.error("Ocorreu um erro ao cancelar o chamado.");
+    } finally {
+      setSalvandoId(null);
+    }
+  }
 
   useEffect(() => {
     if (authPronto && !session) {
@@ -409,74 +456,77 @@ function MeusChamados() {
     setLoading(true);
 
     try {
-      // 1. Tenta carregar pela sessão autenticada do Supabase
-      const { data: dbData } = await supabase
+      // 1. Tenta carregar pela sessão autenticada do Supabase com colunas base garantidas
+      let chamadosFinais: OwnTicket[] = [];
+      const { data: dbData, error: dbErr } = await supabase
         .from("tickets")
-        .select("id,aberto_em,hora,descricao,status,prioridade,solicitante,local,setor,procedimento,contato,solicitante_email,sla_pausado,sla_pausado_em,sla_pausa_motivo,sla_segundos_pausados_acumulados,fechado_em,horario")
+        .select("id,aberto_em,hora,descricao,status,prioridade,solicitante,local,setor,procedimento,contato,solicitante_email,fechado_em,horario")
         .order("id", { ascending: false });
 
-      if (dbData && dbData.length > 0) {
-        setRows(
-          dbData.map((d: any) => ({
-            ...d,
-            email: d.solicitante_email,
-            sla_pausado: Boolean(d.sla_pausado),
-            fechado_em: d.fechado_em,
-            horario: d.horario,
-          })),
-        );
-        setLoading(false);
-        return;
+      if (!dbErr && dbData && dbData.length > 0) {
+        chamadosFinais = dbData.map((d: any) => ({
+          ...d,
+          email: d.solicitante_email,
+          fechado_em: d.fechado_em,
+          horario: d.horario,
+          sla_pausado: false,
+          sla_pausado_em: null,
+          sla_pausa_motivo: null,
+          sla_segundos_pausados_acumulados: 0,
+        }));
+      } else {
+        // 2. Se não houver retorno da tabela privada (acesso simples por e-mail ou WhatsApp), busca dos chamados gravados localmente
+        try {
+          const cached = JSON.parse(localStorage.getItem("tisenai_meus_tickets") || "[]");
+          const cleanWhatsapp = (num: string) => (num || "").replace(/\D/g, "");
+          const activeCleanWpp = activeWhatsapp ? cleanWhatsapp(activeWhatsapp) : "";
+
+          chamadosFinais = cached.filter((t: any) => {
+            const emailMatch =
+              activeEmail &&
+              !activeEmail.includes("@whatsapp.senailrv.local") &&
+              (t.email || "").toLowerCase() === activeEmail.toLowerCase();
+            const wppMatch =
+              activeCleanWpp &&
+              ((t.contato && cleanWhatsapp(t.contato).includes(activeCleanWpp)) ||
+                (t.email && cleanWhatsapp(t.email).includes(activeCleanWpp)));
+            const aliasMatch = activeEmail && (t.email || "").toLowerCase() === activeEmail.toLowerCase();
+            return emailMatch || wppMatch || aliasMatch;
+          });
+        } catch {
+          chamadosFinais = [];
+        }
       }
 
-      // 2. Se não houver retorno da tabela privada (acesso simples por e-mail ou WhatsApp), busca dos chamados gravados localmente
-      let locais: OwnTicket[] = [];
+      // 3. Atualiza os dados com o progresso público em tempo real (SLA, status, prioridade)
       try {
-        const cached = JSON.parse(localStorage.getItem("tisenai_meus_tickets") || "[]");
-        const cleanWhatsapp = (num: string) => (num || "").replace(/\D/g, "");
-        const activeCleanWpp = activeWhatsapp ? cleanWhatsapp(activeWhatsapp) : "";
+        const { data: publicProgress } = await supabase.rpc("public_ticket_sla_progress");
+        if (publicProgress && publicProgress.length > 0) {
+          const progressMap = new Map((publicProgress as any[]).map((p) => [p.id, p]));
 
-        locais = cached.filter((t: any) => {
-          const emailMatch =
-            activeEmail &&
-            !activeEmail.includes("@whatsapp.senailrv.local") &&
-            (t.email || "").toLowerCase() === activeEmail.toLowerCase();
-          const wppMatch =
-            activeCleanWpp &&
-            ((t.contato && cleanWhatsapp(t.contato).includes(activeCleanWpp)) ||
-              (t.email && cleanWhatsapp(t.email).includes(activeCleanWpp)));
-          const aliasMatch = activeEmail && (t.email || "").toLowerCase() === activeEmail.toLowerCase();
-          return emailMatch || wppMatch || aliasMatch;
-        });
-      } catch {
-        locais = [];
+          chamadosFinais = chamadosFinais.map((t) => {
+            const live = progressMap.get(t.id);
+            if (live) {
+              return {
+                ...t,
+                status: live.status || t.status,
+                prioridade: live.prioridade || t.prioridade,
+                aberto_em: live.aberto_em || t.aberto_em,
+                hora: live.hora || t.hora,
+                sla_pausado: Boolean(live.sla_pausado),
+                sla_pausado_em: live.sla_pausado_em || t.sla_pausado_em,
+                sla_pausa_motivo: live.sla_pausa_motivo || t.sla_pausa_motivo,
+                sla_segundos_pausados_acumulados: live.sla_segundos_pausados_acumulados || t.sla_segundos_pausados_acumulados,
+              };
+            }
+            return t;
+          });
+        }
+      } catch (rpcErr) {
+        console.warn("Aviso ao carregar progresso público:", rpcErr);
       }
 
-      // 3. Atualiza os dados locais com o progresso público em tempo real (SLA, status, prioridade)
-      const { data: publicProgress } = await supabase.rpc("public_ticket_sla_progress");
-      if (publicProgress && publicProgress.length > 0) {
-        const progressMap = new Map((publicProgress as any[]).map((p) => [p.id, p]));
-
-        locais = locais.map((t) => {
-          const live = progressMap.get(t.id);
-          if (live) {
-            return {
-              ...t,
-              status: live.status || t.status,
-              prioridade: live.prioridade || t.prioridade,
-              aberto_em: live.aberto_em || t.aberto_em,
-              hora: live.hora || t.hora,
-              sla_pausado: Boolean(live.sla_pausado),
-              sla_pausado_em: live.sla_pausado_em || t.sla_pausado_em,
-              sla_pausa_motivo: live.sla_pausa_motivo || t.sla_pausa_motivo,
-              sla_segundos_pausados_acumulados: live.sla_segundos_pausados_acumulados || t.sla_segundos_pausados_acumulados,
-            };
-          }
-          return t;
-        });
-      }
-
-      setRows(locais);
+      setRows(chamadosFinais);
     } catch (err) {
       console.error(err);
       toast.error("Não foi possível carregar todos os chamados.");
@@ -697,6 +747,20 @@ function MeusChamados() {
                       <Pause className="size-3 shrink-0" /> SLA pausado
                     </span>
                   )}
+                  {t.status !== "Resolvido" && t.status !== "Cancelado" && (
+                    <ConfirmAction
+                      title={`Deseja cancelar o chamado #${t.id}?`}
+                      description="Esta ação encerrará a solicitação e informará a equipe de TI que o atendimento não é mais necessário."
+                      confirmLabel="Sim, cancelar chamado"
+                      variant="destructive"
+                      size="sm"
+                      className="text-xs h-7 gap-1 ml-1"
+                      disabled={salvandoId === t.id}
+                      onConfirm={() => handleCancelarMeuChamado(t.id)}
+                    >
+                      <X className="size-3" /> Cancelar
+                    </ConfirmAction>
+                  )}
                 </div>
               </div>
 
@@ -737,73 +801,75 @@ function MeusChamados() {
               </div>
 
               {/* Atualização e Complemento do Chamado com IA */}
-              <div className="rounded-xl border border-purple-200/80 dark:border-purple-900/50 bg-purple-50/30 dark:bg-purple-950/15 p-3.5 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                    <Sparkles className="size-3.5 text-purple-600 dark:text-purple-400" />
-                    <span>Atualização e Complemento do Chamado</span>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setAtualizandoTicketId(atualizandoTicketId === t.id ? null : t.id)}
-                    className="h-8 text-xs font-semibold text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800 hover:bg-purple-100/60 dark:hover:bg-purple-900/40 gap-1.5 shadow-2xs"
-                  >
-                    <Sparkles className="size-3.5 text-purple-600 dark:text-purple-400" />
-                    <span>{atualizandoTicketId === t.id ? "Fechar atualização" : "Atualizar chamado com IA"}</span>
-                  </Button>
-                </div>
-
-                {atualizandoTicketId === t.id ? (
-                  <div className="pt-2 space-y-3 border-t border-purple-200/60 dark:border-purple-900/50 animate-in fade-in">
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Descreva o novo comportamento do problema ou detalhes adicionais. Clique em <strong>Aprimorar com IA</strong> para estruturar sua mensagem antes de salvar.
-                    </p>
-                    <TextoAssistido
-                      value={textoAtualizacao[t.id] || ""}
-                      onChange={(val) => setTextoAtualizacao((prev) => ({ ...prev, [t.id]: val }))}
-                      placeholder="Ex.: O problema voltou a ocorrer por volta das 14h, e agora a máquina exibe uma mensagem de falha ao salvar..."
-                      rows={3}
-                      ticketId={t.id}
-                      titulo={t.setor ? `Chamado #${t.id} - ${t.setor}` : `Chamado #${t.id}`}
-                      descricao={t.descricao}
-                      categoria={t.setor}
-                      local={t.local}
-                    />
-                    <div className="flex flex-wrap justify-end items-center gap-2 pt-1">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setAtualizandoTicketId(null)}
-                        className="text-xs h-8"
-                      >
-                        Cancelar
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="google-blue"
-                        onClick={() => void handleSalvarAtualizacao(t)}
-                        disabled={salvandoId === t.id || !((textoAtualizacao[t.id] || "").trim().length >= 3)}
-                        className="text-xs font-bold gap-1.5 h-8 shadow-xs"
-                      >
-                        {salvandoId === t.id ? (
-                          <RefreshCw className="size-3.5 animate-spin" />
-                        ) : (
-                          <SendHorizontal className="size-3.5" />
-                        )}
-                        Salvar atualização
-                      </Button>
+              <SectionErrorBoundary name="Atualização do chamado">
+                <div className="rounded-xl border border-purple-200/80 dark:border-purple-900/50 bg-purple-50/30 dark:bg-purple-950/15 p-3.5 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                      <Sparkles className="size-3.5 text-purple-600 dark:text-purple-400" />
+                      <span>Atualização e Complemento do Chamado</span>
                     </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAtualizandoTicketId(atualizandoTicketId === t.id ? null : t.id)}
+                      className="h-8 text-xs font-semibold text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800 hover:bg-purple-100/60 dark:hover:bg-purple-900/40 gap-1.5 shadow-2xs"
+                    >
+                      <Sparkles className="size-3.5 text-purple-600 dark:text-purple-400" />
+                      <span>{atualizandoTicketId === t.id ? "Fechar atualização" : "Atualizar chamado com IA"}</span>
+                    </Button>
                   </div>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground">
-                    O problema mudou ou você tem novas informações? Clique em <strong>Atualizar chamado com IA</strong> para complementar os dados diretamente para os técnicos.
-                  </p>
-                )}
-              </div>
+
+                  {atualizandoTicketId === t.id ? (
+                    <div className="pt-2 space-y-3 border-t border-purple-200/60 dark:border-purple-900/50 animate-in fade-in">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Descreva o novo comportamento do problema ou detalhes adicionais. Clique em <strong>Aprimorar com IA</strong> para estruturar sua mensagem antes de salvar.
+                      </p>
+                      <TextoAssistido
+                        value={textoAtualizacao[t.id] || ""}
+                        onChange={(val) => setTextoAtualizacao((prev) => ({ ...prev, [t.id]: val }))}
+                        placeholder="Ex.: O problema voltou a ocorrer por volta das 14h, e agora a máquina exibe uma mensagem de falha ao salvar..."
+                        rows={3}
+                        ticketId={t.id}
+                        titulo={t.setor ? `Chamado #${t.id} - ${t.setor}` : `Chamado #${t.id}`}
+                        descricao={t.descricao}
+                        categoria={t.setor}
+                        local={t.local}
+                      />
+                      <div className="flex flex-wrap justify-end items-center gap-2 pt-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setAtualizandoTicketId(null)}
+                          className="text-xs h-8"
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="google-blue"
+                          onClick={() => void handleSalvarAtualizacao(t)}
+                          disabled={salvandoId === t.id || !((textoAtualizacao[t.id] || "").trim().length >= 3)}
+                          className="text-xs font-bold gap-1.5 h-8 shadow-xs"
+                        >
+                          {salvandoId === t.id ? (
+                            <RefreshCw className="size-3.5 animate-spin" />
+                          ) : (
+                            <SendHorizontal className="size-3.5" />
+                          )}
+                          Salvar atualização
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">
+                      O problema mudou ou você tem novas informações? Clique em <strong>Atualizar chamado com IA</strong> para complementar os dados diretamente para os técnicos.
+                    </p>
+                  )}
+                </div>
+              </SectionErrorBoundary>
 
               {/* Procedimento / Resposta da TI */}
               {t.procedimento && (
@@ -820,36 +886,40 @@ function MeusChamados() {
 
               {/* Sistema de Avaliação com Emojis (ao final do suporte) */}
               {(t.status === "Resolvido" || Boolean(t.procedimento)) && (
-                <AvaliacaoAtendimento
-                  ticketId={t.id}
-                  onAvaliar={(av) => {
-                    void addInformation(
-                      t.id,
-                      `[Avaliação do Usuário]: ${av.emoji} ${av.label}${av.comentario ? ` - "${av.comentario}"` : ""}`,
-                    );
-                  }}
-                />
+                <SectionErrorBoundary name="Avaliação do atendimento">
+                  <AvaliacaoAtendimento
+                    ticketId={t.id}
+                    onAvaliar={(av) => {
+                      void addInformation(
+                        t.id,
+                        `[Avaliação do Usuário]: ${av.emoji} ${av.label}${av.comentario ? ` - "${av.comentario}"` : ""}`,
+                      );
+                    }}
+                  />
+                </SectionErrorBoundary>
               )}
 
               {/* Conversa e Interação Direta com a Equipe de TI (Chat) */}
               <div className="pt-2 border-t border-border/60 space-y-2">
-                <TicketChat
-                  ticketId={t.id}
-                  solicitanteNome={t.solicitante}
-                  solicitanteEmail={t.email}
-                  ticketDescricao={t.descricao}
-                  ticketAbertoEm={t.aberto_em}
-                  ticketHora={t.hora}
-                  ticketProcedimento={t.procedimento}
-                  ticketStatus={t.status}
-                  ticketFechadoEm={t.fechado_em}
-                  ticketSlaPausado={t.sla_pausado}
-                  ticketSlaPausadoEm={t.sla_pausado_em}
-                  ticketSlaPausaMotivo={t.sla_pausa_motivo}
-                  currentUserEmail={activeEmail}
-                  currentUserName={session?.user?.user_metadata?.full_name || t.solicitante}
-                  isGestorOrAdmin={false}
-                />
+                <SectionErrorBoundary name="Chat do chamado">
+                  <TicketChat
+                    ticketId={t.id}
+                    solicitanteNome={t.solicitante}
+                    solicitanteEmail={t.email}
+                    ticketDescricao={t.descricao}
+                    ticketAbertoEm={t.aberto_em}
+                    ticketHora={t.hora}
+                    ticketProcedimento={t.procedimento}
+                    ticketStatus={t.status}
+                    ticketFechadoEm={t.fechado_em}
+                    ticketSlaPausado={t.sla_pausado}
+                    ticketSlaPausadoEm={t.sla_pausado_em}
+                    ticketSlaPausaMotivo={t.sla_pausa_motivo}
+                    currentUserEmail={activeEmail}
+                    currentUserName={session?.user?.user_metadata?.full_name || t.solicitante}
+                    isGestorOrAdmin={false}
+                  />
+                </SectionErrorBoundary>
               </div>
             </article>
           ))}

@@ -50,9 +50,9 @@ export function PainelChatChamado({ config, onChange, onRestaurarPadrao }: Paine
               <div className="p-3 border-b border-border/70 bg-muted/40 flex items-center justify-between">
                 <div>
                   <h4 className="text-xs font-bold text-foreground">
-                    {c.titulo.replace("#{id}", "#1042")}
+                    {(c.titulo || "Conversa do Chamado #{id}").replace("#{id}", "#1042")}
                   </h4>
-                  <p className="text-[10px] text-muted-foreground">{c.subtitulo}</p>
+                  <p className="text-[10px] text-muted-foreground">{c.subtitulo || ""}</p>
                 </div>
                 <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                   Tempo real
@@ -74,7 +74,12 @@ export function PainelChatChamado({ config, onChange, onRestaurarPadrao }: Paine
               </div>
               <div className="px-3 py-1.5 bg-muted/30 border-t border-border/60 text-center text-[10px] text-muted-foreground flex items-center justify-center gap-1">
                 <CheckCircle2 className="size-3 text-g-green" />
-                <span>{c.avisoFinalizado.replace("{status}", "Resolvido")}</span>
+                <span>
+                  {(c.avisoFinalizado || c.avisoResolvido || "Chamado {status}").replace(
+                    "{status}",
+                    "Resolvido",
+                  )}
+                </span>
               </div>
             </div>
           </div>
@@ -83,7 +88,7 @@ export function PainelChatChamado({ config, onChange, onRestaurarPadrao }: Paine
             <div className="space-y-1.5">
               <Label className="text-xs font-bold">Título da conversa (use #{`{id}`} para o número)</Label>
               <Input
-                value={c.titulo}
+                value={c.titulo || ""}
                 onChange={(e) => onChange({ titulo: e.target.value })}
                 className="text-xs"
                 placeholder="Conversa do Chamado #{id}"
@@ -93,7 +98,7 @@ export function PainelChatChamado({ config, onChange, onRestaurarPadrao }: Paine
             <div className="space-y-1.5">
               <Label className="text-xs font-bold">Subtítulo da conversa</Label>
               <Input
-                value={c.subtitulo}
+                value={c.subtitulo || ""}
                 onChange={(e) => onChange({ subtitulo: e.target.value })}
                 className="text-xs"
                 placeholder="Histórico permanente e interação..."
@@ -103,7 +108,7 @@ export function PainelChatChamado({ config, onChange, onRestaurarPadrao }: Paine
             <div className="space-y-1.5">
               <Label className="text-xs font-bold">Placeholder para o Solicitante</Label>
               <Input
-                value={c.placeholderSolicitante}
+                value={c.placeholderSolicitante || c.placeholderUsuario || ""}
                 onChange={(e) => onChange({ placeholderSolicitante: e.target.value })}
                 className="text-xs"
                 placeholder="Escreva mais detalhes ou esclareça dúvidas..."
@@ -113,7 +118,7 @@ export function PainelChatChamado({ config, onChange, onRestaurarPadrao }: Paine
             <div className="space-y-1.5">
               <Label className="text-xs font-bold">Placeholder para o Gestor / Técnico de TI</Label>
               <Input
-                value={c.placeholderGestor}
+                value={c.placeholderGestor || c.placeholderEquipe || ""}
                 onChange={(e) => onChange({ placeholderGestor: e.target.value })}
                 className="text-xs"
                 placeholder="Escreva uma resposta ou orientação técnica..."
@@ -123,7 +128,7 @@ export function PainelChatChamado({ config, onChange, onRestaurarPadrao }: Paine
             <div className="space-y-1.5">
               <Label className="text-xs font-bold">Placeholder quando o envio estiver desabilitado</Label>
               <Input
-                value={c.placeholderDesabilitado}
+                value={c.placeholderDesabilitado || ""}
                 onChange={(e) => onChange({ placeholderDesabilitado: e.target.value })}
                 className="text-xs"
                 placeholder="Envio desabilitado para este chamado."
@@ -133,7 +138,7 @@ export function PainelChatChamado({ config, onChange, onRestaurarPadrao }: Paine
             <div className="space-y-1.5">
               <Label className="text-xs font-bold">Aviso de chamado finalizado (use {`{status}`})</Label>
               <Input
-                value={c.avisoFinalizado}
+                value={c.avisoFinalizado || c.avisoResolvido || ""}
                 onChange={(e) => onChange({ avisoFinalizado: e.target.value })}
                 className="text-xs"
                 placeholder="Chamado finalizado como {status}..."
@@ -144,7 +149,7 @@ export function PainelChatChamado({ config, onChange, onRestaurarPadrao }: Paine
           <div className="space-y-1.5">
             <Label className="text-xs font-bold">Texto quando não houver mensagens ainda</Label>
             <Input
-              value={c.vazioTexto}
+              value={c.vazioTexto || c.textoVazio || ""}
               onChange={(e) => onChange({ vazioTexto: e.target.value })}
               className="text-xs"
               placeholder="Nenhuma mensagem registrada ainda. Envie a primeira mensagem abaixo!"

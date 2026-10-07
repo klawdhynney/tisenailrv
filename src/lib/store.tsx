@@ -191,29 +191,29 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
   };
 }
 
-function fromRow(r: Row): Ticket {
+export function fromRow(r: Row): Ticket {
   return {
     id: r.id,
     abertoEm: r.aberto_em,
     hora: r.hora,
-    solicitante: r.solicitante,
-    solicitanteEmail: r.solicitante_email,
-    setor: r.setor,
-    local: r.local,
-    descricao: r.descricao,
-    categoria: r.categoria ?? "",
-    prioridade: r.prioridade as Prioridade,
-    responsavel: r.responsavel,
-    status: r.status as Status,
-    fechadoEm: r.fechado_em,
-    horario: r.horario,
-    procedimento: r.procedimento,
-    contato: r.contato,
-    slaReiniciadoEm: r.sla_reiniciado_em,
+    solicitante: r.solicitante || "Solicitante",
+    solicitanteEmail: r.solicitante_email || null,
+    setor: r.setor || "",
+    local: r.local || "",
+    descricao: r.descricao || "",
+    categoria: r.categoria ?? "Geral",
+    prioridade: (r.prioridade as Prioridade) || "Média",
+    responsavel: r.responsavel || null,
+    status: (r.status as Status) || "Aberto",
+    fechadoEm: r.fechado_em || null,
+    horario: r.horario || null,
+    procedimento: r.procedimento || null,
+    contato: r.contato || null,
+    slaReiniciadoEm: r.sla_reiniciado_em || null,
     slaPausado: Boolean((r as any).sla_pausado),
-    slaPausadoEm: (r as any).sla_pausado_em,
-    slaPausaMotivo: (r as any).sla_pausa_motivo,
-    slaPausaAutor: (r as any).sla_pausa_autor,
+    slaPausadoEm: (r as any).sla_pausado_em || null,
+    slaPausaMotivo: (r as any).sla_pausa_motivo || null,
+    slaPausaAutor: (r as any).sla_pausa_autor || null,
     slaHistoricoPausas: Array.isArray((r as any).sla_historico_pausas) ? (r as any).sla_historico_pausas : [],
     slaSegundosPausadosAcumulados: Number((r as any).sla_segundos_pausados_acumulados) || 0,
   };
@@ -686,11 +686,49 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [session?.user?.id]);
 
    const updateTicket = useCallback(async (id: number, patch: Partial<Ticket>) => {
-     const { error } = await supabase.from("tickets").update(toRow(patch) as never).eq("id", id);
-     if (error) { console.error(error); return false; }
+     const row = toRow(patch);
+     let { error } = await supabase.from("tickets").update(row as never).eq("id", id);
+
+     // Se o banco falhar porque uma coluna específica não existe no schema ainda (ex: colunas de SLA):
+     if (
+       error &&
+       (error.code === "42703" ||
+         error.message.toLowerCase().includes("does not exist") ||
+         error.message.toLowerCase().includes("column"))
+     ) {
+       console.warn("Coluna não encontrada na tabela tickets, retentando update com colunas essenciais:", error.message);
+       const colunasBase = [
+         "status",
+         "fechado_em",
+         "horario",
+         "procedimento",
+         "responsavel",
+         "solicitante",
+         "solicitante_email",
+         "setor",
+         "local",
+         "descricao",
+         "categoria",
+         "prioridade",
+         "contato",
+         "sla_reiniciado_em",
+       ];
+       const rowFiltrada: Record<string, unknown> = {};
+       for (const k of colunasBase) {
+         if (k in row) rowFiltrada[k] = row[k];
+       }
+       const resRetry = await supabase.from("tickets").update(rowFiltrada as never).eq("id", id);
+       error = resRetry.error;
+     }
+
+     if (error) {
+       console.error("Falha ao atualizar chamado no Supabase:", error.message);
+       return false;
+     }
+
      setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
      return true;
-  }, []);
+   }, []);
 
    const removeTicket = useCallback(async (id: number) => {
      const { error } = await supabase.from("tickets").delete().eq("id", id);

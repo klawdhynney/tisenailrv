@@ -22,6 +22,8 @@ export function ConfirmAction({
   onConfirm,
   onCancel,
   variant = "google-green",
+  size,
+  className,
   disabled = false,
   loadingText = "Processando...",
 }: {
@@ -42,6 +44,8 @@ export function ConfirmAction({
     | "google-yellow"
     | "google-green"
     | "google-purple";
+  size?: "default" | "sm" | "lg" | "icon";
+  className?: string;
   disabled?: boolean;
   loadingText?: string;
 }) {
@@ -70,7 +74,7 @@ export function ConfirmAction({
       }}
     >
       <AlertDialogTrigger asChild>
-        <Button type="button" variant={variant} disabled={disabled || busy || isLoading}>
+        <Button type="button" variant={variant} size={size} className={className} disabled={disabled || busy || isLoading}>
           {children}
         </Button>
       </AlertDialogTrigger>

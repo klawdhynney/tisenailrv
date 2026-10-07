@@ -58,13 +58,14 @@ export function TextoAssistido({
   descricao,
   mensagens,
 }: TextoAssistidoProps) {
+  const safeValue = value ?? "";
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [textoAprimorado, setTextoAprimorado] = useState<string | null>(null);
   const [edicaoTexto, setEdicaoTexto] = useState("");
-  const [cursor, setCursor] = useState(value.length);
+  const [cursor, setCursor] = useState(safeValue.length);
 
-  const fragmento = value.slice(0, cursor).match(/(?:^|\s)([\p{L}]{3,})$/u)?.[1] ?? "";
+  const fragmento = safeValue.slice(0, cursor).match(/(?:^|\s)([\p{L}]{3,})$/u)?.[1] ?? "";
   const palavras =
     fragmento.length >= 3
       ? vocabulario
@@ -82,7 +83,7 @@ export function TextoAssistido({
     try {
       const res = await revisarTexto({
         data: {
-          texto: value,
+          texto: safeValue,
           ticketId,
           titulo,
           categoria,
@@ -108,7 +109,7 @@ export function TextoAssistido({
     <div className="space-y-2">
       <Textarea
         rows={rows}
-        value={value}
+        value={safeValue}
         placeholder={placeholder}
         autoComplete="on"
         onClick={(e) => setCursor(e.currentTarget.selectionStart)}

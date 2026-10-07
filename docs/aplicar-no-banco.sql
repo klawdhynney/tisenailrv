@@ -460,6 +460,11 @@ ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS sla_pausa_motivo text;
 ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS sla_pausa_autor text;
 ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS sla_historico_pausas jsonb NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS sla_segundos_pausados_acumulados integer NOT NULL DEFAULT 0;
+ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS procedimento text DEFAULT '';
+ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS contato text DEFAULT '';
+ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS local text DEFAULT '';
+ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS solicitante_email text;
+ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS criado_por uuid;
 
 CREATE OR REPLACE FUNCTION public.pause_ticket_sla(
   p_ticket_id integer,

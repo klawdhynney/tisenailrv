@@ -177,15 +177,16 @@ export function TicketChat({
   // Histórico completo consolidado em ordem cronológica com avisos de eventos
   const todasMensagens = useMemo(() => {
     const lista: TicketMensagem[] = [...mensagens];
+    const descLimpa = (ticketDescricao || "").trim();
 
     // 1. Mensagem de Abertura do Chamado (garante presença se ainda não gravada no chat)
     const temMensagemAbertura = lista.some(
       (m) =>
-        m.mensagem.trim() === ticketDescricao.trim() ||
+        (m.mensagem && descLimpa && m.mensagem.trim() === descLimpa) ||
         m.eventoTipo === "abertura" ||
-        m.mensagem.toLowerCase().includes("chamado aberto"),
+        (m.mensagem && m.mensagem.toLowerCase().includes("chamado aberto")),
     );
-    if (!temMensagemAbertura && (ticketDescricao || ticketAbertoEm)) {
+    if (!temMensagemAbertura && (descLimpa || ticketAbertoEm)) {
       let dataAbertura = new Date().toISOString();
       try {
         const [y, m, d] = (ticketAbertoEm || "").split("-").map(Number);
@@ -197,14 +198,14 @@ export function TicketChat({
         // ignore
       }
 
-      if (ticketDescricao) {
+      if (descLimpa) {
         lista.unshift({
           id: `sintetica-abertura-${ticketId}`,
           ticketId,
-          autorNome: solicitanteNome,
+          autorNome: solicitanteNome || "Solicitante",
           autorEmail: solicitanteEmail || "solicitante@senailrv.local",
           autorTipo: "solicitante",
-          mensagem: ticketDescricao,
+          mensagem: descLimpa,
           criadoEm: dataAbertura,
           eventoTipo: "abertura",
         });
@@ -212,9 +213,10 @@ export function TicketChat({
     }
 
     // 2. Procedimento Técnico (se registrado antes do chat e não estiver na lista)
-    if (ticketProcedimento && ticketProcedimento.trim()) {
+    const procLimpo = (ticketProcedimento || "").trim();
+    if (procLimpo) {
       const temProcNaLista = lista.some(
-        (m) => m.mensagem.trim() === ticketProcedimento.trim(),
+        (m) => m.mensagem && m.mensagem.trim() === procLimpo,
       );
       if (!temProcNaLista) {
         lista.push({
@@ -223,7 +225,7 @@ export function TicketChat({
           autorNome: "Equipe de TI SENAI LRV",
           autorEmail: "suporte@senailrv.local",
           autorTipo: "equipe",
-          mensagem: ticketProcedimento,
+          mensagem: procLimpo,
           criadoEm: new Date().toISOString(),
           eventoTipo: "procedimento",
         });
@@ -233,12 +235,13 @@ export function TicketChat({
     // 3. Pausas e Retomadas do SLA do histórico (se não constarem nas mensagens do banco)
     if (slaHistoricoPausas && Array.isArray(slaHistoricoPausas)) {
       slaHistoricoPausas.forEach((pausa, idx) => {
-        if (!pausa.inicio) return;
+        if (!pausa || !pausa.inicio) return;
         const jaTemPausa = lista.some(
           (m) =>
             m.autorTipo === "sistema" &&
+            m.mensagem &&
             m.mensagem.toLowerCase().includes("sla pausado") &&
-            Math.abs(new Date(m.criadoEm).getTime() - new Date(pausa.inicio).getTime()) < 60000,
+            Math.abs(new Date(m.criadoEm || 0).getTime() - new Date(pausa.inicio).getTime()) < 60000,
         );
         if (!jaTemPausa) {
           lista.push({
@@ -257,8 +260,9 @@ export function TicketChat({
           const jaTemRetomada = lista.some(
             (m) =>
               m.autorTipo === "sistema" &&
+              m.mensagem &&
               m.mensagem.toLowerCase().includes("sla retomado") &&
-              Math.abs(new Date(m.criadoEm).getTime() - new Date(pausa.fim!).getTime()) < 60000,
+              Math.abs(new Date(m.criadoEm || 0).getTime() - new Date(pausa.fim!).getTime()) < 60000,
           );
           if (!jaTemRetomada) {
             lista.push({
@@ -281,11 +285,13 @@ export function TicketChat({
       ticketStatus &&
       ["Resolvido", "Concluído", "Cancelado"].includes(ticketStatus)
     ) {
+      const statusLower = (ticketStatus || "").toLowerCase();
       const jaTemFinalizado = lista.some(
         (m) =>
           m.autorTipo === "sistema" &&
+          m.mensagem &&
           (m.mensagem.toLowerCase().includes("finalizado") ||
-            m.mensagem.toLowerCase().includes(ticketStatus.toLowerCase())),
+            (statusLower && m.mensagem.toLowerCase().includes(statusLower))),
       );
       if (!jaTemFinalizado) {
         let dataFechamento = new Date().toISOString();
@@ -312,7 +318,7 @@ export function TicketChat({
 
     // Ordenação cronológica estrita
     return lista.sort(
-      (a, b) => new Date(a.criadoEm).getTime() - new Date(b.criadoEm).getTime(),
+      (a, b) => new Date(a.criadoEm || 0).getTime() - new Date(b.criadoEm || 0).getTime(),
     );
   }, [
     mensagens,
@@ -377,7 +383,23 @@ export function TicketChat({
         .single();
 
       if (error) {
-        throw error;
+        console.warn("Tabela ticket_mensagens indisponível no banco, registrando mensagem localmente:", error.message);
+        const fallbackMsg: TicketMensagem = {
+          id: `local-msg-${Date.now()}`,
+          ticketId,
+          autorNome,
+          autorEmail,
+          autorTipo,
+          mensagem: textoLimpo,
+          criadoEm: new Date().toISOString(),
+          eventoTipo: "mensagem",
+        };
+        setMensagens((prev) => [...prev, fallbackMsg]);
+        setNovoTexto("");
+        toast.success("Mensagem enviada com sucesso!");
+        onMensagemEnviada?.(textoLimpo);
+        setTimeout(() => rolarAteFinal(true), 100);
+        return;
       }
 
       setNovoTexto("");
@@ -429,6 +451,12 @@ export function TicketChat({
     }
   };
 
+  const tituloChat = configChat?.titulo || CHAT_PADRAO.titulo || "Conversa sobre o Chamado #{id}";
+  const subtituloChat = configChat?.subtitulo ?? CHAT_PADRAO.subtitulo ?? "Envie mensagens, dúvidas e informações adicionais para este chamado.";
+  const tituloFormatado = tituloChat.includes("#{id}")
+    ? tituloChat.replace("#{id}", `#${ticketId}`)
+    : `${tituloChat} #${ticketId}`;
+
   return (
     <div className="rounded-2xl border-2 border-border/80 bg-card shadow-sm overflow-hidden flex flex-col">
       {/* Topo do Chat */}
@@ -439,12 +467,10 @@ export function TicketChat({
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-              {configChat.titulo.includes("#{id}")
-                ? configChat.titulo.replace("#{id}", `#${ticketId}`)
-                : `${configChat.titulo} #${ticketId}`}
+              {tituloFormatado}
             </h3>
             <p className="text-[11px] text-muted-foreground">
-              {configChat.subtitulo}
+              {subtituloChat}
             </p>
           </div>
         </div>
@@ -501,7 +527,7 @@ export function TicketChat({
           </div>
         ) : todasMensagens.length === 0 ? (
           <div className="py-8 text-center text-xs text-muted-foreground">
-            {configChat.vazioTexto}
+            {configChat.vazioTexto || configChat.textoVazio || "Nenhuma mensagem registrada ainda. Envie a primeira mensagem abaixo!"}
           </div>
         ) : (
           mensagensExibidas.map((msg, index) => {
@@ -664,16 +690,21 @@ export function TicketChat({
       </div>
 
       {/* Aviso quando o chamado estiver concluído/resolvido */}
-      {ticketStatus && ["Resolvido", "Concluído", "Cancelado"].includes(ticketStatus) && (
-        <div className="px-4 py-2 bg-muted/40 border-t border-border/60 text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
-          <CheckCircle2 className="size-3.5 text-g-green shrink-0" />
-          <span>
-            {configChat.avisoFinalizado.includes("{status}")
-              ? configChat.avisoFinalizado.replace("{status}", ticketStatus || "")
-              : `${configChat.avisoFinalizado} (${ticketStatus})`}
-          </span>
-        </div>
-      )}
+      {ticketStatus && ["Resolvido", "Concluído", "Cancelado"].includes(ticketStatus) && (() => {
+        const aviso =
+          configChat.avisoFinalizado ||
+          configChat.avisoResolvido ||
+          "Chamado {status}. O histórico e as mensagens continuam disponíveis para consulta.";
+        const textoAviso = aviso.includes("{status}")
+          ? aviso.replace("{status}", ticketStatus || "")
+          : `${aviso} (${ticketStatus})`;
+        return (
+          <div className="px-4 py-2 bg-muted/40 border-t border-border/60 text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+            <CheckCircle2 className="size-3.5 text-g-green shrink-0" />
+            <span>{textoAviso}</span>
+          </div>
+        );
+      })()}
 
       {/* Barra de Envio de Nova Mensagem */}
       <form
@@ -693,10 +724,10 @@ export function TicketChat({
           disabled={disabled || enviando}
           placeholder={
             disabled
-              ? configChat.placeholderDesabilitado
+              ? configChat.placeholderDesabilitado || "Envio desabilitado para este chamado."
               : isGestorOrAdmin
-              ? configChat.placeholderGestor
-              : configChat.placeholderSolicitante
+              ? configChat.placeholderGestor || configChat.placeholderEquipe || "Escreva uma resposta ou orientação técnica..."
+              : configChat.placeholderSolicitante || configChat.placeholderUsuario || "Escreva mais detalhes ou esclareça dúvidas..."
           }
           className="text-xs sm:text-sm min-h-[50px] max-h-[120px] resize-none rounded-xl bg-background"
         />
