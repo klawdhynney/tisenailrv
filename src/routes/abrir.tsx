@@ -384,18 +384,20 @@ function AbrirChamado() {
         p_ticket_id: sucessoId,
         p_nota: notaAvaliacao,
         p_comentario: comentarioLimpo,
-      });
+        p_nota_facilidade: notaAvaliacao,
+      } as any);
 
       if (!rpcErr && rpcData) {
         gravado = true;
       } else {
         // 2. Se a RPC falhou, tenta inserção direta na tabela avaliacoes_chamados
-        const { error: insertErr } = await supabase.from("avaliacoes_chamados").upsert(
+        const { error: insertErr } = await (supabase.from("avaliacoes_chamados") as any).upsert(
           {
             ticket_id: sucessoId,
             user_id: session?.user?.id || null,
             user_email: session?.user?.email || null,
             nota: notaAvaliacao,
+            nota_facilidade: notaAvaliacao,
             comentario: comentarioLimpo,
           },
           { onConflict: "ticket_id" },
@@ -428,6 +430,7 @@ function AbrirChamado() {
             user_id: session?.user?.id || null,
             user_email: session?.user?.email || null,
             nota: notaAvaliacao,
+            nota_facilidade: notaAvaliacao,
             comentario: comentarioLimpo,
             enviado_ao_banco: false,
             created_at: new Date().toISOString(),

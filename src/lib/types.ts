@@ -408,7 +408,9 @@ export interface AvaliacaoChamado {
 
 export interface AvaliacaoConfig {
   pergunta: string;
+  perguntaAtendimento?: string;
   opcoes: [string, string, string, string, string];
+  opcoesAtendimento?: [string, string, string, string, string];
   placeholderComentario: string;
   agradecimento: string;
   exibirResumoInicio?: boolean;
@@ -416,9 +418,27 @@ export interface AvaliacaoConfig {
   descricaoResumoInicio?: string;
 }
 
+export const OPCOES_FACILIDADE_PADRAO: [string, string, string, string, string] = [
+  "Muito difícil",
+  "Difícil",
+  "Regular",
+  "Fácil",
+  "Muito fácil",
+];
+
+export const OPCOES_SATISFACAO_PADRAO: [string, string, string, string, string] = [
+  "Muito insatisfeito",
+  "Insatisfeito",
+  "Regular",
+  "Satisfeito",
+  "Muito satisfeito",
+];
+
 export const AVALIACAO_PADRAO: AvaliacaoConfig = {
   pergunta: "Como foi a facilidade de abrir este chamado?",
-  opcoes: ["Muito difícil", "Difícil", "Regular", "Fácil", "Muito fácil"],
+  perguntaAtendimento: "Como você avalia o atendimento recebido da equipe de TI?",
+  opcoes: OPCOES_FACILIDADE_PADRAO,
+  opcoesAtendimento: OPCOES_SATISFACAO_PADRAO,
   placeholderComentario: "Deixe um comentário opcional sobre a sua experiência (até 300 caracteres)...",
   agradecimento: "Obrigado pela sua avaliação! Seu feedback nos ajuda a aprimorar o atendimento.",
   exibirResumoInicio: true,
@@ -437,6 +457,27 @@ export interface AvaliacaoResumoPublico {
     4: number;
     5: number;
   };
+  total_facilidade?: number;
+  media_facilidade?: number;
+  distribuicao_facilidade?: {
+    1: number;
+    2: number;
+    3: number;
+    4: number;
+    5: number;
+  };
+}
+
+export interface AvaliacaoItemDashboard {
+  id?: number;
+  ticket_id: number;
+  nota: number; // Satisfação do atendimento/chamado (1 a 5)
+  nota_facilidade?: number | null; // Facilidade para abrir chamado (1 a 5)
+  atendente?: string | null;
+  categoria?: string | null;
+  setor?: string | null;
+  comentario?: string | null;
+  created_at: string;
 }
 
 export const AVALIACAO_RESUMO_PUBLICO_PADRAO: AvaliacaoResumoPublico = {
@@ -444,6 +485,9 @@ export const AVALIACAO_RESUMO_PUBLICO_PADRAO: AvaliacaoResumoPublico = {
   media: 0,
   satisfacao_pct: 0,
   distribuicao: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+  total_facilidade: 0,
+  media_facilidade: 0,
+  distribuicao_facilidade: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
 };
 
 export type VelocidadeAnimacao = "lenta" | "normal" | "rapida";

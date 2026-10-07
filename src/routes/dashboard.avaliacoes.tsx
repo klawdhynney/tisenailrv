@@ -63,6 +63,8 @@ interface AvaliacaoRow {
   ticket_id: number;
   user_id: string | null;
   nota: number;
+  nota_facilidade?: number | null;
+  atendente?: string | null;
   comentario: string | null;
   created_at: string;
 }
@@ -92,9 +94,8 @@ function PaginaAvaliacoes() {
       let tabelaDisponivel = false;
 
       try {
-        const { data, error } = await supabase
-          .from("avaliacoes_chamados")
-          .select("id, ticket_id, user_id, nota, comentario, created_at")
+        const { data, error } = await (supabase.from("avaliacoes_chamados") as any)
+          .select("id, ticket_id, user_id, nota, nota_facilidade, atendente, comentario, created_at")
           .order("created_at", { ascending: false });
 
         if (error) {
@@ -122,6 +123,8 @@ function PaginaAvaliacoes() {
             ticket_id: Number(s.ticket_id),
             user_id: s.user_id || null,
             nota: Number(s.nota),
+            nota_facilidade: s.nota_facilidade ? Number(s.nota_facilidade) : null,
+            atendente: s.atendente || null,
             comentario: s.comentario || null,
             created_at: s.created_at || s.data || new Date().toISOString(),
           }));
@@ -139,10 +142,12 @@ function PaginaAvaliacoes() {
           if (pendentesDeEnvio.length > 0) {
             for (const item of pendentesDeEnvio) {
               try {
-                await supabase.rpc("submit_ticket_evaluation", {
+                await (supabase.rpc as any)("submit_ticket_evaluation", {
                   p_ticket_id: item.ticket_id,
                   p_nota: item.nota,
                   p_comentario: item.comentario,
+                  p_nota_facilidade: item.nota_facilidade || null,
+                  p_atendente: item.atendente || null,
                 });
               } catch (errSync) {
                 console.warn("Falha ao sincronizar avaliação pendente com o banco:", errSync);
@@ -241,6 +246,20 @@ function PaginaAvaliacoes() {
     if (chamadosNoPeriodo === 0) return 0;
     return Math.min(100, Math.round((totalAvaliacoes / chamadosNoPeriodo) * 100));
   }, [totalAvaliacoes, chamadosNoPeriodo]);
+
+  const avaliacoesComFacilidade = useMemo(() => {
+    return avaliacoesFiltradas.filter(
+      (a) => a.nota_facilidade !== null && a.nota_facilidade !== undefined && a.nota_facilidade >= 1,
+    );
+  }, [avaliacoesFiltradas]);
+
+  const totalFacilidade = avaliacoesComFacilidade.length;
+
+  const notaMediaFacilidade = useMemo(() => {
+    if (totalFacilidade === 0) return 0;
+    const soma = avaliacoesComFacilidade.reduce((acc, a) => acc + (a.nota_facilidade || 0), 0);
+    return soma / totalFacilidade;
+  }, [avaliacoesComFacilidade, totalFacilidade]);
 
   // Distribuição de notas (1 a 5)
   const dadosDistribuicao = useMemo(() => {
@@ -434,7 +453,7 @@ function PaginaAvaliacoes() {
       ) : (
         <>
           {/* Cartões de KPI (Big Numbers) com descrições técnicas curtas */}
-          <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             {/* Total */}
             <Card className="rounded-2xl border-t-4 border-g-blue shadow-2xs">
               <CardHeader className="p-4 pb-2">
@@ -468,6 +487,25 @@ function PaginaAvaliacoes() {
               <CardContent className="p-4 pt-0">
                 <p className="text-[11px] text-muted-foreground leading-tight">
                   Média aritmética das notas atribuídas pelos solicitantes (escala de 1 a 5).
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Facilidade de Abertura */}
+            <Card className="rounded-2xl border-t-4 border-sky-500 shadow-2xs">
+              <CardHeader className="p-4 pb-2">
+                <CardDescription className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
+                  <span>Facilidade de Abertura</span>
+                  <Smile className="size-4 text-sky-500" />
+                </CardDescription>
+                <CardTitle className="text-2xl sm:text-3xl font-black text-foreground pt-1 flex items-baseline gap-1">
+                  {totalFacilidade > 0 ? notaMediaFacilidade.toFixed(2) : "—"}
+                  {totalFacilidade > 0 && <span className="text-xs font-normal text-muted-foreground">/ 5.0</span>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <p className="text-[11px] text-muted-foreground leading-tight">
+                  {totalFacilidade > 0 ? `${totalFacilidade} respostas com média de facilidade.` : "Aguardando respostas."}
                 </p>
               </CardContent>
             </Card>

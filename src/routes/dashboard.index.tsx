@@ -42,6 +42,7 @@ import { CORES_SLA, MESES_DISPONIVEIS, type Ticket, type TipoGrafico, obterDataH
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLoading } from "@/lib/loading-context";
 import { obterPaletaInfo } from "@/lib/tema";
+import { DashboardSatisfacao } from "@/components/DashboardSatisfacao";
 
 export const Route = createFileRoute("/dashboard/")({
   ssr: false,
@@ -583,6 +584,9 @@ function Dashboard() {
           </section>
         </div>
       </div>
+
+      {/* Gráficos Reais de Satisfação e Facilidade de Abertura */}
+      <DashboardSatisfacao mesSelecionado={mes} />
     </div>
   );
 }

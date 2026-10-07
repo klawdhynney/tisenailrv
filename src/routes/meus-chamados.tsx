@@ -81,15 +81,30 @@ const EMOJIS_AVALIACAO = [
   { id: "surpreso", emoji: "😲", label: "Surpreso", desc: "Superou expectativas", bgActive: "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500 ring-2 ring-purple-500/40" },
 ] as const;
 
+const OPCOES_FACILIDADE_CURTAS = [
+  { val: 1, label: "Muito difícil" },
+  { val: 2, label: "Difícil" },
+  { val: 3, label: "Regular" },
+  { val: 4, label: "Fácil" },
+  { val: 5, label: "Muito fácil" },
+] as const;
+
 function AvaliacaoAtendimento({
   ticketId,
   onAvaliar,
 }: {
   ticketId: number;
-  onAvaliar?: (avaliacao: { emoji: string; label: string; comentario: string }) => void;
+  onAvaliar?: (avaliacao: { emoji: string; label: string; comentario: string; nota_facilidade?: number | null }) => void;
 }) {
-  const [salva, setSalva] = useState<{ emoji: string; label: string; comentario: string; data: string } | null>(null);
+  const [salva, setSalva] = useState<{
+    emoji: string;
+    label: string;
+    comentario: string;
+    data: string;
+    nota_facilidade?: number | null;
+  } | null>(null);
   const [selecionado, setSelecionado] = useState<string | null>(null);
+  const [notaFacilidade, setNotaFacilidade] = useState<number | null>(null);
   const [comentario, setComentario] = useState("");
   const [editando, setEditando] = useState(false);
 
@@ -100,6 +115,9 @@ function AvaliacaoAtendimento({
         setSalva(todas[ticketId]);
         setSelecionado(todas[ticketId].label.toLowerCase());
         setComentario(todas[ticketId].comentario || "");
+        if (todas[ticketId].nota_facilidade) {
+          setNotaFacilidade(Number(todas[ticketId].nota_facilidade));
+        }
       }
     } catch {
       // ignore
@@ -117,6 +135,7 @@ function AvaliacaoAtendimento({
       emoji: item.emoji,
       label: item.label,
       comentario: comentario.trim(),
+      nota_facilidade: notaFacilidade,
       data: new Date().toLocaleDateString("pt-BR"),
     };
 
@@ -129,15 +148,16 @@ function AvaliacaoAtendimento({
         p_ticket_id: ticketId,
         p_nota: notaMapeada,
         p_comentario: comentarioLimpo,
-      })
+        p_nota_facilidade: notaFacilidade,
+      } as any)
       .then(({ error: rpcErr }) => {
         if (rpcErr) {
-          supabase
-            .from("avaliacoes_chamados")
+          (supabase.from("avaliacoes_chamados") as any)
             .upsert(
               {
                 ticket_id: ticketId,
                 nota: notaMapeada,
+                nota_facilidade: notaFacilidade,
                 comentario: comentarioLimpo,
               },
               { onConflict: "ticket_id" },
@@ -152,6 +172,7 @@ function AvaliacaoAtendimento({
                     id: Date.now(),
                     ticket_id: ticketId,
                     nota: notaMapeada,
+                    nota_facilidade: notaFacilidade,
                     comentario: comentarioLimpo,
                     enviado_ao_banco: false,
                     created_at: new Date().toISOString(),
@@ -197,15 +218,24 @@ function AvaliacaoAtendimento({
   }
 
   if (salva && !editando) {
+    const rotuloFacilidade = salva.nota_facilidade
+      ? OPCOES_FACILIDADE_CURTAS.find((o) => o.val === salva.nota_facilidade)?.label
+      : null;
+
     return (
-      <div className="rounded-xl border border-g-green/30 bg-g-green/5 p-3.5 space-y-1.5 animate-in fade-in">
+      <div className="rounded-xl border border-g-green/30 bg-g-green/5 p-3.5 space-y-2 animate-in fade-in">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <span className="text-2xl select-none">{salva.emoji}</span>
             <div>
               <p className="text-xs font-bold text-foreground">
-                Sua avaliação: <span className="text-g-green dark:text-green-400 font-extrabold">{salva.label}</span>
+                Sua avaliação do atendimento: <span className="text-g-green dark:text-green-400 font-extrabold">{salva.label}</span>
               </p>
+              {rotuloFacilidade && (
+                <p className="text-[11px] text-muted-foreground">
+                  Facilidade para abrir: <strong className="text-foreground">{rotuloFacilidade} ({salva.nota_facilidade}/5)</strong>
+                </p>
+              )}
               {salva.comentario && (
                 <p className="text-xs text-muted-foreground italic mt-0.5">"{salva.comentario}"</p>
               )}
@@ -226,63 +256,94 @@ function AvaliacaoAtendimento({
   }
 
   return (
-    <div className="rounded-2xl border-2 border-border/80 bg-muted/25 p-4 space-y-3 animate-in fade-in">
-      <div className="flex flex-wrap items-center justify-between gap-1">
-        <span className="text-xs font-black uppercase tracking-wider text-foreground">
-          Avaliação do Atendimento
-        </span>
-        <span className="text-[11px] font-semibold text-muted-foreground">Como foi seu suporte?</span>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {EMOJIS_AVALIACAO.map((e) => {
-          const ativo = selecionado === e.id;
-          return (
-            <button
-              key={e.id}
-              type="button"
-              onClick={() => setSelecionado(e.id)}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
-                ativo
-                  ? `${e.bgActive} shadow-sm scale-[1.03]`
-                  : "bg-card hover:bg-muted/70 border-border text-foreground"
-              }`}
-            >
-              <span className="text-2xl transition-transform hover:scale-125 duration-150 select-none">{e.emoji}</span>
-              <span className="text-xs font-bold mt-1">{e.label}</span>
-              <span className="text-[10px] text-muted-foreground">{e.desc}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {selecionado && (
-        <div className="space-y-2 pt-1 animate-in fade-in">
-          <input
-            type="text"
-            value={comentario}
-            onChange={(e) => setComentario(e.target.value)}
-            placeholder="Deixe um elogio ou observação sobre o atendimento..."
-            className="w-full h-9 rounded-xl border border-input bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-g-blue"
-          />
-          <div className="flex justify-end gap-2">
-            {salva && (
-              <Button type="button" size="sm" variant="ghost" onClick={() => setEditando(false)} className="text-xs">
-                Cancelar
-              </Button>
-            )}
-            <Button
-              type="button"
-              size="sm"
-              variant="google-green"
-              onClick={salvar}
-              className="text-xs font-bold gap-1 shadow-xs"
-            >
-              Confirmar avaliação
-            </Button>
-          </div>
+    <div className="rounded-2xl border-2 border-border/80 bg-muted/25 p-4 space-y-4 animate-in fade-in">
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-1 mb-2">
+          <span className="text-xs font-black uppercase tracking-wider text-foreground">
+            1. Satisfação com o Atendimento
+          </span>
+          <span className="text-[11px] font-semibold text-muted-foreground">Como foi seu suporte?</span>
         </div>
-      )}
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {EMOJIS_AVALIACAO.map((e) => {
+            const ativo = selecionado === e.id;
+            return (
+              <button
+                key={e.id}
+                type="button"
+                onClick={() => setSelecionado(e.id)}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                  ativo
+                    ? `${e.bgActive} shadow-sm scale-[1.03]`
+                    : "bg-card hover:bg-muted/70 border-border text-foreground"
+                }`}
+              >
+                <span className="text-2xl transition-transform hover:scale-125 duration-150 select-none">{e.emoji}</span>
+                <span className="text-xs font-bold mt-1">{e.label}</span>
+                <span className="text-[10px] text-muted-foreground">{e.desc}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-1 mb-2">
+          <span className="text-xs font-black uppercase tracking-wider text-foreground">
+            2. Facilidade para Abrir o Chamado
+          </span>
+          <span className="text-[11px] font-semibold text-muted-foreground">Quão fácil foi abrir a solicitação?</span>
+        </div>
+
+        <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+          {OPCOES_FACILIDADE_CURTAS.map((op) => {
+            const ativo = notaFacilidade === op.val;
+            return (
+              <button
+                key={op.val}
+                type="button"
+                onClick={() => setNotaFacilidade(op.val)}
+                className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border text-center transition-all cursor-pointer text-xs ${
+                  ativo
+                    ? "border-primary bg-primary/10 text-primary font-bold shadow-xs ring-2 ring-primary/40 scale-[1.02]"
+                    : "bg-card hover:bg-muted/70 border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span className="font-bold text-sm">{op.val}★</span>
+                <span className="text-[10px] leading-tight line-clamp-1 mt-0.5">{op.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-2 pt-1">
+        <input
+          type="text"
+          value={comentario}
+          onChange={(e) => setComentario(e.target.value)}
+          placeholder="Deixe um elogio, sugestão ou observação opcional..."
+          className="w-full h-9 rounded-xl border border-input bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-g-blue"
+        />
+        <div className="flex justify-end gap-2">
+          {salva && (
+            <Button type="button" size="sm" variant="ghost" onClick={() => setEditando(false)} className="text-xs">
+              Cancelar
+            </Button>
+          )}
+          <Button
+            type="button"
+            size="sm"
+            variant="google-green"
+            onClick={salvar}
+            disabled={!selecionado}
+            className="text-xs font-bold gap-1 shadow-xs"
+          >
+            Confirmar avaliação
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
