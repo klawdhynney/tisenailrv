@@ -110,7 +110,7 @@ function AvaliacaoAtendimento({
   onAvaliar?: (avaliacao: { emoji: string; label: string; comentario: string; nota_facilidade?: number | null }) => void;
 }) {
   const { regras } = useStore();
-  const configAvaliacao = { ...AVALIACAO_PADRAO, ...(regras.avaliacao ?? {}) };
+  const configAvaliacao = { ...AVALIACAO_PADRAO, ...(regras.avaliacoes ?? regras.avaliacao ?? {}) };
   const [salva, setSalva] = useState<{
     emoji: string;
     label: string;
@@ -282,7 +282,7 @@ function AvaliacaoAtendimento({
       <div>
         <div className="flex flex-wrap items-center justify-between gap-1 mb-2">
           <span className="text-xs font-black uppercase tracking-wider text-foreground">
-            {configAvaliacao.pergunta || "1. Satisfação com o Atendimento"}
+            1. Satisfação com o Atendimento
           </span>
           <span className="text-[11px] font-semibold text-muted-foreground">Como foi seu suporte?</span>
         </div>
@@ -432,6 +432,8 @@ function MeusChamados() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+
       const e =
         localStorage.getItem("tisenai_user_email") || localStorage.getItem("tisenai_email");
       if (e) setEmailLocal(e.trim().toLowerCase());

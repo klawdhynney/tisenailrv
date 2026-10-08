@@ -11,6 +11,7 @@ import {
   Play,
   ArrowRightCircle,
   Info,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,7 +75,9 @@ export function TicketChat({
   const [limiteExibicao, setLimiteExibicao] = useState(25);
   const [carregandoAnteriores, setCarregandoAnteriores] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const scrollEndRef = useRef<HTMLDivElement>(null);
+  const isCarregamentoInicialRef = useRef(true);
+  const totalMensagensAnteriorRef = useRef(0);
+  const [temNovasMensagens, setTemNovasMensagens] = useState(false);
 
   const aprimorarMensagem = async () => {
     if (!novoTexto.trim() || aprimorando) return;
@@ -99,10 +102,28 @@ export function TicketChat({
     }
   };
 
-  // Rolagem suave até a última mensagem
-  const rolarAteFinal = (suave = true) => {
-    if (scrollEndRef.current) {
-      scrollEndRef.current.scrollIntoView({ behavior: suave ? "smooth" : "auto" });
+  // Rolagem restrita ao contêiner interno do chat (NUNCA move a página/window)
+  const rolarContainerAteFinal = (suave = true) => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (suave) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
+  };
+
+  const estaPertoDoFimDoContainer = () => {
+    const el = containerRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
+
+  const handleScrollContainer = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) {
+      setTemNovasMensagens(false);
     }
   };
 
@@ -169,8 +190,26 @@ export function TicketChat({
   }, [ticketId]);
 
   useEffect(() => {
-    if (!carregando) {
-      rolarAteFinal(false);
+    if (carregando) return;
+
+    // No primeiro carregamento das mensagens: NUNCA rola a página nem o chat
+    if (isCarregamentoInicialRef.current) {
+      isCarregamentoInicialRef.current = false;
+      totalMensagensAnteriorRef.current = mensagens.length;
+      return;
+    }
+
+    // Quando novas mensagens chegam após a montagem inicial (ex.: tempo real):
+    if (mensagens.length > totalMensagensAnteriorRef.current) {
+      totalMensagensAnteriorRef.current = mensagens.length;
+
+      if (estaPertoDoFimDoContainer()) {
+        // Usuário já está acompanhando o fim do chat: rola apenas o contêiner interno
+        rolarContainerAteFinal(true);
+      } else {
+        // Usuário está lendo mensagens anteriores: exibe aviso discreto sem arrastar nada
+        setTemNovasMensagens(true);
+      }
     }
   }, [carregando, mensagens.length]);
 
@@ -398,7 +437,9 @@ export function TicketChat({
         setNovoTexto("");
         toast.success("Mensagem enviada com sucesso!");
         onMensagemEnviada?.(textoLimpo);
-        setTimeout(() => rolarAteFinal(true), 100);
+        totalMensagensAnteriorRef.current = totalMensagensAnteriorRef.current + 1;
+        setTemNovasMensagens(false);
+        setTimeout(() => rolarContainerAteFinal(true), 50);
         return;
       }
 
@@ -428,7 +469,9 @@ export function TicketChat({
       }
 
       onMensagemEnviada?.(textoLimpo);
-      setTimeout(() => rolarAteFinal(true), 100);
+      totalMensagensAnteriorRef.current = totalMensagensAnteriorRef.current + 1;
+      setTemNovasMensagens(false);
+      setTimeout(() => rolarContainerAteFinal(true), 50);
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "Não foi possível enviar a mensagem.");
@@ -497,7 +540,8 @@ export function TicketChat({
       {/* Área das Mensagens (Scrollable) */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[260px] max-h-[480px] bg-muted/10"
+        onScroll={handleScrollContainer}
+        className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[260px] max-h-[480px] bg-muted/10 relative"
       >
         {/* Botão de carregar mensagens anteriores sob demanda */}
         {mensagensOcultasQtd > 0 && (
@@ -686,7 +730,22 @@ export function TicketChat({
             );
           })
         )}
-        <div ref={scrollEndRef} />
+        {temNovasMensagens && (
+          <div className="sticky bottom-2 flex justify-center z-20 pointer-events-none">
+            <button
+              type="button"
+              onClick={() => {
+                rolarContainerAteFinal(true);
+                setTemNovasMensagens(false);
+              }}
+              className="pointer-events-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-g-blue text-white text-xs font-semibold shadow-md hover:bg-blue-600 transition-all cursor-pointer animate-in fade-in zoom-in-95"
+              title="Clique para descer até as mensagens mais recentes"
+            >
+              <ChevronDown className="size-3.5" />
+              <span>Novas mensagens</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Aviso quando o chamado estiver concluído/resolvido */}
