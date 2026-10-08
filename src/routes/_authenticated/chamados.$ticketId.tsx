@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { useConfirm } from "@/hooks/useConfirm";
 import { TextoAssistido } from "@/components/TextoAssistido";
 import { TicketChat } from "@/components/TicketChat";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
@@ -196,6 +197,7 @@ function TicketEditor({
   session: ReturnType<typeof useStore>["session"];
 }) {
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const { wrapAsync, isLoading } = useLoading();
   const [draft, setDraft] = useState<Ticket>(() => ({ ...ticket, responsavel: "Claudinei Lima", status: ticket.status === "Aberto" ? "Em andamento" : ticket.status }));
   const [saving, setSaving] = useState(false);
@@ -1061,8 +1063,19 @@ function TicketEditor({
           <Button
             type="button"
             variant="outline"
-            onClick={() => {
-              if (hasChanges && !window.confirm("Deseja descartar as alterações e voltar?")) return;
+            onClick={async () => {
+              if (hasChanges) {
+                const ok = await confirm({
+                  title: "Descartar alterações?",
+                  description:
+                    "Deseja descartar as alterações e voltar? As modificações não salvas serão perdidas.",
+                  confirmLabel: "Sim, descartar",
+                  cancelLabel: "Continuar editando",
+                  variant: "destructive",
+                  icon: "warning",
+                });
+                if (!ok) return;
+              }
               navigate({ to: "/atendimento" });
             }}
           >

@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { StoreProvider } from "@/lib/store";
 import { LoadingProvider } from "@/lib/loading-context";
+import { ConfirmProvider } from "@/lib/confirm-context";
 import { AppShell } from "@/components/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { TEMA_INLINE_SCRIPT } from "@/lib/tema";
@@ -183,11 +184,13 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <StoreProvider>
         <LoadingProvider>
-          <AppShell>
-            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-            <Outlet />
-          </AppShell>
-          <Toaster richColors position="top-right" />
+          <ConfirmProvider>
+            <AppShell>
+              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              <Outlet />
+            </AppShell>
+            <Toaster richColors position="top-right" />
+          </ConfirmProvider>
         </LoadingProvider>
       </StoreProvider>
     </QueryClientProvider>

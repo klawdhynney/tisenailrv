@@ -10,6 +10,7 @@ import { useStore } from "@/lib/store-context";
 import { exportarPdf, exportarXlsx, ticketsParaLinhas } from "@/lib/exportar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CAMPOS_EXPORTACAO } from "@/lib/types";
+import { useConfirm } from "@/hooks/useConfirm";
 
 export const Route = createFileRoute("/_authenticated/chamados")({
   head: () => ({
@@ -33,6 +34,7 @@ function Chamados() {
 
 function Planilha() {
   const { tickets, regras } = useStore();
+  const confirm = useConfirm();
   const arquivoRef = useRef<HTMLInputElement>(null);
   const [importando, setImportando] = useState(false);
   const [camposExportacao, setCamposExportacao] = useState<string[]>(() => regras.planilha?.exportacao ?? CAMPOS_EXPORTACAO.map((c) => c.id));
@@ -50,7 +52,15 @@ function Planilha() {
       const { linhas, erros } = await lerPlanilha(file);
       if (erros.length) { toast.error(`Importação cancelada: ${erros[0]}`); return; }
       if (!linhas.length) { toast.error("Nenhuma linha de chamados encontrada."); return; }
-      if (!window.confirm(`Importar ${linhas.length} chamado(s)? Confira o arquivo antes de confirmar.`)) return;
+      const ok = await confirm({
+        title: "Importar chamados?",
+        description: `Deseja importar ${linhas.length} chamado(s)? Confira o arquivo antes de confirmar.`,
+        confirmLabel: "Sim, importar",
+        cancelLabel: "Cancelar",
+        variant: "google-green",
+        icon: "info",
+      });
+      if (!ok) return;
       let inseridos = 0, ignorados = 0;
       for (let i = 0; i < linhas.length; i += 500) {
         const resultado = await importarChamados({ data: linhas.slice(i, i + 500) });

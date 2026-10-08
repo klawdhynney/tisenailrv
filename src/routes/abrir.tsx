@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useConfirm } from "@/hooks/useConfirm";
 import { Cpu, MapPin, CheckCircle2, ArrowLeft, SendHorizontal, Mail, Star, FileText, MessageCircle, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -104,17 +105,25 @@ function AbrirChamado() {
   const [dialogSubstituirAberto, setDialogSubstituirAberto] = useState(false);
   const [sugestaoPendente, setSugestaoPendente] = useState<string | null>(null);
 
+  const confirm = useConfirm();
+  const dadosCarregadosRef = useRef({ solicitante: "", email: "", setor: "", local: "" });
   const configAvaliacao = regras.avaliacoes ?? AVALIACAO_PADRAO;
 
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("ti-senai-dados") ?? "null");
       if (saved && typeof saved === "object") {
+        const s = typeof saved.solicitante === "string" ? saved.solicitante : "";
+        const sec = typeof saved.setor === "string" ? saved.setor : "";
+        const loc = typeof saved.local === "string" ? saved.local : "";
+        dadosCarregadosRef.current.solicitante = s;
+        dadosCarregadosRef.current.setor = sec;
+        dadosCarregadosRef.current.local = loc;
         setForm((f) => ({
           ...f,
-          solicitante: typeof saved.solicitante === "string" ? saved.solicitante : "",
-          setor: typeof saved.setor === "string" ? saved.setor : "",
-          local: typeof saved.local === "string" ? saved.local : "",
+          solicitante: s,
+          setor: sec,
+          local: loc,
         }));
         setLembrar(true);
       }
@@ -137,6 +146,10 @@ function AbrirChamado() {
         session.user.user_metadata?.full_name ||
         session.user.user_metadata?.name ||
         "";
+      dadosCarregadosRef.current.email = email;
+      if (!dadosCarregadosRef.current.solicitante && nome) {
+        dadosCarregadosRef.current.solicitante = nome;
+      }
       setForm((f) => ({
         ...f,
         email: email,
@@ -837,9 +850,43 @@ function AbrirChamado() {
                 variant="outline"
                 size="lg"
                 className="w-full sm:w-auto"
-                onClick={() => {
-                  const hasContent = Object.values(form).some((v) => (v || "").trim().length > 0);
-                  if (hasContent && !window.confirm("Deseja cancelar o preenchimento e voltar ao início?")) return;
+                onClick={async () => {
+                  const temDescricao = form.descricao.trim().length > 0;
+                  const temCategoria = form.categoria.trim().length > 0;
+                  const temCustom = Object.values(customForm).some(
+                    (v) => (v || "").trim().length > 0,
+                  );
+                  const solicitanteAlterado =
+                    form.solicitante.trim().length > 0 &&
+                    form.solicitante.trim() !==
+                      dadosCarregadosRef.current.solicitante.trim();
+                  const setorAlterado =
+                    form.setor.trim().length > 0 &&
+                    form.setor.trim() !== dadosCarregadosRef.current.setor.trim();
+                  const localAlterado =
+                    form.local.trim().length > 0 &&
+                    form.local.trim() !== dadosCarregadosRef.current.local.trim();
+
+                  const hasContent =
+                    temDescricao ||
+                    temCategoria ||
+                    temCustom ||
+                    solicitanteAlterado ||
+                    setorAlterado ||
+                    localAlterado;
+
+                  if (hasContent) {
+                    const ok = await confirm({
+                      title: "Cancelar preenchimento?",
+                      description:
+                        "Deseja cancelar o preenchimento e voltar ao início? Os dados digitados serão perdidos.",
+                      confirmLabel: "Sim, cancelar",
+                      cancelLabel: "Continuar preenchendo",
+                      variant: "destructive",
+                      icon: "warning",
+                    });
+                    if (!ok) return;
+                  }
                   navigate({ to: "/" });
                 }}
               >

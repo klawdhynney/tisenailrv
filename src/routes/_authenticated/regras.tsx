@@ -56,6 +56,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { useConfirm } from "@/hooks/useConfirm";
 import { useStore } from "@/lib/store-context";
 import { supabase } from "@/integrations/supabase/client";
 import { GestaoUsuarios } from "@/components/GestaoUsuarios";
@@ -267,6 +268,7 @@ function ImageUploadInput({
 }
 
 function Regras() {
+  const { prompt } = useConfirm();
   const { regras: regrasSalvas, setRegras, tickets, publicStats, removeTicket, isAdmin, session } = useStore();
   const [regras, setDraft] = useState(regrasSalvas);
   const [limpandoBanco, setLimpandoBanco] = useState(false);
@@ -1374,8 +1376,16 @@ function Regras() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    const label = prompt("Nome do novo campo adicional a ser incluído no formulário:");
+                  onClick={async () => {
+                    const label = await prompt({
+                      title: "Novo campo adicional",
+                      description: "Informe o nome do novo campo personalizado a ser incluído no formulário de abertura:",
+                      placeholder: "Ex.: Patrimônio, Número da sala...",
+                      confirmLabel: "Adicionar campo",
+                      cancelLabel: "Cancelar",
+                      variant: "google-blue",
+                      icon: "question",
+                    });
                     if (label?.trim()) {
                       const id = "custom_" + Date.now();
                       salvarCamposAbertura([
@@ -3778,8 +3788,17 @@ function EditorParametrosCores({
   corPadraoBg?: string;
   corPadraoText?: string;
 }) {
-  const adicionarNovo = () => {
-    const novoNome = prompt(`Nome do novo parâmetro de ${tipoLabel}:`);
+  const { prompt } = useConfirm();
+  const adicionarNovo = async () => {
+    const novoNome = await prompt({
+      title: `Novo parâmetro de ${tipoLabel}`,
+      description: `Informe o nome do novo parâmetro de ${tipoLabel}:`,
+      placeholder: `Nome do parâmetro...`,
+      confirmLabel: "Adicionar parâmetro",
+      cancelLabel: "Cancelar",
+      variant: "google-blue",
+      icon: "question",
+    });
     if (!novoNome?.trim()) return;
     const nomeLimpo = sanitizeInput(novoNome.trim());
     const novoItem: ParametroCor = {
@@ -3914,6 +3933,7 @@ function ListaEditavel({
   itens: string[];
   onChange: (v: string[]) => void;
 }) {
+  const { prompt } = useConfirm();
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -3943,8 +3963,16 @@ function ListaEditavel({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => {
-            const novo = prompt(`Informe o nome do novo item para ${titulo}:`);
+          onClick={async () => {
+            const novo = await prompt({
+              title: `Adicionar item para ${titulo}`,
+              description: `Informe o nome do novo item para ${titulo}:`,
+              placeholder: "Nome do item...",
+              confirmLabel: "Adicionar",
+              cancelLabel: "Cancelar",
+              variant: "google-blue",
+              icon: "question",
+            });
             if (novo?.trim()) {
               onChange([...itens, sanitizeInput(novo.trim())]);
             }
