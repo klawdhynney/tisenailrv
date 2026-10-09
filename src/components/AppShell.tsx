@@ -17,7 +17,6 @@ import { useStore } from "@/lib/store-context";
 import { type ModoTema, aplicarTemaNoDocumento, resolverEhEscuro } from "@/lib/tema";
 import { supabase } from "@/integrations/supabase/client";
 import defaultIcone from "@/assets/icone.png";
-import defaultCapaPng from "@/assets/capa.png";
 import { BotaoRetornar } from "@/components/BotaoRetornar";
 import { ContainerPadrao } from "@/components/ContainerPadrao";
 import { MENU_PADRAO, SEO_PADRAO } from "@/lib/types";
@@ -124,8 +123,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       } catch {}
     }
   };
-  const [bannerErro, setBannerErro] = useState(false);
-  const [logoErro, setLogoErro] = useState(false);
+  const [logoErro, setLogoErro] = useState(false);
 
   useEffect(() => {
     const rawFavicon = regras.identidadeVisual?.faviconUrl?.trim();
@@ -146,36 +144,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [regras.identidadeVisual?.faviconUrl]);
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const showBanner = pathname === "/" && (regras.paginaInicial?.mostrarBanner ?? true);
-  const bannerUrlSalva = regras.paginaInicial?.bannerUrl?.trim() || "";
-
-  useEffect(() => {
-    setBannerErro(false);
-  }, [bannerUrlSalva]);
-
-  // Se bannerUrlSalva for vazia, padrão (/capa.*) ou legada, usamos o pacote importado do projeto
-  const isBannerPadrao =
-    !bannerUrlSalva ||
-    bannerUrlSalva === "/capa.png" ||
-    bannerUrlSalva === "/capa.webp" ||
-    bannerUrlSalva === "/capa.jpg" ||
-    bannerUrlSalva.startsWith("/capa.") ||
-    bannerUrlSalva.includes("iVBORw0KGgoAAASUhEUgAACAAAAAMACAIAAAA/whCdA") ||
-    bannerUrlSalva.includes("senai-");
-
-  const usarBannerPadrao = isBannerPadrao || bannerErro;
-  const customBannerSrc = bannerUrlSalva.startsWith("data:")
-    ? bannerUrlSalva
-    : `${bannerUrlSalva}${bannerUrlSalva.includes("?") ? "&" : "?"}v=${ASSET_VERSION}`;
-
-  const bannerAltText = regras.paginaInicial?.bannerAlt || "TI SENAI Lucas do Rio Verde";
-  const posicaoCapa = regras.paginaInicial?.posicaoCapa || "centro";
-  const posicaoCapaClass =
-    posicaoCapa === "topo"
-      ? "object-top"
-      : posicaoCapa === "base"
-      ? "object-bottom"
-      : "object-center";
 
   const rawLogo = regras.identidadeVisual?.logoUrl?.trim() || "";
   useEffect(() => {
@@ -564,45 +532,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </header>
       <ContainerPadrao as="main" className="pt-[calc(4.5rem+env(safe-area-inset-top))] sm:pt-[calc(5rem+env(safe-area-inset-top))] pb-6 sm:pb-8 flex-1">
-        {showBanner && (
-          <div className="mb-6 sm:mb-8 w-full" id="banner-capa-container">
-            <Link
-              to="/"
-              className="group block w-full overflow-hidden rounded-2xl border border-border/80 bg-primary dark:bg-card shadow-xs transition-all duration-300 hover:border-g-blue/60 hover:shadow-md"
-              title="Voltar para a página inicial"
-            >
-              <picture className="w-full block">
-                {usarBannerPadrao ? (
-                  <img
-                    src={defaultCapaPng}
-                    alt={bannerAltText}
-                    width={2048}
-                    height={768}
-                    loading="eager"
-                    decoding="async"
-                    onError={(e) => {
-                      if (e.currentTarget.src !== defaultCapaPng) {
-                        e.currentTarget.src = defaultCapaPng;
-                      }
-                    }}
-                    className={`w-full aspect-[2048/768] max-h-[384px] object-contain sm:object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
-                  />
-                ) : (
-                  <img
-                    src={customBannerSrc}
-                    alt={bannerAltText}
-                    width={2048}
-                    height={768}
-                    loading="eager"
-                    decoding="async"
-                    onError={() => setBannerErro(true)}
-                    className={`w-full aspect-[2048/768] max-h-[384px] object-contain sm:object-cover ${posicaoCapaClass} transition-transform duration-500 group-hover:scale-[1.01]`}
-                  />
-                )}
-              </picture>
-            </Link>
-          </div>
-        )}
         {children}
         {pathname !== "/" && <BotaoRetornar />}
       </ContainerPadrao>

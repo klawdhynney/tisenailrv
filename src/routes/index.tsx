@@ -3,7 +3,7 @@ import { ArrowRight, FilePlus2, Activity, ClipboardList, CheckCircle2, Star, Ext
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
 import { AVALIACAO_PADRAO } from "@/lib/types";
-import capaPng from "@/assets/capa.png";
+import capaInicioPng from "@/assets/capa-inicio.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -16,6 +16,9 @@ export const Route = createFileRoute("/")({
       { property: "og:image", content: "/capa.png?v=20261006_v6" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:image", content: "/capa.png?v=20261006_v6" },
+    ],
+    links: [
+      { rel: "preload", href: capaInicioPng, as: "image", fetchPriority: "high" },
     ],
   }),
   component: Inicio,
@@ -38,13 +41,24 @@ function Inicio() {
   const tituloPrincipal = regras.paginaInicial?.titulo || "Bem-vindo à Central de Chamados de TI!";
   const subtituloPrincipal = regras.paginaInicial?.subtitulo || "Central oficial de suporte e serviços de Tecnologia da Informação do SENAI Lucas do Rio Verde.";
 
-  const posicaoCapa = regras.paginaInicial?.posicaoCapa || "centro";
+  const posicaoCapa = regras.paginaInicial?.posicaoCapa;
   const posicaoCapaClass =
     posicaoCapa === "topo"
       ? "object-top"
       : posicaoCapa === "base"
       ? "object-bottom"
-      : "object-center";
+      : posicaoCapa === "centro"
+      ? "object-center"
+      : "object-[18%_center] sm:object-center";
+
+  const bannerUrlCustom = regras.paginaInicial?.bannerUrl?.trim();
+  const bannerSrc =
+    bannerUrlCustom &&
+    bannerUrlCustom !== "/capa.png" &&
+    bannerUrlCustom !== "/capa.webp" &&
+    bannerUrlCustom !== "/capa.jpg"
+      ? bannerUrlCustom
+      : capaInicioPng;
 
   const indTotal = regras.indicadores?.total ?? { titulo: "Total de chamados", desc: "Quantidade de chamados registrados.", ativo: true };
   const indAtend = regras.indicadores?.atendimento ?? { titulo: "Em atendimento", desc: "Chamados que estão sendo tratados pela equipe de TI.", ativo: true };
@@ -58,134 +72,154 @@ function Inicio() {
 
   return (
     <div className="space-y-9">
-      {/* Hero com Título e Indicadores de Desempenho integrados junto à descrição */}
-      <section className="relative isolate overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      {/* Hero com Capa de Fundo, Camada Escura, Título e Indicadores integrados em bloco único */}
+      <section className="relative isolate overflow-hidden rounded-2xl border border-border/80 bg-[#031446] shadow-md transition-all">
+        {/* Imagem de Fundo (Capa) */}
         <div className="absolute inset-0 -z-20 h-full w-full overflow-hidden">
           <img
-            src={capaPng}
-            alt="TI SENAI Lucas do Rio Verde"
-            width={2048}
-            height={768}
-            loading="lazy"
+            src={bannerSrc}
+            alt={regras.paginaInicial?.bannerAlt || "TI SENAI Lucas do Rio Verde"}
+            width={1024}
+            height={384}
+            fetchPriority="high"
+            loading="eager"
             decoding="async"
-            className={`h-full w-full object-cover ${posicaoCapaClass} opacity-15 dark:opacity-10`}
+            className={`h-full w-full object-cover ${posicaoCapaClass}`}
           />
         </div>
-        <div className="absolute inset-0 -z-10 bg-card/85 backdrop-blur-[1px]" />
-        <div className="flex flex-col items-center text-center px-6 pt-8 pb-3 sm:px-10 sm:pt-10 max-w-4xl mx-auto">
-          <p className="inline-flex items-center gap-2 rounded-full bg-card/90 px-3.5 py-1 text-xs font-bold uppercase text-primary shadow-xs border border-border/60">
-            <Activity className="size-4" /> {badgeTexto}
+
+        {/* Camada Escura: Degradê Azul-Marinho Semitransparente */}
+        <div
+          className="absolute inset-0 -z-10"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(3, 20, 70, 0.88) 0%, rgba(3, 20, 70, 0.76) 48%, rgba(3, 20, 70, 0.62) 100%)",
+          }}
+        />
+
+        {/* Conteúdo Centralizado */}
+        <div className="flex flex-col items-center text-center px-3.5 pt-6 pb-3 sm:px-6 sm:pt-12 sm:pb-6 md:pt-14 md:pb-8 max-w-4xl mx-auto">
+          {/* Selo Translúcido */}
+          <p className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full bg-white/10 px-3 py-1 sm:px-4 sm:py-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-white shadow-xs border border-white/20 backdrop-blur-md">
+            <Activity className="size-3 sm:size-3.5 text-sky-300" />
+            <span>{badgeTexto}</span>
           </p>
-          <h1 className="mt-4 text-3xl font-extrabold leading-tight text-foreground sm:text-4xl">
+
+          {/* Título em Branco */}
+          <h1 className="mt-3 sm:mt-4 text-xl min-[400px]:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black leading-snug sm:leading-tight text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)] tracking-tight">
             {tituloPrincipal}
           </h1>
+
+          {/* Descrição com leve transparência e max-w ~800px */}
           {subtituloPrincipal && (
-            <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
+            <p className="mt-2 sm:mt-3 text-xs sm:text-sm md:text-base text-blue-50/90 max-w-[800px] leading-relaxed font-normal drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
               {subtituloPrincipal}
             </p>
           )}
         </div>
 
-        {/* Indicadores de desempenho ocupando a largura total da página */}
-        <div className="w-full px-4 sm:px-6 md:px-8 pb-8 pt-2">
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 text-left w-full">
+        {/* Indicadores de desempenho na parte de baixo do hero */}
+        <div className="w-full px-3 sm:px-6 md:px-8 pb-5 sm:pb-8 pt-1">
+          <div className="grid gap-2.5 min-[400px]:gap-3 sm:gap-4 grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-5 text-left w-full">
             {indTotal.ativo && (
-              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-blue bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-g-blue bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                       {indTotal.titulo}
                     </span>
-                    <strong className="mt-1 block text-3xl font-black text-g-blue">{total}</strong>
+                    <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-g-blue font-mono">{total}</strong>
                   </div>
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-g-blue/10 text-g-blue shrink-0 ml-2">
-                    <ClipboardList className="size-5" />
+                  <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-g-blue/10 text-g-blue shrink-0 ml-2">
+                    <ClipboardList className="size-4 min-[400px]:size-4.5 sm:size-5" />
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
+                <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
                   {indTotal.desc}
                 </p>
               </div>
             )}
 
             {indAtend.ativo && (
-              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-yellow bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-g-yellow bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                       {indAtend.titulo}
                     </span>
-                    <strong className="mt-1 block text-3xl font-black text-g-yellow">{andamento}</strong>
+                    <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-g-yellow font-mono">{andamento}</strong>
                   </div>
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-g-yellow/10 text-amber-700 dark:text-amber-400 shrink-0 ml-2">
-                    <Activity className="size-5" />
+                  <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-g-yellow/10 text-amber-600 dark:text-amber-400 shrink-0 ml-2">
+                    <Activity className="size-4 min-[400px]:size-4.5 sm:size-5" />
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
+                <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
                   {indAtend.desc}
                 </p>
               </div>
             )}
 
             {indResolv.ativo && (
-              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-g-green bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-g-green bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                       {indResolv.titulo}
                     </span>
-                    <strong className="mt-1 block text-3xl font-black text-g-green">{resolvidos}</strong>
+                    <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-g-green font-mono">{resolvidos}</strong>
                   </div>
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-g-green/10 text-g-green shrink-0 ml-2">
-                    <CheckCircle2 className="size-5" />
+                  <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-g-green/10 text-g-green shrink-0 ml-2">
+                    <CheckCircle2 className="size-4 min-[400px]:size-4.5 sm:size-5" />
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
+                <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
                   {indResolv.desc}
                 </p>
               </div>
             )}
 
             {indDia.ativo !== false && (
-              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-sky-500 bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-sky-500 bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                       {indDia.titulo}
                     </span>
-                    <strong className="mt-1 block text-3xl font-black text-sky-600 dark:text-sky-400">{chamadosDia}</strong>
+                    <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-sky-600 dark:text-sky-400 font-mono">{chamadosDia}</strong>
                   </div>
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0 ml-2">
-                    <Clock className="size-5" />
+                  <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0 ml-2">
+                    <Clock className="size-4 min-[400px]:size-4.5 sm:size-5" />
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
+                <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
                   {indDia.desc}
                 </p>
               </div>
             )}
 
             {indAtendDia.ativo !== false && (
-              <div className="flex flex-col justify-between rounded-2xl border-l-4 border-teal-500 bg-card/95 p-4 sm:p-5 shadow-sm backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-teal-500 bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40 min-[400px]:col-span-2 lg:col-span-1">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                       {indAtendDia.titulo}
                     </span>
-                    <strong className="mt-1 block text-3xl font-black text-teal-600 dark:text-teal-400">{atendidosDia}</strong>
+                    <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-teal-600 dark:text-teal-400 font-mono">{atendidosDia}</strong>
                   </div>
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 shrink-0 ml-2">
-                    <CheckCheck className="size-5" />
+                  <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 shrink-0 ml-2">
+                    <CheckCheck className="size-4 min-[400px]:size-4.5 sm:size-5" />
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground/80 leading-snug">
+                <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
                   {indAtendDia.desc}
                 </p>
               </div>
             )}
           </div>
         </div>
-        <div className="h-2 bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
+
+        {/* Faixa Colorida na Base do Hero */}
+        <div className="h-2 w-full bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
       </section>
 
       {/* Seção com botões de serviços */}
