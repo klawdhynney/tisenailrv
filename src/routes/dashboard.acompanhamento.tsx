@@ -208,7 +208,7 @@ function Acompanhamento() {
             <option value="abertos">Chamados abertos</option>
             <option value="andamento">Em andamento</option>
             <option value="pausados">SLA pausado</option>
-            <option value="resolvidos">Resolvidos</option>
+            <option value="resolvidos">Finalizados</option>
             <option value="cancelados">Cancelados</option>
           </select>
 

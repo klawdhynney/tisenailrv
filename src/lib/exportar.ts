@@ -1,4 +1,6 @@
-import type { Ticket } from "./types";
+import type { Ticket, Regras } from "./types";
+import { extrairSetor, extrairLocal, obterRotuloStatus } from "./types";
+import { calcularSla, formatarData, formatarDataHora } from "./sla";
 
 export type LinhaExportacao = Record<string, string | number>;
 
@@ -20,7 +22,7 @@ function escaparXml(valor: string | number) {
     .replace(/'/g, "&apos;");
 }
 
-export function ticketsParaLinhas(tickets: Ticket[], camposSelecionados?: string[]): LinhaExportacao[] {
+export function ticketsParaLinhas(tickets: Ticket[], camposSelecionados?: string[], regras?: Regras | null): LinhaExportacao[] {
   return tickets.map((t) => {
     const linhaCompleta: LinhaExportacao = {
       Numero: t.id,
@@ -28,13 +30,13 @@ export function ticketsParaLinhas(tickets: Ticket[], camposSelecionados?: string
       Hora: t.hora,
       Solicitante: t.solicitante,
       SolicitanteEmail: t.solicitanteEmail ?? "",
-      Setor: t.setor,
-      Local: t.local,
+      Setor: extrairSetor(t.setor),
+      Local: extrairLocal(t),
       Descricao: t.descricao,
       Categoria: t.categoria ?? "",
       Prioridade: t.prioridade,
       Responsavel: t.responsavel ?? "",
-      Status: t.status,
+      Status: obterRotuloStatus(t.status, regras),
       Fechamento: t.fechadoEm ?? "",
       Horario_fechamento: t.horario ?? "",
       Procedimento: t.procedimento ?? "",
@@ -53,6 +55,58 @@ export function ticketsParaLinhas(tickets: Ticket[], camposSelecionados?: string
     }
 
     return linhaCompleta;
+  });
+}
+
+export function ticketsParaLinhasAtendimento(
+  tickets: Ticket[],
+  colunasAtivas: { id: string; label: string }[],
+  regras?: Regras | null
+): LinhaExportacao[] {
+  return tickets.map((t) => {
+    const sla = calcularSla(t, regras || ({} as Regras));
+    const mapaValores: Record<string, string | number> = {
+      atender: "",
+      "Atender": "",
+      numero: t.id,
+      "Nº": t.id,
+      abertoEm: formatarData(t.abertoEm, t.hora),
+      "Aberto em": formatarData(t.abertoEm, t.hora),
+      prioridade: t.prioridade,
+      "Prioridade": t.prioridade,
+      solicitante: t.solicitante,
+      "Solicitante": t.solicitante,
+      setor: extrairSetor(t.setor),
+      "Setor": extrairSetor(t.setor),
+      descricao: t.descricao,
+      "Descrição do problema": t.descricao,
+      status: obterRotuloStatus(t.status, regras),
+      "Status": obterRotuloStatus(t.status, regras),
+      slaPrazo: `${formatarDataHora(sla.prazo)} - ${sla.situacao}`,
+      "SLA / Prazo": `${formatarDataHora(sla.prazo)} - ${sla.situacao}`,
+      procedimento: t.procedimento || "",
+      "Procedimento": t.procedimento || "",
+      fechadoEm: formatarData(t.fechadoEm, t.horario),
+      "Fechado em": formatarData(t.fechadoEm, t.horario),
+      responsavel: t.responsavel || "",
+      "Responsável": t.responsavel || "",
+      local: extrairLocal(t),
+      "Local": extrairLocal(t),
+      categoria: t.categoria || "",
+      "Categoria": t.categoria || "",
+      email: t.solicitanteEmail || "",
+      "E-mail": t.solicitanteEmail || "",
+      whatsapp: t.contato || "",
+      "WhatsApp": t.contato || "",
+    };
+
+    const linha: LinhaExportacao = {};
+    for (const col of colunasAtivas) {
+      if (col.id === "atender" || col.label === "Atender") continue;
+      const val = mapaValores[col.id] ?? mapaValores[col.label] ?? "";
+      linha[col.label] = val;
+    }
+    return linha;
   });
 }
 
@@ -257,7 +311,7 @@ export async function exportarDashboardCompletoPdf(dados: DashboardExportData, n
   doc.setFontSize(10);
   doc.text(`Total de chamados: ${dados.total}`, 14, 37);
   doc.text(`Em atendimento / ativos: ${dados.andamento}`, 80, 37);
-  doc.text(`Resolvidos: ${dados.resolvidos}`, 150, 37);
+  doc.text(`Finalizados: ${dados.resolvidos}`, 150, 37);
 
   let currentY = 43;
 

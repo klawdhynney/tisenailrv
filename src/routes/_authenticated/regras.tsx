@@ -15,6 +15,7 @@ import {
   FileEdit,
   FileText,
   Filter,
+  Headset,
   Image as ImageIcon,
   Info,
   Layers,
@@ -68,9 +69,11 @@ import { PainelMenuNav } from "@/components/regras/PainelMenuNav";
 import { PainelChatChamado } from "@/components/regras/PainelChatChamado";
 import { PainelLoginAuth } from "@/components/regras/PainelLoginAuth";
 import { PainelSeoMeta } from "@/components/regras/PainelSeoMeta";
+import { PainelAtendimentoConfig } from "@/components/regras/PainelAtendimentoConfig";
 
 import { TEMA_CONFIG_PADRAO, CORES_BOTOES_PADRAO, CORES_SITE_PADRAO } from "@/lib/tema";
 import {
+  ATENDIMENTO_PADRAO,
   CAMPOS_ABERTURA_PADRAO,
   CAMPOS_EXPORTACAO,
   COLUNAS_PLANILHA,
@@ -601,12 +604,12 @@ function Regras() {
             { id: "login", label: "Login & Acesso", icone: Lock, cor: "text-g-blue", kw: "login autenticacao google microsoft identificacao acesso entrar" },
             { id: "acompanhamento", label: "Tabela & Acomp.", icone: Table, cor: "text-amber-500", kw: "acompanhamento tabela colunas filtros exportacao planilha" },
             { id: "dashboard", label: "Dashboard & Gráficos", icone: BarChart3, cor: "text-g-blue", kw: "dashboard graficos pizza barras kpi historico indicadores" },
-            { id: "indicadores", label: "Indicadores Topo", icone: Layers, cor: "text-g-yellow", kw: "indicadores cards topo total atendimento resolvidos dia" },
+            { id: "indicadores", label: "Indicadores Topo", icone: Layers, cor: "text-g-yellow", kw: "indicadores cards topo total atendimento finalizados dia" },
             { id: "seo", label: "SEO & Metadados", icone: Search, cor: "text-g-blue", kw: "seo google metadados titulo descricao busca compartilhamento" },
             { id: "lgpd", label: "Privacidade & LGPD", icone: ShieldCheck, cor: "text-g-blue", kw: "lgpd privacidade controlador encarregado dpo termos dados" },
             { id: "sobre", label: "Página Sobre", icone: Info, cor: "text-g-blue", kw: "sobre institucional historia equipe missao sistema informacoes" },
             { id: "rodape", label: "Rodapé & Contato", icone: MessageCircle, cor: "text-g-green", kw: "rodape contato whatsapp direitos links footer" },
-            { id: "atendimento", label: "Prazos, SLA & Agenda", icone: Clock, cor: "text-g-red", kw: "sla prazos horario expediente feriados ferias pausa motivos setores categorias locais" },
+            { id: "atendimento", label: "Atendimento & Colunas", icone: Headset, cor: "text-g-blue", kw: "atendimento colunas planilha exportacao status chips sla prazos horario expediente ordem visibilidade" },
             { id: "alertasEmail", label: "Alertas por E-mail", icone: Mail, cor: "text-g-blue", kw: "email alertas notificacoes fila teste smtp" },
             { id: "banco", label: "Banco & Otimização", icone: Database, cor: "text-purple-600", kw: "banco dados limpeza otimizacao cache" },
             ...(isAdmin ? [{ id: "usuarios", label: "Usuários & Acessos", icone: Users, cor: "text-purple-600", kw: "usuarios cargos papeis admin gestor permissoes acessos" }] : []),
@@ -1902,14 +1905,14 @@ function Regras() {
                     </div>
                   </div>
 
-                  {/* Cartão 3: Resolvidos */}
+                  {/* Cartão 3: Finalizados */}
                   <div className="rounded-xl border-l-4 border-g-green border bg-card p-4 space-y-3 shadow-2xs">
                     <div className="space-y-1">
                       <Label className="text-xs font-bold text-g-green">Cartão 3 (Verde)</Label>
                       <Input
                         value={indConf.resolvidosLabel}
                         onChange={(e) => salvarIndicadores({ resolvidosLabel: sanitizeInput(e.target.value) })}
-                        placeholder="Título: Resolvidos"
+                        placeholder="Título: Finalizados"
                       />
                     </div>
                     <div className="space-y-1">
@@ -1917,7 +1920,7 @@ function Regras() {
                       <Input
                         value={indConf.resolvidosDesc}
                         onChange={(e) => salvarIndicadores({ resolvidosDesc: sanitizeInput(e.target.value) })}
-                        placeholder="Ex.: Chamados que já foram concluídos."
+                        placeholder="Ex.: Chamados que já foram concluídos e finalizados."
                       />
                     </div>
                   </div>
@@ -2384,435 +2387,32 @@ function Regras() {
           </Card>
         </TabsContent>
 
-        {/* 9. ABA PRAZOS, SLA & ATENDIMENTO */}
+        {/* 9. ABA ATENDIMENTO, COLUNAS & REGRAS */}
         <TabsContent value="atendimento" className="space-y-6 focus-visible:outline-none">
-          {/* Prazos por prioridade */}
-          <Card className="border-t-4 border-g-red shadow-xs">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-g-red dark:text-red-400">
-                <Clock className="size-5" />
-                Prazos de SLA por Prioridade (em horas úteis)
-              </CardTitle>
-              <CardDescription>
-                A contagem de horas úteis do chamado respeita exatamente a escala e horários definidos abaixo.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-4">
-                {PRIORIDADES.map((p) => (
-                  <div key={p} className="rounded-xl border border-border/70 p-3 bg-card shadow-2xs">
-                    <div
-                      className="mb-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                      style={{
-                        backgroundColor: CORES_PRIORIDADE[p]?.bg ?? "#34A853",
-                        color: CORES_PRIORIDADE[p]?.text ?? "#FFFFFF",
-                      }}
-                    >
-                      {p}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Input
-                        type="number"
-                        min={1}
-                        value={regras.prazos[p]}
-                        onChange={(e) =>
-                          salvar({ prazos: { ...regras.prazos, [p]: Number(e.target.value) } })
-                        }
-                      />
-                      <span className="text-xs text-muted-foreground font-medium">horas</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Expediente por dia da semana */}
-          <Card className="border-t-4 border-g-blue shadow-xs">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-g-blue dark:text-blue-400">
-                <Calendar className="size-5" />
-                Expediente e Horário de Atendimento por Dia da Semana
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-muted/40 p-3.5 border border-border/70">
-                <div>
-                  <p className="text-sm font-semibold">Horário geral padrão do expediente</p>
-                  <p className="text-xs text-muted-foreground">Usado como base para novos dias e relatórios.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div>
-                    <Label className="text-xs block mb-1">Início</Label>
-                    <Input
-                      type="time"
-                      className="h-8 w-28"
-                      value={regras.expediente.inicio}
-                      onChange={(e) =>
-                        salvar({
-                          expediente: { ...regras.expediente, inicio: e.target.value },
-                        })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs block mb-1">Fim</Label>
-                    <Input
-                      type="time"
-                      className="h-8 w-28"
-                      value={regras.expediente.fim}
-                      onChange={(e) =>
-                        salvar({
-                          expediente: { ...regras.expediente, fim: e.target.value },
-                        })
-                      }
-                    />
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-4 text-xs"
-                    onClick={() => {
-                      const ini = regras.expediente.inicio;
-                      const fim = regras.expediente.fim;
-                      const novo: typeof horariosPorDia = {};
-                      for (let i = 0; i <= 6; i++) {
-                        const ativo = i >= 1 && i <= 5;
-                        novo[i] = { ativo, inicio: ini, fim };
-                      }
-                      salvar({
-                        expediente: {
-                          ...regras.expediente,
-                          dias: [1, 2, 3, 4, 5],
-                          horariosPorDia: novo,
-                        },
-                      });
-                      toast.success("Horário padrão aplicado a Segunda a Sexta.");
-                    }}
-                  >
-                    Aplicar Seg a Sex ({regras.expediente.inicio} às {regras.expediente.fim})
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Personalização dia a dia:</Label>
-                <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                  {DIAS_SEMANA.map((dia) => {
-                    const conf = horariosPorDia[dia.num] ?? {
-                      ativo: regras.expediente.dias.includes(dia.num),
-                      inicio: regras.expediente.inicio,
-                      fim: regras.expediente.fim,
-                    };
-
-                    return (
-                      <div
-                        key={dia.num}
-                        className={`rounded-xl border p-3 transition-all ${
-                          conf.ativo ? "border-g-blue/60 bg-card shadow-2xs" : "border-border/60 bg-muted/20 opacity-70"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-bold text-sm text-foreground">{dia.nome}</span>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={conf.ativo ? "google-blue" : "outline"}
-                            className="h-7 text-xs px-2.5"
-                            onClick={() => atualizarHorarioDia(dia.num, { ativo: !conf.ativo })}
-                          >
-                            {conf.ativo ? "Ativo" : "Inativo"}
-                          </Button>
-                        </div>
-
-                        {conf.ativo ? (
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div>
-                              <Label className="text-[11px] text-muted-foreground block mb-1">Início</Label>
-                              <Input
-                                type="time"
-                                className="h-8 text-xs"
-                                value={conf.inicio}
-                                onChange={(e) => atualizarHorarioDia(dia.num, { inicio: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-[11px] text-muted-foreground block mb-1">Fim</Label>
-                              <Input
-                                type="time"
-                                className="h-8 text-xs"
-                                value={conf.fim}
-                                onChange={(e) => atualizarHorarioDia(dia.num, { fim: e.target.value })}
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-xs text-muted-foreground italic py-1.5">Sem expediente - SLA pausado</p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Feriados e Períodos */}
-          <div className="grid gap-5 lg:grid-cols-2">
-            {/* Feriados */}
-            <Card className="border-t-4 border-amber-500 shadow-xs">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-amber-500 dark:text-amber-400">
-                  <CalendarCheck2 className="size-5" />
-                  Feriados Institucionais e Municipais
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {regras.feriados.map((f) => (
-                  <div key={f.id} className="flex gap-2">
-                    <Input
-                      type="date"
-                      value={f.data}
-                      onChange={(e) =>
-                        salvar({
-                          feriados: regras.feriados.map((x) =>
-                            x.id === f.id ? { ...x, data: e.target.value } : x,
-                          ),
-                        })
-                      }
-                    />
-                    <Input
-                      value={f.nome}
-                      onChange={(e) =>
-                        salvar({
-                          feriados: regras.feriados.map((x) =>
-                            x.id === f.id ? { ...x, nome: sanitizeInput(e.target.value) } : x,
-                          ),
-                        })
-                      }
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => salvar({ feriados: regras.feriados.filter((x) => x.id !== f.id) })}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    salvar({
-                      feriados: [
-                        ...regras.feriados,
-                        { id: crypto.randomUUID(), data: "2026-12-25", nome: "Novo feriado" },
-                      ],
-                    })
-                  }
-                >
-                  <Plus className="mr-2 h-4 w-4" /> Adicionar feriado
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Férias e Atestados */}
-            <Card className="border-t-4 border-g-green shadow-xs">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-g-green dark:text-green-400">
-                  <Plane className="size-5" />
-                  Férias Coletivas, Viagens e Recessos
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {regras.periodos.map((p) => (
-                  <div key={p.id} className="grid gap-2 rounded-lg border border-border p-3">
-                    <div className="flex gap-2">
-                      <select
-                        className="h-10 flex-1 rounded-md border border-input bg-background px-2 text-sm"
-                        value={p.tipo}
-                        onChange={(e) =>
-                          salvar({
-                            periodos: regras.periodos.map((x) =>
-                              x.id === p.id ? { ...x, tipo: e.target.value as Periodo["tipo"] } : x,
-                            ),
-                          })
-                        }
-                      >
-                        {["Férias coletivas", "Férias", "Viagem a serviço", "Atestado médico", "Outro"].map((t) => (
-                          <option key={t}>{t}</option>
-                        ))}
-                      </select>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          salvar({ periodos: regras.periodos.filter((x) => x.id !== p.id) })
-                        }
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <Input
-                      value={p.descricao}
-                      placeholder="Descrição / responsável"
-                      onChange={(e) =>
-                        salvar({
-                          periodos: regras.periodos.map((x) =>
-                            x.id === p.id ? { ...x, descricao: sanitizeInput(e.target.value) } : x,
-                          ),
-                        })
-                      }
-                    />
-                    <div className="flex gap-2">
-                      <Input
-                        type="date"
-                        value={p.inicio}
-                        onChange={(e) =>
-                          salvar({
-                            periodos: regras.periodos.map((x) =>
-                              x.id === p.id ? { ...x, inicio: e.target.value } : x,
-                            ),
-                          })
-                        }
-                      />
-                      <Input
-                        type="date"
-                        value={p.fim}
-                        onChange={(e) =>
-                          salvar({
-                            periodos: regras.periodos.map((x) =>
-                              x.id === p.id ? { ...x, fim: e.target.value } : x,
-                            ),
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    salvar({
-                      periodos: [
-                        ...regras.periodos,
-                        {
-                          id: crypto.randomUUID(),
-                          tipo: "Férias",
-                          descricao: "",
-                          inicio: "2026-10-01",
-                          fim: "2026-10-10",
-                        },
-                      ],
-                    })
-                  }
-                >
-                  <Plus className="mr-2 h-4 w-4" /> Adicionar período de pausa
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Setores, Categorias, Responsáveis e Motivos de Pausa do SLA */}
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 pt-2 border-t border-border">
-            <ListaEditavel
-              titulo="Locais e Salas"
-              corTitulo="text-sky-600 dark:text-sky-400"
-              icone={<Building2 className="size-5" />}
-              botaoAdicionarTexto="Adicionar local"
-              itens={regras.locais ?? ["Bloco A", "Bloco B", "Administrativo", "Laboratório 1", "Laboratório 2", "Oficina Mecânica", "Biblioteca", "Auditório"]}
-              onChange={(locais) => salvar({ locais })}
-            />
-
-            <ListaEditavel
-              titulo="Setores Solicitantes"
-              corTitulo="text-g-blue dark:text-blue-400"
-              icone={<Building2 className="size-5" />}
-              botaoAdicionarTexto="Adicionar setor"
-              itens={regras.setores}
-              onChange={(setores) => salvar({ setores })}
-            />
-
-            <ListaEditavel
-              titulo="Tipos de Problema (Categorias)"
-              corTitulo="text-purple-600 dark:text-purple-400"
-              icone={<Tag className="size-5" />}
-              botaoAdicionarTexto="Adicionar categoria"
-              itens={regras.categorias}
-              onChange={(categorias) => salvar({ categorias })}
-            />
-
-            <ListaEditavel
-              titulo="Responsáveis pelo Atendimento"
-              corTitulo="text-g-green dark:text-green-400"
-              icone={<UserCheck className="size-5" />}
-              botaoAdicionarTexto="Adicionar responsável"
-              itens={responsaveis}
-              onChange={(resp) => salvar({ responsaveis: resp })}
-            />
-
-            <ListaEditavel
-              titulo="Motivos de Pausa do SLA"
-              corTitulo="text-amber-500 dark:text-amber-400"
-              icone={<Pause className="size-5" />}
-              botaoAdicionarTexto="Adicionar motivo"
-              itens={regras.motivosPausaSla ?? MOTIVOS_PAUSA_SLA_PADRAO}
-              onChange={(motivosPausaSla) => salvar({ motivosPausaSla })}
-            />
-          </div>
-
-          {/* Parâmetros e Cores Institucionais */}
-          <div className="space-y-4 pt-4 border-t border-border">
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                <Palette className="h-5 w-5 text-g-blue" />
-                Parâmetros e Cores Institucionais
-              </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Personalize as cores de destaque e rótulos dos chips visuais em todo o sistema.
-              </p>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-3">
-              <EditorParametrosCores
-                titulo="Prioridades"
-                descricao="Crítico, Alta, Média e Baixa"
-                corTitulo="text-g-red dark:text-red-400"
-                icone={<Tag className="h-4 w-4" />}
-                itens={parametrosPrioridade}
-                onChange={(novos) => salvar({ parametrosPrioridade: novos })}
-                tipoLabel="prioridade"
-                corPadraoBg="#1A73E8"
-                corPadraoText="#FFFFFF"
-              />
-
-              <EditorParametrosCores
-                titulo="Status de Atendimento"
-                descricao="Em atendimento, Aguardando, Aberto, Resolvido"
-                corTitulo="text-g-blue dark:text-blue-400"
-                icone={<Clock className="h-4 w-4" />}
-                itens={parametrosStatus}
-                onChange={(novos) => salvar({ parametrosStatus: novos })}
-                tipoLabel="status"
-                corPadraoBg="#34A853"
-                corPadraoText="#FFFFFF"
-              />
-
-              <EditorParametrosCores
-                titulo="SLA dos Chamados"
-                descricao="No prazo, Estourado, Cancelado"
-                corTitulo="text-g-green dark:text-green-400"
-                icone={<CheckCircle2 className="h-4 w-4" />}
-                itens={parametrosSla}
-                onChange={(novos) => salvar({ parametrosSla: novos })}
-                tipoLabel="SLA"
-                corPadraoBg="#34A853"
-                corPadraoText="#FFFFFF"
-              />
-            </div>
-          </div>
+          <PainelAtendimentoConfig
+            regras={regras}
+            onChange={salvar}
+            onSalvar={async () => {
+              const ok = await setRegras(regras);
+              return Boolean(ok);
+            }}
+            onDescartar={() => {
+              setDraft(regrasSalvas);
+              toast.info("Alterações descartadas.");
+            }}
+            onRestaurarPadrao={() => {
+              salvar({
+                atendimento: ATENDIMENTO_PADRAO,
+                parametrosStatus: PARAMETROS_STATUS_PADRAO,
+                parametrosPrioridade: PARAMETROS_PRIORIDADE_PADRAO,
+                parametrosSla: PARAMETROS_SLA_PADRAO,
+              });
+              toast.info(
+                "Configurações padrão restauradas no rascunho. Clique em salvar para persistir.",
+              );
+            }}
+            alterado={alterado}
+          />
         </TabsContent>
 
         {/* 10. ABA BANCO E OTIMIZAÇÃO */}
@@ -3029,10 +2629,10 @@ function Regras() {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-muted/20">
                         <div className="space-y-0.5">
                           <Label htmlFor="ia-usar-resolvidos" className="text-sm font-semibold cursor-pointer">
-                            Usar chamados resolvidos como referência
+                            Usar chamados finalizados como referência
                           </Label>
                           <p className="text-xs text-muted-foreground">
-                            Busca no servidor até 5 chamados resolvidos semelhantes da mesma categoria para orientar a IA com soluções já validadas pela equipe (sem dados pessoais).
+                            Busca no servidor até 5 chamados finalizados semelhantes da mesma categoria para orientar a IA com soluções já validadas pela equipe (sem dados pessoais).
                           </p>
                         </div>
                         <Switch
@@ -3487,7 +3087,7 @@ function SecaoAlertasEmail({ config, onChange, userEmail, isAdmin }: SecaoAlerta
               <div className="flex items-center justify-between rounded-lg border border-border/70 p-3 bg-muted/20">
                 <div className="space-y-0.5 pr-2">
                   <span className="text-xs font-bold text-foreground">Finalização do Chamado</span>
-                  <p className="text-[11px] text-muted-foreground">Envia resumo completo quando for resolvido ou concluído.</p>
+                  <p className="text-[11px] text-muted-foreground">Envia resumo completo quando for finalizado ou concluído.</p>
                 </div>
                 <Switch
                   checked={config.eventos.finalizacao}

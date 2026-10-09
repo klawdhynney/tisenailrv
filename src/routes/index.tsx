@@ -48,7 +48,11 @@ function Inicio() {
 
   const indTotal = regras.indicadores?.total ?? { titulo: "Total de chamados", desc: "Quantidade de chamados registrados.", ativo: true };
   const indAtend = regras.indicadores?.atendimento ?? { titulo: "Em atendimento", desc: "Chamados que estão sendo tratados pela equipe de TI.", ativo: true };
-  const indResolv = regras.indicadores?.resolvidos ?? { titulo: "Resolvidos", desc: "Chamados que já foram concluídos.", ativo: true };
+  const indResolvRaw = regras.indicadores?.resolvidos ?? { titulo: "Finalizados", desc: "Chamados que já foram concluídos e finalizados.", ativo: true };
+  const indResolv = {
+    ...indResolvRaw,
+    titulo: indResolvRaw.titulo === "Resolvidos" ? "Finalizados" : indResolvRaw.titulo || "Finalizados",
+  };
   const indDia = regras.indicadores?.chamadosDia ?? { titulo: "Chamados do dia", desc: "Chamados abertos hoje.", ativo: true };
   const indAtendDia = regras.indicadores?.atendidosDia ?? { titulo: "Atendidos no dia", desc: "Chamados concluídos hoje.", ativo: true };
 

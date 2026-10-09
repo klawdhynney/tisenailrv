@@ -77,7 +77,7 @@ export function PainelChatChamado({ config, onChange, onRestaurarPadrao }: Paine
                 <span>
                   {(c.avisoFinalizado || c.avisoResolvido || "Chamado {status}").replace(
                     "{status}",
-                    "Resolvido",
+                    "Finalizado",
                   )}
                 </span>
               </div>

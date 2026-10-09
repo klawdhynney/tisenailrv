@@ -16,6 +16,45 @@ export const STATUS_LIST: Status[] = [
   "Cancelado",
 ];
 
+export const STATUS_ROTULOS: Record<string, string> = {
+  Resolvido: "Finalizado",
+  Finalizado: "Finalizado",
+  Aberto: "Aberto",
+  "Em andamento": "Em andamento",
+  "Em atendimento": "Em atendimento",
+  Aguardando: "Aguardando",
+  Cancelado: "Cancelado",
+};
+
+export function obterRotuloStatus(status: string | null | undefined, regras?: Regras | null): string {
+  if (!status) return "";
+  const param = regras?.parametrosStatus?.find(
+    (s) =>
+      (s.id === "s5" && (status === "Resolvido" || status === "Finalizado")) ||
+      s.nome.toLowerCase() === status.toLowerCase(),
+  );
+  if (param?.nome) return param.nome;
+  if (status === "Resolvido") return "Finalizado";
+  return STATUS_ROTULOS[status] ?? status;
+}
+
+export function extrairSetor(setor: string | null | undefined): string {
+  if (!setor) return "";
+  const limpo = setor.trim();
+  if (limpo.includes(" · ")) {
+    return limpo.split(" · ")[0].trim();
+  }
+  return limpo;
+}
+
+export function extrairLocal(ticket: { setor?: string | null; local?: string | null }): string {
+  if (ticket.local && ticket.local.trim()) return ticket.local.trim();
+  if (ticket.setor && ticket.setor.includes(" · ")) {
+    return ticket.setor.split(" · ")[1].trim();
+  }
+  return "";
+}
+
 export interface PausaSlaHistorico {
   id?: string;
   inicio: string; // ISO
@@ -277,7 +316,7 @@ export const INDICADORES_PADRAO: IndicadoresConfig = {
   totalDesc: "Quantidade de chamados registrados.",
   atendimentoLabel: "Em atendimento",
   atendimentoDesc: "Chamados que estão sendo tratados pela equipe de TI.",
-  resolvidosLabel: "Resolvidos",
+  resolvidosLabel: "Finalizados",
   resolvidosDesc: "Chamados que já foram concluídos.",
   chamadosDiaLabel: "Chamados do dia",
   chamadosDiaDesc: "Chamados abertos hoje.",
@@ -294,7 +333,7 @@ export const INDICADORES_PADRAO: IndicadoresConfig = {
     ativo: true,
   },
   resolvidos: {
-    titulo: "Resolvidos",
+    titulo: "Finalizados",
     desc: "Chamados que já foram concluídos.",
     ativo: true,
   },
@@ -773,8 +812,76 @@ export interface Regras {
   meusChamados?: MeusChamadosConfig | undefined;
 }
 
+export type ColunaLargura = "estreita" | "media" | "larga" | "automatica";
+
+export interface ColunaPlanilhaConfig {
+  id: string;
+  label: string;
+  ativa: boolean;
+  obrigatoria?: boolean;
+  largura?: ColunaLargura;
+  linhas?: number;
+  exportarExcel?: boolean;
+  exportarPdf?: boolean;
+}
+
+export const COLUNAS_ATENDIMENTO_PADRAO_NOMES = [
+  "Atender",
+  "Nº",
+  "Aberto em",
+  "Prioridade",
+  "Solicitante",
+  "Setor",
+  "Descrição do problema",
+  "Status",
+  "SLA / Prazo",
+  "Procedimento",
+  "Fechado em",
+  "Responsável",
+] as const;
+
+export const COLUNAS_ATENDIMENTO_PADRAO: ColunaPlanilhaConfig[] = [
+  { id: "atender", label: "Atender", ativa: true, obrigatoria: true, largura: "estreita", exportarExcel: false, exportarPdf: false },
+  { id: "numero", label: "Nº", ativa: true, obrigatoria: true, largura: "estreita", exportarExcel: true, exportarPdf: true },
+  { id: "abertoEm", label: "Aberto em", ativa: true, largura: "media", exportarExcel: true, exportarPdf: true },
+  { id: "prioridade", label: "Prioridade", ativa: true, largura: "estreita", exportarExcel: true, exportarPdf: true },
+  { id: "solicitante", label: "Solicitante", ativa: true, largura: "media", exportarExcel: true, exportarPdf: true },
+  { id: "setor", label: "Setor", ativa: true, largura: "media", linhas: 2, exportarExcel: true, exportarPdf: true },
+  { id: "descricao", label: "Descrição do problema", ativa: true, largura: "larga", linhas: 2, exportarExcel: true, exportarPdf: true },
+  { id: "status", label: "Status", ativa: true, largura: "media", exportarExcel: true, exportarPdf: true },
+  { id: "slaPrazo", label: "SLA / Prazo", ativa: true, largura: "media", exportarExcel: true, exportarPdf: true },
+  { id: "procedimento", label: "Procedimento", ativa: true, largura: "larga", linhas: 2, exportarExcel: true, exportarPdf: true },
+  { id: "fechadoEm", label: "Fechado em", ativa: true, largura: "media", exportarExcel: true, exportarPdf: true },
+  { id: "responsavel", label: "Responsável", ativa: true, largura: "media", exportarExcel: true, exportarPdf: true },
+  // Opcionais desativadas por padrão:
+  { id: "local", label: "Local", ativa: false, largura: "media", exportarExcel: false, exportarPdf: false },
+  { id: "categoria", label: "Categoria", ativa: false, largura: "media", exportarExcel: false, exportarPdf: false },
+  { id: "email", label: "E-mail", ativa: false, largura: "media", exportarExcel: false, exportarPdf: false },
+  { id: "whatsapp", label: "WhatsApp", ativa: false, largura: "media", exportarExcel: false, exportarPdf: false },
+];
+
 export const FILTROS_PLANILHA = ["Mês", "Busca", "Por página", "Categoria", "Setor", "SLA"] as const;
-export const COLUNAS_PLANILHA = ["Ver chamado", "Nº", "Aberto em", "Solicitante", "Setor", "Descrição do problema", "Prioridade", "Status", "SLA", "Prazo", "Responsável", "Procedimento", "Fechado em", "E-mail", "WhatsApp", "Categoria"] as const;
+export const COLUNAS_PLANILHA = [
+  "Atender",
+  "Nº",
+  "Aberto em",
+  "Prioridade",
+  "Solicitante",
+  "Setor",
+  "Descrição do problema",
+  "Status",
+  "SLA / Prazo",
+  "Procedimento",
+  "Fechado em",
+  "Responsável",
+  "Local",
+  "Categoria",
+  "E-mail",
+  "WhatsApp",
+  "Ver chamado",
+  "SLA",
+  "Prazo",
+] as const;
 
 export const MESES = [
   "Janeiro",
@@ -818,7 +925,7 @@ export const PARAMETROS_STATUS_PADRAO: ParametroCor[] = [
   { id: "s2", nome: "Aguardando", bg: "#FA7B17", text: "#FFFFFF" },     // Laranja
   { id: "s3", nome: "Cancelado", bg: "#5F6368", text: "#FFFFFF" },      // Grafite
   { id: "s4", nome: "Aberto", bg: "#1A73E8", text: "#FFFFFF" },         // Azul
-  { id: "s5", nome: "Resolvido", bg: "#0D652D", text: "#FFFFFF" },      // Verde escuro
+  { id: "s5", nome: "Finalizado", bg: "#0D652D", text: "#FFFFFF" },     // Verde escuro
 ];
 
 export const MOTIVOS_PAUSA_SLA_PADRAO: string[] = [
@@ -836,7 +943,9 @@ export const PARAMETROS_SLA_PADRAO: ParametroCor[] = [
   { id: "sla3", nome: "Cancelado", bg: "#5F6368", text: "#FFFFFF" },  // Grafite
   { id: "sla4", nome: "Aguardando", bg: "#FA7B17", text: "#FFFFFF" }, // Laranja
   { id: "sla5", nome: "SLA pausado", bg: "#F59E0B", text: "#000000" }, // Âmbar
-  { id: "sla6", nome: "—", bg: "#E8EAED", text: "#3C4043" },
+  { id: "sla6", nome: "Perto de vencer", bg: "#FBBC04", text: "#202124" }, // Amarelo
+  { id: "sla7", nome: "Vencido", bg: "#EA4335", text: "#FFFFFF" },   // Vermelho
+  { id: "sla8", nome: "—", bg: "#E8EAED", text: "#3C4043" },
 ];
 
 export const CORES_PRIORIDADE: Record<string, { bg: string; text: string }> = {
@@ -854,10 +963,14 @@ export const CORES_STATUS: Record<string, { bg: string; text: string }> = {
   Cancelado: { bg: "#5F6368", text: "#FFFFFF" },
   Aberto: { bg: "#1A73E8", text: "#FFFFFF" },
   Resolvido: { bg: "#0D652D", text: "#FFFFFF" },
+  Finalizado: { bg: "#0D652D", text: "#FFFFFF" },
+  Finalizados: { bg: "#0D652D", text: "#FFFFFF" },
 };
 
 export const CORES_SLA: Record<string, { bg: string; text: string }> = {
   "No prazo": { bg: "#34A853", text: "#FFFFFF" },
+  "Perto de vencer": { bg: "#FBBC04", text: "#202124" },
+  Vencido: { bg: "#EA4335", text: "#FFFFFF" },
   Estourado: { bg: "#EA4335", text: "#FFFFFF" },
   "SLA pausado": { bg: "#F59E0B", text: "#000000" },
   Cancelado: { bg: "#5F6368", text: "#FFFFFF" },
@@ -1070,6 +1183,20 @@ export interface AtendimentoConfig {
   subtitulo: string;
   placeholderBusca: string;
   itensPorPaginaPadrao: number;
+  mesInicialPadrao?: string; // "todos" ou mês específico como "2026-10"
+  statusInicialPadrao?: string; // "todos" ou "Aberto", etc.
+  ordenacaoPadrao?: "recentes" | "antigos" | "prioridade";
+  botaoBaixarExcel?: string;
+  botaoBaixarPdf?: string;
+  botoesExportacaoVisiveis?: {
+    excel: boolean;
+    pdf: boolean;
+  };
+  botoesStatusVisiveis?: string[];
+  ordemBotoesStatus?: string[];
+  colunas?: ColunaPlanilhaConfig[];
+  unidadePrazoSla?: "horas" | "dias";
+  limitePertoVencerHoras?: number;
 }
 
 export const ATENDIMENTO_PADRAO: AtendimentoConfig = {
@@ -1077,6 +1204,20 @@ export const ATENDIMENTO_PADRAO: AtendimentoConfig = {
   subtitulo: "Gerencie chamados, atualize status, registre procedimentos e acompanhe os prazos de SLA.",
   placeholderBusca: "Buscar por número, solicitante, setor, descrição...",
   itensPorPaginaPadrao: 20,
+  mesInicialPadrao: "todos",
+  statusInicialPadrao: "todos",
+  ordenacaoPadrao: "recentes",
+  botaoBaixarExcel: "Baixar Excel",
+  botaoBaixarPdf: "Baixar PDF",
+  botoesExportacaoVisiveis: {
+    excel: true,
+    pdf: true,
+  },
+  botoesStatusVisiveis: ["Todos", "Aberto", "Em atendimento", "Aguardando", "Finalizados", "Cancelados"],
+  ordemBotoesStatus: ["Todos", "Aberto", "Em atendimento", "Aguardando", "Finalizados", "Cancelados"],
+  colunas: [...COLUNAS_ATENDIMENTO_PADRAO],
+  unidadePrazoSla: "horas",
+  limitePertoVencerHoras: 2,
 };
 
 export interface MeusChamadosConfig {

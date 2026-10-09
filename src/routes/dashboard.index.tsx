@@ -520,11 +520,11 @@ function Dashboard() {
                 desc: indConf?.atendimentoDesc || "Chamados que estão sendo tratados pela equipe de TI.",
               },
               {
-                label: indConf?.resolvidosLabel || "Resolvidos",
+                label: indConf?.resolvidosLabel || "Finalizados",
                 count: resolvidos,
                 border: "border-g-green",
                 color: "text-g-green",
-                desc: indConf?.resolvidosDesc || "Chamados que já foram concluídos.",
+                desc: indConf?.resolvidosDesc || "Chamados que já foram concluídos e finalizados.",
               },
               {
                 label: indConf?.chamadosDiaLabel || "Chamados do dia",
@@ -1186,7 +1186,7 @@ function GraficoSerieHistorica({ mesSelecionado }: { mesSelecionado?: string }) 
 
   const seriesConfig = [
     { key: "Total", label: "Total de Chamados", cor: sh.linha, desc: "Volume total registrado no mês" },
-    { key: "Resolvidos", label: "Resolvidos", cor: sh.resolvidos, desc: "Chamados com atendimento concluído" },
+    { key: "Resolvidos", label: "Finalizados", cor: sh.resolvidos, desc: "Chamados com atendimento finalizado" },
     { key: "Em atendimento", label: "Em Atendimento", cor: sh.emAtendimento, desc: "Chamados em andamento pela equipe" },
   ];
 
@@ -1201,9 +1201,9 @@ function GraficoSerieHistorica({ mesSelecionado }: { mesSelecionado?: string }) 
         </div>
 
         <div className="rounded-xl border-l-4 border-g-green bg-card p-4 shadow-sm">
-          <p className="text-xs font-semibold text-muted-foreground">Resolvidos</p>
+          <p className="text-xs font-semibold text-muted-foreground">Finalizados</p>
           <p className="mt-1 text-2xl sm:text-3xl font-black text-g-green tracking-tight">{resolvidosPeriodo}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{taxaResolucao}% de taxa de resolução</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{taxaResolucao}% de taxa de finalização</p>
         </div>
 
         <div className="rounded-xl border-l-4 border-g-yellow bg-card p-4 shadow-sm">
@@ -1505,7 +1505,7 @@ function GraficoSerieHistorica({ mesSelecionado }: { mesSelecionado?: string }) 
                   <Line
                     type="monotone"
                     dataKey="Resolvidos"
-                    name="Resolvidos"
+                    name="Finalizados"
                     stroke={sh.resolvidos}
                     strokeWidth={2.8}
                     dot={{ r: 4, fill: sh.resolvidos, stroke: "#ffffff", strokeWidth: 2 }}
@@ -1610,9 +1610,9 @@ function GraficoSerieHistorica({ mesSelecionado }: { mesSelecionado?: string }) 
               <tr className="border-b border-border/80 bg-muted/50 font-bold text-muted-foreground">
                 <th className="p-3">Mês / Ano</th>
                 <th className="p-3 text-right">Total Registrado</th>
-                <th className="p-3 text-right">Resolvidos</th>
+                <th className="p-3 text-right">Finalizados</th>
                 <th className="p-3 text-right">Em Atendimento</th>
-                <th className="p-3 text-right">Taxa de Resolução</th>
+                <th className="p-3 text-right">Taxa de Finalização</th>
               </tr>
             </thead>
             <tbody>

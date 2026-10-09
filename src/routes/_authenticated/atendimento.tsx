@@ -1,19 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FileSpreadsheet, FileText, Headset } from "lucide-react";
+import { Headset } from "lucide-react";
 import { TicketSheet } from "@/components/TicketSheet";
-import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
-import { exportarPdf, exportarXlsx, ticketsParaLinhas } from "@/lib/exportar";
-
 import { ATENDIMENTO_PADRAO } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/atendimento")({
   head: () => ({
     meta: [
-      { title: "Atendimento de chamados | TI Senai LRV" },
-      { name: "description", content: "Fila de chamados recebidos para a equipe de TI assumir, atualizar e resolver." },
-      { property: "og:title", content: "Atendimento de Chamados" },
-      { property: "og:description", content: "Fila de atendimento da equipe de TI." },
+      { title: "Atendimento de Chamados | TI Senai LRV" },
+      {
+        name: "description",
+        content:
+          "Central de Atendimento ao Usuário: gerencie chamados, atualize status, registre procedimentos e acompanhe os prazos de SLA.",
+      },
+      { property: "og:title", content: "Central de Atendimento ao Usuário" },
+      { property: "og:description", content: "Fila de atendimento da equipe de TI do SENAI LRV." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -22,9 +23,8 @@ export const Route = createFileRoute("/_authenticated/atendimento")({
 });
 
 function Atendimento() {
-  const { tickets, regras } = useStore();
+  const { regras } = useStore();
   const configAtendimento = { ...ATENDIMENTO_PADRAO, ...(regras.atendimento ?? {}) };
-  const dadosExportacao = () => ticketsParaLinhas(tickets, regras.planilha?.exportacao);
 
   return (
     <div className="space-y-6">
@@ -34,25 +34,12 @@ function Atendimento() {
             <span className="rounded-xl bg-g-blue/15 p-2 text-g-blue">
               <Headset className="size-7" />
             </span>
-            {configAtendimento.titulo || "Atendimento de Chamados"}
+            {configAtendimento.titulo || "Central de Atendimento ao Usuário"}
           </h1>
           <p className="mt-1 text-xs text-muted-foreground">
-            {configAtendimento.subtitulo || "Fila operacional de chamados técnicos para triagem, atualização de status e cumprimento de SLA."}
+            {configAtendimento.subtitulo ||
+              "Gerencie chamados, atualize status, registre procedimentos e acompanhe os prazos de SLA."}
           </p>
-        </div>
-        <div className="no-print flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => exportarXlsx(dadosExportacao(), "Planilha_Atendimento_TI")}
-          >
-            <FileSpreadsheet className="size-4" /> {configAtendimento.botaoBaixarExcel || "Baixar Excel"}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => exportarPdf(dadosExportacao(), "Planilha_Atendimento_TI", "Planilha de Atendimento de Chamados")}
-          >
-            <FileText className="size-4" /> {configAtendimento.botaoBaixarPdf || "Baixar PDF"}
-          </Button>
         </div>
       </header>
       <TicketSheet attendance />

@@ -29,7 +29,7 @@ import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { useLoading } from "@/lib/loading-context";
 import { useStore } from "@/lib/store-context";
 import { fromRow } from "@/lib/store";
-import { PRIORIDADES, type Ticket, obterDataHojeCuiaba, obterHoraAgoraCuiaba } from "@/lib/types";
+import { PRIORIDADES, type Ticket, obterDataHojeCuiaba, obterHoraAgoraCuiaba, obterRotuloStatus } from "@/lib/types";
 import { calcularSla, formatarData, formatarDataHora, formatarDuracao, segundosUteis } from "@/lib/sla";
 import { sugerirPrioridade } from "@/lib/sugerir-prioridade.functions";
 import { sugerirRespostasAtendimento } from "@/lib/revisar-texto.functions";
@@ -473,8 +473,8 @@ function TicketEditor({
                 autor_tipo: "sistema",
                 evento_tipo: isFin ? "status_finalizado" : "status_alterado",
                 mensagem: isFin
-                  ? `Chamado finalizado como ${patch.status}.`
-                  : `Status alterado de "${ticket.status}" para "${patch.status}".`,
+                  ? `Chamado finalizado como ${obterRotuloStatus(patch.status, regras)}.`
+                  : `Status alterado de "${obterRotuloStatus(ticket.status, regras)}" para "${obterRotuloStatus(patch.status, regras)}".`,
               });
             } catch {
               // Trigger do banco assegura persistência
@@ -1008,10 +1008,10 @@ function TicketEditor({
             </div>
           </div>
 
-          {/* Status na ordem estrita: Em atendimento (Verde), Aguardando (Laranja), Cancelado (Grafite), Aberto (Azul) e Resolvido (Verde escuro) */}
+          {/* Status na ordem estrita: Em atendimento (Verde), Aguardando (Laranja), Cancelado (Grafite), Aberto (Azul) e Finalizado (Verde escuro) */}
           <div className="border-t border-border/80 pt-4">
             <h2 className="mb-2 text-sm font-bold text-foreground">
-              Status do Chamado (Ordem: Em atendimento, Aguardando, Cancelado, Aberto, Resolvido)
+              Status do Chamado (Ordem: Em atendimento, Aguardando, Cancelado, Aberto, Finalizado)
             </h2>
             <div className="flex flex-wrap gap-2.5">
               {LISTA_STATUS.map((s) => {
@@ -1037,7 +1037,7 @@ function TicketEditor({
                       }
                     }}
                   >
-                    {s}
+                    {obterRotuloStatus(s, regras)}
                   </Button>
                 );
               })}
@@ -1196,7 +1196,7 @@ function TicketEditor({
 
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Ao finalizar, o status do chamado mudará para <strong>Resolvido</strong>, o horário de encerramento será gravado no fuso oficial e o atendimento será concluído.
+                Ao finalizar, o status do chamado mudará para <strong>Finalizado</strong>, o horário de encerramento será gravado no fuso oficial e o atendimento será concluído.
               </p>
 
               <div className="space-y-1.5">
@@ -1284,7 +1284,7 @@ function TicketEditor({
                 <Input
                   value={motivoCancelamento}
                   onChange={(e) => setMotivoCancelamento(e.target.value)}
-                  placeholder="Ex.: Solicitação duplicada, resolvido pelo usuário..."
+                  placeholder="Ex.: Solicitação duplicada, finalizado pelo usuário..."
                   className="text-xs sm:text-sm"
                 />
               </div>

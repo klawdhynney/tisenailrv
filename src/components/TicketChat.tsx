@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/UserAvatar";
 import { cn } from "@/lib/utils";
 import type { TicketMensagem } from "@/lib/types";
-import { CHAT_PADRAO } from "@/lib/types";
+import { CHAT_PADRAO, obterRotuloStatus } from "@/lib/types";
 import { useStore } from "@/lib/store-context";
 import { revisarTexto } from "@/lib/revisar-texto.functions";
 
@@ -349,7 +349,7 @@ export function TicketChat({
           autorEmail: "sistema@senailrv.local",
           autorTipo: "sistema",
           eventoTipo: "status_finalizado",
-          mensagem: `Chamado finalizado como ${ticketStatus}.`,
+          mensagem: `Chamado finalizado como ${obterRotuloStatus(ticketStatus || "")}.`,
           criadoEm: dataFechamento,
         });
       }
@@ -754,9 +754,10 @@ export function TicketChat({
           configChat.avisoFinalizado ||
           configChat.avisoResolvido ||
           "Chamado {status}. O histórico e as mensagens continuam disponíveis para consulta.";
+        const rotulo = obterRotuloStatus(ticketStatus || "");
         const textoAviso = aviso.includes("{status}")
-          ? aviso.replace("{status}", ticketStatus || "")
-          : `${aviso} (${ticketStatus})`;
+          ? aviso.replace("{status}", rotulo)
+          : `${aviso} (${rotulo})`;
         return (
           <div className="px-4 py-2 bg-muted/40 border-t border-border/60 text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
             <CheckCircle2 className="size-3.5 text-g-green shrink-0" />

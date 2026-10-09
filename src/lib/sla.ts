@@ -147,7 +147,7 @@ export function segundosUteis(a: Date, b: Date, regras: Regras): number {
 }
 
 export interface SlaInfo {
-  situacao: "No prazo" | "Estourado" | "Cancelado" | "Aguardando" | "SLA pausado" | "—";
+  situacao: "No prazo" | "Perto de vencer" | "Vencido" | "Estourado" | "Cancelado" | "Aguardando" | "SLA pausado" | "—";
   prazo: Date | null;
   restanteMin: number | null;
   pausadoPor: string | null;
@@ -160,6 +160,9 @@ export function calcularSla(t: Ticket, regras: Regras, agora = new Date()): SlaI
 
   const horas = regras.prazos[t.prioridade];
   if (!horas) return { situacao: "—", prazo: null, restanteMin: null, pausadoPor: null, percentual: 0 };
+
+  const limitePertoVencerHoras = Number(regras.atendimento?.limitePertoVencerHoras ?? 2);
+  const limiteMin = Math.max(15, limitePertoVencerHoras * 60);
 
   const inicio = t.slaReiniciadoEm ? new Date(t.slaReiniciadoEm) : toDate(t.abertoEm, t.hora);
   const segAcumulados = t.slaSegundosPausadosAcumulados || 0;
@@ -193,7 +196,7 @@ export function calcularSla(t: Ticket, regras: Regras, agora = new Date()): SlaI
 
   if (t.status === "Aguardando" || (regras.statusQuePausam && regras.statusQuePausam.includes(t.status)))
     return {
-      situacao: t.status === "Aguardando" ? "Aguardando" : agora > prazo ? "Estourado" : "No prazo",
+      situacao: t.status === "Aguardando" ? "Aguardando" : agora > prazo ? "Vencido" : "No prazo",
       prazo,
       restanteMin: null,
       pausadoPor: `Status: ${t.status}`,
@@ -201,13 +204,18 @@ export function calcularSla(t: Ticket, regras: Regras, agora = new Date()): SlaI
     };
 
   const ref = t.fechadoEm ? toDate(t.fechadoEm, t.horario) : agora;
-  const encerrado = t.status === "Resolvido" && !!t.fechadoEm;
+  const encerrado = (t.status === "Resolvido" || (t.status as string) === "Finalizado") && !!t.fechadoEm;
 
   if (!encerrado) {
     const mp = motivoPausa(agora, regras);
     if (mp) {
       const restante = minutosUteis(agora, prazo, regras);
-      return { situacao: agora > prazo ? "Estourado" : "No prazo", prazo, restanteMin: restante, pausadoPor: mp, percentual: 0 };
+      const estourado = agora > prazo;
+      let sit: SlaInfo["situacao"] = estourado ? "Vencido" : "No prazo";
+      if (!estourado && restante !== null && restante <= limiteMin && restante > 0) {
+        sit = "Perto de vencer";
+      }
+      return { situacao: sit, prazo, restanteMin: restante, pausadoPor: mp, percentual: 0 };
     }
   }
 
@@ -215,10 +223,16 @@ export function calcularSla(t: Ticket, regras: Regras, agora = new Date()): SlaI
   const total = horas * 60;
   const percentual = Math.min(100, Math.round((usados / total) * 100));
   const dentro = ref.getTime() <= prazo.getTime() + 1000;
+  const restanteMin = dentro ? minutosUteis(ref, prazo, regras) : -minutosUteis(prazo, ref, regras);
+  let situacao: SlaInfo["situacao"] = dentro ? "No prazo" : "Vencido";
+  if (!encerrado && dentro && restanteMin !== null && restanteMin <= limiteMin && restanteMin > 0) {
+    situacao = "Perto de vencer";
+  }
+
   return {
-    situacao: dentro ? "No prazo" : "Estourado",
+    situacao,
     prazo,
-    restanteMin: dentro ? minutosUteis(ref, prazo, regras) : -minutosUteis(prazo, ref, regras),
+    restanteMin,
     pausadoPor: null,
     percentual,
   };

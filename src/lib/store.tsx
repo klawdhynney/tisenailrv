@@ -29,6 +29,7 @@ import {
   LOGIN_PADRAO,
   SEO_PADRAO,
   ATENDIMENTO_PADRAO,
+  COLUNAS_ATENDIMENTO_PADRAO,
   MEUS_CHAMADOS_PADRAO,
   type ConfiguracaoHistoricoItem,
   type Regras,
@@ -155,7 +156,19 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     chat: { ...CHAT_PADRAO, ...(regrasSalvas.chat || {}) },
     login: { ...LOGIN_PADRAO, ...(regrasSalvas.login || {}) },
     seo: { ...SEO_PADRAO, ...(regrasSalvas.seo || {}) },
-    atendimento: { ...ATENDIMENTO_PADRAO, ...(regrasSalvas.atendimento || {}) },
+    atendimento: {
+      ...ATENDIMENTO_PADRAO,
+      ...(regrasSalvas.atendimento || {}),
+      colunas:
+        Array.isArray(regrasSalvas.atendimento?.colunas) && regrasSalvas.atendimento.colunas.length > 0
+          ? regrasSalvas.atendimento.colunas
+          : [...COLUNAS_ATENDIMENTO_PADRAO],
+      botoesStatusVisiveis:
+        Array.isArray(regrasSalvas.atendimento?.botoesStatusVisiveis) &&
+        regrasSalvas.atendimento.botoesStatusVisiveis.length > 0
+          ? regrasSalvas.atendimento.botoesStatusVisiveis
+          : [...(ATENDIMENTO_PADRAO.botoesStatusVisiveis || [])],
+    },
     meusChamados: { ...MEUS_CHAMADOS_PADRAO, ...(regrasSalvas.meusChamados || {}) },
     alertasEmail: {
       ...ALERTAS_EMAIL_PADRAO,
