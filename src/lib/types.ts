@@ -921,6 +921,7 @@ export const PARAMETROS_PRIORIDADE_PADRAO: ParametroCor[] = [
 ];
 
 export const PARAMETROS_STATUS_PADRAO: ParametroCor[] = [
+  { id: "s0", nome: "Todos", bg: "#1A73E8", text: "#FFFFFF" },          // Azul principal
   { id: "s1", nome: "Em atendimento", bg: "#34A853", text: "#FFFFFF" }, // Verde
   { id: "s2", nome: "Aguardando", bg: "#FA7B17", text: "#FFFFFF" },     // Laranja
   { id: "s3", nome: "Cancelado", bg: "#5F6368", text: "#FFFFFF" },      // Grafite
@@ -1204,7 +1205,7 @@ export const ATENDIMENTO_PADRAO: AtendimentoConfig = {
   subtitulo: "Gerencie chamados, atualize status, registre procedimentos e acompanhe os prazos de SLA.",
   placeholderBusca: "Buscar por número, solicitante, setor, descrição...",
   itensPorPaginaPadrao: 20,
-  mesInicialPadrao: "todos",
+  mesInicialPadrao: "atual",
   statusInicialPadrao: "todos",
   ordenacaoPadrao: "recentes",
   botaoBaixarExcel: "Baixar Excel",

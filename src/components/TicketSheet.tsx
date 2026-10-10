@@ -18,10 +18,12 @@ import {
   MESES_DISPONIVEIS,
   extrairSetor,
   extrairLocal,
+  obterDataHojeCuiaba,
   obterRotuloStatus,
   type ColunaPlanilhaConfig,
   type Ticket,
 } from "@/lib/types";
+import { FiltroMes } from "@/components/FiltroMes";
 import { exportarPdf, exportarXlsx, ticketsParaLinhasAtendimento } from "@/lib/exportar";
 
 interface TicketSheetProps {
@@ -45,8 +47,15 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
     return colunasConfig.filter((c) => c.ativa);
   }, [colunasConfig]);
 
-  // Filtros
-  const [month, setMonth] = useState(() => configAtendimento.mesInicialPadrao || "todos");
+  // Filtros - sempre inicia no mês atual no fuso de Lucas do Rio Verde (America/Cuiaba), sem persistir estado anterior
+  const [month, setMonth] = useState(() => {
+    const mesAtualCuiaba = obterDataHojeCuiaba().slice(0, 7);
+    if (configAtendimento.mesInicialPadrao === "todos") return "todos";
+    if (configAtendimento.mesInicialPadrao && configAtendimento.mesInicialPadrao !== "atual") {
+      return configAtendimento.mesInicialPadrao;
+    }
+    return mesAtualCuiaba;
+  });
   const [statusFiltro, setStatusFiltro] = useState(() => configAtendimento.statusInicialPadrao || "todos");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Todas");
@@ -57,6 +66,28 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
   const topRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const syncing = useRef(false);
+
+  // Cores dinâmicas para botões de status (com azul primário #1A73E8 para Todos)
+  const coresStatus = useMemo(() => {
+    const mapa: Record<string, { bg: string; text: string }> = {
+      todos: { bg: "#1A73E8", text: "#FFFFFF" },
+      Aberto: { bg: "#1A73E8", text: "#FFFFFF" },
+      "Em atendimento": { bg: "#34A853", text: "#FFFFFF" },
+      Aguardando: { bg: "#FA7B17", text: "#FFFFFF" },
+      Finalizados: { bg: "#0D652D", text: "#FFFFFF" },
+      Cancelados: { bg: "#5F6368", text: "#FFFFFF" },
+    };
+    for (const p of regras.parametrosStatus ?? []) {
+      const nomeLower = p.nome.toLowerCase();
+      if (nomeLower === "todos") mapa.todos = { bg: p.bg, text: p.text || "#FFFFFF" };
+      else if (nomeLower === "aberto") mapa.Aberto = { bg: p.bg, text: p.text || "#FFFFFF" };
+      else if (nomeLower === "em atendimento") mapa["Em atendimento"] = { bg: p.bg, text: p.text || "#FFFFFF" };
+      else if (nomeLower === "aguardando") mapa.Aguardando = { bg: p.bg, text: p.text || "#FFFFFF" };
+      else if (nomeLower === "finalizado" || nomeLower === "finalizados") mapa.Finalizados = { bg: p.bg, text: p.text || "#FFFFFF" };
+      else if (nomeLower === "cancelado" || nomeLower === "cancelados") mapa.Cancelados = { bg: p.bg, text: p.text || "#FFFFFF" };
+    }
+    return mapa;
+  }, [regras.parametrosStatus]);
 
   // Tickets do mês selecionado para calcular as contagens dos chips de status
   const ticketsDoMes = useMemo(() => {
@@ -201,28 +232,67 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
   return (
     <TooltipProvider delayDuration={150}>
       <section className="space-y-4">
-        {/* Linha de Filtros & Chips de Status */}
-        <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-card border border-border shadow-2xs">
-          {/* Lado Esquerdo: Filtro de Mês */}
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-xs font-semibold text-foreground">
-              <span>Mês:</span>
-              <select
-                aria-label="Mês da planilha"
-                className="h-9 rounded-xl border border-input bg-background px-3 text-xs font-semibold shadow-2xs hover:border-g-blue/60 focus:ring-2 focus:ring-g-blue"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-              >
-                <option value="todos">Todos os meses</option>
-                {MESES_DISPONIVEIS.map((m) => (
-                  <option key={m.key} value={m.key}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+        {/* Cabeçalho da Central de Atendimento com Ações de Exportação na linha do título */}
+        {attendance && (
+          <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
+                <span className="rounded-xl bg-g-blue/15 p-2 text-g-blue shrink-0">
+                  <Headset className="size-6 sm:size-7" />
+                </span>
+                <span>{configAtendimento.titulo || "Central de Atendimento ao Usuário"}</span>
+              </h1>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {configAtendimento.subtitulo ||
+                  "Gerencie chamados, atualize status, registre procedimentos e acompanhe os prazos de SLA."}
+              </p>
+            </div>
 
-            {/* Chips de Status Dinâmicos com Contagens */}
+            {/* Ações de Exportação alinhadas à direita na linha do título */}
+            <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-center">
+              {configAtendimento.botoesExportacaoVisiveis?.excel !== false && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={dispararExportacaoXlsx}
+                  className="h-9 sm:h-10 rounded-xl font-bold text-xs gap-1.5 shadow-2xs hover:border-g-green/50 cursor-pointer"
+                  title="Baixar planilha Excel com os filtros e colunas visíveis"
+                >
+                  <FileSpreadsheet className="size-4 text-g-green" />
+                  <span>{configAtendimento.botaoBaixarExcel || "Baixar Excel"}</span>
+                </Button>
+              )}
+
+              {configAtendimento.botoesExportacaoVisiveis?.pdf !== false && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={dispararExportacaoPdf}
+                  className="h-9 sm:h-10 rounded-xl font-bold text-xs gap-1.5 shadow-2xs hover:border-g-red/50 cursor-pointer"
+                  title="Baixar relatório PDF com os filtros e colunas visíveis"
+                >
+                  <FileText className="size-4 text-g-red" />
+                  <span>{configAtendimento.botaoBaixarPdf || "Baixar PDF"}</span>
+                </Button>
+              )}
+            </div>
+          </header>
+        )}
+
+        {/* Linha Unificada de Filtros: Mês, Chips de Status e Busca na primeira linha à direita */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl bg-card border border-border shadow-2xs">
+          {/* Lado Esquerdo: Filtro de Mês e Chips de Status */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Filtro de Mês Padronizado com Popover acessível */}
+            <FiltroMes
+              valor={month}
+              onChange={setMonth}
+              tickets={tickets}
+            />
+
+            {/* Chips de Status Dinâmicos com Contagens e Alto Contraste */}
             <div className="flex flex-wrap items-center gap-1.5" role="toolbar" aria-label="Filtrar por status">
               {botoesStatusDefinidos.map((st) => {
                 const chaveContagem =
@@ -249,16 +319,7 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
                     : st;
 
                 const isAtivo = statusFiltro === valorFiltro;
-
-                // Cores fiéis aos chips do site
-                const estiloAtivo: Record<string, string> = {
-                  todos: "bg-foreground text-background border-foreground shadow-xs",
-                  Aberto: "bg-[#1A73E8] text-white border-[#1A73E8] shadow-xs",
-                  "Em atendimento": "bg-[#34A853] text-white border-[#34A853] shadow-xs",
-                  Aguardando: "bg-[#FA7B17] text-white border-[#FA7B17] shadow-xs",
-                  Finalizados: "bg-[#0D652D] text-white border-[#0D652D] shadow-xs",
-                  Cancelados: "bg-[#5F6368] text-white border-[#5F6368] shadow-xs",
-                };
+                const cor = coresStatus[valorFiltro] || { bg: "#1A73E8", text: "#FFFFFF" };
 
                 const estiloInativo: Record<string, string> = {
                   todos: "border-border text-foreground hover:bg-muted/70",
@@ -269,7 +330,6 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
                   Cancelados: "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/40",
                 };
 
-                const classesAtivo = estiloAtivo[valorFiltro] || "bg-g-blue text-white";
                 const classesInativo = estiloInativo[valorFiltro] || "border-border text-foreground";
 
                 return (
@@ -278,14 +338,25 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
                     type="button"
                     aria-pressed={isAtivo}
                     onClick={() => setStatusFiltro(valorFiltro)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
-                      isAtivo ? classesAtivo : `${classesInativo} bg-card/60`
+                    style={
+                      isAtivo
+                        ? {
+                            backgroundColor: cor.bg,
+                            color: cor.text,
+                            borderColor: cor.bg,
+                          }
+                        : undefined
+                    }
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer shadow-2xs ${
+                      isAtivo ? "shadow-xs" : `${classesInativo} bg-card/60`
                     }`}
                   >
                     <span>{st === "Resolvido" || st === "Resolvidos" ? "Finalizados" : st}</span>
                     <span
-                      className={`px-1.5 py-0.2 rounded-full text-[11px] font-extrabold ${
-                        isAtivo ? "bg-white/25 text-white" : "bg-muted text-muted-foreground"
+                      className={`px-1.5 py-0.5 rounded-full text-[11px] font-extrabold ${
+                        isAtivo
+                          ? "bg-white/25 text-white"
+                          : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {contagem}
@@ -296,41 +367,17 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
             </div>
           </div>
 
-          {/* Lado Direito: Busca & Ações de Exportação */}
-          <div className="flex flex-wrap items-center gap-2 ml-auto">
-            <div className="relative min-w-44 sm:min-w-56">
+          {/* Lado Direito: Busca na primeira linha à direita (em telas menores ocupa largura total) */}
+          <div className="w-full sm:w-auto sm:ml-auto flex-1 sm:flex-initial min-w-[200px] sm:max-w-xs">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
               <Input
-                className="h-9 pl-8 text-xs bg-background rounded-xl border-input"
-                placeholder={configAtendimento.placeholderBusca || "Buscar na planilha..."}
+                className="h-9 pl-8 text-xs bg-background rounded-xl border-input w-full"
+                placeholder={configAtendimento.placeholderBusca || "Buscar por número, solicitante..."}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={dispararExportacaoXlsx}
-              className="h-9 rounded-xl font-bold text-xs gap-1.5 shadow-2xs hover:border-g-green/50"
-              title="Baixar planilha Excel com os filtros e colunas visíveis"
-            >
-              <FileSpreadsheet className="size-3.5 text-g-green" />
-              <span>{configAtendimento.botaoBaixarExcel || "Baixar Excel"}</span>
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={dispararExportacaoPdf}
-              className="h-9 rounded-xl font-bold text-xs gap-1.5 shadow-2xs hover:border-g-red/50"
-              title="Baixar relatório PDF com os filtros e colunas visíveis"
-            >
-              <FileText className="size-3.5 text-g-red" />
-              <span>{configAtendimento.botaoBaixarPdf || "Baixar PDF"}</span>
-            </Button>
           </div>
         </div>
 
@@ -361,33 +408,37 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
               <thead className="sticky top-0 z-30 shadow-xs">
                 <tr className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white font-bold tracking-wide">
                   {colunasVisiveis.map((c) => {
-                    const isAtender = c.id === "atender" || c.label === "Atender";
+                    const isAtender = c.id === "atender" || c.label === "Atender" || c.label === "CALL";
                     const isNumero = c.id === "numero" || c.label === "Nº";
 
-                    let larguraCls = "min-w-[130px]";
-                    if (isAtender) larguraCls = "w-[58px] min-w-[58px] max-w-[58px]";
-                    else if (isNumero) larguraCls = "w-[72px] min-w-[72px] max-w-[72px]";
-                    else if (c.id === "prioridade") larguraCls = "w-[100px] min-w-[95px]";
-                    else if (c.id === "abertoEm" || c.id === "fechadoEm") larguraCls = "w-[125px] min-w-[120px]";
-                    else if (c.id === "solicitante") larguraCls = "w-[150px] min-w-[130px] max-w-[180px]";
-                    else if (c.id === "setor") larguraCls = "w-[145px] min-w-[125px] max-w-[165px]";
-                    else if (c.id === "descricao") larguraCls = "min-w-[220px] max-w-[340px]";
-                    else if (c.id === "procedimento") larguraCls = "min-w-[180px] max-w-[280px]";
-                    else if (c.id === "slaPrazo") larguraCls = "w-[160px] min-w-[145px]";
-                    else if (c.id === "status") larguraCls = "w-[130px] min-w-[120px]";
+                    let larguraCls = "min-w-[120px]";
+                    if (isAtender) larguraCls = "w-[56px] min-w-[56px] max-w-[56px]";
+                    else if (isNumero) larguraCls = "w-[64px] min-w-[60px] max-w-[68px]";
+                    else if (c.id === "prioridade") larguraCls = "w-[95px] min-w-[90px]";
+                    else if (c.id === "abertoEm" || c.id === "fechadoEm") larguraCls = "w-[115px] min-w-[110px]";
+                    else if (c.id === "solicitante") larguraCls = "w-[135px] min-w-[115px] max-w-[155px]";
+                    else if (c.id === "setor") larguraCls = "w-[120px] min-w-[105px] max-w-[135px]";
+                    else if (c.id === "descricao") larguraCls = "min-w-[190px] max-w-[270px]";
+                    else if (c.id === "procedimento") larguraCls = "min-w-[160px] max-w-[240px]";
+                    else if (c.id === "slaPrazo") larguraCls = "w-[145px] min-w-[135px]";
+                    else if (c.id === "status") larguraCls = "w-[115px] min-w-[105px]";
 
                     const stickyCls = isAtender
                       ? "sticky left-0 z-40 bg-blue-800 text-center"
                       : isNumero
-                      ? "sticky left-[58px] z-40 bg-blue-800 border-r border-white/20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.2)]"
+                      ? "sticky left-[56px] z-40 bg-blue-800 border-r border-white/20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.2)]"
                       : "";
+
+                    const rotuloHeader = isAtender
+                      ? (c.label === "CALL" ? "Atender" : c.label || "Atender")
+                      : c.label;
 
                     return (
                       <th
                         key={c.id}
-                        className={`px-3 py-3 text-xs font-bold uppercase tracking-wider text-white border-r border-white/10 last:border-r-0 ${larguraCls} ${stickyCls}`}
+                        className={`px-2.5 py-3 text-xs font-bold uppercase tracking-wider text-white border-r border-white/10 last:border-r-0 ${larguraCls} ${stickyCls}`}
                       >
-                        {c.label}
+                        {rotuloHeader}
                       </th>
                     );
                   })}
@@ -663,13 +714,13 @@ function TicketRow({
   return (
     <tr className="align-middle border-b border-border/80 transition-colors hover:bg-blue-50/70 dark:hover:bg-blue-950/30 even:bg-muted/20">
       {colunas.map((c) => {
-        const isAtender = c.id === "atender" || c.label === "Atender";
+        const isAtender = c.id === "atender" || c.label === "Atender" || c.label === "CALL";
         const isNumero = c.id === "numero" || c.label === "Nº";
 
         const stickyCls = isAtender
           ? "sticky left-0 z-20 bg-card text-center"
           : isNumero
-          ? "sticky left-[58px] z-20 bg-card border-r border-border/80 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]"
+          ? "sticky left-[56px] z-20 bg-card border-r border-border/80 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]"
           : "";
 
         return (

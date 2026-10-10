@@ -153,8 +153,13 @@ export function PainelAtendimentoConfig({
     });
   };
 
-  const parametrosStatus: ParametroCor[] =
-    regras.parametrosStatus ?? PARAMETROS_STATUS_PADRAO;
+  const parametrosStatus: ParametroCor[] = useMemo(() => {
+    const lista = regras.parametrosStatus ?? PARAMETROS_STATUS_PADRAO;
+    if (!lista.some((p) => p.nome.toLowerCase() === "todos")) {
+      return [{ id: "s0", nome: "Todos", bg: "#1A73E8", text: "#FFFFFF" }, ...lista];
+    }
+    return lista;
+  }, [regras.parametrosStatus]);
   const parametrosPrioridade: ParametroCor[] =
     regras.parametrosPrioridade ?? PARAMETROS_PRIORIDADE_PADRAO;
   const parametrosSla: ParametroCor[] =
@@ -1190,9 +1195,10 @@ export function PainelAtendimentoConfig({
                   <Label className="text-xs font-semibold">Mês Padrão ao Abrir</Label>
                   <select
                     className="h-10 w-full rounded-xl border border-input bg-background px-3 text-xs font-medium"
-                    value={configAtend.mesInicialPadrao || "todos"}
+                    value={configAtend.mesInicialPadrao || "atual"}
                     onChange={(e) => salvarAtendimento({ mesInicialPadrao: e.target.value })}
                   >
+                    <option value="atual">Mês atual</option>
                     <option value="todos">Todos os meses</option>
                     {MESES_DISPONIVEIS.map((m) => (
                       <option key={m.key} value={m.key}>
