@@ -101,27 +101,31 @@ function Inicio() {
             }}
           />
 
-          {/* Conteúdo Centralizado sobre a capa */}
-          <div className="absolute inset-0 flex flex-col items-center text-center px-6 max-w-5xl mx-auto">
-            {/* Selo Translúcido — no topo do hero com pouco espaço acima */}
-            <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-xs border border-white/20 backdrop-blur-md mt-3">
+          {/* Conteúdo sobre a capa */}
+          <div className="absolute inset-0 flex flex-col items-center text-center px-6 max-w-5xl mx-auto pt-4 sm:pt-5 md:pt-6">
+            {/* Selo Translúcido — no topo do hero com espaçamento harmônico */}
+            <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-xs border border-white/20 backdrop-blur-md">
               <Activity className="size-3.5 text-sky-300" />
               <span>{badgeTexto}</span>
             </p>
 
-            {/* Título — próximo do selo, espaçamento pequeno */}
+            {/* Título — agrupado próximo ao selo */}
             <h1
-              className="mt-2.5 text-[clamp(1.35rem,2.8vw,3rem)] font-black leading-tight text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)] tracking-tight"
+              className="mt-2 sm:mt-2.5 text-[clamp(1.35rem,2.8vw,3rem)] font-black leading-tight text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)] tracking-tight"
               style={{ textWrap: "balance" } as React.CSSProperties}
             >
               {tituloPrincipal}
             </h1>
 
-            {/* Descrição — fonte maior, mais legível, sem palavra solta */}
+            {/* Descrição — posicionada mais abaixo conforme indicado pelas setas */}
             {subtituloPrincipal && (
               <p
-                className="mt-2.5 text-[clamp(0.875rem,1.45vw,1.5rem)] text-white/95 max-w-[900px] font-normal drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]"
-                style={{ textWrap: "pretty", lineHeight: 1.5 } as React.CSSProperties}
+                className="text-[clamp(0.875rem,1.38vw,1.4rem)] text-white/95 max-w-[900px] font-normal drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]"
+                style={{
+                  marginTop: "clamp(1.5rem, 4vw, 3.75rem)",
+                  textWrap: "pretty",
+                  lineHeight: 1.55,
+                } as React.CSSProperties}
               >
                 {subtituloPrincipal}
               </p>
