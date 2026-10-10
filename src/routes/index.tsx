@@ -41,15 +41,6 @@ function Inicio() {
   const tituloPrincipal = regras.paginaInicial?.titulo || "Bem-vindo à Central de Chamados de TI!";
   const subtituloPrincipal = regras.paginaInicial?.subtitulo || "Central oficial de suporte e serviços de Tecnologia da Informação do SENAI Lucas do Rio Verde.";
 
-  const posicaoCapa = regras.paginaInicial?.posicaoCapa;
-  const posicaoCapaClass =
-    posicaoCapa === "topo"
-      ? "object-top"
-      : posicaoCapa === "base"
-      ? "object-bottom"
-      : posicaoCapa === "centro"
-      ? "object-center"
-      : "object-[18%_center] sm:object-center";
 
   const bannerUrlCustom = regras.paginaInicial?.bannerUrl?.trim();
   const bannerSrc =
@@ -71,11 +62,13 @@ function Inicio() {
   const indAtendDia = regras.indicadores?.atendidosDia ?? { titulo: "Atendidos no dia", desc: "Chamados concluídos hoje.", ativo: true };
 
   return (
-    <div className="space-y-9">
-      {/* Hero com Capa de Fundo, Camada Escura, Título e Indicadores integrados em bloco único */}
-      <section className="relative isolate overflow-hidden rounded-2xl border border-border/80 bg-[#031446] shadow-md transition-all">
-        {/* Imagem de Fundo (Capa) */}
-        <div className="absolute inset-0 -z-20 h-full w-full overflow-hidden">
+    <div className="space-y-5">
+      {/* ═══ HERO: Capa em tamanho full + texto centralizado ═══ */}
+      <section className="hero-section relative isolate overflow-hidden rounded-2xl border border-border/80 bg-[#031446] shadow-md transition-all">
+
+        {/* ── Desktop/Tablet: imagem como fundo com proporção nativa, texto por cima ── */}
+        <div className="hero-desktop hidden sm:block relative">
+          {/* Imagem de Fundo (Capa) — proporção nativa 1024×384 sem corte */}
           <img
             src={bannerSrc}
             alt={regras.paginaInicial?.bannerAlt || "TI SENAI Lucas do Rio Verde"}
@@ -84,142 +77,186 @@ function Inicio() {
             fetchPriority="high"
             loading="eager"
             decoding="async"
-            className={`h-full w-full object-cover ${posicaoCapaClass}`}
+            className="block w-full h-auto"
+            style={{ aspectRatio: "1024 / 384" }}
           />
-        </div>
 
-        {/* Camada Escura: Degradê Azul-Marinho Semitransparente */}
-        <div
-          className="absolute inset-0 -z-10"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(3, 20, 70, 0.88) 0%, rgba(3, 20, 70, 0.76) 48%, rgba(3, 20, 70, 0.62) 100%)",
-          }}
-        />
+          {/* Camada Escura: Degradê Azul-Marinho Semitransparente */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(3, 20, 70, 0.72) 0%, rgba(3, 20, 70, 0.58) 45%, rgba(3, 20, 70, 0.50) 100%)",
+            }}
+          />
 
-        {/* Conteúdo Centralizado */}
-        <div className="flex flex-col items-center text-center px-3.5 pt-6 pb-3 sm:px-6 sm:pt-12 sm:pb-6 md:pt-14 md:pb-8 max-w-4xl mx-auto">
-          {/* Selo Translúcido */}
-          <p className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full bg-white/10 px-3 py-1 sm:px-4 sm:py-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-white shadow-xs border border-white/20 backdrop-blur-md">
-            <Activity className="size-3 sm:size-3.5 text-sky-300" />
-            <span>{badgeTexto}</span>
-          </p>
-
-          {/* Título em Branco */}
-          <h1 className="mt-3 sm:mt-4 text-xl min-[400px]:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black leading-snug sm:leading-tight text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)] tracking-tight">
-            {tituloPrincipal}
-          </h1>
-
-          {/* Descrição com leve transparência e max-w ~800px */}
-          {subtituloPrincipal && (
-            <p className="mt-2 sm:mt-3 text-xs sm:text-sm md:text-base text-blue-50/90 max-w-[800px] leading-relaxed font-normal drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
-              {subtituloPrincipal}
+          {/* Conteúdo Centralizado sobre a capa */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 py-4 max-w-4xl mx-auto">
+            {/* Selo Translúcido — no topo do hero */}
+            <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-xs border border-white/20 backdrop-blur-md mb-auto mt-3">
+              <Activity className="size-3.5 text-sky-300" />
+              <span>{badgeTexto}</span>
             </p>
-          )}
+
+            {/* Título */}
+            <h1
+              className="text-[clamp(1.35rem,2.8vw,3rem)] font-black leading-tight text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)] tracking-tight"
+              style={{ textWrap: "balance" } as React.CSSProperties}
+            >
+              {tituloPrincipal}
+            </h1>
+
+            {/* Descrição */}
+            {subtituloPrincipal && (
+              <p className="mt-2 text-[clamp(0.75rem,1.1vw,1rem)] text-blue-50/90 max-w-[720px] leading-relaxed font-normal drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)] mb-auto">
+                {subtituloPrincipal}
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Indicadores de desempenho na parte de baixo do hero */}
-        <div className="w-full px-3 sm:px-6 md:px-8 pb-5 sm:pb-8 pt-1">
-          <div className="grid gap-2.5 min-[400px]:gap-3 sm:gap-4 grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-5 text-left w-full">
-            {indTotal.ativo && (
-              <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-g-blue bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      {indTotal.titulo}
-                    </span>
-                    <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-g-blue font-mono">{total}</strong>
-                  </div>
-                  <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-g-blue/10 text-g-blue shrink-0 ml-2">
-                    <ClipboardList className="size-4 min-[400px]:size-4.5 sm:size-5" />
-                  </div>
-                </div>
-                <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
-                  {indTotal.desc}
-                </p>
-              </div>
-            )}
+        {/* ── Mobile: imagem inteira no topo + bloco de texto azul-marinho abaixo ── */}
+        <div className="hero-mobile sm:hidden">
+          {/* Imagem inteira sem corte */}
+          <img
+            src={bannerSrc}
+            alt={regras.paginaInicial?.bannerAlt || "TI SENAI Lucas do Rio Verde"}
+            width={1024}
+            height={384}
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
+            className="block w-full h-auto"
+            style={{ aspectRatio: "1024 / 384" }}
+          />
 
-            {indAtend.ativo && (
-              <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-g-yellow bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      {indAtend.titulo}
-                    </span>
-                    <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-g-yellow font-mono">{andamento}</strong>
-                  </div>
-                  <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-g-yellow/10 text-amber-600 dark:text-amber-400 shrink-0 ml-2">
-                    <Activity className="size-4 min-[400px]:size-4.5 sm:size-5" />
-                  </div>
-                </div>
-                <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
-                  {indAtend.desc}
-                </p>
-              </div>
-            )}
+          {/* Bloco de texto com mesmo fundo azul-marinho */}
+          <div className="flex flex-col items-center text-center px-4 py-5 bg-[#031446]">
+            {/* Selo */}
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-xs border border-white/20 backdrop-blur-md">
+              <Activity className="size-3 text-sky-300" />
+              <span>{badgeTexto}</span>
+            </p>
 
-            {indResolv.ativo && (
-              <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-g-green bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      {indResolv.titulo}
-                    </span>
-                    <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-g-green font-mono">{resolvidos}</strong>
-                  </div>
-                  <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-g-green/10 text-g-green shrink-0 ml-2">
-                    <CheckCircle2 className="size-4 min-[400px]:size-4.5 sm:size-5" />
-                  </div>
-                </div>
-                <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
-                  {indResolv.desc}
-                </p>
-              </div>
-            )}
+            {/* Título */}
+            <h1
+              className="mt-3 text-xl min-[400px]:text-2xl font-black leading-snug text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)] tracking-tight"
+              style={{ textWrap: "balance" } as React.CSSProperties}
+            >
+              {tituloPrincipal}
+            </h1>
 
-            {indDia.ativo !== false && (
-              <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-sky-500 bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      {indDia.titulo}
-                    </span>
-                    <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-sky-600 dark:text-sky-400 font-mono">{chamadosDia}</strong>
-                  </div>
-                  <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0 ml-2">
-                    <Clock className="size-4 min-[400px]:size-4.5 sm:size-5" />
-                  </div>
-                </div>
-                <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
-                  {indDia.desc}
-                </p>
-              </div>
-            )}
-
-            {indAtendDia.ativo !== false && (
-              <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-teal-500 bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md backdrop-blur-xs transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40 min-[400px]:col-span-2 lg:col-span-1">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      {indAtendDia.titulo}
-                    </span>
-                    <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-teal-600 dark:text-teal-400 font-mono">{atendidosDia}</strong>
-                  </div>
-                  <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 shrink-0 ml-2">
-                    <CheckCheck className="size-4 min-[400px]:size-4.5 sm:size-5" />
-                  </div>
-                </div>
-                <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
-                  {indAtendDia.desc}
-                </p>
-              </div>
+            {/* Descrição */}
+            {subtituloPrincipal && (
+              <p className="mt-2 text-xs text-blue-50/90 max-w-[360px] leading-relaxed font-normal drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
+                {subtituloPrincipal}
+              </p>
             )}
           </div>
         </div>
 
         {/* Faixa Colorida na Base do Hero */}
         <div className="h-2 w-full bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
+      </section>
+
+      {/* ═══ INDICADORES: faixa própria abaixo do hero ═══ */}
+      <section className="w-full">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 min-[400px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 text-left w-full">
+          {indTotal.ativo && (
+            <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-g-blue bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {indTotal.titulo}
+                  </span>
+                  <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-g-blue font-mono">{total}</strong>
+                </div>
+                <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-g-blue/10 text-g-blue shrink-0 ml-2">
+                  <ClipboardList className="size-4 min-[400px]:size-4.5 sm:size-5" />
+                </div>
+              </div>
+              <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
+                {indTotal.desc}
+              </p>
+            </div>
+          )}
+
+          {indAtend.ativo && (
+            <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-g-yellow bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {indAtend.titulo}
+                  </span>
+                  <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-g-yellow font-mono">{andamento}</strong>
+                </div>
+                <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-g-yellow/10 text-amber-600 dark:text-amber-400 shrink-0 ml-2">
+                  <Activity className="size-4 min-[400px]:size-4.5 sm:size-5" />
+                </div>
+              </div>
+              <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
+                {indAtend.desc}
+              </p>
+            </div>
+          )}
+
+          {indResolv.ativo && (
+            <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-g-green bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {indResolv.titulo}
+                  </span>
+                  <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-g-green font-mono">{resolvidos}</strong>
+                </div>
+                <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-g-green/10 text-g-green shrink-0 ml-2">
+                  <CheckCircle2 className="size-4 min-[400px]:size-4.5 sm:size-5" />
+                </div>
+              </div>
+              <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
+                {indResolv.desc}
+              </p>
+            </div>
+          )}
+
+          {indDia.ativo !== false && (
+            <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-sky-500 bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {indDia.titulo}
+                  </span>
+                  <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-sky-600 dark:text-sky-400 font-mono">{chamadosDia}</strong>
+                </div>
+                <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0 ml-2">
+                  <Clock className="size-4 min-[400px]:size-4.5 sm:size-5" />
+                </div>
+              </div>
+              <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
+                {indDia.desc}
+              </p>
+            </div>
+          )}
+
+          {indAtendDia.ativo !== false && (
+            <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-teal-500 bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40 min-[400px]:col-span-2 md:col-span-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {indAtendDia.titulo}
+                  </span>
+                  <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-teal-600 dark:text-teal-400 font-mono">{atendidosDia}</strong>
+                </div>
+                <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 shrink-0 ml-2">
+                  <CheckCheck className="size-4 min-[400px]:size-4.5 sm:size-5" />
+                </div>
+              </div>
+              <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
+                {indAtendDia.desc}
+              </p>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Seção com botões de serviços */}
