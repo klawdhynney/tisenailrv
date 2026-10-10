@@ -81,39 +81,54 @@ function Inicio() {
             style={{ aspectRatio: "1024 / 384" }}
           />
 
-          {/* Camada Escura: Degradê Azul-Marinho Semitransparente */}
+          {/* Camada Escura: Degradê Azul-Marinho Semitransparente — reforçada para
+              manter a marca d'água "TI SENAI / LUCAS DO RIO VERDE" discreta */}
           <div
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(180deg, rgba(3, 20, 70, 0.72) 0%, rgba(3, 20, 70, 0.58) 45%, rgba(3, 20, 70, 0.50) 100%)",
+                "linear-gradient(180deg, rgba(3, 20, 70, 0.78) 0%, rgba(3, 20, 70, 0.68) 40%, rgba(3, 20, 70, 0.62) 100%)",
+            }}
+          />
+
+          {/* Degradê radial extra centrado no bloco de texto para
+              reforçar legibilidade da descrição sobre a marca d'água */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(ellipse 70% 80% at 50% 55%, rgba(3, 20, 70, 0.38) 0%, transparent 100%)",
             }}
           />
 
           {/* Conteúdo Centralizado sobre a capa */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 py-4 max-w-4xl mx-auto">
-            {/* Selo Translúcido — no topo do hero */}
-            <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-xs border border-white/20 backdrop-blur-md mb-auto mt-3">
+          <div className="absolute inset-0 flex flex-col items-center text-center px-6 max-w-5xl mx-auto">
+            {/* Selo Translúcido — no topo do hero com pouco espaço acima */}
+            <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-xs border border-white/20 backdrop-blur-md mt-3">
               <Activity className="size-3.5 text-sky-300" />
               <span>{badgeTexto}</span>
             </p>
 
-            {/* Título */}
+            {/* Título — próximo do selo, espaçamento pequeno */}
             <h1
-              className="text-[clamp(1.35rem,2.8vw,3rem)] font-black leading-tight text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)] tracking-tight"
+              className="mt-2.5 text-[clamp(1.35rem,2.8vw,3rem)] font-black leading-tight text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)] tracking-tight"
               style={{ textWrap: "balance" } as React.CSSProperties}
             >
               {tituloPrincipal}
             </h1>
 
-            {/* Descrição */}
+            {/* Descrição — fonte maior, mais legível, sem palavra solta */}
             {subtituloPrincipal && (
-              <p className="mt-2 text-[clamp(0.75rem,1.1vw,1rem)] text-blue-50/90 max-w-[720px] leading-relaxed font-normal drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)] mb-auto">
+              <p
+                className="mt-2.5 text-[clamp(0.875rem,1.45vw,1.5rem)] text-white/95 max-w-[900px] font-normal drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]"
+                style={{ textWrap: "pretty", lineHeight: 1.5 } as React.CSSProperties}
+              >
                 {subtituloPrincipal}
               </p>
             )}
           </div>
         </div>
+
 
         {/* ── Mobile: imagem inteira no topo + bloco de texto azul-marinho abaixo ── */}
         <div className="hero-mobile sm:hidden">
@@ -130,25 +145,34 @@ function Inicio() {
             style={{ aspectRatio: "1024 / 384" }}
           />
 
-          {/* Bloco de texto com mesmo fundo azul-marinho */}
-          <div className="flex flex-col items-center text-center px-4 py-5 bg-[#031446]">
+          {/* Bloco de texto com fundo azul-marinho em degradê */}
+          <div
+            className="flex flex-col items-center text-center px-4 py-5"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(3, 20, 70, 0.95) 0%, rgba(3, 20, 70, 1) 100%)",
+            }}
+          >
             {/* Selo */}
             <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-xs border border-white/20 backdrop-blur-md">
               <Activity className="size-3 text-sky-300" />
               <span>{badgeTexto}</span>
             </p>
 
-            {/* Título */}
+            {/* Título — próximo do selo */}
             <h1
-              className="mt-3 text-xl min-[400px]:text-2xl font-black leading-snug text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)] tracking-tight"
+              className="mt-2.5 text-xl min-[400px]:text-2xl font-black leading-snug text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)] tracking-tight"
               style={{ textWrap: "balance" } as React.CSSProperties}
             >
               {tituloPrincipal}
             </h1>
 
-            {/* Descrição */}
+            {/* Descrição — fonte proporcionalmente maior, legível */}
             {subtituloPrincipal && (
-              <p className="mt-2 text-xs text-blue-50/90 max-w-[360px] leading-relaxed font-normal drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
+              <p
+                className="mt-2 text-sm min-[400px]:text-base text-white/95 max-w-[420px] font-normal drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]"
+                style={{ textWrap: "pretty", lineHeight: 1.5 } as React.CSSProperties}
+              >
                 {subtituloPrincipal}
               </p>
             )}
