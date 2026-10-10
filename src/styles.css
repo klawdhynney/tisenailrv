@@ -663,3 +663,22 @@
   }
 }
 
+/* ═══ Hero Indicator Cards — translúcidos sobre a capa ═══ */
+.hero-ind-card {
+  background: rgba(3, 20, 70, 0.60);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+}
+
+/* ═══ Hero Hover: escurecer capa ao passar o mouse ═══ */
+/* Somente dispositivos com mouse (pointer:fine) e respeitando reduced-motion */
+@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .hero-desktop:hover .hero-hover-overlay {
+    background-color: rgba(3, 20, 70, 0.15);
+  }
+}
+

@@ -230,8 +230,8 @@ export interface PaginaInicialConfig {
 
 export const PAGINA_INICIAL_PADRAO: PaginaInicialConfig = {
   badgeTexto: "Atendimento de TI · SENAI LRV",
-  titulo: "Bem-vindo à Central de Chamados de TI!",
-  subtitulo: "Central oficial de suporte e serviços de Tecnologia da Informação do SENAI Lucas do Rio Verde.",
+  titulo: "Bem-vindo à Central de Chamados de TI.",
+  subtitulo: "Registre aqui o seu chamado, descreva de forma clara e objetiva o problema e informe o local exato para agilizar o atendimento. O registro permite à equipe organizar as tarefas, à gestão acompanhar as demandas e gerar dados estatísticos para identificar recorrências e melhorar os serviços.",
   mostrarBanner: true,
   exibirBanner: true,
   bannerUrl: "/capa.png",

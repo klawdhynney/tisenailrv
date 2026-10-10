@@ -24,6 +24,90 @@ export const Route = createFileRoute("/")({
   component: Inicio,
 });
 
+/* ── Helper: Cartão compacto de indicador (reutilizado em desktop e mobile) ── */
+function IndicadorCard({
+  titulo,
+  valor,
+  desc,
+  cor,
+  corTexto,
+  icone: Icone,
+  className = "",
+}: {
+  titulo: string;
+  valor: number;
+  desc: string;
+  cor: string;        // ex: "border-g-blue"
+  corTexto: string;   // ex: "text-g-blue"
+  icone: React.ComponentType<{ className?: string }>;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`hero-ind-card flex flex-col justify-between rounded-xl border-l-[3.5px] ${cor} p-2.5 xl:p-3 shadow-sm transition-all ${className}`}
+    >
+      <div className="flex items-start justify-between gap-1.5">
+        <div className="min-w-0 flex-1">
+          <span className="block text-[10.5px] xl:text-[11.5px] font-bold uppercase tracking-tight text-white/80 leading-[1.15] min-h-[25px]">
+            {titulo}
+          </span>
+          <strong className={`mt-1 block text-xl xl:text-2xl font-black ${corTexto} font-mono leading-none`}>
+            {valor}
+          </strong>
+        </div>
+        <div className={`flex size-7 xl:size-8 items-center justify-center rounded-lg ${corTexto} bg-white/10 shrink-0 mt-0.5`}>
+          <Icone className="size-3.5 xl:size-4" />
+        </div>
+      </div>
+      <p className="mt-1.5 text-[10.5px] xl:text-[11.5px] text-white/75 leading-tight line-clamp-2">
+        {desc}
+      </p>
+    </div>
+  );
+}
+
+/* ── Helper: Cartão de indicador para mobile (tema card normal) ── */
+function IndicadorCardMobile({
+  titulo,
+  valor,
+  desc,
+  cor,
+  corTexto,
+  corIconeBg,
+  icone: Icone,
+  className = "",
+}: {
+  titulo: string;
+  valor: number;
+  desc: string;
+  cor: string;
+  corTexto: string;
+  corIconeBg: string;
+  icone: React.ComponentType<{ className?: string }>;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`flex flex-col justify-between rounded-xl border-l-4 ${cor} bg-card dark:bg-card/95 p-3 shadow-md border-y border-r border-border/40 ${className}`}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            {titulo}
+          </span>
+          <strong className={`mt-0.5 block text-xl font-black ${corTexto} font-mono`}>{valor}</strong>
+        </div>
+        <div className={`flex size-8 items-center justify-center rounded-lg ${corIconeBg} shrink-0 ml-2`}>
+          <Icone className="size-4" />
+        </div>
+      </div>
+      <p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
+        {desc}
+      </p>
+    </div>
+  );
+}
+
 function Inicio() {
   const { publicStats, dailyStats, evaluationStats, regras, isGestor, isAdmin } = useStore();
   const total = publicStats.reduce((n, r) => n + r.total, 0);
@@ -37,10 +121,8 @@ function Inicio() {
   const chamadosDia = dailyStats?.chamadosDoDia ?? 0;
   const atendidosDia = dailyStats?.atendidosNoDia ?? 0;
 
-  const badgeTexto = regras.paginaInicial?.badgeTexto || "Atendimento de TI · SENAI LRV";
-  const tituloPrincipal = regras.paginaInicial?.titulo || "Bem-vindo à Central de Chamados de TI!";
+  const tituloPrincipal = regras.paginaInicial?.titulo || "Bem-vindo à Central de Chamados de TI.";
   const subtituloPrincipal = regras.paginaInicial?.subtitulo || "Central oficial de suporte e serviços de Tecnologia da Informação do SENAI Lucas do Rio Verde.";
-
 
   const bannerUrlCustom = regras.paginaInicial?.bannerUrl?.trim();
   const bannerSrc =
@@ -61,13 +143,25 @@ function Inicio() {
   const indDia = regras.indicadores?.chamadosDia ?? { titulo: "Chamados do dia", desc: "Chamados abertos hoje.", ativo: true };
   const indAtendDia = regras.indicadores?.atendidosDia ?? { titulo: "Atendidos no dia", desc: "Chamados concluídos hoje.", ativo: true };
 
+  /* Monta lista de indicadores ativos */
+  const indicadores = [
+    indTotal.ativo && { ...indTotal, valor: total, cor: "border-g-blue", corTexto: "text-g-blue", corIconeBg: "bg-g-blue/10 text-g-blue", icone: ClipboardList },
+    indAtend.ativo && { ...indAtend, valor: andamento, cor: "border-g-yellow", corTexto: "text-g-yellow", corIconeBg: "bg-g-yellow/10 text-amber-600 dark:text-amber-400", icone: Activity },
+    indResolv.ativo && { ...indResolv, valor: resolvidos, cor: "border-g-green", corTexto: "text-g-green", corIconeBg: "bg-g-green/10 text-g-green", icone: CheckCircle2 },
+    indDia.ativo !== false && { ...indDia, valor: chamadosDia, cor: "border-sky-500", corTexto: "text-sky-400", corIconeBg: "bg-sky-500/10 text-sky-600 dark:text-sky-400", icone: Clock },
+    indAtendDia.ativo !== false && { ...indAtendDia, valor: atendidosDia, cor: "border-teal-500", corTexto: "text-teal-400", corIconeBg: "bg-teal-500/10 text-teal-600 dark:text-teal-400", icone: CheckCheck },
+  ].filter(Boolean) as Array<{
+    titulo: string; desc: string; valor: number; cor: string; corTexto: string; corIconeBg: string;
+    icone: React.ComponentType<{ className?: string }>;
+  }>;
+
   return (
     <div className="space-y-5">
-      {/* ═══ HERO: Capa em tamanho full + texto centralizado ═══ */}
-      <section className="hero-section relative isolate overflow-hidden rounded-2xl border border-border/80 bg-[#031446] shadow-md transition-all">
+      {/* ═══ HERO: Capa full + texto + indicadores dentro da capa ═══ */}
+      <section className="hero-section relative isolate overflow-visible rounded-2xl border border-border/80 bg-[#031446] shadow-md">
 
-        {/* ── Desktop/Tablet: imagem como fundo com proporção nativa, texto por cima ── */}
-        <div className="hero-desktop hidden sm:block relative">
+        {/* ── Desktop (≥1024px): imagem com proporção nativa, texto no topo e indicadores na base ── */}
+        <div className="hero-desktop hidden lg:block relative rounded-2xl overflow-hidden">
           {/* Imagem de Fundo (Capa) — proporção nativa 1024×384 sem corte */}
           <img
             src={bannerSrc}
@@ -81,61 +175,78 @@ function Inicio() {
             style={{ aspectRatio: "1024 / 384" }}
           />
 
-          {/* Camada Escura: Degradê Azul-Marinho Semitransparente — reforçada para
-              manter a marca d'água "TI SENAI / LUCAS DO RIO VERDE" discreta */}
+          {/* Camada Escura: Degradê Azul-Marinho Semitransparente — reforçada
+              para manter a marca d'água "TI SENAI / LUCAS DO RIO VERDE" discreta */}
           <div
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(180deg, rgba(3, 20, 70, 0.78) 0%, rgba(3, 20, 70, 0.68) 40%, rgba(3, 20, 70, 0.62) 100%)",
+                "linear-gradient(180deg, rgba(3,20,70,0.82) 0%, rgba(3,20,70,0.68) 35%, rgba(3,20,70,0.60) 60%, rgba(3,20,70,0.75) 100%)",
             }}
           />
 
-          {/* Degradê radial extra centrado no bloco de texto para
-              reforçar legibilidade da descrição sobre a marca d'água */}
+          {/* Degradê radial centrado no bloco de texto — legibilidade sobre a marca d'água */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
               background:
-                "radial-gradient(ellipse 70% 80% at 50% 55%, rgba(3, 20, 70, 0.38) 0%, transparent 100%)",
+                "radial-gradient(ellipse 85% 75% at 50% 38%, rgba(3,20,70,0.45) 0%, transparent 100%)",
             }}
           />
 
-          {/* Conteúdo sobre a capa */}
-          <div className="absolute inset-0 flex flex-col items-center text-center px-6 max-w-5xl mx-auto pt-4 sm:pt-5 md:pt-6">
-            {/* Selo Translúcido — no topo do hero com espaçamento harmônico */}
-            <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-xs border border-white/20 backdrop-blur-md">
-              <Activity className="size-3.5 text-sky-300" />
-              <span>{badgeTexto}</span>
-            </p>
+          {/* Hover: escurecer a capa ao passar o mouse (somente pointer:fine + respeitando reduced-motion) */}
+          <div className="hero-hover-overlay absolute inset-0 bg-[#031446]/0 transition-colors duration-300 pointer-events-none" />
 
-            {/* Título — agrupado próximo ao selo */}
-            <h1
-              className="mt-2 sm:mt-2.5 text-[clamp(1.35rem,2.8vw,3rem)] font-black leading-tight text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)] tracking-tight"
-              style={{ textWrap: "balance" } as React.CSSProperties}
-            >
-              {tituloPrincipal}
-            </h1>
-
-            {/* Descrição — posicionada mais abaixo conforme indicado pelas setas */}
-            {subtituloPrincipal && (
-              <p
-                className="text-[clamp(0.875rem,1.38vw,1.4rem)] text-white/95 max-w-[900px] font-normal drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]"
-                style={{
-                  marginTop: "clamp(1.5rem, 4vw, 3.75rem)",
-                  textWrap: "pretty",
-                  lineHeight: 1.55,
-                } as React.CSSProperties}
+          {/* Conteúdo: texto no topo, indicadores na base */}
+          <div className="absolute inset-0 flex flex-col justify-between px-6 xl:px-8">
+            {/* Bloco de texto: topo */}
+            <div className="flex flex-col items-center text-center pt-6 xl:pt-8 max-w-[820px] mx-auto">
+              <h1
+                className="text-[clamp(1.45rem,2.1vw,2.35rem)] font-black leading-tight text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] tracking-tight whitespace-nowrap"
+                style={{ textWrap: "balance" } as React.CSSProperties}
               >
-                {subtituloPrincipal}
-              </p>
-            )}
+                {tituloPrincipal}
+              </h1>
+
+              {subtituloPrincipal && (
+                <p
+                  className="mt-[clamp(0.75rem,1.2vw,1.15rem)] text-[clamp(0.92rem,1.18vw,1.12rem)] text-white/95 max-w-[820px] font-normal drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)] leading-[1.55]"
+                  style={{
+                    textWrap: "balance",
+                  } as React.CSSProperties}
+                >
+                  {subtituloPrincipal}
+                </p>
+              )}
+            </div>
+
+            {/* Indicadores: base da capa — 5 cartões compactos translúcidos em linha única */}
+            <div
+              className="hero-indicators-row grid gap-2.5 pb-4 xl:pb-5"
+              style={{
+                gridTemplateColumns: `repeat(${indicadores.length}, minmax(0, 1fr))`,
+              }}
+            >
+              {indicadores.map((ind) => (
+                <IndicadorCard
+                  key={ind.titulo}
+                  titulo={ind.titulo}
+                  valor={ind.valor}
+                  desc={ind.desc}
+                  cor={ind.cor}
+                  corTexto={ind.corTexto}
+                  icone={ind.icone}
+                />
+              ))}
+            </div>
           </div>
+
+          {/* Faixa Colorida na Base do Hero */}
+          <div className="absolute bottom-0 left-0 right-0 h-2 bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
         </div>
 
-
-        {/* ── Mobile: imagem inteira no topo + bloco de texto azul-marinho abaixo ── */}
-        <div className="hero-mobile sm:hidden">
+        {/* ── Tablet e Celular (<1024px): capa inteira no topo + bloco contínuo com texto e indicadores ── */}
+        <div className="hero-mobile lg:hidden">
           {/* Imagem inteira sem corte */}
           <img
             src={bannerSrc}
@@ -145,145 +256,68 @@ function Inicio() {
             fetchPriority="high"
             loading="eager"
             decoding="async"
-            className="block w-full h-auto"
+            className="block w-full h-auto rounded-t-2xl"
             style={{ aspectRatio: "1024 / 384" }}
           />
 
-          {/* Bloco de texto com fundo azul-marinho em degradê */}
+          {/* Bloco texto + indicadores com fundo azul-marinho contínuo em degradê */}
           <div
-            className="flex flex-col items-center text-center px-4 py-5"
+            className="flex flex-col items-center text-center px-4 sm:px-6 pt-5 sm:pt-6 pb-5"
             style={{
               background:
-                "linear-gradient(180deg, rgba(3, 20, 70, 0.95) 0%, rgba(3, 20, 70, 1) 100%)",
+                "linear-gradient(180deg, rgba(3,20,70,0.96) 0%, rgba(3,20,70,1) 100%)",
             }}
           >
-            {/* Selo */}
-            <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-xs border border-white/20 backdrop-blur-md">
-              <Activity className="size-3 text-sky-300" />
-              <span>{badgeTexto}</span>
-            </p>
-
-            {/* Título — próximo do selo */}
             <h1
-              className="mt-2.5 text-xl min-[400px]:text-2xl font-black leading-snug text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)] tracking-tight"
+              className="text-[clamp(1.2rem,4vw,1.85rem)] font-black leading-snug text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)] tracking-tight"
               style={{ textWrap: "balance" } as React.CSSProperties}
             >
               {tituloPrincipal}
             </h1>
 
-            {/* Descrição — fonte proporcionalmente maior, legível */}
             {subtituloPrincipal && (
               <p
-                className="mt-2 text-sm min-[400px]:text-base text-white/95 max-w-[420px] font-normal drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]"
-                style={{ textWrap: "pretty", lineHeight: 1.5 } as React.CSSProperties}
+                className="mt-2 text-[clamp(0.85rem,2.5vw,1.05rem)] text-white/90 max-w-[680px] font-normal drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]"
+                style={{ textWrap: "balance", lineHeight: 1.55 } as React.CSSProperties}
               >
                 {subtituloPrincipal}
               </p>
             )}
+
+            {/* Indicadores tablet/celular: grid responsivo balanceado sem cartão solitário desalinhado */}
+            <div className="mt-5 w-full grid gap-2.5 sm:gap-3.5 grid-cols-2 sm:grid-cols-6">
+              {indicadores.map((ind, idx) => {
+                const ehUltimoImpar = indicadores.length % 2 !== 0 && idx === indicadores.length - 1;
+                const mobileSpan = ehUltimoImpar ? "col-span-2 max-w-[340px] justify-self-center w-full" : "col-span-1";
+                // Tablet (sm:grid-cols-6): com 5 itens, 3 primeiros col-span-2 (3x2=6), 2 últimos col-span-3 (2x3=6)
+                const tabletSpan =
+                  indicadores.length === 5
+                    ? idx < 3
+                      ? "sm:col-span-2"
+                      : "sm:col-span-3"
+                    : indicadores.length === 4
+                    ? "sm:col-span-3"
+                    : "sm:col-span-2";
+
+                return (
+                  <IndicadorCardMobile
+                    key={ind.titulo}
+                    titulo={ind.titulo}
+                    valor={ind.valor}
+                    desc={ind.desc}
+                    cor={ind.cor}
+                    corTexto={ind.corTexto}
+                    corIconeBg={ind.corIconeBg}
+                    icone={ind.icone}
+                    className={`${mobileSpan} ${tabletSpan}`}
+                  />
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        {/* Faixa Colorida na Base do Hero */}
-        <div className="h-2 w-full bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)]" />
-      </section>
-
-      {/* ═══ INDICADORES: faixa própria abaixo do hero ═══ */}
-      <section className="w-full">
-        <div className="grid gap-3 sm:gap-4 grid-cols-1 min-[400px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 text-left w-full">
-          {indTotal.ativo && (
-            <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-g-blue bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                    {indTotal.titulo}
-                  </span>
-                  <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-g-blue font-mono">{total}</strong>
-                </div>
-                <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-g-blue/10 text-g-blue shrink-0 ml-2">
-                  <ClipboardList className="size-4 min-[400px]:size-4.5 sm:size-5" />
-                </div>
-              </div>
-              <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
-                {indTotal.desc}
-              </p>
-            </div>
-          )}
-
-          {indAtend.ativo && (
-            <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-g-yellow bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                    {indAtend.titulo}
-                  </span>
-                  <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-g-yellow font-mono">{andamento}</strong>
-                </div>
-                <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-g-yellow/10 text-amber-600 dark:text-amber-400 shrink-0 ml-2">
-                  <Activity className="size-4 min-[400px]:size-4.5 sm:size-5" />
-                </div>
-              </div>
-              <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
-                {indAtend.desc}
-              </p>
-            </div>
-          )}
-
-          {indResolv.ativo && (
-            <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-g-green bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                    {indResolv.titulo}
-                  </span>
-                  <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-g-green font-mono">{resolvidos}</strong>
-                </div>
-                <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-g-green/10 text-g-green shrink-0 ml-2">
-                  <CheckCircle2 className="size-4 min-[400px]:size-4.5 sm:size-5" />
-                </div>
-              </div>
-              <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
-                {indResolv.desc}
-              </p>
-            </div>
-          )}
-
-          {indDia.ativo !== false && (
-            <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-sky-500 bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                    {indDia.titulo}
-                  </span>
-                  <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-sky-600 dark:text-sky-400 font-mono">{chamadosDia}</strong>
-                </div>
-                <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0 ml-2">
-                  <Clock className="size-4 min-[400px]:size-4.5 sm:size-5" />
-                </div>
-              </div>
-              <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
-                {indDia.desc}
-              </p>
-            </div>
-          )}
-
-          {indAtendDia.ativo !== false && (
-            <div className="flex flex-col justify-between rounded-xl sm:rounded-2xl border-l-4 border-teal-500 bg-card dark:bg-card/95 p-3 min-[400px]:p-3.5 sm:p-4 md:p-5 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg border-y border-r border-border/40 min-[400px]:col-span-2 md:col-span-1">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                    {indAtendDia.titulo}
-                  </span>
-                  <strong className="mt-0.5 sm:mt-1 block text-xl min-[400px]:text-2xl sm:text-3xl font-black text-teal-600 dark:text-teal-400 font-mono">{atendidosDia}</strong>
-                </div>
-                <div className="flex size-8 min-[400px]:size-9 sm:size-11 items-center justify-center rounded-lg sm:rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 shrink-0 ml-2">
-                  <CheckCheck className="size-4 min-[400px]:size-4.5 sm:size-5" />
-                </div>
-              </div>
-              <p className="mt-2 sm:mt-2.5 text-[11px] sm:text-xs text-muted-foreground leading-snug">
-                {indAtendDia.desc}
-              </p>
-            </div>
-          )}
+          {/* Faixa Colorida na Base */}
+          <div className="h-2 w-full bg-[linear-gradient(90deg,var(--g-blue)_0%,var(--g-blue)_25%,var(--g-red)_25%,var(--g-red)_50%,var(--g-yellow)_50%,var(--g-yellow)_75%,var(--g-green)_75%)] rounded-b-2xl" />
         </div>
       </section>
 
