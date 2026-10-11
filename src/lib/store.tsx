@@ -32,6 +32,7 @@ import {
   COLUNAS_ATENDIMENTO_PADRAO,
   MEUS_CHAMADOS_PADRAO,
   type ConfiguracaoHistoricoItem,
+  type AvaliacaoItemDashboard,
   type Regras,
   type Ticket,
   type Prioridade,
@@ -40,6 +41,7 @@ import {
   obterDataHojeCuiaba,
 } from "./types";
 import { aplicarCoresCustomizadasNoDocumento } from "./tema";
+import { buscarAvaliacoesCompletas, sincronizarAvaliacoesComBanco } from "./evaluations-service";
 
 type Row = Database["public"]["Tables"]["tickets"]["Row"];
 
@@ -279,6 +281,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     atendidosNoDia: 0,
   });
   const [evaluationStats, setEvaluationStats] = useState<AvaliacaoResumoPublico>(AVALIACAO_RESUMO_PUBLICO_PADRAO);
+  const [evaluationError, setEvaluationError] = useState(false);
+  const [evaluationLoading, setEvaluationLoading] = useState(true);
+  const [avaliacoesList, setAvaliacoesList] = useState<AvaliacaoItemDashboard[]>([]);
   const [regras, setRegrasState] = useState<Regras>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -504,98 +509,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
   }, [recarregarDailyStats]);
 
-  // Estatísticas agregadas de avaliações (públicas e anônimas)
+  // Estatísticas agregadas e lista unificada de avaliações (públicas e anônimas)
   const recarregarEvaluationStats = useCallback(async () => {
+    setEvaluationLoading(true);
+    setEvaluationError(false);
     try {
-      // 1. Tenta a RPC get_public_evaluation_stats
-      const { data, error } = await supabase.rpc("get_public_evaluation_stats");
-      if (!error && data && typeof data === "object") {
-        const stats = data as unknown as AvaliacaoResumoPublico;
-        if (typeof stats.total === "number") {
-          setEvaluationStats({
-            total: stats.total || 0,
-            media: Number(stats.media || 0),
-            satisfacao_pct: stats.satisfacao_pct || 0,
-            distribuicao: {
-              1: stats.distribuicao?.[1] || 0,
-              2: stats.distribuicao?.[2] || 0,
-              3: stats.distribuicao?.[3] || 0,
-              4: stats.distribuicao?.[4] || 0,
-              5: stats.distribuicao?.[5] || 0,
-            },
-          });
-          // Se a RPC respondeu com sucesso, sincroniza eventuais avaliações pendentes do cache local para o banco
-          if (typeof window !== "undefined") {
-            try {
-              const salvasLocais = JSON.parse(localStorage.getItem("tisenai_avaliacoes_locais") || "[]");
-              if (Array.isArray(salvasLocais) && salvasLocais.length > 0) {
-                for (const p of salvasLocais) {
-                  if (p.ticket_id && p.nota) {
-                    supabase.rpc("submit_ticket_evaluation", {
-                      p_ticket_id: p.ticket_id,
-                      p_nota: p.nota,
-                      p_comentario: p.comentario || null,
-                    }).catch(() => {});
-                  }
-                }
-                localStorage.removeItem("tisenai_avaliacoes_locais");
-              }
-            } catch {
-              // ignore
-            }
-          }
-          return;
-        }
-      }
-
-      // 2. View pública agregada se a RPC falhar
-      const { data: viewData, error: viewError } = await supabase
-        .from("avaliacoes_public_stats" as any)
-        .select("*")
-        .maybeSingle();
-
-      if (!viewError && viewData) {
-        const v = viewData as any;
-        setEvaluationStats({
-          total: v.total || 0,
-          media: Number(v.media || 0),
-          satisfacao_pct: v.satisfacao_pct || 0,
-          distribuicao: {
-            1: v.nota_1 || 0,
-            2: v.nota_2 || 0,
-            3: v.nota_3 || 0,
-            4: v.nota_4 || 0,
-            5: v.nota_5 || 0,
-          },
-        });
-        return;
-      }
-
-      // 3. Fallback com avaliações locais no navegador
-      if (typeof window !== "undefined") {
-        const salvasLocais = JSON.parse(localStorage.getItem("tisenai_avaliacoes_locais") || "[]");
-        if (Array.isArray(salvasLocais) && salvasLocais.length > 0) {
-          const total = salvasLocais.length;
-          const soma = salvasLocais.reduce((acc, a) => acc + (Number(a.nota) || 0), 0);
-          const media = Number((soma / total).toFixed(2));
-          const sat = Math.round((salvasLocais.filter((a) => Number(a.nota) >= 4).length / total) * 100);
-          const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-          for (const a of salvasLocais) {
-            const n = Math.min(5, Math.max(1, Math.round(Number(a.nota) || 0)));
-            if (n in dist) dist[n as keyof typeof dist]++;
-          }
-          setEvaluationStats({
-            total,
-            media,
-            satisfacao_pct: sat,
-            distribuicao: dist,
-          });
-        }
+      const res = await buscarAvaliacoesCompletas();
+      setAvaliacoesList(res.itens);
+      setEvaluationStats(res.resumo);
+      if (res.erro && res.itens.length === 0) {
+        console.error("Falha ao consultar avaliações do sistema:", res.erro);
+        setEvaluationError(true);
       }
     } catch (err) {
-      console.warn("Não foi possível carregar estatísticas agregadas de avaliações:", err);
+      console.error("Erro inesperado ao recarregar estatísticas de avaliação:", err);
+      setEvaluationError(true);
+    } finally {
+      setEvaluationLoading(false);
     }
   }, []);
+
+  const sincronizarAvaliacoes = useCallback(async () => {
+    const res = await sincronizarAvaliacoesComBanco(isGestor || isAdmin);
+    await recarregarEvaluationStats();
+    return res;
+  }, [isGestor, isAdmin, recarregarEvaluationStats]);
 
   useEffect(() => {
     recarregarEvaluationStats();
@@ -609,6 +547,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(ch);
     };
   }, [recarregarEvaluationStats]);
+
+  // Sincronização automática em segundo plano quando gestor/admin conecta
+  useEffect(() => {
+    if (authPronto && (isGestor || isAdmin)) {
+      sincronizarAvaliacoesComBanco(true)
+        .then((res) => {
+          if (res.sincronizados > 0) {
+            console.info("Sincronização de avaliações realizada:", res.mensagem);
+            recarregarEvaluationStats();
+          }
+        })
+        .catch((err) => {
+          console.warn("Sincronização automática em segundo plano:", err);
+        });
+    }
+  }, [authPronto, isGestor, isAdmin, recarregarEvaluationStats]);
 
   // Regras (públicas) + tempo real com cache local síncrono
   useEffect(() => {
@@ -918,7 +872,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       dailyStats,
       recarregarDailyStats,
       evaluationStats,
+      evaluationError,
+      evaluationLoading,
+      avaliacoesList,
       recarregarEvaluationStats,
+      sincronizarAvaliacoes,
       regras,
       hidratado,
       session,
@@ -943,7 +901,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       dailyStats,
       recarregarDailyStats,
       evaluationStats,
+      evaluationError,
+      evaluationLoading,
+      avaliacoesList,
       recarregarEvaluationStats,
+      sincronizarAvaliacoes,
       regras,
       hidratado,
       session,

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, FilePlus2, Activity, ClipboardList, CheckCircle2, Star, ExternalLink, Clock, CheckCheck } from "lucide-react";
+import { ArrowRight, FilePlus2, Activity, ClipboardList, CheckCircle2, Star, ExternalLink, Clock, CheckCheck, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
 import { AVALIACAO_PADRAO } from "@/lib/types";
@@ -109,7 +109,7 @@ function IndicadorCardMobile({
 }
 
 function Inicio() {
-  const { publicStats, dailyStats, evaluationStats, regras, isGestor, isAdmin } = useStore();
+  const { publicStats, dailyStats, evaluationStats, evaluationError, evaluationLoading, recarregarEvaluationStats, regras, isGestor, isAdmin } = useStore();
   const total = publicStats.reduce((n, r) => n + r.total, 0);
   const andamento = publicStats
     .filter((r) => !["Resolvido", "Cancelado"].includes(r.status))
@@ -394,7 +394,31 @@ function Inicio() {
             )}
           </div>
 
-          {evaluationStats.total === 0 ? (
+          {evaluationLoading && evaluationStats.total === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border/80 bg-card/60 p-8 text-center space-y-2 animate-pulse">
+              <Activity className="size-8 text-muted-foreground/40 mx-auto animate-spin" />
+              <p className="text-sm font-bold text-foreground">Carregando avaliações...</p>
+            </div>
+          ) : evaluationError && evaluationStats.total === 0 ? (
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/5 dark:bg-red-950/20 p-8 text-center space-y-3">
+              <AlertCircle className="size-8 text-red-500 mx-auto" />
+              <p className="text-sm font-bold text-foreground">Não foi possível carregar as avaliações no momento.</p>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                Ocorreu um erro de comunicação com o servidor ao consultar os dados de satisfação.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  console.info("Tentando recarregar avaliações a pedido do usuário...");
+                  recarregarEvaluationStats();
+                }}
+                className="gap-2 text-xs font-semibold"
+              >
+                <RefreshCw className="size-3.5" /> Tentar novamente
+              </Button>
+            </div>
+          ) : evaluationStats.total === 0 ? (
             <div className="rounded-2xl border border-dashed border-border/80 bg-card/60 p-8 text-center space-y-2">
               <Star className="size-8 text-muted-foreground/30 mx-auto" />
               <p className="text-sm font-bold text-foreground">Ainda não há avaliações.</p>

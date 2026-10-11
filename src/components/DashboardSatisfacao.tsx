@@ -27,6 +27,8 @@ import {
   HelpCircle,
   Activity,
   Layers,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,138 +71,12 @@ export function DashboardSatisfacao({
   mesSelecionado = "todos",
   semBordaSuperior = false,
 }: DashboardSatisfacaoProps) {
-  const { tickets, regras } = useStore();
+  const { tickets, regras, avaliacoesList, evaluationLoading, evaluationError, recarregarEvaluationStats } = useStore();
   const isMobile = useIsMobile();
-  const [avaliacoes, setAvaliacoes] = useState<AvaliacaoItemDashboard[]>([]);
-  const [carregando, setCarregando] = useState(true);
+  const avaliacoes = avaliacoesList;
+  const carregando = evaluationLoading;
   const [tipoGraficoDistribuicao, setTipoGraficoDistribuicao] = useState<"barras" | "pizza">("barras");
   const [visaoDimensao, setVisaoDimensao] = useState<"atendente" | "categoria">("categoria");
-
-  useEffect(() => {
-    let ativo = true;
-
-    async function carregar() {
-      setCarregando(true);
-      let listaRemota: AvaliacaoItemDashboard[] = [];
-      let tabelaDisponivel = false;
-
-      try {
-        // 1. Tenta carregar via RPC segura otimizada para dashboard
-        const { data: rpcData, error: rpcErr } = await (supabase.rpc as any)("get_evaluations_for_dashboard");
-
-        if (!rpcErr && Array.isArray(rpcData)) {
-          listaRemota = rpcData.map((r: any) => ({
-            id: r.id,
-            ticket_id: r.ticket_id,
-            nota: Number(r.nota),
-            nota_facilidade: r.nota_facilidade !== null && r.nota_facilidade !== undefined ? Number(r.nota_facilidade) : null,
-            atendente: r.atendente || null,
-            categoria: r.categoria || null,
-            setor: r.setor || null,
-            created_at: r.created_at,
-          }));
-          tabelaDisponivel = true;
-        } else {
-          // Fallback: consulta direta na tabela avaliacoes_chamados
-          const { data: directData, error: directErr } = await (supabase.from("avaliacoes_chamados") as any)
-            .select("id, ticket_id, nota, nota_facilidade, atendente, comentario, created_at")
-            .order("created_at", { ascending: false });
-
-          if (!directErr && directData) {
-            listaRemota = directData.map((r: any) => ({
-              id: r.id,
-              ticket_id: r.ticket_id,
-              nota: Number(r.nota),
-              nota_facilidade: r.nota_facilidade !== null && r.nota_facilidade !== undefined ? Number(r.nota_facilidade) : null,
-              atendente: r.atendente || null,
-              comentario: r.comentario || null,
-              created_at: r.created_at,
-            }));
-            tabelaDisponivel = true;
-          }
-        }
-      } catch (err) {
-        console.warn("Erro ao buscar avaliações para o dashboard:", err);
-      }
-
-      // 2. Lê do cache local para sincronizar e mesclar
-      let listaLocal: AvaliacaoItemDashboard[] = [];
-      try {
-        const salvasLocais = JSON.parse(localStorage.getItem("tisenai_avaliacoes_locais") || "[]");
-        if (Array.isArray(salvasLocais)) {
-          listaLocal = salvasLocais.map((s: any, idx: number) => ({
-            id: s.id || 900000 + idx,
-            ticket_id: Number(s.ticket_id),
-            nota: Number(s.nota),
-            nota_facilidade: s.nota_facilidade ? Number(s.nota_facilidade) : null,
-            atendente: s.atendente || null,
-            comentario: s.comentario || null,
-            created_at: s.created_at || s.data || new Date().toISOString(),
-          }));
-        }
-      } catch {
-        // ignore
-      }
-
-      // 3. Sincroniza avaliações pendentes do localStorage com o banco
-      if (tabelaDisponivel && listaLocal.length > 0) {
-        const ticketsNoBanco = new Set(listaRemota.map((r) => r.ticket_id));
-        const pendentes = listaLocal.filter((l) => !ticketsNoBanco.has(l.ticket_id));
-
-        if (pendentes.length > 0) {
-          for (const item of pendentes) {
-            try {
-              await (supabase.rpc as any)("submit_ticket_evaluation", {
-                p_ticket_id: item.ticket_id,
-                p_nota: item.nota,
-                p_comentario: item.comentario || null,
-                p_nota_facilidade: item.nota_facilidade || null,
-                p_atendente: item.atendente || null,
-              });
-            } catch (errSync) {
-              console.warn("Falha na sincronização de avaliação pendente:", errSync);
-            }
-          }
-        }
-
-        try {
-          localStorage.removeItem("tisenai_avaliacoes_locais");
-        } catch {
-          // ignore
-        }
-      }
-
-      // 4. Mescla sem duplicidade
-      const mapaTickets = new Map<number, AvaliacaoItemDashboard>();
-      for (const r of listaRemota) {
-        mapaTickets.set(r.ticket_id, r);
-      }
-      for (const l of listaLocal) {
-        if (!mapaTickets.has(l.ticket_id)) {
-          mapaTickets.set(l.ticket_id, l);
-        }
-      }
-
-      if (ativo) {
-        setAvaliacoes(Array.from(mapaTickets.values()));
-        setCarregando(false);
-      }
-    }
-
-    void carregar();
-
-    const channel = supabase
-      .channel("dashboard-satisfacao-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "avaliacoes_chamados" }, () => {
-        void carregar();
-      })
-      .subscribe();
-
-    return () => {
-      ativo = false;
-      void supabase.removeChannel(channel);
-    };
-  }, []);
 
   // Mapeamento auxiliar de chamados para obter categoria e responsável se faltar
   const mapaChamados = useMemo(() => {
@@ -457,11 +333,30 @@ export function DashboardSatisfacao({
         )}
       </div>
 
-      {carregando ? (
+      {carregando && totalAvaliacoes === 0 ? (
         <div className="rounded-2xl border-2 border-border/80 bg-card p-10 text-center space-y-3 animate-pulse">
           <Activity className="size-8 text-primary mx-auto animate-spin" />
           <p className="text-sm font-semibold text-muted-foreground">Carregando métricas reais de satisfação...</p>
         </div>
+      ) : evaluationError && totalAvaliacoes === 0 ? (
+        <Card className="rounded-2xl border-2 border-red-500/30 bg-red-500/5 dark:bg-red-950/20 p-8 text-center space-y-3">
+          <AlertCircle className="size-10 text-red-500 mx-auto" />
+          <h3 className="text-base font-bold text-foreground">Erro ao carregar métricas de avaliação</h3>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            Não foi possível carregar os dados de avaliação do servidor. Verifique sua conexão e tente novamente.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              console.info("Tentando recarregar métricas de satisfação a pedido do usuário...");
+              recarregarEvaluationStats();
+            }}
+            className="gap-2 text-xs font-semibold"
+          >
+            <RefreshCw className="size-3.5" /> Tentar novamente
+          </Button>
+        </Card>
       ) : totalAvaliacoes === 0 ? (
         <Card className="rounded-2xl border-2 border-dashed border-border/80 bg-card/60 p-8 text-center space-y-3">
           <Smile className="size-12 text-muted-foreground/60 mx-auto" />

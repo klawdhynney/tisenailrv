@@ -9,7 +9,11 @@ export interface StoreValue {
   dailyStats: { chamadosDoDia: number; atendidosNoDia: number };
   recarregarDailyStats: () => Promise<void>;
   evaluationStats: import("./types").AvaliacaoResumoPublico;
+  evaluationError: boolean;
+  evaluationLoading: boolean;
+  avaliacoesList: import("./types").AvaliacaoItemDashboard[];
   recarregarEvaluationStats: () => Promise<void>;
+  sincronizarAvaliacoes: () => Promise<{ sincronizados: number; falhas: number; mensagem: string }>;
   regras: Regras;
   hidratado: boolean;
   session: Session | null;

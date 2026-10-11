@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ClipboardList,
   MessageSquare,
+  RefreshCw,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,13 +43,11 @@ interface AvaliacaoRow {
 }
 
 function PaginaAvaliacoes() {
-  const { authPronto, regras } = useStore();
+  const { authPronto, regras, avaliacoesList, evaluationLoading, evaluationError, recarregarEvaluationStats } = useStore();
   const configAvaliacao = { ...AVALIACAO_PADRAO, ...(regras.avaliacao ?? {}) };
   const search = Route.useSearch();
   const mesQuery = search?.mes || search?.periodo;
   const [periodo, setPeriodo] = useState<string>(() => mesQuery || "todos");
-  const [comentarios, setComentarios] = useState<AvaliacaoRow[]>([]);
-  const [carregandoComentarios, setCarregandoComentarios] = useState(true);
 
   useEffect(() => {
     const q = search?.mes || search?.periodo;
@@ -57,46 +56,24 @@ function PaginaAvaliacoes() {
     }
   }, [search?.mes, search?.periodo]);
 
-  useEffect(() => {
-    let ativo = true;
-
-    async function carregarComentarios() {
-      setCarregandoComentarios(true);
-      try {
-        const { data, error } = await (supabase.from("avaliacoes_chamados") as any)
-          .select("id, ticket_id, user_id, nota, nota_facilidade, atendente, comentario, created_at")
-          .not("comentario", "is", null)
-          .order("created_at", { ascending: false })
-          .limit(30);
-
-        if (!error && data && ativo) {
-          setComentarios(data as AvaliacaoRow[]);
-        }
-      } catch (err) {
-        console.warn("Erro ao buscar comentários:", err);
-      } finally {
-        if (ativo) setCarregandoComentarios(false);
-      }
-    }
-
-    void carregarComentarios();
-
-    const channel = supabase
-      .channel("dash-avaliacoes-comments-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "avaliacoes_chamados" }, () => {
-        void carregarComentarios();
-      })
-      .subscribe();
-
-    return () => {
-      ativo = false;
-      void supabase.removeChannel(channel);
-    };
-  }, []);
+  const comentarios = useMemo(() => {
+    return avaliacoesList
+      .filter((a) => a.comentario && a.comentario.trim().length > 0)
+      .map((a) => ({
+        id: a.id || a.ticket_id,
+        ticket_id: a.ticket_id,
+        user_id: null,
+        nota: a.nota,
+        nota_facilidade: a.nota_facilidade,
+        atendente: a.atendente,
+        comentario: a.comentario,
+        created_at: a.created_at,
+      }));
+  }, [avaliacoesList]);
 
   const comentariosFiltrados = useMemo(() => {
     if (!periodo || periodo === "todos") {
-      return comentarios.filter((c) => c.comentario && c.comentario.trim().length > 0);
+      return comentarios;
     }
     if (periodo === "7d" || periodo === "30d" || periodo === "90d") {
       const dias = periodo === "7d" ? 7 : periodo === "30d" ? 30 : 90;
@@ -104,12 +81,12 @@ function PaginaAvaliacoes() {
       corte.setDate(corte.getDate() - dias);
       return comentarios.filter((c) => {
         const d = new Date(c.created_at || "");
-        return !isNaN(d.getTime()) && d >= corte && c.comentario && c.comentario.trim().length > 0;
+        return !isNaN(d.getTime()) && d >= corte;
       });
     }
     return comentarios.filter((c) => {
       const dataStr = c.created_at || "";
-      return dataStr.startsWith(periodo) && c.comentario && c.comentario.trim().length > 0;
+      return dataStr.startsWith(periodo);
     });
   }, [comentarios, periodo]);
 
@@ -215,8 +192,20 @@ function PaginaAvaliacoes() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {carregandoComentarios ? (
+          {evaluationLoading && comentariosFiltrados.length === 0 ? (
             <div className="py-6 text-center text-xs text-muted-foreground">Carregando comentários...</div>
+          ) : evaluationError && comentariosFiltrados.length === 0 ? (
+            <div className="py-6 text-center space-y-2">
+              <p className="text-xs text-red-500">Erro ao carregar comentários dos solicitantes.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => recarregarEvaluationStats()}
+                className="gap-1.5 text-xs h-7"
+              >
+                <RefreshCw className="size-3" /> Tentar novamente
+              </Button>
+            </div>
           ) : comentariosFiltrados.length === 0 ? (
             <p className="text-xs text-muted-foreground py-4 text-center">
               Nenhum comentário em texto registrado no período selecionado.
