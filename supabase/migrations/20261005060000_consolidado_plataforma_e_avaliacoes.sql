@@ -28,18 +28,11 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_role' AND typnamespace = 'public'::regnamespace) THEN
     CREATE TYPE public.app_role AS ENUM ('gestor', 'admin', 'usuario');
-  ELSE
-    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'admin' AND enumtypid = 'public.app_role'::regtype) THEN
-      ALTER TYPE public.app_role ADD VALUE 'admin';
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'usuario' AND enumtypid = 'public.app_role'::regtype) THEN
-      ALTER TYPE public.app_role ADD VALUE 'usuario';
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'gestor' AND enumtypid = 'public.app_role'::regtype) THEN
-      ALTER TYPE public.app_role ADD VALUE 'gestor';
-    END IF;
   END IF;
 END $$;
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'admin';
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'usuario';
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'gestor';
 
 -- 1.2 Tabela user_roles
 CREATE TABLE IF NOT EXISTS public.user_roles (

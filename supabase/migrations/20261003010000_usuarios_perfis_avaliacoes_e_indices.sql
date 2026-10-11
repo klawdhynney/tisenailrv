@@ -4,13 +4,13 @@
 -- 1. Expansão de Perfis (Roles)
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'admin' AND enumtypid = 'public.app_role'::regtype) THEN
-    ALTER TYPE public.app_role ADD VALUE 'admin';
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'usuario' AND enumtypid = 'public.app_role'::regtype) THEN
-    ALTER TYPE public.app_role ADD VALUE 'usuario';
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_role' AND typnamespace = 'public'::regnamespace) THEN
+    CREATE TYPE public.app_role AS ENUM ('gestor', 'admin', 'usuario');
   END IF;
 END $$;
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'admin';
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'usuario';
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'gestor';
 
 -- 2. Tabela de Perfis de Usuário (Status Ativo/Bloqueado e Metadados)
 CREATE TABLE IF NOT EXISTS public.user_profiles (
