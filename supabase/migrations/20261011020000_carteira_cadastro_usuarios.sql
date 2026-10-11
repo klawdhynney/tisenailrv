@@ -9,11 +9,14 @@
 -- admin_toggle_user_block, gatilho de cadastro e políticas de RLS.
 -- ============================================================================
 
--- 1. Garante tipo app_role se ainda não existir
+-- 1. Compatibilidade com papéis em texto (sem erros de enum)
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_role' AND typnamespace = 'public'::regnamespace) THEN
-    CREATE TYPE public.app_role AS ENUM ('gestor', 'admin', 'usuario');
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_roles' AND column_name = 'role') THEN
+    ALTER TABLE public.user_roles ALTER COLUMN role TYPE text USING role::text;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pre_registered_roles' AND column_name = 'role') THEN
+    ALTER TABLE public.pre_registered_roles ALTER COLUMN role TYPE text USING role::text;
   END IF;
 END $$;
 
@@ -65,9 +68,15 @@ CREATE INDEX IF NOT EXISTS idx_user_profiles_matricula ON public.user_profiles(m
 CREATE TABLE IF NOT EXISTS public.user_roles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
-  role public.app_role NOT NULL,
+  role text NOT NULL,
   CONSTRAINT user_roles_user_role_unique UNIQUE (user_id, role)
 );
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_roles' AND column_name = 'role') THEN
+    ALTER TABLE public.user_roles ALTER COLUMN role TYPE text USING role::text;
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON public.user_roles(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_roles_role ON public.user_roles(role);
 
@@ -180,7 +189,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_nome text;
   v_email text;
-  v_pre_role public.app_role;
+  v_pre_role text;
 BEGIN
   v_email := lower(btrim(coalesce(new.email, '')));
   v_nome := coalesce(
@@ -204,7 +213,7 @@ BEGIN
     ultimo_acesso = now(),
     updated_at = now();
 
-  SELECT role INTO v_pre_role
+  SELECT role::text INTO v_pre_role
   FROM public.pre_registered_roles
   WHERE lower(btrim(email)) = v_email;
 
@@ -214,7 +223,7 @@ BEGIN
     ON CONFLICT (user_id, role) DO NOTHING;
   ELSE
     INSERT INTO public.user_roles (user_id, role)
-    VALUES (new.id, 'usuario'::public.app_role)
+    VALUES (new.id, 'usuario')
     ON CONFLICT (user_id, role) DO NOTHING;
   END IF;
 
@@ -253,19 +262,19 @@ WHERE NOT EXISTS (SELECT 1 FROM public.user_profiles p WHERE p.id = u.id)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.user_roles (user_id, role)
-SELECT p.id, 'usuario'::public.app_role
+SELECT p.id, 'usuario'
 FROM public.user_profiles p
 WHERE NOT EXISTS (SELECT 1 FROM public.user_roles ur WHERE ur.user_id = p.id)
 ON CONFLICT (user_id, role) DO NOTHING;
 
 INSERT INTO public.user_roles (user_id, role)
-SELECT p.id, 'admin'::public.app_role
+SELECT p.id, 'admin'
 FROM public.user_profiles p
 WHERE lower(btrim(p.email)) IN ('klaw.com@gmail.com', 'klawdhynney@gmail.com', 'claudineigoncalvesdelima@hotmail.com', 'claudinei.lima@senaimt.ind.br')
 ON CONFLICT (user_id, role) DO NOTHING;
 
 INSERT INTO public.user_roles (user_id, role)
-SELECT p.id, 'gestor'::public.app_role
+SELECT p.id, 'gestor'
 FROM public.user_profiles p
 WHERE lower(btrim(p.email)) IN ('klaw.com@gmail.com', 'klawdhynney@gmail.com', 'claudineigoncalvesdelima@hotmail.com', 'claudinei.lima@senaimt.ind.br')
 ON CONFLICT (user_id, role) DO NOTHING;
@@ -592,7 +601,7 @@ RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_admin_email text;
   v_target_email text;
-  v_role_enum public.app_role;
+  v_role_clean text;
   v_role_norm text := lower(btrim(p_new_role));
   v_admin_count integer;
 BEGIN
@@ -604,15 +613,14 @@ BEGIN
   v_admin_email := lower(btrim(coalesce(auth.jwt() ->> 'email', '')));
 
   IF v_role_norm IN ('admin', 'administrador') THEN
-    v_role_enum := 'admin'::public.app_role;
+    v_role_clean := 'admin';
   ELSIF v_role_norm IN ('tecnico', 'técnico', 'gestor') THEN
-    v_role_enum := 'gestor'::public.app_role;
+    v_role_clean := 'gestor';
   ELSE
-    v_role_norm := 'usuario';
-    v_role_enum := 'usuario'::public.app_role;
+    v_role_clean := 'usuario';
   END IF;
 
-  IF v_role_enum <> 'admin' AND EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_target_user_id AND role = 'admin') THEN
+  IF v_role_clean <> 'admin' AND EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_target_user_id AND role = 'admin') THEN
     SELECT count(DISTINCT ur.user_id) INTO v_admin_count
     FROM public.user_roles ur
     JOIN public.user_profiles up ON up.id = ur.user_id
@@ -625,7 +633,7 @@ BEGIN
 
   DELETE FROM public.user_roles WHERE user_id = p_target_user_id;
   INSERT INTO public.user_roles (user_id, role)
-  VALUES (p_target_user_id, v_role_enum)
+  VALUES (p_target_user_id, v_role_clean)
   ON CONFLICT (user_id, role) DO NOTHING;
 
   INSERT INTO public.audit_logs_usuarios (admin_id, admin_email, alvo_email, alvo_user_id, acao, detalhes)
