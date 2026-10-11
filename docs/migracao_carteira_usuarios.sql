@@ -9,18 +9,13 @@
 -- admin_toggle_user_block, gatilho de cadastro e políticas de RLS.
 -- ============================================================================
 
--- 1. Garante valor 'tecnico' no enum app_role se ainda não existir
+-- 1. Garante tipo app_role se ainda não existir
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_role') THEN
-    CREATE TYPE public.app_role AS ENUM ('gestor', 'admin', 'usuario', 'tecnico');
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_role' AND typnamespace = 'public'::regnamespace) THEN
+    CREATE TYPE public.app_role AS ENUM ('gestor', 'admin', 'usuario');
   END IF;
 END $$;
-
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'admin';
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'usuario';
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'gestor';
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'tecnico';
 
 -- 2. Tabela user_profiles
 CREATE TABLE IF NOT EXISTS public.user_profiles (
@@ -77,19 +72,6 @@ CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON public.user_roles(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_roles_role ON public.user_roles(role);
 
 -- 4. Funções de papéis
-CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role public.app_role)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = _user_id
-      AND (
-        role = _role
-        OR (_role = 'gestor' AND role = 'tecnico')
-        OR (_role = 'tecnico' AND role = 'gestor')
-      )
-  );
-$$;
-
 CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role text)
 RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
 DECLARE
@@ -100,16 +82,21 @@ BEGIN
   END IF;
 
   IF v_role_norm IN ('admin', 'administrador') THEN
-    RETURN EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND role = 'admin');
+    RETURN EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND role::text = 'admin');
   ELSIF v_role_norm IN ('gestor', 'tecnico', 'técnico') THEN
     RETURN EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND (role::text = 'gestor' OR role::text = 'tecnico'));
   ELSIF v_role_norm IN ('usuario', 'usuário', 'solicitante') THEN
-    RETURN EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND role = 'usuario')
+    RETURN EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND (role::text = 'usuario' OR role::text = 'solicitante'))
       OR NOT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id);
   ELSE
     RETURN false;
   END IF;
 END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role public.app_role)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT public.has_role(_user_id, _role::text);
 $$;
 
 CREATE OR REPLACE FUNCTION public.is_admin()
@@ -131,7 +118,7 @@ BEGIN
     RETURN true;
   END IF;
 
-  RETURN public.has_role(auth.uid(), 'admin'::public.app_role);
+  RETURN public.has_role(auth.uid(), 'admin');
 END;
 $$;
 
@@ -154,9 +141,8 @@ BEGIN
     RETURN true;
   END IF;
 
-  RETURN public.has_role(auth.uid(), 'gestor'::public.app_role)
-      OR public.has_role(auth.uid(), 'tecnico'::public.app_role)
-      OR public.has_role(auth.uid(), 'admin'::public.app_role);
+  RETURN public.has_role(auth.uid(), 'gestor')
+      OR public.has_role(auth.uid(), 'admin');
 END;
 $$;
 
@@ -504,8 +490,14 @@ BEGIN
       'created_at', p.created_at,
       'updated_at', p.updated_at,
       'role', coalesce(
-        (SELECT ur.role::text FROM public.user_roles ur WHERE ur.user_id = p.id
-         ORDER BY CASE ur.role WHEN 'admin' THEN 1 WHEN 'gestor' THEN 2 WHEN 'tecnico' THEN 3 ELSE 4 END LIMIT 1),
+        (SELECT CASE ur.role::text
+           WHEN 'admin' THEN 'admin'
+           WHEN 'gestor' THEN 'tecnico'
+           WHEN 'tecnico' THEN 'tecnico'
+           ELSE 'usuario'
+         END
+         FROM public.user_roles ur WHERE ur.user_id = p.id
+         ORDER BY CASE ur.role::text WHEN 'admin' THEN 1 WHEN 'gestor' THEN 2 WHEN 'tecnico' THEN 2 ELSE 3 END LIMIT 1),
         'usuario'
       ),
       'total_chamados', (
@@ -613,9 +605,7 @@ BEGIN
 
   IF v_role_norm IN ('admin', 'administrador') THEN
     v_role_enum := 'admin'::public.app_role;
-  ELSIF v_role_norm IN ('tecnico', 'técnico') THEN
-    v_role_enum := 'tecnico'::public.app_role;
-  ELSIF v_role_norm = 'gestor' THEN
+  ELSIF v_role_norm IN ('tecnico', 'técnico', 'gestor') THEN
     v_role_enum := 'gestor'::public.app_role;
   ELSE
     v_role_norm := 'usuario';

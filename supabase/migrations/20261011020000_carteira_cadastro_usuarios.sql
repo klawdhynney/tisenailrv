@@ -1,23 +1,23 @@
 -- ============================================================================
--- MIGRAÇÃO: CARTEIRA DE CADASTRO BÁSICO DE USUÁRIOS E INTEGRAÇÃO COM CHAMADOS
--- Arquivo: 20261011020000_carteira_cadastro_usuarios.sql
--- TI SENAI LRV - 100% Idempotente e Seguro
+-- SCRIPT DE EXECUÇÃO: CARTEIRA DE CADASTRO BÁSICO DE USUÁRIOS
+-- TI SENAI LRV - Lovable Cloud / Supabase SQL Editor
+-- 
+-- 100% Idempotente e Seguro: não exclui nenhum dado existente.
+-- Executa a criação/atualização de user_profiles, user_roles, tickets(solicitante_id),
+-- funções has_role, update_my_profile, open_public_ticket_with_receipt,
+-- admin_get_users, admin_edit_user_profile, admin_update_user_role,
+-- admin_toggle_user_block, gatilho de cadastro e políticas de RLS.
 -- ============================================================================
 
--- 1. Garante valor 'tecnico' no enum app_role se ainda não existir
+-- 1. Garante tipo app_role se ainda não existir
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_role') THEN
-    CREATE TYPE public.app_role AS ENUM ('gestor', 'admin', 'usuario', 'tecnico');
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_role' AND typnamespace = 'public'::regnamespace) THEN
+    CREATE TYPE public.app_role AS ENUM ('gestor', 'admin', 'usuario');
   END IF;
 END $$;
 
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'admin';
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'usuario';
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'gestor';
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'tecnico';
-
--- 2. Garante a tabela user_profiles com todos os campos da Carteira de Usuários
+-- 2. Tabela user_profiles
 CREATE TABLE IF NOT EXISTS public.user_profiles (
   id uuid PRIMARY KEY,
   email text NOT NULL,
@@ -38,7 +38,6 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
   CONSTRAINT chk_user_profiles_status CHECK (status IN ('ativo', 'inativo'))
 );
 
--- Adiciona colunas necessárias se a tabela já existir com schema anterior
 ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS setor text NOT NULL DEFAULT 'Pendente';
 ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS cargo text;
 ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS telefone text;
@@ -53,18 +52,16 @@ ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS ultimo_acesso timestam
 ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
 ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
 
--- Sincroniza status e bloqueado existentes
 UPDATE public.user_profiles
 SET status = CASE WHEN bloqueado = true THEN 'inativo' ELSE 'ativo' END
 WHERE status IS NULL OR (bloqueado = true AND status = 'ativo') OR (bloqueado = false AND status = 'inativo');
 
--- Índices em user_profiles
 CREATE INDEX IF NOT EXISTS idx_user_profiles_email ON public.user_profiles(email);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_setor ON public.user_profiles(setor);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_status ON public.user_profiles(status);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_matricula ON public.user_profiles(matricula);
 
--- 3. Garante a tabela user_roles
+-- 3. Tabela user_roles
 CREATE TABLE IF NOT EXISTS public.user_roles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
@@ -74,21 +71,7 @@ CREATE TABLE IF NOT EXISTS public.user_roles (
 CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON public.user_roles(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_roles_role ON public.user_roles(role);
 
--- 4. Função has_role com SECURITY DEFINER e search_path para evitar recursão
-CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role public.app_role)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = _user_id
-      AND (
-        role = _role
-        OR (_role = 'gestor' AND role = 'tecnico')
-        OR (_role = 'tecnico' AND role = 'gestor')
-      )
-  );
-$$;
-
--- Sobrecarga de has_role recebendo texto para compatibilidade ampla
+-- 4. Funções de papéis
 CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role text)
 RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
 DECLARE
@@ -99,11 +82,11 @@ BEGIN
   END IF;
 
   IF v_role_norm IN ('admin', 'administrador') THEN
-    RETURN EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND role = 'admin');
+    RETURN EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND role::text = 'admin');
   ELSIF v_role_norm IN ('gestor', 'tecnico', 'técnico') THEN
     RETURN EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND (role::text = 'gestor' OR role::text = 'tecnico'));
   ELSIF v_role_norm IN ('usuario', 'usuário', 'solicitante') THEN
-    RETURN EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND role = 'usuario')
+    RETURN EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND (role::text = 'usuario' OR role::text = 'solicitante'))
       OR NOT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id);
   ELSE
     RETURN false;
@@ -111,7 +94,11 @@ BEGIN
 END;
 $$;
 
--- Funções utilitárias de papéis
+CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role public.app_role)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT public.has_role(_user_id, _role::text);
+$$;
+
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
 DECLARE
@@ -131,7 +118,7 @@ BEGIN
     RETURN true;
   END IF;
 
-  RETURN public.has_role(auth.uid(), 'admin'::public.app_role);
+  RETURN public.has_role(auth.uid(), 'admin');
 END;
 $$;
 
@@ -154,9 +141,8 @@ BEGIN
     RETURN true;
   END IF;
 
-  RETURN public.has_role(auth.uid(), 'gestor'::public.app_role)
-      OR public.has_role(auth.uid(), 'tecnico'::public.app_role)
-      OR public.has_role(auth.uid(), 'admin'::public.app_role);
+  RETURN public.has_role(auth.uid(), 'gestor')
+      OR public.has_role(auth.uid(), 'admin');
 END;
 $$;
 
@@ -171,11 +157,10 @@ GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated, service_role
 GRANT EXECUTE ON FUNCTION public.is_named_manager() TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.is_gestor_or_admin() TO anon, authenticated, service_role;
 
--- 5. Atualização da tabela tickets para vínculo com solicitante_id
+-- 5. Vínculo da tabela tickets
 ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS solicitante_id uuid;
 CREATE INDEX IF NOT EXISTS idx_tickets_solicitante_id ON public.tickets(solicitante_id);
 
--- Backfill idempotente de solicitante_id em chamados antigos
 UPDATE public.tickets t
 SET solicitante_id = u.id
 FROM public.user_profiles u
@@ -188,7 +173,7 @@ SET solicitante_id = criado_por
 WHERE solicitante_id IS NULL
   AND criado_por IS NOT NULL;
 
--- 6. Gatilho de cadastro automático ao criar conta em auth.users
+-- 6. Gatilho de cadastro de usuário
 CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
 RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -206,28 +191,11 @@ BEGIN
   );
 
   INSERT INTO public.user_profiles (
-    id,
-    email,
-    nome,
-    foto_url,
-    setor,
-    status,
-    bloqueado,
-    created_at,
-    updated_at,
-    ultimo_acesso
+    id, email, nome, foto_url, setor, status, bloqueado, created_at, updated_at, ultimo_acesso
   )
   VALUES (
-    new.id,
-    v_email,
-    v_nome,
-    nullif(btrim(new.raw_user_meta_data->>'avatar_url'), ''),
-    'Pendente',
-    'ativo',
-    false,
-    coalesce(new.created_at, now()),
-    now(),
-    now()
+    new.id, v_email, v_nome, nullif(btrim(new.raw_user_meta_data->>'avatar_url'), ''),
+    'Pendente', 'ativo', false, coalesce(new.created_at, now()), now(), now()
   )
   ON CONFLICT (id) DO UPDATE SET
     email = EXCLUDED.email,
@@ -236,7 +204,6 @@ BEGIN
     ultimo_acesso = now(),
     updated_at = now();
 
-  -- Verifica se havia pré-cadastro de papel
   SELECT role INTO v_pre_role
   FROM public.pre_registered_roles
   WHERE lower(btrim(email)) = v_email;
@@ -246,18 +213,13 @@ BEGIN
     VALUES (new.id, v_pre_role)
     ON CONFLICT (user_id, role) DO NOTHING;
   ELSE
-    -- Papel padrão: solicitante ('usuario')
     INSERT INTO public.user_roles (user_id, role)
     VALUES (new.id, 'usuario'::public.app_role)
     ON CONFLICT (user_id, role) DO NOTHING;
   END IF;
 
-  -- Garante papel admin para os administradores autorizados do projeto
   IF v_email IN (
-    'klaw.com@gmail.com',
-    'klawdhynney@gmail.com',
-    'claudineigoncalvesdelima@hotmail.com',
-    'claudinei.lima@senaimt.ind.br'
+    'klaw.com@gmail.com', 'klawdhynney@gmail.com', 'claudineigoncalvesdelima@hotmail.com', 'claudinei.lima@senaimt.ind.br'
   ) THEN
     INSERT INTO public.user_roles (user_id, role) VALUES (new.id, 'admin') ON CONFLICT (user_id, role) DO NOTHING;
     INSERT INTO public.user_roles (user_id, role) VALUES (new.id, 'gestor') ON CONFLICT (user_id, role) DO NOTHING;
@@ -272,18 +234,9 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
 
--- Backfill idempotente de contas de auth.users existentes em user_profiles
+-- Backfill idempotente
 INSERT INTO public.user_profiles (
-  id,
-  email,
-  nome,
-  foto_url,
-  setor,
-  status,
-  bloqueado,
-  created_at,
-  updated_at,
-  ultimo_acesso
+  id, email, nome, foto_url, setor, status, bloqueado, created_at, updated_at, ultimo_acesso
 )
 SELECT
   u.id,
@@ -294,47 +247,30 @@ SELECT
     split_part(u.email, '@', 1)
   ),
   nullif(btrim(u.raw_user_meta_data->>'avatar_url'), ''),
-  'Pendente',
-  'ativo',
-  false,
-  coalesce(u.created_at, now()),
-  now(),
-  now()
+  'Pendente', 'ativo', false, coalesce(u.created_at, now()), now(), now()
 FROM auth.users u
 WHERE NOT EXISTS (SELECT 1 FROM public.user_profiles p WHERE p.id = u.id)
 ON CONFLICT (id) DO NOTHING;
 
--- Garante papel para todos os perfis existentes
 INSERT INTO public.user_roles (user_id, role)
 SELECT p.id, 'usuario'::public.app_role
 FROM public.user_profiles p
 WHERE NOT EXISTS (SELECT 1 FROM public.user_roles ur WHERE ur.user_id = p.id)
 ON CONFLICT (user_id, role) DO NOTHING;
 
--- Atribui papéis de admin para os administradores autorizados
 INSERT INTO public.user_roles (user_id, role)
 SELECT p.id, 'admin'::public.app_role
 FROM public.user_profiles p
-WHERE lower(btrim(p.email)) IN (
-  'klaw.com@gmail.com',
-  'klawdhynney@gmail.com',
-  'claudineigoncalvesdelima@hotmail.com',
-  'claudinei.lima@senaimt.ind.br'
-)
+WHERE lower(btrim(p.email)) IN ('klaw.com@gmail.com', 'klawdhynney@gmail.com', 'claudineigoncalvesdelima@hotmail.com', 'claudinei.lima@senaimt.ind.br')
 ON CONFLICT (user_id, role) DO NOTHING;
 
 INSERT INTO public.user_roles (user_id, role)
 SELECT p.id, 'gestor'::public.app_role
 FROM public.user_profiles p
-WHERE lower(btrim(p.email)) IN (
-  'klaw.com@gmail.com',
-  'klawdhynney@gmail.com',
-  'claudineigoncalvesdelima@hotmail.com',
-  'claudinei.lima@senaimt.ind.br'
-)
+WHERE lower(btrim(p.email)) IN ('klaw.com@gmail.com', 'klawdhynney@gmail.com', 'claudineigoncalvesdelima@hotmail.com', 'claudinei.lima@senaimt.ind.br')
 ON CONFLICT (user_id, role) DO NOTHING;
 
--- 7. Atualização da função sync_user_profile
+-- 7. sync_user_profile
 CREATE OR REPLACE FUNCTION public.sync_user_profile(
   p_nome text DEFAULT NULL,
   p_foto_url text DEFAULT NULL
@@ -353,31 +289,16 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Não autenticado');
   END IF;
 
-  -- Administradores raiz
-  IF v_email IN (
-    'klaw.com@gmail.com',
-    'klawdhynney@gmail.com',
-    'claudineigoncalvesdelima@hotmail.com',
-    'claudinei.lima@senaimt.ind.br'
-  ) THEN
+  IF v_email IN ('klaw.com@gmail.com', 'klawdhynney@gmail.com', 'claudineigoncalvesdelima@hotmail.com', 'claudinei.lima@senaimt.ind.br') THEN
     INSERT INTO public.user_roles (user_id, role) VALUES (v_user_id, 'admin') ON CONFLICT (user_id, role) DO NOTHING;
     INSERT INTO public.user_roles (user_id, role) VALUES (v_user_id, 'gestor') ON CONFLICT (user_id, role) DO NOTHING;
   END IF;
 
-  -- Atualiza ou insere o perfil do usuário preservando setor e status
   INSERT INTO public.user_profiles (
     id, email, nome, foto_url, setor, status, bloqueado, ultimo_acesso, updated_at
   )
   VALUES (
-    v_user_id,
-    v_email,
-    nullif(btrim(p_nome), ''),
-    nullif(btrim(p_foto_url), ''),
-    'Pendente',
-    'ativo',
-    false,
-    now(),
-    now()
+    v_user_id, v_email, nullif(btrim(p_nome), ''), nullif(btrim(p_foto_url), ''), 'Pendente', 'ativo', false, now(), now()
   )
   ON CONFLICT (id) DO UPDATE SET
     email = EXCLUDED.email,
@@ -387,7 +308,6 @@ BEGIN
     updated_at = now()
   RETURNING status, bloqueado, setor INTO v_status, v_bloqueado, v_setor;
 
-  -- Identifica papel mais alto
   IF EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = v_user_id AND role = 'admin') THEN
     v_current_role := 'admin';
   ELSIF EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = v_user_id AND (role::text = 'gestor' OR role::text = 'tecnico')) THEN
@@ -409,7 +329,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.sync_user_profile(text, text) TO authenticated, service_role;
 
--- 8. Função para o próprio usuário atualizar seu cadastro
+-- 8. update_my_profile
 CREATE OR REPLACE FUNCTION public.update_my_profile(
   p_nome text,
   p_setor text,
@@ -459,7 +379,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.update_my_profile(text, text, text, text, text, text) TO authenticated, service_role;
 
--- 9. RPC atualizada: open_public_ticket_with_receipt (com solicitante_id e bloqueio de inativos)
+-- 9. open_public_ticket_with_receipt
 CREATE OR REPLACE FUNCTION public.open_public_ticket_with_receipt(
   p_solicitante text,
   p_email text,
@@ -483,7 +403,6 @@ BEGIN
     RAISE EXCEPTION 'Autenticação necessária para abrir chamado. Entre com Google ou Microsoft.';
   END IF;
 
-  -- Verifica se o usuário solicitante está ativo
   SELECT coalesce(bloqueado, false), coalesce(status, 'ativo')
   INTO v_bloqueado, v_status
   FROM public.user_profiles
@@ -544,7 +463,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.open_public_ticket_with_receipt(text,text,text,text,text,text,text) TO authenticated, service_role;
 
--- 10. RPCs Administrativas com Proteções e Suporte Completo à Carteira
+-- 10. RPCs Administrativas
 CREATE OR REPLACE FUNCTION public.admin_get_users()
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
@@ -571,8 +490,14 @@ BEGIN
       'created_at', p.created_at,
       'updated_at', p.updated_at,
       'role', coalesce(
-        (SELECT ur.role::text FROM public.user_roles ur WHERE ur.user_id = p.id
-         ORDER BY CASE ur.role WHEN 'admin' THEN 1 WHEN 'gestor' THEN 2 WHEN 'tecnico' THEN 3 ELSE 4 END LIMIT 1),
+        (SELECT CASE ur.role::text
+           WHEN 'admin' THEN 'admin'
+           WHEN 'gestor' THEN 'tecnico'
+           WHEN 'tecnico' THEN 'tecnico'
+           ELSE 'usuario'
+         END
+         FROM public.user_roles ur WHERE ur.user_id = p.id
+         ORDER BY CASE ur.role::text WHEN 'admin' THEN 1 WHEN 'gestor' THEN 2 WHEN 'tecnico' THEN 2 ELSE 3 END LIMIT 1),
         'usuario'
       ),
       'total_chamados', (
@@ -591,7 +516,6 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.admin_get_users() TO authenticated, service_role;
 
--- Edição do cadastro de qualquer usuário pelo administrador
 CREATE OR REPLACE FUNCTION public.admin_edit_user_profile(
   p_target_user_id uuid,
   p_nome text,
@@ -617,12 +541,10 @@ BEGIN
   SELECT email INTO v_target_email FROM public.user_profiles WHERE id = p_target_user_id;
   v_admin_email := lower(btrim(coalesce(auth.jwt() ->> 'email', '')));
 
-  -- Proteção: administrador não pode desativar a si mesmo
   IF p_target_user_id = auth.uid() AND v_novo_status = 'inativo' THEN
     RAISE EXCEPTION 'Você não pode desativar o seu próprio usuário administrador.';
   END IF;
 
-  -- Proteção: não desativar o último administrador
   IF v_novo_status = 'inativo' AND EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_target_user_id AND role = 'admin') THEN
     SELECT count(DISTINCT ur.user_id) INTO v_admin_count
     FROM public.user_roles ur
@@ -662,7 +584,6 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.admin_edit_user_profile(uuid, text, text, text, text, text, text, text) TO authenticated, service_role;
 
--- Alteração de papel com proteção do último admin
 CREATE OR REPLACE FUNCTION public.admin_update_user_role(
   p_target_user_id uuid,
   p_new_role text
@@ -682,19 +603,15 @@ BEGIN
   SELECT email INTO v_target_email FROM public.user_profiles WHERE id = p_target_user_id;
   v_admin_email := lower(btrim(coalesce(auth.jwt() ->> 'email', '')));
 
-  -- Converte e normaliza papel
   IF v_role_norm IN ('admin', 'administrador') THEN
     v_role_enum := 'admin'::public.app_role;
-  ELSIF v_role_norm IN ('tecnico', 'técnico') THEN
-    v_role_enum := 'tecnico'::public.app_role;
-  ELSIF v_role_norm = 'gestor' THEN
+  ELSIF v_role_norm IN ('tecnico', 'técnico', 'gestor') THEN
     v_role_enum := 'gestor'::public.app_role;
   ELSE
     v_role_norm := 'usuario';
     v_role_enum := 'usuario'::public.app_role;
   END IF;
 
-  -- Proteção contra remoção do último administrador
   IF v_role_enum <> 'admin' AND EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_target_user_id AND role = 'admin') THEN
     SELECT count(DISTINCT ur.user_id) INTO v_admin_count
     FROM public.user_roles ur
@@ -726,7 +643,6 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.admin_update_user_role(uuid, text) TO authenticated, service_role;
 
--- Ativar ou desativar usuário com proteção de auto-desativação e último admin
 CREATE OR REPLACE FUNCTION public.admin_toggle_user_block(
   p_target_user_id uuid,
   p_bloquear boolean
@@ -748,14 +664,12 @@ BEGIN
   SELECT email INTO v_target_email FROM public.user_profiles WHERE id = p_target_user_id;
   v_admin_email := lower(btrim(coalesce(auth.jwt() ->> 'email', '')));
 
-  -- Protege os 4 administradores raiz do projeto contra desativação
   IF p_bloquear AND lower(btrim(coalesce(v_target_email, ''))) IN (
     'klaw.com@gmail.com', 'klawdhynney@gmail.com', 'claudineigoncalvesdelima@hotmail.com', 'claudinei.lima@senaimt.ind.br'
   ) THEN
     RAISE EXCEPTION 'Não é permitido desativar um administrador raiz da plataforma.';
   END IF;
 
-  -- Protege contra desativação do último admin
   IF p_bloquear AND EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_target_user_id AND role = 'admin') THEN
     SELECT count(DISTINCT ur.user_id) INTO v_admin_count
     FROM public.user_roles ur
@@ -819,7 +733,6 @@ CREATE POLICY "user_profiles_update_policy" ON public.user_profiles
     public.is_admin()
     OR (
       id = auth.uid()
-      -- Usuário comum não altera email, status nem bloqueio diretamente
       AND email = (SELECT up.email FROM public.user_profiles up WHERE up.id = auth.uid())
       AND status = (SELECT up.status FROM public.user_profiles up WHERE up.id = auth.uid())
       AND bloqueado = (SELECT up.bloqueado FROM public.user_profiles up WHERE up.id = auth.uid())
