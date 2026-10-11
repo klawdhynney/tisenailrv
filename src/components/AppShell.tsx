@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Laptop, Check, Users, Mail } from "lucide-react";
+import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Laptop, Check, Users, Mail, User } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import defaultIcone from "@/assets/icone.png";
 import { BotaoRetornar } from "@/components/BotaoRetornar";
 import { ContainerPadrao } from "@/components/ContainerPadrao";
+import { AvisoCadastroPendente } from "@/components/AvisoCadastroPendente";
 import { MENU_PADRAO, SEO_PADRAO } from "@/lib/types";
 
 const ASSET_VERSION = "20261006_v6";
@@ -286,6 +287,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="cursor-pointer">
+          <Link to="/meu-cadastro" className="flex items-center gap-2">
+            <User className="h-4 w-4 text-primary" />
+            <span>Meu Cadastro</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="cursor-pointer">
           <Link to="/meus-chamados" className="flex items-center gap-2">
             <FilePlus2 className="h-4 w-4 text-muted-foreground" />
             <span>Meus Chamados</span>
@@ -507,26 +514,67 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </Button>
               </div>
             </div>
-            <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-2">
-              {session ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setAberto(false);
-                    sair();
-                  }}
-                  className="font-bold text-xs text-destructive hover:bg-destructive/10 border-destructive/30"
-                >
-                  <LogOut className="h-3.5 w-3.5 mr-1" /> Sair
-                </Button>
-              ) : (
-                <Button asChild variant="outline" size="sm" onClick={() => setAberto(false)} className="font-bold text-xs">
-                  <Link to="/auth" search={{ redirectTo: undefined, returnTo: undefined, error: undefined, error_description: undefined }}>
-                    <LogIn className="h-3.5 w-3.5 mr-1" /> Entrar
-                  </Link>
-                </Button>
+            <div className="pt-2 border-t border-border/60 flex flex-col gap-2">
+              {session && (
+                <>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAberto(false)}
+                    className="w-full justify-start font-medium text-xs gap-2"
+                  >
+                    <Link to="/meu-cadastro">
+                      <User className="size-3.5 text-primary" /> Meu Cadastro
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAberto(false)}
+                    className="w-full justify-start font-medium text-xs gap-2"
+                  >
+                    <Link to="/meus-chamados">
+                      <FilePlus2 className="size-3.5 text-muted-foreground" /> Meus Chamados
+                    </Link>
+                  </Button>
+                  {isAdmin && (
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAberto(false)}
+                      className="w-full justify-start font-medium text-xs gap-2 text-purple-600 dark:text-purple-400"
+                    >
+                      <Link to="/usuarios">
+                        <Users className="size-3.5" /> Gestão de Usuários
+                      </Link>
+                    </Button>
+                  )}
+                </>
               )}
+              <div className="flex items-center justify-between gap-2">
+                {session ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setAberto(false);
+                      sair();
+                    }}
+                    className="font-bold text-xs text-destructive hover:bg-destructive/10 border-destructive/30"
+                  >
+                    <LogOut className="h-3.5 w-3.5 mr-1" /> Sair
+                  </Button>
+                ) : (
+                  <Button asChild variant="outline" size="sm" onClick={() => setAberto(false)} className="font-bold text-xs">
+                    <Link to="/auth" search={{ redirectTo: undefined, returnTo: undefined, error: undefined, error_description: undefined }}>
+                      <LogIn className="h-3.5 w-3.5 mr-1" /> Entrar
+                    </Link>
+                  </Button>
+                )}
+              </div>
             </div>
           </ContainerPadrao>
         )}
@@ -534,6 +582,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <ContainerPadrao as="main" className="pt-[calc(4.5rem+env(safe-area-inset-top))] sm:pt-[calc(5rem+env(safe-area-inset-top))] pb-6 sm:pb-8 flex-1">
         {children}
         {pathname !== "/" && <BotaoRetornar />}
+        <AvisoCadastroPendente />
       </ContainerPadrao>
       <footer className="mt-auto border-t border-border py-6 text-center text-xs text-muted-foreground pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
         <ContainerPadrao className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5">

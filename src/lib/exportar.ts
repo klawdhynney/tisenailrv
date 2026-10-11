@@ -379,3 +379,76 @@ export async function exportarDashboardCompletoPdf(dados: DashboardExportData, n
   const nomeFinal = nome.endsWith(".pdf") ? nome : `${nome}.pdf`;
   doc.save(nomeFinal);
 }
+
+export async function exportarUsuariosPdf(
+  usuarios: {
+    nome: string;
+    email: string;
+    setor: string;
+    cargo: string;
+    telefone: string;
+    papel: string;
+    status: string;
+    ultimoAcesso: string;
+    matricula: string;
+  }[],
+  nomeArquivo: string
+) {
+  const { jsPDF } = await import("jspdf");
+  const autoTable = (await import("jspdf-autotable")).default;
+
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+  doc.setTextColor(26, 115, 232);
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text("TI SENAI LRV • Base de Usuários Cadastrados", 14, 15);
+
+  doc.setTextColor(95, 99, 104);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    `Total de usuários: ${usuarios.length} | Emitido em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR").slice(0, 5)}`,
+    14,
+    22,
+  );
+
+  const head = [["Nome", "E-mail", "Setor", "Cargo / Função", "Telefone", "Matrícula", "Perfil", "Status", "Último Acesso"]];
+  const body = usuarios.map((u) => [
+    u.nome || "—",
+    u.email || "—",
+    u.setor || "—",
+    u.cargo || "—",
+    u.telefone || "—",
+    u.matricula || "—",
+    u.papel || "—",
+    u.status || "—",
+    u.ultimoAcesso || "—",
+  ]);
+
+  autoTable(doc, {
+    startY: 28,
+    head,
+    body,
+    theme: "striped",
+    styles: {
+      fontSize: 10,
+      cellPadding: 2.5,
+      overflow: "linebreak",
+      textColor: [32, 33, 36],
+    },
+    headStyles: {
+      fillColor: [26, 115, 232],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 10,
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+    margin: { left: 14, right: 14, bottom: 15 },
+  });
+
+  const finalName = nomeArquivo.endsWith(".pdf") ? nomeArquivo : `${nomeArquivo}.pdf`;
+  doc.save(finalName);
+}

@@ -38,6 +38,7 @@ import {
   type Prioridade,
   type Status,
   type PapelUsuario,
+  type UsuarioCadastro,
   obterDataHojeCuiaba,
 } from "./types";
 import { aplicarCoresCustomizadasNoDocumento } from "./tema";
@@ -234,6 +235,7 @@ export function fromRow(r: Row): Ticket {
     hora: r.hora,
     solicitante: r.solicitante || "Solicitante",
     solicitanteEmail: r.solicitante_email || null,
+    solicitanteId: (r as any).solicitante_id || null,
     setor: r.setor || "",
     local: r.local || "",
     descricao: r.descricao || "",
@@ -258,7 +260,7 @@ export function fromRow(r: Row): Ticket {
 function toRow(p: Partial<Ticket>) {
   const m: Record<string, unknown> = {};
   const map: Record<string, string> = {
-    abertoEm: "aberto_em", hora: "hora", solicitante: "solicitante", solicitanteEmail: "solicitante_email", setor: "setor", local: "local",
+    abertoEm: "aberto_em", hora: "hora", solicitante: "solicitante", solicitanteEmail: "solicitante_email", solicitanteId: "solicitante_id", setor: "setor", local: "local",
     descricao: "descricao", categoria: "categoria", prioridade: "prioridade", responsavel: "responsavel",
     status: "status", fechadoEm: "fechado_em", horario: "horario", procedimento: "procedimento",
     contato: "contato", slaReiniciadoEm: "sla_reiniciado_em",
@@ -303,6 +305,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [userBlocked, setUserBlocked] = useState(false);
   const [authPronto, setAuthPronto] = useState(false);
   const [emailAlertsAtivos, setEmailAlertsAtivos] = useState(true);
+  const [perfilUsuario, setPerfilUsuario] = useState<UsuarioCadastro | null>(null);
 
   // Sessão
   useEffect(() => {
@@ -396,7 +399,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         supabase.rpc("claim_manager_access"),
         supabase.rpc("is_admin"),
         supabase.rpc("is_named_manager"),
-        supabase.from("user_profiles").select("bloqueado, notificacoes_email_ativas" as any).eq("id", uid).maybeSingle(),
+        supabase.from("user_profiles").select("*" as any).eq("id", uid).maybeSingle(),
       ]);
 
       if (!ativo) return;
@@ -405,17 +408,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (profileData && (profileData as any).notificacoes_email_ativas !== undefined) {
         setEmailAlertsAtivos((profileData as any).notificacoes_email_ativas !== false);
       }
-      const bloqueado = profileData?.bloqueado === true;
-      if (bloqueado) {
-        setUserBlocked(true);
-        setIsAdmin(false);
-        setIsGestor(false);
-        setUserRole("usuario");
-        setAuthPronto(true);
-        try { sessionStorage.removeItem(cacheChave); } catch {}
-        await supabase.auth.signOut();
-        return;
-      }
+      const isBloqueado = profileData?.bloqueado === true || (profileData as any)?.status === "inativo";
 
       const ADMINS_INICIAIS = [
         "klaw.com@gmail.com",
@@ -433,16 +426,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const eGestor = eAdmin || gestorVal === true;
       const papelFinal: PapelUsuario = eAdmin ? "admin" : eGestor ? "gestor" : "usuario";
 
-      setUserBlocked(false);
-      setIsAdmin(eAdmin);
-      setIsGestor(eGestor);
-      setUserRole(papelFinal);
+      setUserBlocked(isBloqueado);
+      setIsAdmin(isBloqueado ? false : eAdmin);
+      setIsGestor(isBloqueado ? false : eGestor);
+      setUserRole(isBloqueado ? "usuario" : papelFinal);
       setAuthPronto(true);
+
+      const nomePadrao = session?.user.user_metadata?.full_name || session?.user.user_metadata?.name || emailNormalizado.split("@")[0] || "Usuário";
+      setPerfilUsuario({
+        id: uid,
+        email: emailNormalizado,
+        nome: (profileData as any)?.nome || nomePadrao,
+        fotoUrl: (profileData as any)?.foto_url || session?.user.user_metadata?.avatar_url || null,
+        setor: (profileData as any)?.setor || "Pendente",
+        cargo: (profileData as any)?.cargo || null,
+        telefone: (profileData as any)?.telefone || null,
+        localPadrao: (profileData as any)?.local_padrao || null,
+        matricula: (profileData as any)?.matricula || null,
+        status: ((profileData as any)?.status as "ativo" | "inativo") || (isBloqueado ? "inativo" : "ativo"),
+        bloqueado: isBloqueado,
+        role: papelFinal,
+        ultimoAcesso: (profileData as any)?.ultimo_acesso || null,
+        createdAt: (profileData as any)?.created_at || session?.user.created_at,
+        updatedAt: (profileData as any)?.updated_at,
+      });
 
       try {
         sessionStorage.setItem(
           cacheChave,
-          JSON.stringify({ isAdmin: eAdmin, isGestor: eGestor, userRole: papelFinal, userBlocked: false })
+          JSON.stringify({ isAdmin: eAdmin, isGestor: eGestor, userRole: papelFinal, userBlocked: isBloqueado })
         );
       } catch {}
     })();
@@ -651,6 +663,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         .insert({
           solicitante: t.solicitante.trim().slice(0, 120),
           solicitante_email: emailLimpo,
+          solicitante_id: session?.user?.id || null,
           contato: contatoLimpo,
           setor: t.setor.trim().slice(0, 120),
           local: (t.local ?? "").trim().slice(0, 240),
@@ -858,10 +871,130 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [session?.user.id]);
 
+  const carregarPerfilUsuario = useCallback(async () => {
+    const uid = session?.user?.id;
+    if (!uid) {
+      setPerfilUsuario(null);
+      return;
+    }
+    try {
+      const { data: pData } = await supabase
+        .from("user_profiles")
+        .select("*" as any)
+        .eq("id", uid)
+        .maybeSingle();
+
+      const email = session?.user?.email || (pData as any)?.email || "";
+      const nomePadrao = session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || email.split("@")[0] || "Usuário";
+      const isBloq = (pData as any)?.bloqueado === true || (pData as any)?.status === "inativo";
+
+      setPerfilUsuario({
+        id: uid,
+        email,
+        nome: (pData as any)?.nome || nomePadrao,
+        fotoUrl: (pData as any)?.foto_url || session?.user?.user_metadata?.avatar_url || null,
+        setor: (pData as any)?.setor || "Pendente",
+        cargo: (pData as any)?.cargo || null,
+        telefone: (pData as any)?.telefone || null,
+        localPadrao: (pData as any)?.local_padrao || null,
+        matricula: (pData as any)?.matricula || null,
+        status: ((pData as any)?.status as "ativo" | "inativo") || (isBloq ? "inativo" : "ativo"),
+        bloqueado: isBloq,
+        role: userRole,
+        ultimoAcesso: (pData as any)?.ultimo_acesso || null,
+        createdAt: (pData as any)?.created_at || session?.user?.created_at,
+        updatedAt: (pData as any)?.updated_at,
+      });
+    } catch {
+      if (session?.user) {
+        setPerfilUsuario({
+          id: uid,
+          email: session.user.email || "",
+          nome: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Usuário",
+          fotoUrl: session.user.user_metadata?.avatar_url || null,
+          setor: "Pendente",
+          status: "ativo",
+          bloqueado: false,
+          role: userRole,
+          createdAt: session.user.created_at,
+        });
+      }
+    }
+  }, [session?.user, userRole]);
+
+  const atualizarMeuCadastro = useCallback(async (dados: {
+    nome: string;
+    setor: string;
+    cargo?: string;
+    telefone?: string;
+    localPadrao?: string;
+    matricula?: string;
+  }) => {
+    const uid = session?.user?.id;
+    if (!uid) {
+      return { success: false, message: "Você precisa estar conectado." };
+    }
+
+    const nomeLimpo = dados.nome.trim();
+    const setorLimpo = dados.setor.trim();
+
+    if (!nomeLimpo || nomeLimpo.length < 2) {
+      return { success: false, message: "Nome completo é obrigatório (mínimo 2 caracteres)." };
+    }
+    if (!setorLimpo || setorLimpo === "Pendente") {
+      return { success: false, message: "Por favor, selecione um setor válido da lista." };
+    }
+
+    try {
+      const { error: rpcErr } = await (supabase as any).rpc("update_my_profile", {
+        p_nome: nomeLimpo,
+        p_setor: setorLimpo,
+        p_cargo: dados.cargo?.trim() || null,
+        p_telefone: dados.telefone?.trim() || null,
+        p_local_padrao: dados.localPadrao?.trim() || null,
+        p_matricula: dados.matricula?.trim() || null,
+      });
+
+      if (rpcErr) {
+        const { error: updErr } = await (supabase.from("user_profiles") as any).upsert({
+          id: uid,
+          email: session?.user?.email || "",
+          nome: nomeLimpo,
+          setor: setorLimpo,
+          cargo: dados.cargo?.trim() || null,
+          telefone: dados.telefone?.trim() || null,
+          local_padrao: dados.localPadrao?.trim() || null,
+          matricula: dados.matricula?.trim() || null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "id" });
+
+        if (updErr) {
+          return { success: false, message: updErr.message || "Erro ao salvar perfil." };
+        }
+      }
+
+      setPerfilUsuario((prev) => prev ? {
+        ...prev,
+        nome: nomeLimpo,
+        setor: setorLimpo,
+        cargo: dados.cargo?.trim() || null,
+        telefone: dados.telefone?.trim() || null,
+        localPadrao: dados.localPadrao?.trim() || null,
+        matricula: dados.matricula?.trim() || null,
+        updatedAt: new Date().toISOString(),
+      } : null);
+
+      return { success: true, message: "Cadastro atualizado com sucesso!" };
+    } catch (err: any) {
+      return { success: false, message: err?.message || "Erro ao atualizar cadastro." };
+    }
+  }, [session?.user]);
+
   const sair = useCallback(async () => {
     try {
       sessionStorage.clear();
     } catch {}
+    setPerfilUsuario(null);
     await supabase.auth.signOut();
   }, []);
 
@@ -893,6 +1026,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       desfazerAlteracaoConfig,
       emailAlertsAtivos,
       alternarEmailAlertas,
+      perfilUsuario,
+      recarregarPerfilUsuario: carregarPerfilUsuario,
+      atualizarMeuCadastro,
       sair,
     }),
     [
@@ -922,6 +1058,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       desfazerAlteracaoConfig,
       emailAlertsAtivos,
       alternarEmailAlertas,
+      perfilUsuario,
+      carregarPerfilUsuario,
+      atualizarMeuCadastro,
       sair,
     ],
   );

@@ -85,6 +85,7 @@ export interface Ticket {
   hora: string; // HH:mm
   solicitante: string;
   solicitanteEmail?: string | null;
+  solicitanteId?: string | null;
   setor: string;
   local: string;
   descricao: string;
@@ -500,20 +501,47 @@ export const RODAPE_PADRAO: RodapeConfig = {
   whatsappSuporte: "66 99644-4461",
 };
 
-export type PapelUsuario = "admin" | "gestor" | "usuario";
+export type PapelUsuario = "admin" | "gestor" | "usuario" | "tecnico";
+
+export interface UsuarioCadastro {
+  id: string;
+  email: string;
+  nome: string;
+  fotoUrl?: string | null;
+  setor: string;
+  cargo?: string | null;
+  telefone?: string | null;
+  localPadrao?: string | null;
+  matricula?: string | null;
+  status: "ativo" | "inativo";
+  bloqueado: boolean;
+  role: PapelUsuario;
+  ultimoAcesso?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  provedor?: string | null;
+  totalChamados?: number;
+}
 
 export interface UsuarioAdmin {
   id: string;
   email: string;
   nome?: string | null;
   fotoUrl?: string | null;
+  setor?: string | null;
+  cargo?: string | null;
+  telefone?: string | null;
+  localPadrao?: string | null;
+  matricula?: string | null;
   role: PapelUsuario;
   bloqueado: boolean;
-  statusConta?: "ativo" | "bloqueado" | "pendente";
+  status?: "ativo" | "inativo";
+  statusConta?: "ativo" | "bloqueado" | "pendente" | "inativo";
   provedor?: string | null;
   totalChamados?: number;
   ultimoAcesso?: string | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface AvaliacaoChamado {

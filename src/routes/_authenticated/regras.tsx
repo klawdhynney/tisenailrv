@@ -538,6 +538,14 @@ function Regras() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {isAdmin && (
+            <Button asChild variant="outline">
+              <Link to="/usuarios">
+                <Users className="mr-2 h-4 w-4 text-purple-600" /> Gestão de Usuários
+              </Link>
+            </Button>
+          )}
+
           <ConfirmAction
             title="Restaurar configurações padrão?"
             description="Todas as preferências visuais, textos e prazos voltarão para os valores institucionais originais."

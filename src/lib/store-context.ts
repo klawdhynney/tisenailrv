@@ -33,6 +33,16 @@ export interface StoreValue {
   desfazerAlteracaoConfig: (id: number) => Promise<boolean>;
   emailAlertsAtivos: boolean;
   alternarEmailAlertas: (ativo: boolean) => Promise<boolean>;
+  perfilUsuario: import("./types").UsuarioCadastro | null;
+  recarregarPerfilUsuario: () => Promise<void>;
+  atualizarMeuCadastro: (dados: {
+    nome: string;
+    setor: string;
+    cargo?: string;
+    telefone?: string;
+    localPadrao?: string;
+    matricula?: string;
+  }) => Promise<{ success: boolean; message?: string }>;
   sair: () => Promise<void>;
 }
 

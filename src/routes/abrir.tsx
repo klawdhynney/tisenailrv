@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { useConfirm } from "@/hooks/useConfirm";
-import { Cpu, MapPin, CheckCircle2, ArrowLeft, SendHorizontal, Mail, Star, FileText, MessageCircle, Sparkles, Wand2 } from "lucide-react";
+import { Cpu, MapPin, CheckCircle2, ArrowLeft, SendHorizontal, Mail, Star, FileText, MessageCircle, Sparkles, Wand2, UserCheck, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -63,7 +64,7 @@ interface FormValues {
 }
 
 function AbrirChamado() {
-  const { session, authPronto, regras, addTicket, recarregarEvaluationStats } = useStore();
+  const { session, authPronto, regras, addTicket, recarregarEvaluationStats, perfilUsuario, atualizarMeuCadastro, userBlocked } = useStore();
   const { wrapAsync, isLoading } = useLoading();
   const navigate = useNavigate();
   const configAbrir = regras.abrirChamado ?? ABRIR_CHAMADO_PADRAO;
@@ -91,6 +92,7 @@ function AbrirChamado() {
   const [sucessoId, setSucessoId] = useState<number | null>(null);
   const [lembrar, setLembrar] = useState(false);
   const [preferenciaCarregada, setPreferenciaCarregada] = useState(false);
+  const [salvarNoCadastro, setSalvarNoCadastro] = useState(false);
 
   // Estados da Avaliação (Ajuste 6)
   const [notaAvaliacao, setNotaAvaliacao] = useState<number | null>(null);
@@ -142,21 +144,35 @@ function AbrirChamado() {
   useEffect(() => {
     if (session?.user) {
       const email = session.user.email || "";
-      const nome =
-        session.user.user_metadata?.full_name ||
-        session.user.user_metadata?.name ||
-        "";
+      const nomePerfil = perfilUsuario?.nome || session.user.user_metadata?.full_name || session.user.user_metadata?.name || "";
+      const setorPerfil = perfilUsuario?.setor && perfilUsuario.setor !== "Pendente" ? perfilUsuario.setor : "";
+      const localPadraoPerfil = perfilUsuario?.localPadrao || "";
+
       dadosCarregadosRef.current.email = email;
-      if (!dadosCarregadosRef.current.solicitante && nome) {
-        dadosCarregadosRef.current.solicitante = nome;
+      if (nomePerfil && !dadosCarregadosRef.current.solicitante) {
+        dadosCarregadosRef.current.solicitante = nomePerfil;
       }
+      if (setorPerfil && !dadosCarregadosRef.current.setor) {
+        dadosCarregadosRef.current.setor = setorPerfil;
+      }
+      if (localPadraoPerfil && !dadosCarregadosRef.current.local) {
+        dadosCarregadosRef.current.local = localPadraoPerfil;
+      }
+
       setForm((f) => ({
         ...f,
         email: email,
-        solicitante: f.solicitante || nome,
+        solicitante: f.solicitante || nomePerfil,
+        setor: f.setor || setorPerfil,
+        local: f.local || localPadraoPerfil,
       }));
+
+      // Se o setor estiver pendente ou local padrão estiver vazio, oferece salvar no cadastro
+      if (!setorPerfil || !localPadraoPerfil) {
+        setSalvarNoCadastro(true);
+      }
     }
-  }, [session]);
+  }, [session, perfilUsuario]);
 
   useEffect(() => {
     if (!preferenciaCarregada) return;
@@ -314,6 +330,11 @@ function AbrirChamado() {
   }
 
   async function confirmarEnvioFinal() {
+    if (userBlocked || perfilUsuario?.status === "inativo") {
+      toast.error("Seu usuário está inativo no momento. Entre em contato com a equipe de TI para regularizar seu acesso.");
+      return;
+    }
+
     if (enviando || isLoading) return;
     setEnviando(true);
     setConfirmandoEnvio(false);
@@ -321,6 +342,16 @@ function AbrirChamado() {
     try {
       await wrapAsync(
         async () => {
+          // Se o usuário optou por salvar no cadastro e estiver autenticado
+          if (salvarNoCadastro && session?.user?.id && form.setor) {
+            try {
+              await atualizarMeuCadastro({
+                nome: form.solicitante,
+                setor: form.setor,
+                localPadrao: form.local,
+              });
+            } catch {}
+          }
           const customData = campos
             .filter((c) => !["solicitante", "email", "setor", "categoria", "local", "contato", "descricao"].includes(c.id) && c.ativo && customForm[c.id])
             .map((c) => `[${c.label}: ${(customForm[c.id] ?? "").trim()}]`)
@@ -720,6 +751,17 @@ function AbrirChamado() {
           <span className="text-xs text-muted-foreground"><span className="font-bold text-[var(--g-red)]">*</span> Campos obrigatórios</span>
         </CardHeader>
         <CardContent>
+          {(userBlocked || perfilUsuario?.status === "inativo") && (
+            <div className="mb-5 rounded-2xl border-2 border-destructive/40 bg-destructive/10 p-4 text-center space-y-1.5 animate-in fade-in">
+              <div className="flex items-center justify-center gap-2 text-destructive font-bold text-sm">
+                <AlertCircle className="size-5" /> Acesso Inativo
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Sua conta de usuário está inativa no sistema. Você não pode registrar novos chamados no momento. Entre em contato com a equipe de TI para regularizar seu cadastro.
+              </p>
+            </div>
+          )}
+
           <form onSubmit={enviar} className="grid gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
               {isCampoAtivo("solicitante") && (
@@ -837,12 +879,35 @@ function AbrirChamado() {
               </div>
             )}
 
+            {session && (!perfilUsuario?.setor || perfilUsuario?.setor === "Pendente" || !perfilUsuario?.localPadrao) && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 text-foreground">
+                  <UserCheck className="size-4 text-primary shrink-0" />
+                  <span>
+                    Salvar este setor e local como padrão no <strong>Meu Cadastro</strong>
+                  </span>
+                </div>
+                <Switch
+                  checked={salvarNoCadastro}
+                  onCheckedChange={setSalvarNoCadastro}
+                  aria-label="Salvar setor e local no cadastro"
+                  className="scale-90"
+                />
+              </div>
+            )}
+
             <label className="flex items-center gap-2 text-sm text-muted-foreground select-none cursor-pointer">
               <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} className="rounded" /> Lembrar meus dados neste aparelho
             </label>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Button type="submit" variant="google-green" size="lg" disabled={enviando} className="w-full sm:w-auto font-bold gap-2 shadow-md">
+              <Button
+                type="submit"
+                variant="google-green"
+                size="lg"
+                disabled={enviando || userBlocked || perfilUsuario?.status === "inativo"}
+                className="w-full sm:w-auto font-bold gap-2 shadow-md"
+              >
                 <SendHorizontal className="size-5 shrink-0" /> {enviando ? "Enviando..." : (configAbrir?.textoBotao || "Enviar chamado")}
               </Button>
               <Button

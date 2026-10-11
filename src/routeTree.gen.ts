@@ -15,6 +15,7 @@ import { Route as AbrirRouteImport } from './routes/abrir'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LgpdRouteImport } from './routes/lgpd'
+import { Route as MeuCadastroRouteImport } from './routes/meu-cadastro'
 import { Route as MeusChamadosRouteImport } from './routes/meus-chamados'
 import { Route as PreferenciasEmailRouteImport } from './routes/preferencias-email'
 import { Route as SobreRouteImport } from './routes/sobre'
@@ -59,6 +60,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const LgpdRoute = LgpdRouteImport.update({
   id: '/lgpd',
   path: '/lgpd',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeuCadastroRoute = MeuCadastroRouteImport.update({
+  id: '/meu-cadastro',
+  path: '/meu-cadastro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeusChamadosRoute = MeusChamadosRouteImport.update({
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/lgpd': typeof LgpdRoute
+  '/meu-cadastro': typeof MeuCadastroRoute
   '/meus-chamados': typeof MeusChamadosRoute
   '/preferencias-email': typeof PreferenciasEmailRoute
   '/sobre': typeof SobreRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/abrir': typeof AbrirRoute
   '/auth': typeof AuthRoute
   '/lgpd': typeof LgpdRoute
+  '/meu-cadastro': typeof MeuCadastroRoute
   '/meus-chamados': typeof MeusChamadosRoute
   '/preferencias-email': typeof PreferenciasEmailRoute
   '/sobre': typeof SobreRoute
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/lgpd': typeof LgpdRoute
+  '/meu-cadastro': typeof MeuCadastroRoute
   '/meus-chamados': typeof MeusChamadosRoute
   '/preferencias-email': typeof PreferenciasEmailRoute
   '/sobre': typeof SobreRoute
@@ -224,6 +233,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/lgpd'
+    | '/meu-cadastro'
     | '/meus-chamados'
     | '/preferencias-email'
     | '/sobre'
@@ -246,6 +256,7 @@ export interface FileRouteTypes {
     | '/abrir'
     | '/auth'
     | '/lgpd'
+    | '/meu-cadastro'
     | '/meus-chamados'
     | '/preferencias-email'
     | '/sobre'
@@ -270,6 +281,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/lgpd'
+    | '/meu-cadastro'
     | '/meus-chamados'
     | '/preferencias-email'
     | '/sobre'
@@ -295,6 +307,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   LgpdRoute: typeof LgpdRoute
+  MeuCadastroRoute: typeof MeuCadastroRoute
   MeusChamadosRoute: typeof MeusChamadosRoute
   PreferenciasEmailRoute: typeof PreferenciasEmailRoute
   SobreRoute: typeof SobreRoute
@@ -345,6 +358,13 @@ declare module '@tanstack/react-router' {
       path: '/lgpd'
       fullPath: '/lgpd'
       preLoaderRoute: typeof LgpdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meu-cadastro': {
+      id: '/meu-cadastro'
+      path: '/meu-cadastro'
+      fullPath: '/meu-cadastro'
+      preLoaderRoute: typeof MeuCadastroRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meus-chamados': {
@@ -528,6 +548,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRouteWithChildren,
   LgpdRoute: LgpdRoute,
+  MeuCadastroRoute: MeuCadastroRoute,
   MeusChamadosRoute: MeusChamadosRoute,
   PreferenciasEmailRoute: PreferenciasEmailRoute,
   SobreRoute: SobreRoute,
