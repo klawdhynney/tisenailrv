@@ -60,5 +60,5 @@ Avisos no Teams e Outlook permanecem adiados para outro upgrade.
 
 ## Migrações de avaliações
 
-- [ ] Desbloquear e executar as migrações pendentes para criar a tabela de avaliações com acesso seguro.
-- [ ] Aplicar e conferir as 18 avaliações históricas sem duplicar registros.
+- [ ] Desbloquear e executar as migrações pendentes para criar a tabela de avaliações com acesso seguro. Bloqueio: o executor precisa confirmar os novos valores admin/usuario em uma transação separada antes de executar a migração 0018; a ferramenta disponível executa primeiro toda a fila pendente na mesma transação.
+- [ ] Aplicar e conferir as 18 avaliações históricas sem duplicar registros. Aguarda o desbloqueio do executor e a criação segura da tabela; remover acesso público a e-mails/comentários e exigir autorização na gravação antes de concluir a aplicação.
