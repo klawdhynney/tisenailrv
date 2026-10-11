@@ -57,3 +57,8 @@ Avisos no Teams e Outlook permanecem adiados para outro upgrade.
 
 - [x] Criar e personalizar os seis e-mails de acesso do sistema.
 - [x] Adicionar a opção Entrar com Apple e ativar o provedor gerenciado.
+
+## Migrações de avaliações
+
+- [ ] Desbloquear e executar as migrações pendentes para criar a tabela de avaliações com acesso seguro.
+- [ ] Aplicar e conferir as 18 avaliações históricas sem duplicar registros.
