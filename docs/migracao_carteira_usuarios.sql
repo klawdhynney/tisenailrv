@@ -3,12 +3,13 @@
 -- TI SENAI LRV - Lovable Cloud / Supabase SQL Editor
 -- 
 -- 100% Idempotente e Seguro: não exclui nenhum dado existente.
--- Executa a criação/atualização de user_profiles, user_roles, pre_registered_roles,
--- audit_logs_usuarios, tickets(solicitante_id),
--- funções has_role, is_admin, is_named_manager, is_gestor_or_admin,
--- sync_user_profile, update_my_profile, open_public_ticket_with_receipt,
--- admin_get_users, admin_edit_user_profile, admin_update_user_role,
--- admin_toggle_user_block, gatilho de cadastro e políticas de RLS.
+-- Ordem rigorosa de dependências:
+--   1. Compatibilidade de tipos (role text)
+--   2. Tabelas básicas (user_roles, pre_registered_roles, user_profiles, audit_logs_usuarios)
+--   3. Funções de permissão (has_role, is_admin, is_named_manager, is_gestor_or_admin)
+--   4. Gatilhos de autenticação e backfill
+--   5. RPCs da carteira e administração (update_my_profile, open_public_ticket_with_receipt, admin_*)
+--   6. Políticas de RLS (definidas por último, com todas as funções já disponíveis)
 -- ============================================================================
 
 -- 1. Compatibilidade com papéis em texto (sem erros de enum)
@@ -22,7 +23,24 @@ BEGIN
   END IF;
 END $$;
 
--- 2. Tabela user_profiles
+-- 2. Tabelas básicas
+CREATE TABLE IF NOT EXISTS public.user_roles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  role text NOT NULL,
+  CONSTRAINT user_roles_user_role_unique UNIQUE (user_id, role)
+);
+CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON public.user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_role ON public.user_roles(role);
+
+CREATE TABLE IF NOT EXISTS public.pre_registered_roles (
+  id serial PRIMARY KEY,
+  email text UNIQUE NOT NULL,
+  role text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_pre_registered_roles_email ON public.pre_registered_roles(email);
+
 CREATE TABLE IF NOT EXISTS public.user_profiles (
   id uuid PRIMARY KEY,
   email text NOT NULL,
@@ -66,45 +84,6 @@ CREATE INDEX IF NOT EXISTS idx_user_profiles_setor ON public.user_profiles(setor
 CREATE INDEX IF NOT EXISTS idx_user_profiles_status ON public.user_profiles(status);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_matricula ON public.user_profiles(matricula);
 
--- 3. Tabela user_roles
-CREATE TABLE IF NOT EXISTS public.user_roles (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  role text NOT NULL,
-  CONSTRAINT user_roles_user_role_unique UNIQUE (user_id, role)
-);
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_roles' AND column_name = 'role') THEN
-    ALTER TABLE public.user_roles ALTER COLUMN role TYPE text USING role::text;
-  END IF;
-END $$;
-CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON public.user_roles(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_roles_role ON public.user_roles(role);
-
--- 3.1 Tabela pre_registered_roles
-CREATE TABLE IF NOT EXISTS public.pre_registered_roles (
-  id serial PRIMARY KEY,
-  email text UNIQUE NOT NULL,
-  role text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pre_registered_roles' AND column_name = 'role') THEN
-    ALTER TABLE public.pre_registered_roles ALTER COLUMN role TYPE text USING role::text;
-  END IF;
-END $$;
-CREATE INDEX IF NOT EXISTS idx_pre_registered_roles_email ON public.pre_registered_roles(email);
-ALTER TABLE public.pre_registered_roles ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins gerenciam pre_registered_roles" ON public.pre_registered_roles;
-CREATE POLICY "Admins gerenciam pre_registered_roles" ON public.pre_registered_roles
-  FOR ALL TO authenticated
-  USING (public.is_admin())
-  WITH CHECK (public.is_admin());
-GRANT ALL ON public.pre_registered_roles TO authenticated, service_role;
-
--- 3.2 Tabela audit_logs_usuarios
 CREATE TABLE IF NOT EXISTS public.audit_logs_usuarios (
   id serial PRIMARY KEY,
   admin_id uuid,
@@ -118,18 +97,12 @@ CREATE TABLE IF NOT EXISTS public.audit_logs_usuarios (
 CREATE INDEX IF NOT EXISTS idx_audit_logs_usuarios_admin_id ON public.audit_logs_usuarios(admin_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_usuarios_alvo_user_id ON public.audit_logs_usuarios(alvo_user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_usuarios_created_at ON public.audit_logs_usuarios(created_at DESC);
-ALTER TABLE public.audit_logs_usuarios ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins leem logs de auditoria" ON public.audit_logs_usuarios;
-CREATE POLICY "Admins leem logs de auditoria" ON public.audit_logs_usuarios
-  FOR SELECT TO authenticated
-  USING (public.is_admin());
-DROP POLICY IF EXISTS "Admins inserem logs de auditoria" ON public.audit_logs_usuarios;
-CREATE POLICY "Admins inserem logs de auditoria" ON public.audit_logs_usuarios
-  FOR INSERT TO authenticated
-  WITH CHECK (public.is_admin() OR auth.uid() IS NOT NULL);
-GRANT SELECT, INSERT ON public.audit_logs_usuarios TO authenticated, service_role;
 
--- 4. Funções de papéis e checagem de permissão
+ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS solicitante_id uuid;
+ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS criado_por uuid;
+CREATE INDEX IF NOT EXISTS idx_tickets_solicitante_id ON public.tickets(solicitante_id);
+
+-- 3. Funções de permissão (criadas ANTES de qualquer política de segurança)
 CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role text)
 RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
 DECLARE
@@ -209,24 +182,7 @@ GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated, service_role
 GRANT EXECUTE ON FUNCTION public.is_named_manager() TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.is_gestor_or_admin() TO anon, authenticated, service_role;
 
--- 5. Vínculo da tabela tickets com solicitante_id
-ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS solicitante_id uuid;
-ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS criado_por uuid;
-CREATE INDEX IF NOT EXISTS idx_tickets_solicitante_id ON public.tickets(solicitante_id);
-
-UPDATE public.tickets t
-SET solicitante_id = u.id
-FROM public.user_profiles u
-WHERE t.solicitante_id IS NULL
-  AND t.solicitante_email IS NOT NULL
-  AND lower(btrim(t.solicitante_email)) = lower(btrim(u.email));
-
-UPDATE public.tickets
-SET solicitante_id = criado_por
-WHERE solicitante_id IS NULL
-  AND criado_por IS NOT NULL;
-
--- 6. Gatilho de cadastro de usuário
+-- 4. Gatilhos de autenticação e backfill de dados
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_auth_user() CASCADE;
 CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
@@ -284,7 +240,6 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
@@ -325,7 +280,19 @@ FROM public.user_profiles p
 WHERE lower(btrim(p.email)) IN ('klaw.com@gmail.com', 'klawdhynney@gmail.com', 'claudineigoncalvesdelima@hotmail.com', 'claudinei.lima@senaimt.ind.br')
 ON CONFLICT (user_id, role) DO NOTHING;
 
--- 7. sync_user_profile
+UPDATE public.tickets t
+SET solicitante_id = u.id
+FROM public.user_profiles u
+WHERE t.solicitante_id IS NULL
+  AND t.solicitante_email IS NOT NULL
+  AND lower(btrim(t.solicitante_email)) = lower(btrim(u.email));
+
+UPDATE public.tickets
+SET solicitante_id = criado_por
+WHERE solicitante_id IS NULL
+  AND criado_por IS NOT NULL;
+
+-- 5. RPCs da carteira e administração
 DROP FUNCTION IF EXISTS public.sync_user_profile(text, text);
 DROP FUNCTION IF EXISTS public.sync_user_profile();
 CREATE OR REPLACE FUNCTION public.sync_user_profile(
@@ -386,7 +353,6 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.sync_user_profile(text, text) TO authenticated, service_role;
 
--- 8. update_my_profile
 DROP FUNCTION IF EXISTS public.update_my_profile(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS public.update_my_profile(text, text, text, text);
 DROP FUNCTION IF EXISTS public.update_my_profile(text, text);
@@ -439,7 +405,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.update_my_profile(text, text, text, text, text, text) TO authenticated, service_role;
 
--- 9. open_public_ticket_with_receipt (DROP OBRIGATÓRIO PARA ALTERAÇÃO DE NOMES DE PARÂMETROS)
+-- open_public_ticket_with_receipt (DROP OBRIGATÓRIO PARA MODIFICAR NOMES DE PARÂMETROS)
 DROP FUNCTION IF EXISTS public.open_public_ticket_with_receipt(text, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS public.open_public_ticket_with_receipt(text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS public.open_public_ticket_with_receipt(text, text, text, text, text);
@@ -526,7 +492,6 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.open_public_ticket_with_receipt(text,text,text,text,text,text,text) TO authenticated, service_role;
 
--- 10. RPCs Administrativas
 DROP FUNCTION IF EXISTS public.admin_get_users();
 CREATE OR REPLACE FUNCTION public.admin_get_users()
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -771,12 +736,34 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.admin_toggle_user_block(uuid, boolean) TO authenticated, service_role;
 
--- 11. Políticas de RLS em public.user_profiles
+-- 6. Políticas de RLS (definidas no final após todas as funções e tabelas existirem)
+
+-- Políticas em pre_registered_roles
+ALTER TABLE public.pre_registered_roles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admins gerenciam pre_registered_roles" ON public.pre_registered_roles;
+CREATE POLICY "Admins gerenciam pre_registered_roles" ON public.pre_registered_roles
+  FOR ALL TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+GRANT ALL ON public.pre_registered_roles TO authenticated, service_role;
+
+-- Políticas em audit_logs_usuarios
+ALTER TABLE public.audit_logs_usuarios ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admins leem logs de auditoria" ON public.audit_logs_usuarios;
+CREATE POLICY "Admins leem logs de auditoria" ON public.audit_logs_usuarios
+  FOR SELECT TO authenticated
+  USING (public.is_admin());
+DROP POLICY IF EXISTS "Admins inserem logs de auditoria" ON public.audit_logs_usuarios;
+CREATE POLICY "Admins inserem logs de auditoria" ON public.audit_logs_usuarios
+  FOR INSERT TO authenticated
+  WITH CHECK (public.is_admin() OR auth.uid() IS NOT NULL);
+GRANT SELECT, INSERT ON public.audit_logs_usuarios TO authenticated, service_role;
+
+-- Políticas em user_profiles
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Usuarios veem proprio perfil ou admin ve todos" ON public.user_profiles;
 DROP POLICY IF EXISTS "user_profiles_select_policy" ON public.user_profiles;
-
 CREATE POLICY "user_profiles_select_policy" ON public.user_profiles
   FOR SELECT TO authenticated
   USING (
@@ -793,7 +780,6 @@ CREATE POLICY "user_profiles_select_policy" ON public.user_profiles
 
 DROP POLICY IF EXISTS "Usuarios atualizam proprio perfil ou admin atualiza" ON public.user_profiles;
 DROP POLICY IF EXISTS "user_profiles_update_policy" ON public.user_profiles;
-
 CREATE POLICY "user_profiles_update_policy" ON public.user_profiles
   FOR UPDATE TO authenticated
   USING (id = auth.uid() OR public.is_admin())
@@ -801,7 +787,6 @@ CREATE POLICY "user_profiles_update_policy" ON public.user_profiles
 
 DROP POLICY IF EXISTS "Usuarios inserem proprio perfil" ON public.user_profiles;
 DROP POLICY IF EXISTS "user_profiles_insert_policy" ON public.user_profiles;
-
 CREATE POLICY "user_profiles_insert_policy" ON public.user_profiles
   FOR INSERT TO authenticated
   WITH CHECK (id = auth.uid() OR public.is_admin());
