@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import type { AlertasEmailSolicitanteConfig } from "@/lib/types";
 import { renderizarEmailAlerta } from "@/lib/email-alertas/templates";
+import { supabase } from "@/integrations/supabase/client";
 import {
   enviarEmailTesteServerFn,
   processarFilaAlertasServerFn,
@@ -71,14 +72,26 @@ export function PainelAlertasEmail({ config, onChange, userEmail }: PainelAlerta
   const carregarLogs = async () => {
     setCarregandoLogs(true);
     try {
-      const res = await obterLogsAlertasServerFn({
-        data: {
-          limite: 100,
-          filtroStatus,
-          filtroEvento,
-        },
+      const { data: logsData, error: logsErr } = await supabase.rpc("get_email_alertas_logs", {
+        p_limite: 100,
+        p_filtro_status: filtroStatus,
+        p_filtro_evento: filtroEvento,
       });
-      setLogs(res || []);
+
+      if (!logsErr && logsData) {
+        setLogs(logsData as any[]);
+      } else {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const res = await obterLogsAlertasServerFn({
+          data: {
+            limite: 100,
+            filtroStatus,
+            filtroEvento,
+            authToken: sessionData?.session?.access_token,
+          },
+        });
+        setLogs(res || []);
+      }
     } catch (e: any) {
       console.warn("Falha ao carregar logs de alertas:", e);
     } finally {
@@ -98,13 +111,39 @@ export function PainelAlertasEmail({ config, onChange, userEmail }: PainelAlerta
     }
     setEnviandoTeste(true);
     try {
-      const res = await enviarEmailTesteServerFn({ data: { destinatario: emailTeste } });
-      if (res.sucesso) {
-        toast.success(res.mensagem || "E-mail de teste enviado com sucesso!");
-        carregarLogs();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      // 1. Tenta enfileirar via cliente autenticado do navegador
+      const { data: idFila, error: rpcErr } = await supabase.rpc("enviar_email_alerta_teste", {
+        p_destinatario: emailTeste.trim().toLowerCase(),
+      });
+
+      if (rpcErr || !idFila) {
+        // Fallback: se o client rpc der erro, tenta via server function com o token da sessão
+        const res = await enviarEmailTesteServerFn({
+          data: {
+            destinatario: emailTeste.trim().toLowerCase(),
+            authToken: token,
+          },
+        });
+        if (!res.sucesso) {
+          toast.error(res.erro || rpcErr?.message || "Acesso restrito a gestores e administradores.");
+          return;
+        }
       } else {
-        toast.error(res.erro || "Falha ao enviar e-mail de teste.");
+        // Dispara o processador server-side para entrega imediata
+        try {
+          await processarFilaAlertasServerFn({
+            data: { authToken: token },
+          });
+        } catch (procErr: any) {
+          console.warn("Fila enfileirada, processamento server:", procErr);
+        }
       }
+
+      toast.success(`E-mail de teste disparado com sucesso para ${emailTeste}!`);
+      await carregarLogs();
     } catch (e: any) {
       toast.error(e?.message || "Erro inesperado ao disparar e-mail de teste.");
     } finally {
@@ -116,7 +155,10 @@ export function PainelAlertasEmail({ config, onChange, userEmail }: PainelAlerta
   const processarFilaAgora = async () => {
     setProcessandoFila(true);
     try {
-      const res = await processarFilaAlertasServerFn();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const res = await processarFilaAlertasServerFn({
+        data: { authToken: sessionData?.session?.access_token },
+      });
       if (res.sucesso !== false) {
         toast.success(res.mensagem || `Fila processada: ${res.enviados} enviado(s).`);
         carregarLogs();
@@ -134,13 +176,29 @@ export function PainelAlertasEmail({ config, onChange, userEmail }: PainelAlerta
   const reenviarAlerta = async (logId: number) => {
     setReenviandoId(logId);
     try {
-      const res = await reenviarAlertaFalhaServerFn({ data: { logId } });
-      if (res.sucesso) {
-        toast.success("Alerta reenviado com sucesso!");
-        carregarLogs();
+      const { data: ok, error: rpcErr } = await supabase.rpc("reenviar_email_alerta_falha", {
+        p_log_id: logId,
+      });
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      if (rpcErr || !ok) {
+        const res = await reenviarAlertaFalhaServerFn({
+          data: { logId, authToken: token },
+        });
+        if (!res.sucesso) {
+          toast.error(res.erro || rpcErr?.message || "Falha ao reenviar alerta.");
+          return;
+        }
       } else {
-        toast.error(res.erro || "Falha ao reenviar alerta.");
+        await processarFilaAlertasServerFn({
+          data: { authToken: token },
+        });
       }
+
+      toast.success("Alerta reenviado com sucesso!");
+      carregarLogs();
     } catch (e: any) {
       toast.error(e?.message || "Erro ao reenviar alerta.");
     } finally {

@@ -14,13 +14,20 @@ import { enviarEmailAlerta } from "./provider.server";
 import { renderizarEmailAlerta, type DadosEmailAlerta } from "./templates";
 import type { AlertasEmailSolicitanteConfig } from "@/lib/types";
 
-function getSupabaseServerClient() {
+function getSupabaseServerClient(accessToken?: string) {
   const url = process.env.SUPABASE_URL || "https://c--7870cf2d-1046-4d67-8cc7-2076d631485a-prod.lovable.cloud";
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_IqnMaNAnDUs0Sv9ODF-XfA_A20VGIko";
 
   return createClient(url, serviceKey || publishableKey, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: accessToken
+      ? {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      : undefined,
   });
 }
 
@@ -28,8 +35,16 @@ function getSupabaseServerClient() {
  * Processa itens pendentes da fila de alertas.
  */
 export const processarFilaAlertasServerFn = createServerFn({ method: "POST" })
-  .handler(async () => {
-    const supabase = getSupabaseServerClient();
+  .inputValidator((input) =>
+    z
+      .object({
+        authToken: z.string().optional(),
+      })
+      .optional()
+      .parse(input)
+  )
+  .handler(async ({ data }) => {
+    const supabase = getSupabaseServerClient(data?.authToken);
 
     // 1. Carrega configurações do sistema
     const { data: configRow } = await supabase
@@ -161,9 +176,17 @@ export const processarFilaAlertasServerFn = createServerFn({ method: "POST" })
  * Envia um e-mail de teste manual imediato a partir do Painel de Ajustes.
  */
 export const enviarEmailTesteServerFn = createServerFn({ method: "POST" })
-  .inputValidator((input) => z.object({ destinatario: z.string().email() }).parse(input))
+  .inputValidator(
+    (input) =>
+      z
+        .object({
+          destinatario: z.string().email(),
+          authToken: z.string().optional(),
+        })
+        .parse(input)
+  )
   .handler(async ({ data }) => {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(data.authToken);
     const dest = data.destinatario.trim().toLowerCase();
 
     // 1. Enfileira o e-mail de teste
@@ -176,7 +199,7 @@ export const enviarEmailTesteServerFn = createServerFn({ method: "POST" })
     }
 
     // 2. Processa a fila imediatamente para entrega instantânea
-    await processarFilaAlertasServerFn();
+    await processarFilaAlertasServerFn({ data: { authToken: data.authToken } });
 
     return {
       sucesso: true,
@@ -189,9 +212,17 @@ export const enviarEmailTesteServerFn = createServerFn({ method: "POST" })
  * Reenvia um alerta que falhou.
  */
 export const reenviarAlertaFalhaServerFn = createServerFn({ method: "POST" })
-  .inputValidator((input) => z.object({ logId: z.number() }).parse(input))
+  .inputValidator(
+    (input) =>
+      z
+        .object({
+          logId: z.number(),
+          authToken: z.string().optional(),
+        })
+        .parse(input)
+  )
   .handler(async ({ data }) => {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(data.authToken);
     const { data: ok, error } = await supabase.rpc("reenviar_email_alerta_falha", {
       p_log_id: data.logId,
     });
@@ -201,7 +232,7 @@ export const reenviarAlertaFalhaServerFn = createServerFn({ method: "POST" })
     }
 
     // Processa a fila
-    await processarFilaAlertasServerFn();
+    await processarFilaAlertasServerFn({ data: { authToken: data.authToken } });
 
     return { sucesso: true, mensagem: "Alerta reagendado e processado com sucesso!" };
   });
@@ -217,11 +248,12 @@ export const obterLogsAlertasServerFn = createServerFn({ method: "POST" })
           limite: z.number().optional().default(50),
           filtroStatus: z.string().optional().default("todos"),
           filtroEvento: z.string().optional().default("todos"),
+          authToken: z.string().optional(),
         })
         .parse(input)
   )
   .handler(async ({ data }) => {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(data.authToken);
     const { data: logs, error } = await supabase.rpc("get_email_alertas_logs", {
       p_limite: data.limite,
       p_filtro_status: data.filtroStatus,
