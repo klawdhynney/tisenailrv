@@ -737,62 +737,6 @@ export const WHATSAPP_PADRAO: WhatsappConfig = {
 *Descrição:* {descricao}`,
 };
 
-export interface AlertasEmailConfig {
-  ativo: boolean;
-  eventos: {
-    status: boolean;
-    novaResposta: boolean;
-    slaPausadoRetomado: boolean;
-    finalizacao: boolean;
-  };
-  nomeRemetente: string;
-  emailResposta: string;
-  modeloAssunto: string;
-  modeloCorpo: string;
-  modeloFinalizadoAssunto: string;
-  modeloFinalizadoCorpo: string;
-}
-
-export const MODELO_CORPO_EMAIL_PADRAO = `Olá! O seu chamado de suporte nº {numero} recebeu uma nova atualização:
-
-Status: {status}
-Prioridade: {prioridade}
-Prazo limite (SLA): {prazo}
-
-Última resposta da equipe:
-{resposta}
-
-Para acompanhar os detalhes e responder à equipe de suporte, acesse o link abaixo:
-{link}`;
-
-export const MODELO_FINALIZADO_CORPO_PADRAO = `Olá! O seu chamado de suporte nº {numero} foi finalizado com sucesso:
-
-Status: {status}
-Prioridade: {prioridade}
-
-Resumo do atendimento:
-{resposta}
-
-Data de conclusão: {prazo}
-
-Caso precise de novo suporte, você pode abrir uma nova solicitação no portal.
-{link}`;
-
-export const ALERTAS_EMAIL_PADRAO: AlertasEmailConfig = {
-  ativo: true,
-  eventos: {
-    status: true,
-    novaResposta: true,
-    slaPausadoRetomado: true,
-    finalizacao: true,
-  },
-  nomeRemetente: "TI SENAI LRV",
-  emailResposta: "suporte@tisenailrv.app",
-  modeloAssunto: "Chamado nº {numero}: {status}",
-  modeloCorpo: MODELO_CORPO_EMAIL_PADRAO,
-  modeloFinalizadoAssunto: "Chamado nº {numero}: {status} (Concluído)",
-  modeloFinalizadoCorpo: MODELO_FINALIZADO_CORPO_PADRAO,
-};
 
 export interface Regras {
   prazos: Record<Prioridade, number>; // horas úteis
@@ -828,7 +772,6 @@ export interface Regras {
   animacaoCarregamento?: AnimacaoCarregamentoConfig | undefined;
   iaSuporte?: IaSuporteConfig | undefined;
   whatsapp?: WhatsappConfig | undefined;
-  alertasEmail?: AlertasEmailConfig | undefined;
   temaConfig?: TemaConfig | undefined;
   coresBotoes?: CoresBotoesPorTemaConfig | undefined;
   coresSite?: CoresSiteConfig | undefined;
@@ -1343,7 +1286,6 @@ export const REGRAS_PADRAO: Regras = {
   iaSuporte: { ...IA_SUPORTE_PADRAO },
   whatsapp: { ...WHATSAPP_PADRAO },
   sobre: { ...SOBRE_PADRAO },
-  alertasEmail: { ...ALERTAS_EMAIL_PADRAO },
   temaConfig: { ...TEMA_CONFIG_PADRAO },
   coresBotoes: {
     claro: { ...CORES_BOTOES_PADRAO.claro },

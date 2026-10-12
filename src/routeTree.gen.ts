@@ -17,7 +17,6 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LgpdRouteImport } from './routes/lgpd'
 import { Route as MeuCadastroRouteImport } from './routes/meu-cadastro'
 import { Route as MeusChamadosRouteImport } from './routes/meus-chamados'
-import { Route as PreferenciasEmailRouteImport } from './routes/preferencias-email'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as AuthenticatedAtendimentoRouteImport } from './routes/_authenticated/atendimento'
 import { Route as AuthenticatedChamadosRouteImport } from './routes/_authenticated/chamados'
@@ -31,7 +30,6 @@ import { Route as AuthenticatedChamadosTicketIdRouteImport } from './routes/_aut
 import { Route as AuthenticatedRegrasUsuariosRouteImport } from './routes/_authenticated/regras.usuarios'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
-import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,11 +68,6 @@ const MeuCadastroRoute = MeuCadastroRouteImport.update({
 const MeusChamadosRoute = MeusChamadosRouteImport.update({
   id: '/meus-chamados',
   path: '/meus-chamados',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PreferenciasEmailRoute = PreferenciasEmailRouteImport.update({
-  id: '/preferencias-email',
-  path: '/preferencias-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SobreRoute = SobreRouteImport.update({
@@ -145,12 +138,6 @@ const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
   path: '/lovable/email/auth/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LovableEmailTransactionalPreviewRoute =
-  LovableEmailTransactionalPreviewRouteImport.update({
-    id: '/lovable/email/transactional/preview',
-    path: '/lovable/email/transactional/preview',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -160,7 +147,6 @@ export interface FileRoutesByFullPath {
   '/lgpd': typeof LgpdRoute
   '/meu-cadastro': typeof MeuCadastroRoute
   '/meus-chamados': typeof MeusChamadosRoute
-  '/preferencias-email': typeof PreferenciasEmailRoute
   '/sobre': typeof SobreRoute
   '/atendimento': typeof AuthenticatedAtendimentoRoute
   '/chamados': typeof AuthenticatedChamadosRouteWithChildren
@@ -174,7 +160,6 @@ export interface FileRoutesByFullPath {
   '/regras/usuarios': typeof AuthenticatedRegrasUsuariosRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
-  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -183,7 +168,6 @@ export interface FileRoutesByTo {
   '/lgpd': typeof LgpdRoute
   '/meu-cadastro': typeof MeuCadastroRoute
   '/meus-chamados': typeof MeusChamadosRoute
-  '/preferencias-email': typeof PreferenciasEmailRoute
   '/sobre': typeof SobreRoute
   '/atendimento': typeof AuthenticatedAtendimentoRoute
   '/chamados': typeof AuthenticatedChamadosRouteWithChildren
@@ -197,7 +181,6 @@ export interface FileRoutesByTo {
   '/regras/usuarios': typeof AuthenticatedRegrasUsuariosRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
-  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -209,7 +192,6 @@ export interface FileRoutesById {
   '/lgpd': typeof LgpdRoute
   '/meu-cadastro': typeof MeuCadastroRoute
   '/meus-chamados': typeof MeusChamadosRoute
-  '/preferencias-email': typeof PreferenciasEmailRoute
   '/sobre': typeof SobreRoute
   '/_authenticated/atendimento': typeof AuthenticatedAtendimentoRoute
   '/_authenticated/chamados': typeof AuthenticatedChamadosRouteWithChildren
@@ -223,7 +205,6 @@ export interface FileRoutesById {
   '/_authenticated/regras/usuarios': typeof AuthenticatedRegrasUsuariosRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
-  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -235,7 +216,6 @@ export interface FileRouteTypes {
     | '/lgpd'
     | '/meu-cadastro'
     | '/meus-chamados'
-    | '/preferencias-email'
     | '/sobre'
     | '/atendimento'
     | '/chamados'
@@ -249,7 +229,6 @@ export interface FileRouteTypes {
     | '/regras/usuarios'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
-    | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -258,7 +237,6 @@ export interface FileRouteTypes {
     | '/lgpd'
     | '/meu-cadastro'
     | '/meus-chamados'
-    | '/preferencias-email'
     | '/sobre'
     | '/atendimento'
     | '/chamados'
@@ -272,7 +250,6 @@ export interface FileRouteTypes {
     | '/regras/usuarios'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
-    | '/lovable/email/transactional/preview'
   id:
     | '__root__'
     | '/'
@@ -283,7 +260,6 @@ export interface FileRouteTypes {
     | '/lgpd'
     | '/meu-cadastro'
     | '/meus-chamados'
-    | '/preferencias-email'
     | '/sobre'
     | '/_authenticated/atendimento'
     | '/_authenticated/chamados'
@@ -297,7 +273,6 @@ export interface FileRouteTypes {
     | '/_authenticated/regras/usuarios'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
-    | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -309,11 +284,9 @@ export interface RootRouteChildren {
   LgpdRoute: typeof LgpdRoute
   MeuCadastroRoute: typeof MeuCadastroRoute
   MeusChamadosRoute: typeof MeusChamadosRoute
-  PreferenciasEmailRoute: typeof PreferenciasEmailRoute
   SobreRoute: typeof SobreRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
-  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -372,13 +345,6 @@ declare module '@tanstack/react-router' {
       path: '/meus-chamados'
       fullPath: '/meus-chamados'
       preLoaderRoute: typeof MeusChamadosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/preferencias-email': {
-      id: '/preferencias-email'
-      path: '/preferencias-email'
-      fullPath: '/preferencias-email'
-      preLoaderRoute: typeof PreferenciasEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sobre': {
@@ -472,13 +438,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lovable/email/transactional/preview': {
-      id: '/lovable/email/transactional/preview'
-      path: '/lovable/email/transactional/preview'
-      fullPath: '/lovable/email/transactional/preview'
-      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -550,11 +509,9 @@ const rootRouteChildren: RootRouteChildren = {
   LgpdRoute: LgpdRoute,
   MeuCadastroRoute: MeuCadastroRoute,
   MeusChamadosRoute: MeusChamadosRoute,
-  PreferenciasEmailRoute: PreferenciasEmailRoute,
   SobreRoute: SobreRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
-  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

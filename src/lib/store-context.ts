@@ -31,8 +31,6 @@ export interface StoreValue {
   ) => Promise<boolean>;
   carregarHistoricoConfig: () => Promise<import("./types").ConfiguracaoHistoricoItem[]>;
   desfazerAlteracaoConfig: (id: number) => Promise<boolean>;
-  emailAlertsAtivos: boolean;
-  alternarEmailAlertas: (ativo: boolean) => Promise<boolean>;
   perfilUsuario: import("./types").UsuarioCadastro | null;
   recarregarPerfilUsuario: () => Promise<void>;
   atualizarMeuCadastro: (dados: {

@@ -1,9 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Laptop, Check, Users, Mail, User } from "lucide-react";
+import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Laptop, Check, Users, User } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +36,7 @@ const navGestor = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [aberto, setAberto] = useState(false);
-  const { isGestor, isAdmin, userRole, session, sair, regras, emailAlertsAtivos, alternarEmailAlertas } = useStore();
+  const { isGestor, isAdmin, userRole, session, sair, regras } = useStore();
 
   const [modoTema, setModoTema] = useState<ModoTema>(() => {
     if (typeof window === "undefined") return "auto";
@@ -328,19 +327,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           </>
         )}
-        <DropdownMenuSeparator />
-        <div className="flex items-center justify-between px-2.5 py-1.5 text-xs text-foreground">
-          <div className="flex items-center gap-2">
-            <Mail className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-medium">Alertas por e-mail</span>
-          </div>
-          <Switch
-            checked={emailAlertsAtivos}
-            onCheckedChange={(checked) => alternarEmailAlertas(checked)}
-            aria-label="Receber alertas por e-mail"
-            className="scale-90"
-          />
-        </div>
+
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => sair()}
@@ -467,18 +454,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <p className="text-[10px] text-muted-foreground font-mono truncate">{emailUsuario}</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2 text-xs text-foreground border border-border/50">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs font-medium">Alertas por e-mail</span>
-                  </div>
-                  <Switch
-                    checked={emailAlertsAtivos}
-                    onCheckedChange={(checked) => alternarEmailAlertas(checked)}
-                    aria-label="Receber alertas por e-mail"
-                    className="scale-90"
-                  />
-                </div>
+
               </>
             )}
             {links(true)}

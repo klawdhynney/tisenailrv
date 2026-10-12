@@ -22,7 +22,6 @@ import {
   PROMPT_APRIMORAR_TEXTO_PADRAO,
   PROMPT_SUGERIR_ABERTURA_PADRAO,
   WHATSAPP_PADRAO,
-  ALERTAS_EMAIL_PADRAO,
   MOTIVOS_PAUSA_SLA_PADRAO,
   MENU_PADRAO,
   CHAT_PADRAO,
@@ -173,14 +172,6 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
           : [...(ATENDIMENTO_PADRAO.botoesStatusVisiveis || [])],
     },
     meusChamados: { ...MEUS_CHAMADOS_PADRAO, ...(regrasSalvas.meusChamados || {}) },
-    alertasEmail: {
-      ...ALERTAS_EMAIL_PADRAO,
-      ...(regrasSalvas.alertasEmail || {}),
-      eventos: {
-        ...ALERTAS_EMAIL_PADRAO.eventos,
-        ...(regrasSalvas.alertasEmail?.eventos || {}),
-      },
-    },
     temaConfig: {
       ...(REGRAS_PADRAO.temaConfig ?? {
         modoPadrao: "auto",
@@ -304,7 +295,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<PapelUsuario>("usuario");
   const [userBlocked, setUserBlocked] = useState(false);
   const [authPronto, setAuthPronto] = useState(false);
-  const [emailAlertsAtivos, setEmailAlertsAtivos] = useState(true);
   const [perfilUsuario, setPerfilUsuario] = useState<UsuarioCadastro | null>(null);
 
   // Sessão
@@ -349,7 +339,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setIsAdmin(false);
       setUserRole("usuario");
       setUserBlocked(false);
-      setEmailAlertsAtivos(true);
       setAuthPronto(true);
       return;
     }
@@ -384,9 +373,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           setIsGestor(Boolean(p.isGestor));
           setUserRole(p.userRole || "usuario");
           setUserBlocked(Boolean(p.userBlocked));
-          if (p.emailAlertsAtivos !== undefined) {
-            setEmailAlertsAtivos(Boolean(p.emailAlertsAtivos));
-          }
           setAuthPronto(true);
         }
       }
@@ -405,9 +391,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (!ativo) return;
 
       const profileData = profileRes.status === "fulfilled" ? profileRes.value.data : null;
-      if (profileData && (profileData as any).notificacoes_email_ativas !== undefined) {
-        setEmailAlertsAtivos((profileData as any).notificacoes_email_ativas !== false);
-      }
       const isBloqueado = profileData?.bloqueado === true || (profileData as any)?.status === "inativo";
 
       const ADMINS_INICIAIS = [
@@ -853,23 +836,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
      }
    }, [regras, setRegras]);
 
-  const alternarEmailAlertas = useCallback(async (ativo: boolean) => {
-    setEmailAlertsAtivos(ativo);
-    const uid = session?.user.id;
-    if (!uid) return true;
-    try {
-      const { error } = await supabase.from("user_profiles").update({
-        notificacoes_email_ativas: ativo,
-        updated_at: new Date().toISOString(),
-      } as any).eq("id", uid);
-      if (error) {
-        await supabase.rpc("set_user_email_notifications", { p_ativo: ativo } as any);
-      }
-      return true;
-    } catch {
-      return false;
-    }
-  }, [session?.user.id]);
 
   const carregarPerfilUsuario = useCallback(async () => {
     const uid = session?.user?.id;
@@ -1024,8 +990,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setRegras,
       carregarHistoricoConfig,
       desfazerAlteracaoConfig,
-      emailAlertsAtivos,
-      alternarEmailAlertas,
       perfilUsuario,
       recarregarPerfilUsuario: carregarPerfilUsuario,
       atualizarMeuCadastro,
@@ -1056,8 +1020,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setRegras,
       carregarHistoricoConfig,
       desfazerAlteracaoConfig,
-      emailAlertsAtivos,
-      alternarEmailAlertas,
       perfilUsuario,
       carregarPerfilUsuario,
       atualizarMeuCadastro,
