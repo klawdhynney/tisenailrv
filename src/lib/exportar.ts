@@ -306,13 +306,54 @@ async function obterIconeBase64(): Promise<string | null> {
     img.crossOrigin = "anonymous";
     img.onload = () => {
       try {
+        const size = 160;
+        const pad = 6;
+        const innerW = size - 2 * pad;
+        const innerH = size - 2 * pad;
+        const radius = innerW * 0.22;
+
         const canvas = document.createElement("canvas");
-        const size = 96;
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext("2d");
         if (ctx) {
-          ctx.drawImage(img, 0, 0, size, size);
+          ctx.clearRect(0, 0, size, size);
+
+          const desenharCaminhoArredondado = (x: number, y: number, w: number, h: number, r: number) => {
+            ctx.beginPath();
+            if (typeof ctx.roundRect === "function") {
+              ctx.roundRect(x, y, w, h, r);
+            } else {
+              ctx.moveTo(x + r, y);
+              ctx.lineTo(x + w - r, y);
+              ctx.arcTo(x + w, y, x + w, y + r, r);
+              ctx.lineTo(x + w, y + h - r);
+              ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+              ctx.lineTo(x + r, y + h);
+              ctx.arcTo(x, y, x, y + h - r, r);
+              ctx.lineTo(x, y + r);
+              ctx.arcTo(x, y, x + r, y, r);
+              ctx.closePath();
+            }
+          };
+
+          // 1. Recorte dos cantos arredondados (elimina 100% de qualquer fundo preto externo)
+          ctx.save();
+          desenharCaminhoArredondado(pad, pad, innerW, innerH, radius);
+          ctx.clip();
+          ctx.drawImage(img, pad - 1, pad - 1, innerW + 2, innerH + 2);
+          ctx.restore();
+
+          // 2. Borda branca suave com leve acabamento para destacar com elegância no cabeçalho azul
+          ctx.save();
+          desenharCaminhoArredondado(pad, pad, innerW, innerH, radius);
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.92)";
+          ctx.lineWidth = 3.2;
+          ctx.shadowColor = "rgba(255, 255, 255, 0.45)";
+          ctx.shadowBlur = 3;
+          ctx.stroke();
+          ctx.restore();
+
           resolve(canvas.toDataURL("image/png"));
           return;
         }
