@@ -369,7 +369,7 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
           </div>
 
           {/* Lado Direito: Busca na primeira linha à direita */}
-          <div className="w-full sm:w-44 md:w-52 lg:w-60 shrink-0 sm:ml-auto">
+          <div className="w-full sm:w-40 md:w-48 lg:w-52 shrink-0 sm:ml-auto">
             <div className="relative w-full">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
               <Input

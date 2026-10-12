@@ -72,11 +72,11 @@ export function FiltroMes({
 
   const listaMeses = useMemo(() => obterMesesParaFiltro(tickets), [tickets]);
 
-  // Rótulo exibido dentro do botão
+  // Rótulo exibido dentro do botão (sem o prefixo "Mês:" para economizar espaço e evitar corte dos botões)
   const rotuloExibido =
     valor === "todos"
-      ? "Mês: Todos"
-      : `Mês: ${listaMeses.find((m) => m.key === valor)?.label || formatarChaveMes(valor)}`;
+      ? "Todos"
+      : listaMeses.find((m) => m.key === valor)?.label || formatarChaveMes(valor);
 
   const totalOpcoes = listaMeses.length + 1; // "todos" + lista de meses
 
