@@ -142,7 +142,7 @@ const mesAtualPadrao = () => {
 };
 
 function Dashboard() {
-  const { publicStats, dailyStats, isGestor, isAdmin, regras, session, authPronto } = useStore();
+  const { publicStats, dailyStats, evaluationStats, isGestor, isAdmin, regras, session, authPronto } = useStore();
   const { wrapAsync, isLoading } = useLoading();
   const search = Route.useSearch();
   const navigate = useNavigate();
@@ -347,20 +347,76 @@ function Dashboard() {
 
   const baixarPdf = async () => {
     await wrapAsync(async () => {
-      const { exportarPdf } = await import("@/lib/exportar");
-      const totalVal = dados.reduce((sum, item) => sum + item.value, 0);
-      const rows = dados.map((r) => {
-        const pct = totalVal > 0 ? `${((r.value / totalVal) * 100).toFixed(1)}%` : "0%";
-        return {
-          "Item / Categoria": r.name,
-          "Quantidade": r.value,
-          "Participação": pct,
-        };
-      });
-      await exportarPdf(
-        rows,
-        `dashboard-${visao}-${mes}`,
-        `TI SENAI LRV · Indicadores - ${VISOES.find((v) => v.id === visao)?.label || visao}`,
+      const { exportarDashboardCompletoPdf } = await import("@/lib/exportar");
+
+      // Monta dados consolidados de todas as 5 visões categóricas
+      const dadosCategorias = categorias;
+      const dadosSetores = setores;
+      const dadosPrioridades = contar("prioridade");
+      const dadosStatus = contar("status");
+      const dadosSlaExport = dadosSla;
+
+      // Monta série histórica mês a mês consolidada
+      const mapaHistorico = new Map<string, { total: number; resolvidos: number; emAtendimento: number; label: string }>();
+      for (const r of publicStats || []) {
+        if (!r?.mes) continue;
+        const chave = r.mes;
+        const { labelLongo } = formatarChaveMes(chave);
+        const atual = mapaHistorico.get(chave) ?? { total: 0, resolvidos: 0, emAtendimento: 0, label: labelLongo };
+        atual.total += r.total;
+        if (r.status === "Resolvido") {
+          atual.resolvidos += r.total;
+        } else if (r.status !== "Cancelado") {
+          atual.emAtendimento += r.total;
+        }
+        mapaHistorico.set(chave, atual);
+      }
+      const listaHistorico = [...mapaHistorico.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([mesKey, val]) => ({
+          mes: mesKey,
+          label: val.label,
+          total: val.total,
+          resolvidos: val.resolvidos,
+          emAtendimento: val.emAtendimento,
+          taxa: val.total > 0 ? `${((val.resolvidos / val.total) * 100).toFixed(0)}%` : "0%",
+        }));
+
+      const totalHistorico = listaHistorico.reduce((acc, it) => acc + it.total, 0);
+      const mediaMensalHist = listaHistorico.length > 0 ? Math.round(totalHistorico / listaHistorico.length) : 0;
+      const mesPicoHist = listaHistorico.length > 0 ? [...listaHistorico].sort((a, b) => b.total - a.total)[0] : undefined;
+
+      const mesNome = mes === "todos" ? "Todos os meses" : (MESES_DISPONIVEIS.find((m) => m.key === mes)?.label || mes);
+      const taxaRes = total > 0 ? `${((resolvidos / total) * 100).toFixed(1)}%` : "0%";
+
+      await exportarDashboardCompletoPdf(
+        {
+          mesLabel: mesNome,
+          total,
+          andamento: ativos,
+          resolvidos,
+          chamadosDia: dailyStats?.abertosHoje ?? 0,
+          atendidosDia: dailyStats?.fechadosHoje ?? 0,
+          taxaResolucao: taxaRes,
+          recorrentes: dadosCategorias,
+          setores: dadosSetores,
+          prioridades: dadosPrioridades,
+          status: dadosStatus,
+          sla: dadosSlaExport,
+          serieHistorica: listaHistorico,
+          mediaMensalHistorica: mediaMensalHist,
+          mesPicoHistorico: mesPicoHist ? { label: mesPicoHist.label, total: mesPicoHist.total } : undefined,
+          avaliacoes: evaluationStats && evaluationStats.total > 0
+            ? {
+                total: evaluationStats.total,
+                media: evaluationStats.media,
+                satisfacaoPct: evaluationStats.satisfacao_pct,
+                mediaFacilidade: evaluationStats.media_facilidade,
+                distribuicao: evaluationStats.distribuicao,
+              }
+            : undefined,
+        },
+        `dashboard-completo-${mes}`,
       );
     });
   };
