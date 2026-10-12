@@ -521,6 +521,9 @@ export interface UsuarioCadastro {
   updatedAt?: string;
   provedor?: string | null;
   totalChamados?: number;
+  alertaEmailAberto?: boolean;
+  alertaEmailAtualizado?: boolean;
+  alertaEmailFinalizado?: boolean;
 }
 
 export interface UsuarioAdmin {
@@ -737,6 +740,38 @@ export const WHATSAPP_PADRAO: WhatsappConfig = {
 *Descrição:* {descricao}`,
 };
 
+export interface AlertasEmailSolicitanteConfig {
+  ativo: boolean; // Padrão: false (inicia desligado para testes prévios)
+  sistemaAtivoAPartirDe: string; // ISO timestamp para evitar disparos retroativos
+  eventos: {
+    aberto: boolean;
+    atualizado: boolean;
+    finalizado: boolean;
+  };
+  nomeRemetente: string;
+  emailRemetente: string;
+  textoRodape: string;
+  janelaAgrupamentoMinutos: number;
+  modoAmbienteTeste: "redirecionar" | "apenas_log" | "desativado";
+  emailAmbienteTeste: string;
+}
+
+export const ALERTAS_EMAIL_SOLICITANTE_PADRAO: AlertasEmailSolicitanteConfig = {
+  ativo: false,
+  sistemaAtivoAPartirDe: new Date().toISOString(),
+  eventos: {
+    aberto: true,
+    atualizado: true,
+    finalizado: true,
+  },
+  nomeRemetente: "TI SENAI LRV",
+  emailRemetente: "avisos@tisenailrv.app",
+  textoRodape: "Você recebeu esta notificação automática por ser o solicitante registrado neste chamado institucional.",
+  janelaAgrupamentoMinutos: 5,
+  modoAmbienteTeste: "redirecionar",
+  emailAmbienteTeste: "admin@tisenailrv.app",
+};
+
 
 export interface Regras {
   prazos: Record<Prioridade, number>; // horas úteis
@@ -781,6 +816,7 @@ export interface Regras {
   seo?: SeoConfig | undefined;
   atendimento?: AtendimentoConfig | undefined;
   meusChamados?: MeusChamadosConfig | undefined;
+  alertasEmailSolicitante?: AlertasEmailSolicitanteConfig | undefined;
 }
 
 export type ColunaLargura = "estreita" | "media" | "larga" | "automatica";
@@ -1286,6 +1322,7 @@ export const REGRAS_PADRAO: Regras = {
   iaSuporte: { ...IA_SUPORTE_PADRAO },
   whatsapp: { ...WHATSAPP_PADRAO },
   sobre: { ...SOBRE_PADRAO },
+  alertasEmailSolicitante: { ...ALERTAS_EMAIL_SOLICITANTE_PADRAO },
   temaConfig: { ...TEMA_CONFIG_PADRAO },
   coresBotoes: {
     claro: { ...CORES_BOTOES_PADRAO.claro },

@@ -41,6 +41,11 @@ export interface StoreValue {
     localPadrao?: string;
     matricula?: string;
   }) => Promise<{ success: boolean; message?: string }>;
+  atualizarPreferenciasAlertaEmail: (prefs: {
+    aberto: boolean;
+    atualizado: boolean;
+    finalizado: boolean;
+  }) => Promise<boolean>;
   sair: () => Promise<void>;
 }
 

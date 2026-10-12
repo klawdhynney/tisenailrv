@@ -39,6 +39,7 @@ import {
   Sparkles,
   Star,
   Zap,
+  Mail,
   Search,
   LayoutTemplate,
   History,
@@ -96,6 +97,7 @@ import {
   AVALIACAO_PADRAO,
   IA_SUPORTE_PADRAO,
   WHATSAPP_PADRAO,
+  ALERTAS_EMAIL_SOLICITANTE_PADRAO,
   MENU_PADRAO,
   CHAT_PADRAO,
   LOGIN_PADRAO,
@@ -104,7 +106,9 @@ import {
   type CampoAbertura,
   type ParametroCor,
   type Periodo,
+  type AlertasEmailSolicitanteConfig,
 } from "@/lib/types";
+import { PainelAlertasEmail } from "@/components/regras/PainelAlertasEmail";
 
 export const Route = createFileRoute("/_authenticated/regras")({
   head: () => ({
@@ -467,6 +471,11 @@ function Regras() {
   const salvarWhatsapp = (patch: Partial<typeof whatsappConf>) =>
     salvar({ whatsapp: { ...whatsappConf, ...patch } });
 
+  // Alertas por E-mail (Solicitantes)
+  const alertasSolicitanteConf = (regras.alertasEmailSolicitante ?? ALERTAS_EMAIL_SOLICITANTE_PADRAO) as AlertasEmailSolicitanteConfig;
+  const salvarAlertasSolicitante = (patch: Partial<AlertasEmailSolicitanteConfig>) =>
+    salvar({ alertasEmailSolicitante: { ...alertasSolicitanteConf, ...patch } });
+
 
   // 9. Horários, SLA e Atendimento
   const horariosPorDia = regras.expediente.horariosPorDia ?? {
@@ -608,6 +617,7 @@ function Regras() {
             { id: "banco", label: "Banco & Otimização", icone: Database, cor: "text-purple-600", kw: "banco dados limpeza otimizacao cache" },
             ...(isAdmin ? [{ id: "usuarios", label: "Usuários & Acessos", icone: Users, cor: "text-purple-600", kw: "usuarios cargos papeis admin gestor permissoes acessos" }] : []),
             ...(isAdmin ? [{ id: "ia", label: "IA de Suporte", icone: Sparkles, cor: "text-purple-600", kw: "ia inteligencia artificial prompts tokens gemini suporte" }] : []),
+            ...(isAdmin ? [{ id: "alertasEmail", label: "Alertas por E-mail", icone: Mail, cor: "text-g-blue", kw: "email alertas notificacoes fila teste solicitante chamado aberto atualizado finalizado" }] : []),
             { id: "botoes", label: "Cores dos Botões", icone: MousePointerClick, cor: "text-g-blue", kw: "botoes cores aparencia botoes primario secundario contorno destaque sucesso perigo dashboard abas" },
             { id: "coresSite", label: "Cores do Site", icone: Layout, cor: "text-purple-600", kw: "cores site fundo cards textos bordas faixa cabecalho tema" },
             { id: "temas", label: "Tema & Cores", icone: Palette, cor: "text-purple-600", kw: "tema cores paleta claro escuro pastel design aparencia" },
@@ -2831,6 +2841,17 @@ function Regras() {
                 </Tabs>
               </CardContent>
             </Card>
+          </TabsContent>
+        )}
+
+        {/* ABA ALERTAS POR E-MAIL (ADMIN) */}
+        {isAdmin && (
+          <TabsContent value="alertasEmail" className="space-y-6 focus-visible:outline-none">
+            <PainelAlertasEmail
+              config={alertasSolicitanteConf}
+              onChange={salvarAlertasSolicitante}
+              userEmail={session?.user?.email || ""}
+            />
           </TabsContent>
         )}
 

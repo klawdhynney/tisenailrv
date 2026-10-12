@@ -15,6 +15,7 @@ import {
   Sparkles,
   ShieldCheck,
   Hash,
+  Bell,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useStore } from "@/lib/store-context";
 import { formatarTelefoneBR, validarTelefoneBR } from "@/lib/telefone";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,7 +56,17 @@ export const Route = createFileRoute("/meu-cadastro")({
 });
 
 function PaginaMeuCadastro() {
-  const { session, authPronto, regras, perfilUsuario, atualizarMeuCadastro, recarregarPerfilUsuario, userRole, userBlocked } = useStore();
+  const {
+    session,
+    authPronto,
+    regras,
+    perfilUsuario,
+    atualizarMeuCadastro,
+    atualizarPreferenciasAlertaEmail,
+    recarregarPerfilUsuario,
+    userRole,
+    userBlocked,
+  } = useStore();
   const navigate = useNavigate();
 
   const [nome, setNome] = useState("");
@@ -63,6 +75,9 @@ function PaginaMeuCadastro() {
   const [telefone, setTelefone] = useState("");
   const [localPadrao, setLocalPadrao] = useState("");
   const [matricula, setMatricula] = useState("");
+  const [alertaAberto, setAlertaAberto] = useState(true);
+  const [alertaAtualizado, setAlertaAtualizado] = useState(true);
+  const [alertaFinalizado, setAlertaFinalizado] = useState(true);
   const [erros, setErros] = useState<Record<string, string>>({});
   const [salvando, setSalvando] = useState(false);
 
@@ -75,6 +90,9 @@ function PaginaMeuCadastro() {
       setTelefone(formatarTelefoneBR(perfilUsuario.telefone || ""));
       setLocalPadrao(perfilUsuario.localPadrao || "");
       setMatricula(perfilUsuario.matricula || "");
+      setAlertaAberto(perfilUsuario.alertaEmailAberto !== false);
+      setAlertaAtualizado(perfilUsuario.alertaEmailAtualizado !== false);
+      setAlertaFinalizado(perfilUsuario.alertaEmailFinalizado !== false);
     } else if (session?.user) {
       const email = session.user.email || "";
       const nomePadrao = session.user.user_metadata?.full_name || session.user.user_metadata?.name || email.split("@")[0] || "";
@@ -135,7 +153,12 @@ function PaginaMeuCadastro() {
       if (!res.success) {
         toast.error(res.message || "Erro ao salvar cadastro.");
       } else {
-        toast.success("Seu cadastro foi salvo com sucesso!");
+        await atualizarPreferenciasAlertaEmail({
+          aberto: alertaAberto,
+          atualizado: alertaAtualizado,
+          finalizado: alertaFinalizado,
+        });
+        toast.success("Seu cadastro e preferências foram salvos com sucesso!");
         await recarregarPerfilUsuario();
       }
     } catch (err: any) {
@@ -382,6 +405,67 @@ function PaginaMeuCadastro() {
                     className="pl-8 font-mono text-sm"
                   />
                   <Hash className="size-3.5 text-muted-foreground absolute left-2.5 top-3" />
+                </div>
+              </div>
+            </div>
+
+            {/* Preferências de Notificações por E-mail */}
+            <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-4">
+              <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
+                <Bell className="size-4 text-primary" />
+                <span>Preferências de Notificações por E-mail</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Escolha quais avisos automáticos de acompanhamento você deseja receber no seu e-mail corporativo.
+              </p>
+
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/60 bg-background/50 hover:bg-background transition-colors">
+                  <div className="space-y-0.5 pr-2">
+                    <Label htmlFor="pref-aberto" className="text-xs font-semibold cursor-pointer">
+                      Avisar quando meu chamado for aberto
+                    </Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Receba confirmação imediata com o número, SLA e resumo do chamado registrado.
+                    </p>
+                  </div>
+                  <Switch
+                    id="pref-aberto"
+                    checked={alertaAberto}
+                    onCheckedChange={setAlertaAberto}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/60 bg-background/50 hover:bg-background transition-colors">
+                  <div className="space-y-0.5 pr-2">
+                    <Label htmlFor="pref-atualizado" className="text-xs font-semibold cursor-pointer">
+                      Avisar quando meu chamado for atualizado
+                    </Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Receba atualizações de status ou novas respostas da equipe de suporte.
+                    </p>
+                  </div>
+                  <Switch
+                    id="pref-atualizado"
+                    checked={alertaAtualizado}
+                    onCheckedChange={setAlertaAtualizado}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/60 bg-background/50 hover:bg-background transition-colors">
+                  <div className="space-y-0.5 pr-2">
+                    <Label htmlFor="pref-finalizado" className="text-xs font-semibold cursor-pointer">
+                      Avisar quando meu chamado for finalizado
+                    </Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Receba o procedimento técnico aplicado e o link para avaliar o atendimento.
+                    </p>
+                  </div>
+                  <Switch
+                    id="pref-finalizado"
+                    checked={alertaFinalizado}
+                    onCheckedChange={setAlertaFinalizado}
+                  />
                 </div>
               </div>
             </div>

@@ -22,6 +22,7 @@ import {
   PROMPT_APRIMORAR_TEXTO_PADRAO,
   PROMPT_SUGERIR_ABERTURA_PADRAO,
   WHATSAPP_PADRAO,
+  ALERTAS_EMAIL_SOLICITANTE_PADRAO,
   MOTIVOS_PAUSA_SLA_PADRAO,
   MENU_PADRAO,
   CHAT_PADRAO,
@@ -172,6 +173,14 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
           : [...(ATENDIMENTO_PADRAO.botoesStatusVisiveis || [])],
     },
     meusChamados: { ...MEUS_CHAMADOS_PADRAO, ...(regrasSalvas.meusChamados || {}) },
+    alertasEmailSolicitante: {
+      ...ALERTAS_EMAIL_SOLICITANTE_PADRAO,
+      ...(regrasSalvas.alertasEmailSolicitante || {}),
+      eventos: {
+        ...ALERTAS_EMAIL_SOLICITANTE_PADRAO.eventos,
+        ...(regrasSalvas.alertasEmailSolicitante?.eventos || {}),
+      },
+    },
     temaConfig: {
       ...(REGRAS_PADRAO.temaConfig ?? {
         modoPadrao: "auto",
@@ -864,6 +873,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         telefone: (pData as any)?.telefone || null,
         localPadrao: (pData as any)?.local_padrao || null,
         matricula: (pData as any)?.matricula || null,
+        alertaEmailAberto: (pData as any)?.alerta_email_aberto !== false,
+        alertaEmailAtualizado: (pData as any)?.alerta_email_atualizado !== false,
+        alertaEmailFinalizado: (pData as any)?.alerta_email_finalizado !== false,
         status: ((pData as any)?.status as "ativo" | "inativo") || (isBloq ? "inativo" : "ativo"),
         bloqueado: isBloq,
         role: userRole,
@@ -879,6 +891,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           nome: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Usuário",
           fotoUrl: session.user.user_metadata?.avatar_url || null,
           setor: "Pendente",
+          alertaEmailAberto: true,
+          alertaEmailAtualizado: true,
+          alertaEmailFinalizado: true,
           status: "ativo",
           bloqueado: false,
           role: userRole,
@@ -887,6 +902,43 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [session?.user, userRole]);
+
+  const atualizarPreferenciasAlertaEmail = useCallback(async (prefs: {
+    aberto: boolean;
+    atualizado: boolean;
+    finalizado: boolean;
+  }) => {
+    const uid = session?.user?.id;
+    if (!uid) return false;
+    try {
+      const { error: rpcErr } = await supabase.rpc("update_my_email_alert_preferences", {
+        p_aberto: prefs.aberto,
+        p_atualizado: prefs.atualizado,
+        p_finalizado: prefs.finalizado,
+      } as any);
+
+      if (rpcErr) {
+        await supabase.from("user_profiles").update({
+          alerta_email_aberto: prefs.aberto,
+          alerta_email_atualizado: prefs.atualizado,
+          alerta_email_finalizado: prefs.finalizado,
+          updated_at: new Date().toISOString(),
+        } as any).eq("id", uid);
+      }
+
+      setPerfilUsuario((ant) => ant ? {
+        ...ant,
+        alertaEmailAberto: prefs.aberto,
+        alertaEmailAtualizado: prefs.atualizado,
+        alertaEmailFinalizado: prefs.finalizado,
+      } : null);
+
+      return true;
+    } catch (e) {
+      console.error("Erro ao atualizar preferências de alerta de e-mail:", e);
+      return false;
+    }
+  }, [session?.user?.id]);
 
   const atualizarMeuCadastro = useCallback(async (dados: {
     nome: string;
@@ -993,6 +1045,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       perfilUsuario,
       recarregarPerfilUsuario: carregarPerfilUsuario,
       atualizarMeuCadastro,
+      atualizarPreferenciasAlertaEmail,
       sair,
     }),
     [
@@ -1023,6 +1076,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       perfilUsuario,
       carregarPerfilUsuario,
       atualizarMeuCadastro,
+      atualizarPreferenciasAlertaEmail,
       sair,
     ],
   );
