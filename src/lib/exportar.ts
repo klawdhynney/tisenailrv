@@ -299,6 +299,33 @@ export function exportarXml(linhas: LinhaExportacao[], nome: string) {
   baixarBlob(`<?xml version="1.0" encoding="UTF-8"?><chamados>${registros}</chamados>`, "application/xml;charset=utf-8", nomeFinal);
 }
 
+async function obterIconeBase64(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        const size = 96;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, size, size);
+          resolve(canvas.toDataURL("image/png"));
+          return;
+        }
+      } catch {
+        // fallback
+      }
+      resolve(null);
+    };
+    img.onerror = () => resolve(null);
+    img.src = "/icone.png";
+  });
+}
+
 export async function exportarPdf(linhas: LinhaExportacao[], nome: string, titulo: string) {
   if (!linhas || linhas.length === 0) return;
   const [{ jsPDF }, autoTableModule] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
@@ -314,16 +341,27 @@ export async function exportarPdf(linhas: LinhaExportacao[], nome: string, titul
   doc.setFillColor(26, 115, 232);
   doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, "F");
 
+  // Inserção do ícone oficial do site do lado esquerdo antes do título
+  const iconeDataUrl = await obterIconeBase64();
+  if (iconeDataUrl) {
+    try {
+      doc.addImage(iconeDataUrl, "PNG", 10, 3, 12, 12);
+    } catch {
+      // fallback silencioso
+    }
+  }
+
+  const startTextX = iconeDataUrl ? 25 : 10;
   doc.setFontSize(13);
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.text(`TI SENAI LRV · ${titulo}`, 10, 9.5);
+  doc.text(`TI SENAI LRV · ${titulo}`, startTextX, 9.5);
 
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
   doc.text(
     `Emitido em ${dataEmissao} às ${horaEmissao} · Total de registros: ${linhas.length} · Relatório oficial do sistema`,
-    10,
+    startTextX,
     15,
   );
 
@@ -445,21 +483,31 @@ export async function exportarDashboardCompletoPdf(dados: DashboardExportData, n
   const autoTable = autoTableModule.default;
   const dataEmissao = new Date().toLocaleDateString("pt-BR");
   const horaEmissao = new Date().toLocaleTimeString("pt-BR").slice(0, 5);
+  const iconeDataUrl = await obterIconeBase64();
 
   const desenharBannerTopo = (tituloSecao = "Dashboard Completo de Indicadores") => {
     doc.setFillColor(26, 115, 232);
     doc.rect(0, 0, 210, 22, "F");
 
-    doc.setFontSize(14);
+    if (iconeDataUrl) {
+      try {
+        doc.addImage(iconeDataUrl, "PNG", 12, 3.5, 15, 15);
+      } catch {
+        // fallback
+      }
+    }
+
+    const startX = iconeDataUrl ? 30 : 14;
+    doc.setFontSize(13.5);
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.text(`TI SENAI LRV · ${tituloSecao}`, 14, 10);
+    doc.text(`TI SENAI LRV · ${tituloSecao}`, startX, 10.5);
 
     doc.setFontSize(8.5);
     doc.setFont("helvetica", "normal");
     doc.text(
       `Período: ${dados.mesLabel} | Emitido em: ${dataEmissao} às ${horaEmissao} | Sistema de Chamados TI SENAI LRV`,
-      14,
+      startX,
       17,
     );
   };
