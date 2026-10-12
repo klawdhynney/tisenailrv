@@ -25,6 +25,7 @@ import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticat
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardAcompanhamentoRouteImport } from './routes/dashboard.acompanhamento'
 import { Route as DashboardAvaliacoesRouteImport } from './routes/dashboard.avaliacoes'
+import { Route as DashboardIndicadoresRouteImport } from './routes/dashboard.indicadores'
 import { Route as DashboardSerieHistoricaRouteImport } from './routes/dashboard.serie-historica'
 import { Route as AuthenticatedChamadosTicketIdRouteImport } from './routes/_authenticated/chamados.$ticketId'
 import { Route as AuthenticatedRegrasUsuariosRouteImport } from './routes/_authenticated/regras.usuarios'
@@ -111,6 +112,11 @@ const DashboardAvaliacoesRoute = DashboardAvaliacoesRouteImport.update({
   path: '/avaliacoes',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardIndicadoresRoute = DashboardIndicadoresRouteImport.update({
+  id: '/indicadores',
+  path: '/indicadores',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardSerieHistoricaRoute = DashboardSerieHistoricaRouteImport.update({
   id: '/serie-historica',
   path: '/serie-historica',
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/dashboard/acompanhamento': typeof DashboardAcompanhamentoRoute
   '/dashboard/avaliacoes': typeof DashboardAvaliacoesRoute
+  '/dashboard/indicadores': typeof DashboardIndicadoresRoute
   '/dashboard/serie-historica': typeof DashboardSerieHistoricaRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
@@ -175,6 +182,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/dashboard/acompanhamento': typeof DashboardAcompanhamentoRoute
   '/dashboard/avaliacoes': typeof DashboardAvaliacoesRoute
+  '/dashboard/indicadores': typeof DashboardIndicadoresRoute
   '/dashboard/serie-historica': typeof DashboardSerieHistoricaRoute
   '/dashboard': typeof DashboardIndexRoute
   '/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/dashboard/acompanhamento': typeof DashboardAcompanhamentoRoute
   '/dashboard/avaliacoes': typeof DashboardAvaliacoesRoute
+  '/dashboard/indicadores': typeof DashboardIndicadoresRoute
   '/dashboard/serie-historica': typeof DashboardSerieHistoricaRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/_authenticated/chamados/$ticketId': typeof AuthenticatedChamadosTicketIdRoute
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/dashboard/acompanhamento'
     | '/dashboard/avaliacoes'
+    | '/dashboard/indicadores'
     | '/dashboard/serie-historica'
     | '/dashboard/'
     | '/chamados/$ticketId'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/dashboard/acompanhamento'
     | '/dashboard/avaliacoes'
+    | '/dashboard/indicadores'
     | '/dashboard/serie-historica'
     | '/dashboard'
     | '/chamados/$ticketId'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/dashboard/acompanhamento'
     | '/dashboard/avaliacoes'
+    | '/dashboard/indicadores'
     | '/dashboard/serie-historica'
     | '/dashboard/'
     | '/_authenticated/chamados/$ticketId'
@@ -403,6 +415,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAvaliacoesRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/indicadores': {
+      id: '/dashboard/indicadores'
+      path: '/indicadores'
+      fullPath: '/dashboard/indicadores'
+      preLoaderRoute: typeof DashboardIndicadoresRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/serie-historica': {
       id: '/dashboard/serie-historica'
       path: '/serie-historica'
@@ -485,6 +504,7 @@ const AuthenticatedRouteRouteWithChildren =
 interface DashboardRouteChildren {
   DashboardAcompanhamentoRoute: typeof DashboardAcompanhamentoRoute
   DashboardAvaliacoesRoute: typeof DashboardAvaliacoesRoute
+  DashboardIndicadoresRoute: typeof DashboardIndicadoresRoute
   DashboardSerieHistoricaRoute: typeof DashboardSerieHistoricaRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
@@ -492,6 +512,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAcompanhamentoRoute: DashboardAcompanhamentoRoute,
   DashboardAvaliacoesRoute: DashboardAvaliacoesRoute,
+  DashboardIndicadoresRoute: DashboardIndicadoresRoute,
   DashboardSerieHistoricaRoute: DashboardSerieHistoricaRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }

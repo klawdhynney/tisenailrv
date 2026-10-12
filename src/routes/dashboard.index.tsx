@@ -220,21 +220,27 @@ function Dashboard() {
   const [visao, setVisao] = useState<Visao>(() => (regras.dashboard?.visaoPadrao as Visao) || "problemas");
 
   const [tipoGrafico, setTipoGrafico] = useState<TipoGrafico>(() => {
-    if (tipoQuery === "kpi" || tipoQuery === "pizza" || tipoQuery === "barras" || tipoQuery === "historico") {
+    if (tipoQuery === "pizza" || tipoQuery === "barras" || tipoQuery === "historico") {
       return tipoQuery;
     }
     const padrao = regras.dashboard?.tipoGraficoPadrao as any;
-    if (padrao === "pizza" || padrao === "barras" || padrao === "historico" || padrao === "kpi") {
+    if (padrao === "pizza" || padrao === "barras" || padrao === "historico") {
       return padrao;
     }
-    return "kpi";
+    return "pizza";
   });
 
   useEffect(() => {
-    if (tipoQuery === "kpi" || tipoQuery === "pizza" || tipoQuery === "barras" || tipoQuery === "historico") {
+    if (tipoQuery === "kpi") {
+      navigate({
+        to: "/dashboard/indicadores",
+        search: { mes: mesQuery || undefined },
+        replace: true,
+      });
+    } else if (tipoQuery === "pizza" || tipoQuery === "barras" || tipoQuery === "historico") {
       setTipoGrafico(tipoQuery);
     }
-  }, [tipoQuery]);
+  }, [tipoQuery, mesQuery, navigate]);
 
   const linhas = useMemo(
     () => (publicStats || []).filter((r) => r && (mes === "todos" || r.mes === mes)),
@@ -595,6 +601,20 @@ function Dashboard() {
               <span>Avaliações</span>
             </Link>
           </Button>
+
+          {/* Botão Indicadores (Página Solo) */}
+          <Button
+            asChild
+            variant="outline"
+            className="min-h-[40px] h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
+            title="Indicadores Principais (KPIs)"
+            aria-label="Indicadores"
+          >
+            <Link to="/dashboard/indicadores" search={{ mes: mes !== "todos" ? mes : undefined }}>
+              <LayoutGrid className="size-4 text-g-blue shrink-0" />
+              <span>Indicadores</span>
+            </Link>
+          </Button>
         </div>
 
         {/* Botões de exportação na mesma linha */}
@@ -695,21 +715,22 @@ function Dashboard() {
                   </p>
                 </div>
 
-                {/* Menu e Abas dos Gráficos com Cartões KPI em Primeiro e Série Histórica após os demais */}
+                {/* Menu e Abas dos Gráficos */}
                 <div className="no-print flex flex-wrap gap-2" aria-label="Tipo de gráfico">
                   {(() => {
                     const graficosDisponiveis = [
-                      { id: "kpi", label: dashConf?.titulosGraficos?.kpi || "Cartões de Indicadores", icon: LayoutGrid, title: "Cartões de Indicadores (Big Numbers)" },
                       { id: "pizza", label: dashConf?.titulosGraficos?.pizza || "Pizza", icon: PieChartIcon, title: "Gráfico de Rosca / Pizza" },
                       { id: "barras", label: dashConf?.titulosGraficos?.barras || "Barras", icon: BarChart3, title: "Gráfico de Barras horizontais" },
                       { id: "historico", label: dashConf?.titulosGraficos?.historico || "Série Histórica", icon: Activity, title: "Série histórica por chamados" },
                     ];
-                    const ordem = dashConf?.ordemGraficos && dashConf.ordemGraficos.length > 0
+                    const ordem = (dashConf?.ordemGraficos && dashConf.ordemGraficos.length > 0
                       ? dashConf.ordemGraficos
-                      : ["kpi", "pizza", "barras", "historico"];
-                    const visiveis = dashConf?.graficos && dashConf.graficos.length > 0
+                      : ["pizza", "barras", "historico"]
+                    ).filter((id: string) => id !== "kpi");
+                    const visiveis = (dashConf?.graficos && dashConf.graficos.length > 0
                       ? dashConf.graficos
-                      : ["kpi", "pizza", "barras", "historico"];
+                      : ["pizza", "barras", "historico"]
+                    ).filter((id: string) => id !== "kpi");
                     const filtrados = ordem
                       .map((id) => graficosDisponiveis.find((g) => g.id === id))
                       .filter((g) => Boolean(g && visiveis.includes(g.id)));
