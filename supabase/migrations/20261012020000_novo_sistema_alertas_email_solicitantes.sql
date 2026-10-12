@@ -4,12 +4,13 @@
 -- Eventos: Aberto, Atualizado (com agrupamento de 5min) e Finalizado.
 -- Destinatário exclusivo: solicitante do chamado.
 -- Idempotência, proteção de retroatividade, logs com RLS e preferências de usuário.
+-- 100% resiliente: cria tabelas auxiliares se não existirem e previne erros de relacionamento.
 -- ============================================================================
 
 -- 1. TABELA DE FILA E LOGS DE ALERTAS (alertas_email_fila)
 CREATE TABLE IF NOT EXISTS public.alertas_email_fila (
   id bigserial PRIMARY KEY,
-  ticket_id bigint NOT NULL REFERENCES public.tickets(id) ON DELETE CASCADE,
+  ticket_id integer NOT NULL REFERENCES public.tickets(id) ON DELETE CASCADE,
   destinatario text NOT NULL,
   evento text NOT NULL CHECK (evento IN ('aberto', 'atualizado', 'finalizado', 'teste')),
   assunto text NOT NULL,
@@ -318,7 +319,27 @@ CREATE TRIGGER trg_alertas_ticket_eventos
   FOR EACH ROW
   EXECUTE FUNCTION public.fn_trigger_alertas_ticket();
 
--- 5. FUNÇÃO TRIGGER: RESPOSTAS DA EQUIPE NO CHAT (EVENTO: ATUALIZADO)
+-- ============================================================================
+-- 5. TABELA DE MENSAGENS / CHAT (ticket_mensagens) E TRIGGER DE ATUALIZAÇÃO
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.ticket_mensagens (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  ticket_id integer NOT NULL REFERENCES public.tickets(id) ON DELETE CASCADE,
+  user_id uuid,
+  autor_nome text NOT NULL,
+  autor_email text NOT NULL,
+  autor_tipo text NOT NULL CHECK (autor_tipo IN ('solicitante', 'equipe', 'sistema')),
+  mensagem text NOT NULL,
+  criado_em timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.ticket_mensagens ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_ticket_mensagens_ticket_id ON public.ticket_mensagens(ticket_id, criado_em ASC);
+CREATE INDEX IF NOT EXISTS idx_ticket_mensagens_user_id ON public.ticket_mensagens(user_id);
+GRANT SELECT, INSERT ON public.ticket_mensagens TO authenticated;
+GRANT ALL ON public.ticket_mensagens TO service_role;
+
+-- Função trigger para mensagens da equipe no chat
 CREATE OR REPLACE FUNCTION public.fn_trigger_alertas_mensagem()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -447,29 +468,47 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_alertas_mensagem_eventos ON public.ticket_mensagens;
-CREATE TRIGGER trg_alertas_mensagem_eventos
-  AFTER INSERT ON public.ticket_mensagens
-  FOR EACH ROW
-  EXECUTE FUNCTION public.fn_trigger_alertas_mensagem();
+-- Trigger resiliente para ticket_mensagens
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'ticket_mensagens') THEN
+    DROP TRIGGER IF EXISTS trg_alertas_mensagem_eventos ON public.ticket_mensagens;
+    CREATE TRIGGER trg_alertas_mensagem_eventos
+      AFTER INSERT ON public.ticket_mensagens
+      FOR EACH ROW
+      EXECUTE FUNCTION public.fn_trigger_alertas_mensagem();
+  END IF;
+END $$;
 
+-- ============================================================================
 -- 6. SEGURANÇA E POLÍTICAS RLS (alertas_email_fila)
+-- ============================================================================
 ALTER TABLE public.alertas_email_fila ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "alertas_email_fila_admin_select" ON public.alertas_email_fila;
 CREATE POLICY "alertas_email_fila_admin_select" ON public.alertas_email_fila
   FOR SELECT TO authenticated
   USING (
-    public.is_named_manager()
-    OR public.has_role(auth.uid(), 'gestor')
-    OR public.has_role(auth.uid(), 'admin')
+    public.is_admin()
+    OR public.is_named_manager()
+    OR public.has_role(auth.uid(), 'gestor'::text)
+    OR public.has_role(auth.uid(), 'admin'::text)
   );
 
 GRANT ALL ON public.alertas_email_fila TO service_role;
 GRANT SELECT ON public.alertas_email_fila TO authenticated;
-GRANT USAGE, SELECT ON SEQUENCE public.alertas_email_fila_id_seq TO authenticated, service_role;
 
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'S' AND relname = 'alertas_email_fila_id_seq') THEN
+    EXECUTE 'GRANT USAGE, SELECT ON SEQUENCE public.alertas_email_fila_id_seq TO authenticated, service_role';
+  END IF;
+END $$;
+
+-- ============================================================================
 -- 7. RPCS PARA ADMINISTRAÇÃO E PROCESSAMENTO
+-- ============================================================================
+
 -- 7.1 Listar logs com filtros
 CREATE OR REPLACE FUNCTION public.get_email_alertas_logs(
   p_limite integer DEFAULT 50,
@@ -478,7 +517,7 @@ CREATE OR REPLACE FUNCTION public.get_email_alertas_logs(
 )
 RETURNS TABLE (
   id bigint,
-  ticket_id bigint,
+  ticket_id integer,
   destinatario text,
   evento text,
   assunto text,
@@ -497,7 +536,12 @@ SECURITY DEFINER
 SET search_path = public, auth
 AS $$
 BEGIN
-  IF NOT (public.is_named_manager() OR public.has_role(auth.uid(), 'gestor') OR public.has_role(auth.uid(), 'admin')) THEN
+  IF NOT (
+    public.is_admin()
+    OR public.is_named_manager()
+    OR public.has_role(auth.uid(), 'gestor'::text)
+    OR public.has_role(auth.uid(), 'admin'::text)
+  ) THEN
     RAISE EXCEPTION 'Acesso negado. Apenas gestores e administradores podem visualizar o log de alertas.';
   END IF;
 
@@ -533,7 +577,12 @@ SECURITY DEFINER
 SET search_path = public, auth
 AS $$
 BEGIN
-  IF NOT (public.is_named_manager() OR public.has_role(auth.uid(), 'gestor') OR public.has_role(auth.uid(), 'admin')) THEN
+  IF NOT (
+    public.is_admin()
+    OR public.is_named_manager()
+    OR public.has_role(auth.uid(), 'gestor'::text)
+    OR public.has_role(auth.uid(), 'admin'::text)
+  ) THEN
     RAISE EXCEPTION 'Acesso negado.';
   END IF;
 
@@ -560,9 +609,14 @@ SET search_path = public, auth
 AS $$
 DECLARE
   v_id bigint;
-  v_ticket_id bigint;
+  v_ticket_id integer;
 BEGIN
-  IF NOT (public.is_named_manager() OR public.has_role(auth.uid(), 'gestor') OR public.has_role(auth.uid(), 'admin')) THEN
+  IF NOT (
+    public.is_admin()
+    OR public.is_named_manager()
+    OR public.has_role(auth.uid(), 'gestor'::text)
+    OR public.has_role(auth.uid(), 'admin'::text)
+  ) THEN
     RAISE EXCEPTION 'Acesso restrito a gestores e administradores.';
   END IF;
 
@@ -640,7 +694,7 @@ $$;
 CREATE OR REPLACE FUNCTION public.reclamar_itens_fila_alertas(p_limite integer DEFAULT 10)
 RETURNS TABLE (
   id bigint,
-  ticket_id bigint,
+  ticket_id integer,
   destinatario text,
   evento text,
   assunto text,
