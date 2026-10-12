@@ -103,7 +103,7 @@ export function FiltroMes({
           aria-haspopup="dialog"
           aria-expanded={aberto}
           className={cn(
-            "h-9 px-3 rounded-xl text-xs font-semibold border border-input bg-background hover:bg-muted text-foreground shadow-2xs gap-1.5 shrink-0 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-g-blue focus-visible:ring-offset-1",
+            "h-8.5 px-2.5 sm:px-3 rounded-xl text-xs font-semibold border border-input bg-background hover:bg-muted text-foreground shadow-2xs gap-1.5 shrink-0 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-g-blue focus-visible:ring-offset-1",
             valor !== "todos" && "border-g-blue/60 bg-g-blue/5 text-g-blue font-bold",
             className
           )}

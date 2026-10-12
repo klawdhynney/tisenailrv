@@ -682,3 +682,13 @@
   }
 }
 
+/* Utilitário para ocultar barras de rolagem em carrosséis/barras de filtros horizontais */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+

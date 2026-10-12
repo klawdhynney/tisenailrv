@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, FileSpreadsheet, FileText, Headset, Search } from "lucide-react";
+import { Eye, FileSpreadsheet, FileText, Headset, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PrioridadeChip, SlaChip, StatusChip } from "@/components/Chips";
@@ -281,19 +281,20 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
           </header>
         )}
 
-        {/* Linha Unificada de Filtros: Mês, Chips de Status e Busca na primeira linha à direita */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl bg-card border border-border shadow-2xs">
-          {/* Lado Esquerdo: Filtro de Mês e Chips de Status */}
-          <div className="flex flex-wrap items-center gap-2">
+        {/* Linha Unificada de Filtros: Mês, Chips de Status e Busca alinhados em uma só linha */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-2xl bg-card border border-border shadow-2xs">
+          {/* Lado Esquerdo: Filtro de Mês e Chips de Status em linha única */}
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 overflow-x-auto no-scrollbar py-0.5">
             {/* Filtro de Mês Padronizado com Popover acessível */}
             <FiltroMes
               valor={month}
               onChange={setMonth}
               tickets={tickets}
+              className="h-8.5 px-2.5 text-xs shrink-0"
             />
 
             {/* Chips de Status Dinâmicos com Contagens e Alto Contraste */}
-            <div className="flex flex-wrap items-center gap-1.5" role="toolbar" aria-label="Filtrar por status">
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0" role="toolbar" aria-label="Filtrar por status">
               {botoesStatusDefinidos.map((st) => {
                 const chaveContagem =
                   st.toLowerCase() === "todos"
@@ -347,13 +348,13 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
                           }
                         : undefined
                     }
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer shadow-2xs ${
+                    className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer shadow-2xs shrink-0 whitespace-nowrap ${
                       isAtivo ? "shadow-xs" : `${classesInativo} bg-card/60`
                     }`}
                   >
                     <span>{st === "Resolvido" || st === "Resolvidos" ? "Finalizados" : st}</span>
                     <span
-                      className={`px-1.5 py-0.5 rounded-full text-[11px] font-extrabold ${
+                      className={`px-1.5 py-0.2 rounded-full text-[11px] font-extrabold ${
                         isAtivo
                           ? "bg-white/25 text-white"
                           : "bg-muted text-muted-foreground"
@@ -367,16 +368,27 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
             </div>
           </div>
 
-          {/* Lado Direito: Busca na primeira linha à direita (em telas menores ocupa largura total) */}
-          <div className="w-full sm:w-auto sm:ml-auto flex-1 sm:flex-initial min-w-[200px] sm:max-w-xs">
+          {/* Lado Direito: Busca na primeira linha à direita */}
+          <div className="w-full sm:w-44 md:w-52 lg:w-60 shrink-0 sm:ml-auto">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
               <Input
-                className="h-9 pl-8 text-xs bg-background rounded-xl border-input w-full"
+                className="h-8.5 pl-8 pr-7 text-xs bg-background rounded-xl border-input w-full shadow-2xs"
                 placeholder={configAtendimento.placeholderBusca || "Buscar por número, solicitante..."}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer p-0.5 rounded-full transition-colors"
+                  title="Limpar busca"
+                  aria-label="Limpar busca"
+                >
+                  <X className="size-3" />
+                </button>
+              )}
             </div>
           </div>
         </div>
