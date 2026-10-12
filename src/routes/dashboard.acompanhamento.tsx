@@ -111,8 +111,46 @@ function Acompanhamento() {
           if (!data || data.length < 1000) break;
         }
       }
+
+      let chamadosFiltrados = all;
+
+      // Se o usuário não for gestor nem administrador, exibe estritamente apenas seus próprios chamados
+      if (!isGestor && !isAdmin) {
+        const userEmail = session?.user?.email?.toLowerCase().trim() || "";
+
+        // 1. Busca os IDs pertencentes ao usuário via tabela tickets (protegida por RLS)
+        const { data: meusTicketsDb } = await supabase
+          .from("tickets")
+          .select("id, solicitante_email, criado_por, solicitante_id");
+
+        const meusIds = new Set<number>();
+
+        if (meusTicketsDb && meusTicketsDb.length > 0) {
+          for (const t of meusTicketsDb) {
+            meusIds.add(t.id);
+          }
+        }
+
+        // 2. Busca também do cache local da sessão (chamados recém-criados ou com email vinculado)
+        try {
+          const cached = JSON.parse(localStorage.getItem("tisenai_meus_tickets") || "[]");
+          if (Array.isArray(cached)) {
+            for (const ct of cached) {
+              if (ct.id) {
+                const ctEmail = (ct.email || ct.solicitante_email || "").toLowerCase().trim();
+                if (!ctEmail || ctEmail === userEmail) {
+                  meusIds.add(Number(ct.id));
+                }
+              }
+            }
+          }
+        } catch {}
+
+        chamadosFiltrados = all.filter((t) => meusIds.has(t.id));
+      }
+
       if (mounted) {
-        setProgress(all);
+        setProgress(chamadosFiltrados);
       }
     } finally {
       if (mounted) setLoading(false);
@@ -120,6 +158,7 @@ function Acompanhamento() {
   };
 
   useEffect(() => {
+    if (!authPronto) return;
     let mounted = true;
     void carregarChamados(mounted);
 
@@ -134,7 +173,7 @@ function Acompanhamento() {
       mounted = false;
       void supabase.removeChannel(channel);
     };
-  }, []);
+  }, [authPronto, isGestor, isAdmin, session?.user?.id]);
 
   const filtered = useMemo(() => {
     return progress.filter((t) => {
