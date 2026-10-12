@@ -43,6 +43,7 @@ import {
 } from "./types";
 import { aplicarCoresCustomizadasNoDocumento } from "./tema";
 import { buscarAvaliacoesCompletas, sincronizarAvaliacoesComBanco } from "./evaluations-service";
+import { processarFilaAlertasServerFn } from "@/lib/email-alertas/processor.server";
 
 type Row = Database["public"]["Tables"]["tickets"]["Row"];
 
@@ -502,16 +503,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "tickets" }, carregar)
       .subscribe();
 
-    // Timer de 60 segundos para atualizar em caso de virada de dia no fuso America/Cuiaba
+    // Timer de 30 segundos para atualizar diário e processar alertas da fila
     const intervaloDia = setInterval(() => {
       recarregarDailyStats();
-    }, 60000);
+      void processarFilaAlertasServerFn({ data: { authToken: session?.access_token } }).catch(() => {});
+    }, 30000);
+
+    // Processa pendências da fila logo na conexão inicial
+    void processarFilaAlertasServerFn({ data: { authToken: session?.access_token } }).catch(() => {});
 
     return () => {
       clearInterval(intervaloDia);
       supabase.removeChannel(channel);
     };
-  }, [recarregarDailyStats]);
+  }, [recarregarDailyStats, session?.access_token]);
 
   // Estatísticas agregadas e lista unificada de avaliações (públicas e anônimas)
   const recarregarEvaluationStats = useCallback(async () => {
@@ -639,6 +644,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       });
 
       if (!error && typeof data === "number") {
+        void processarFilaAlertasServerFn({ data: { authToken: session?.access_token } }).catch(() => {});
         return data;
       }
       if (error) {
@@ -673,12 +679,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
+      if (insertData?.id) {
+        void processarFilaAlertasServerFn({ data: { authToken: session?.access_token } }).catch(() => {});
+      }
+
       return insertData?.id ?? null;
     } catch (err) {
       console.error("Erro fatal ao salvar chamado:", err);
       return null;
     }
-  }, [session?.user?.id]);
+  }, [session?.user?.id, session?.access_token]);
 
    const updateTicket = useCallback(async (id: number, patch: Partial<Ticket>) => {
      const row = toRow(patch);
@@ -721,9 +731,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
        return false;
      }
 
+     void processarFilaAlertasServerFn({ data: { authToken: session?.access_token } }).catch(() => {});
      setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
      return true;
-   }, []);
+   }, [session?.access_token]);
 
    const removeTicket = useCallback(async (id: number) => {
      const { error } = await supabase.from("tickets").delete().eq("id", id);

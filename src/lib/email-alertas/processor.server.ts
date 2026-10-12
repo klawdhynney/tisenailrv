@@ -102,7 +102,7 @@ export const processarFilaAlertasServerFn = createServerFn({ method: "POST" })
         let destinatarioEfetivo = destinatarioReal;
         let prefixoAssunto = "";
 
-        if (!isProducao && eventoTipo !== "teste") {
+        if (modoTeste !== "desativado" && !isProducao && eventoTipo !== "teste") {
           if (modoTeste === "apenas_log") {
             // Em modo apenas_log, registra sucesso simulado sem disparar e-mail real
             await supabase.rpc("concluir_processamento_alerta", {

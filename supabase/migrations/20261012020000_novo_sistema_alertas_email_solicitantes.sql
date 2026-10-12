@@ -169,7 +169,7 @@ BEGIN
       'prioridade', NEW.prioridade,
       'status', NEW.status,
       'local', COALESCE(NEW.local, ''),
-      'aberto_em', COALESCE(NEW.aberto_em, to_char(now() AT TIME ZONE 'America/Cuiaba', 'DD/MM/YYYY HH24:MI')),
+      'aberto_em', to_char(COALESCE(NEW.created_at, now()) AT TIME ZONE 'America/Cuiaba', 'DD/MM/YYYY HH24:MI'),
       'prazo', COALESCE(NEW.fechado_em::text, NEW.aberto_em::text, '-')
     );
 
@@ -224,7 +224,7 @@ BEGIN
         'prioridade', NEW.prioridade,
         'status', 'Finalizado',
         'procedimento', COALESCE(NEW.procedimento, 'Atendimento finalizado com sucesso pela equipe de TI.'),
-        'finalizado_em', to_char(COALESCE(NEW.fechado_em, now()) AT TIME ZONE 'America/Cuiaba', 'DD/MM/YYYY HH24:MI')
+        'finalizado_em', to_char(COALESCE(NEW.fechado_em::timestamp, now()) AT TIME ZONE 'America/Cuiaba', 'DD/MM/YYYY HH24:MI')
       );
 
       -- Cancela atualizações pendentes que ainda estivessem aguardando na janela de 5min

@@ -23,6 +23,7 @@ import type { TicketMensagem } from "@/lib/types";
 import { CHAT_PADRAO, obterRotuloStatus } from "@/lib/types";
 import { useStore } from "@/lib/store-context";
 import { revisarTexto } from "@/lib/revisar-texto.functions";
+import { processarFilaAlertasServerFn } from "@/lib/email-alertas/processor.server";
 
 interface TicketChatProps {
   ticketId: number;
@@ -447,6 +448,7 @@ export function TicketChat({
       toast.success("Mensagem enviada com sucesso!");
 
       if (inserted) {
+        void processarFilaAlertasServerFn().catch(() => {});
         setMensagens((prev) => [
           ...prev,
           {
