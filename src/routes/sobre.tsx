@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Info, ArrowRight, ShieldCheck, Cpu, BarChart3, Laptop } from "lucide-react";
+import { Info, ArrowRight, ShieldCheck, Cpu, BarChart3, Laptop, ClipboardList } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store-context";
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/sobre")({
 });
 
 function PaginaSobre() {
-  const { regras } = useStore();
+  const { regras, isGestor, isAdmin } = useStore();
   const config = { ...SOBRE_PADRAO, ...(regras.sobre ?? {}) };
 
   return (
@@ -78,9 +78,18 @@ function PaginaSobre() {
             </p>
             <div className="pt-1">
               <Button asChild variant="outline" size="sm" className="font-semibold text-xs gap-1.5 h-9">
-                <Link to="/dashboard">
-                  <BarChart3 className="size-3.5 text-g-blue" />
-                  <span>Acessar o Dashboard</span>
+                <Link to={isGestor || isAdmin ? "/dashboard" : "/dashboard/acompanhamento"}>
+                  {isGestor || isAdmin ? (
+                    <>
+                      <BarChart3 className="size-3.5 text-g-blue" />
+                      <span>Acessar o Dashboard</span>
+                    </>
+                  ) : (
+                    <>
+                      <ClipboardList className="size-3.5 text-g-blue" />
+                      <span>Acompanhar Chamados</span>
+                    </>
+                  )}
                   <ArrowRight className="size-3" />
                 </Link>
               </Button>

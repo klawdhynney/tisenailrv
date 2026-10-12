@@ -155,9 +155,37 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
     avaliacoes: { ...AVALIACAO_PADRAO, ...(regrasSalvas.avaliacoes || {}) },
     iaSuporte: { ...IA_SUPORTE_PADRAO, ...iaSuporteFinal },
     whatsapp: { ...WHATSAPP_PADRAO, ...(regrasSalvas.whatsapp || {}) },
-    sobre: { ...SOBRE_PADRAO, ...(regrasSalvas.sobre || {}) },
-    menu: Array.isArray(regrasSalvas.menu) ? regrasSalvas.menu : [...MENU_PADRAO],
-    chat: { ...CHAT_PADRAO, ...(regrasSalvas.chat || {}) },
+    menu: (() => {
+      const padrao = [...MENU_PADRAO];
+      if (!Array.isArray(regrasSalvas.menu) || regrasSalvas.menu.length === 0) return padrao;
+      let salvos = [...regrasSalvas.menu];
+      const temAcomp = salvos.some((m) => m.id === "acompanhamento");
+      if (!temAcomp) {
+        const idxAbrir = salvos.findIndex((m) => m.id === "abrir");
+        const acompItem = padrao.find((m) => m.id === "acompanhamento") || {
+          id: "acompanhamento",
+          label: "Acompanhar Chamados",
+          to: "/dashboard/acompanhamento",
+          visivel: true,
+          ordem: 3,
+        };
+        if (idxAbrir !== -1) {
+          salvos.splice(idxAbrir + 1, 0, acompItem);
+        } else {
+          salvos.push(acompItem);
+        }
+        salvos = salvos.map((item, idx) => ({ ...item, ordem: idx + 1 }));
+      }
+      for (const itemPadrao of padrao) {
+        const existe = salvos.find((m) => m.id === itemPadrao.id);
+        if (!existe) {
+          salvos.push(itemPadrao);
+        } else if (itemPadrao.exigeGestor) {
+          existe.exigeGestor = true;
+        }
+      }
+      return salvos;
+    })(),
     login: { ...LOGIN_PADRAO, ...(regrasSalvas.login || {}) },
     seo: { ...SEO_PADRAO, ...(regrasSalvas.seo || {}) },
     atendimento: {

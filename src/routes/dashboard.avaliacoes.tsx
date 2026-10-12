@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Star,
@@ -6,6 +6,8 @@ import {
   ClipboardList,
   MessageSquare,
   RefreshCw,
+  ShieldAlert,
+  Home,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,11 +45,30 @@ interface AvaliacaoRow {
 }
 
 function PaginaAvaliacoes() {
-  const { authPronto, regras, avaliacoesList, evaluationLoading, evaluationError, recarregarEvaluationStats } = useStore();
+  const { authPronto, isGestor, isAdmin, session, regras, avaliacoesList, evaluationLoading, evaluationError, recarregarEvaluationStats } = useStore();
+  const navigate = useNavigate();
   const configAvaliacao = { ...AVALIACAO_PADRAO, ...(regras.avaliacao ?? {}) };
   const search = Route.useSearch();
   const mesQuery = search?.mes || search?.periodo;
   const [periodo, setPeriodo] = useState<string>(() => mesQuery || "todos");
+
+  useEffect(() => {
+    if (!authPronto) return;
+    if (!isGestor && !isAdmin) {
+      if (!session) {
+        navigate({
+          to: "/auth",
+          search: { redirectTo: "/dashboard/avaliacoes" },
+          replace: true,
+        });
+      } else {
+        navigate({
+          to: "/dashboard/acompanhamento",
+          replace: true,
+        });
+      }
+    }
+  }, [authPronto, isGestor, isAdmin, session, navigate]);
 
   useEffect(() => {
     const q = search?.mes || search?.periodo;
@@ -92,6 +113,28 @@ function PaginaAvaliacoes() {
 
   if (!authPronto) {
     return <div className="py-20 text-center text-sm text-muted-foreground">Verificando credenciais...</div>;
+  }
+
+  if (!isGestor && !isAdmin) {
+    return (
+      <div className="mx-auto max-w-lg rounded-2xl border-2 border-[var(--g-yellow)] bg-card p-8 text-center space-y-4 my-12 shadow-sm">
+        <ShieldAlert className="mx-auto h-12 w-12 text-[var(--g-yellow)]" />
+        <h1 className="text-xl font-bold text-foreground">Acesso Restrito</h1>
+        <p className="text-sm text-muted-foreground">
+          As avaliações e métricas de satisfação detalhadas são exclusivas para a equipe de gestão de TI e administradores.
+        </p>
+        <div className="pt-2 flex flex-wrap justify-center gap-2">
+          <Button asChild variant="default" size="sm">
+            <Link to="/dashboard/acompanhamento">Acompanhar Chamados</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/">
+              <Home className="size-3.5 mr-1.5" /> Início
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

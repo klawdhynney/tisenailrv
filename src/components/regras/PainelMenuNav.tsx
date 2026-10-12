@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { ArrowDown, ArrowUp, Eye, EyeOff, LayoutTemplate, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,9 +18,34 @@ export function PainelMenuNav({ config, onChange, onRestaurarPadrao }: PainelMen
   const listaBruta: MenuItemConfig[] = Array.isArray(config)
     ? config
     : (config?.itens ?? (Array.isArray(MENU_PADRAO) ? MENU_PADRAO : []));
-  const itens = (listaBruta && listaBruta.length > 0 ? listaBruta : (Array.isArray(MENU_PADRAO) ? MENU_PADRAO : []))
-    .slice()
-    .sort((a, b) => a.ordem - b.ordem);
+  const itens = useMemo(() => {
+    let lista = (listaBruta && listaBruta.length > 0 ? listaBruta : MENU_PADRAO).slice();
+    if (!lista.some((m) => m.id === "acompanhamento")) {
+      const idxAbrir = lista.findIndex((m) => m.id === "abrir");
+      const acompItem = MENU_PADRAO.find((m) => m.id === "acompanhamento") || {
+        id: "acompanhamento",
+        label: "Acompanhar Chamados",
+        to: "/dashboard/acompanhamento",
+        visivel: true,
+        ordem: 3,
+      };
+      if (idxAbrir !== -1) {
+        lista.splice(idxAbrir + 1, 0, acompItem);
+      } else {
+        lista.push(acompItem);
+      }
+      lista = lista.map((it, idx) => ({ ...it, ordem: idx + 1 }));
+    }
+    for (const itemPadrao of MENU_PADRAO) {
+      const existe = lista.find((m) => m.id === itemPadrao.id);
+      if (!existe) {
+        lista.push(itemPadrao);
+      } else if (itemPadrao.exigeGestor && !existe.exigeGestor) {
+        existe.exigeGestor = true;
+      }
+    }
+    return lista.sort((a, b) => a.ordem - b.ordem);
+  }, [listaBruta]);
 
   const atualizarItem = (id: string, patch: Partial<MenuItemConfig>) => {
     const novos = itens.map((item) => (item.id === id ? { ...item, ...patch } : item));
@@ -131,7 +157,7 @@ export function PainelMenuNav({ config, onChange, onRestaurarPadrao }: PainelMen
                         className="h-8 text-xs font-bold max-w-xs"
                         placeholder="Nome do link"
                       />
-                      <span className="text-[11px] font-mono text-muted-foreground shrink-0">{item.href}</span>
+                      <span className="text-[11px] font-mono text-muted-foreground shrink-0">{item.to || item.href}</span>
                     </div>
                     <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                       <span>Ordem: #{item.ordem}</span>

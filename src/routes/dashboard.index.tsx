@@ -30,6 +30,8 @@ import {
   LayoutGrid,
   PieChartIcon,
   RotateCcw,
+  ShieldAlert,
+  Home,
   Star,
   Table2,
   TrendingUp,
@@ -140,13 +142,31 @@ const mesAtualPadrao = () => {
 };
 
 function Dashboard() {
-  const { publicStats, dailyStats, isGestor, regras, session, authPronto } = useStore();
+  const { publicStats, dailyStats, isGestor, isAdmin, regras, session, authPronto } = useStore();
   const { wrapAsync, isLoading } = useLoading();
   const search = Route.useSearch();
   const navigate = useNavigate();
   const tipoQuery = search?.tipo;
   const mesQuery = search?.mes;
 
+  // Proteção de rota: Dashboard analítico restrito exclusivamente para administradores e gestores
+  useEffect(() => {
+    if (!authPronto) return;
+    if (!isGestor && !isAdmin) {
+      if (!session) {
+        navigate({
+          to: "/auth",
+          search: { redirectTo: "/dashboard" },
+          replace: true,
+        });
+      } else {
+        navigate({
+          to: "/dashboard/acompanhamento",
+          replace: true,
+        });
+      }
+    }
+  }, [authPronto, isGestor, isAdmin, session, navigate]);
 
   const [progress, setProgress] = useState<Database["public"]["Functions"]["public_ticket_sla_progress"]["Returns"]>([]);
   const [now, setNow] = useState(() => new Date());
@@ -157,13 +177,14 @@ function Dashboard() {
   }, []);
 
   useEffect(() => {
+    if (!authPronto || (!isGestor && !isAdmin)) return;
     let mounted = true;
     const load = async () => {
       const all: typeof progress = [];
       for (let offset = 0; ; offset += 1000) {
         const { data, error } = await supabase.rpc("public_ticket_sla_progress").range(offset, offset + 999);
         if (error) {
-          console.error("Falha ao carregar SLA público", error.message);
+          console.error("Falha ao carregar SLA do dashboard", error.message);
           return;
         }
         all.push(...(data ?? []));
@@ -180,7 +201,7 @@ function Dashboard() {
       mounted = false;
       void supabase.removeChannel(channel);
     };
-  }, []);
+  }, [authPronto, isGestor, isAdmin]);
 
   const [mes, setMes] = useState(() => {
     if (mesQuery && (mesQuery === "todos" || MESES_DISPONIVEIS.some((m) => m.key === mesQuery))) {
@@ -334,6 +355,49 @@ function Dashboard() {
 
   const indConf = regras.indicadores;
   const dashConf = regras.dashboard;
+
+  if (!authPronto) {
+    return (
+      <div className="py-20 text-center">
+        <div className="inline-flex items-center gap-2 rounded-xl bg-card border border-border px-4 py-2 text-sm text-muted-foreground shadow-xs animate-pulse">
+          Verificando permissões de acesso ao dashboard...
+        </div>
+      </div>
+    );
+  }
+
+  if (!isGestor && !isAdmin) {
+    return (
+      <div className="mx-auto max-w-lg rounded-2xl border-2 border-[var(--g-yellow)] bg-card p-8 text-center space-y-4 my-12 shadow-sm">
+        <ShieldAlert className="mx-auto h-12 w-12 text-[var(--g-yellow)]" />
+        <h1 className="text-xl font-bold text-foreground">Acesso Restrito ao Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
+          O dashboard analítico com gráficos e indicadores operacionais é de acesso exclusivo para a equipe de gestão de TI e administradores.
+        </p>
+        <div className="pt-2 flex flex-wrap justify-center gap-2">
+          <Button asChild variant="default" size="sm">
+            <Link to="/dashboard/acompanhamento">Acompanhar Chamados</Link>
+          </Button>
+          {!session ? (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/auth" search={{ redirectTo: "/dashboard" }}>
+                Entrar com conta de TI
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/meus-chamados">Meus Chamados</Link>
+            </Button>
+          )}
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/">
+              <Home className="size-3.5 mr-1.5" /> Início
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

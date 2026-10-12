@@ -1068,6 +1068,9 @@ export interface MenuItemConfig {
   to: string;
   visivel: boolean;
   ordem: number;
+  exigeGestor?: boolean;
+  exigeAdmin?: boolean;
+  href?: string;
 }
 
 export interface MenuConfig {
@@ -1077,10 +1080,11 @@ export interface MenuConfig {
 export const MENU_PADRAO: MenuItemConfig[] = [
   { id: "inicio", label: "Início", to: "/", visivel: true, ordem: 1 },
   { id: "abrir", label: "Abrir Chamado", to: "/abrir", visivel: true, ordem: 2 },
-  { id: "dashboard", label: "Dashboard", to: "/dashboard", visivel: true, ordem: 3 },
-  { id: "meusChamados", label: "Meus Chamados", to: "/meus-chamados", visivel: true, ordem: 4 },
-  { id: "atendimento", label: "Atendimento", to: "/atendimento", visivel: true, ordem: 5 },
-  { id: "painel", label: "Painel de Ajustes", to: "/regras", visivel: true, ordem: 6 },
+  { id: "acompanhamento", label: "Acompanhar Chamados", to: "/dashboard/acompanhamento", visivel: true, ordem: 3 },
+  { id: "dashboard", label: "Dashboard", to: "/dashboard", visivel: true, ordem: 4, exigeGestor: true },
+  { id: "meusChamados", label: "Meus Chamados", to: "/meus-chamados", visivel: true, ordem: 5 },
+  { id: "atendimento", label: "Atendimento", to: "/atendimento", visivel: true, ordem: 6, exigeGestor: true },
+  { id: "painel", label: "Painel de Ajustes", to: "/regras", visivel: true, ordem: 7, exigeGestor: true },
 ];
 
 export interface ChatConfig {

@@ -43,7 +43,7 @@ export const Route = createFileRoute("/dashboard/acompanhamento")({
 type ProgressTicket = Database["public"]["Functions"]["public_ticket_sla_progress"]["Returns"][number];
 
 function Acompanhamento() {
-  const { regras, isGestor, session, authPronto } = useStore();
+  const { regras, isGestor, isAdmin, session, authPronto } = useStore();
   const { wrapAsync, isLoading } = useLoading();
   const navigate = useNavigate();
   const config = regras.acompanhamento;
@@ -180,11 +180,19 @@ function Acompanhamento() {
       {/* Barra de Ações e Filtros */}
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="outline" size="sm" className="gap-1.5 font-bold">
-            <Link to="/dashboard">
-              <ArrowLeft className="size-4" /> Voltar ao dashboard
-            </Link>
-          </Button>
+          {isGestor || isAdmin ? (
+            <Button asChild variant="outline" size="sm" className="gap-1.5 font-bold">
+              <Link to="/dashboard">
+                <ArrowLeft className="size-4" /> Voltar ao dashboard
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild variant="outline" size="sm" className="gap-1.5 font-bold">
+              <Link to="/">
+                <ArrowLeft className="size-4" /> Início
+              </Link>
+            </Button>
+          )}
 
           {/* Busca por ID ou Categoria */}
           <div className="relative min-w-[200px] flex-1 sm:w-64 sm:flex-initial">

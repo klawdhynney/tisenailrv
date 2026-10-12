@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Laptop, Check, Users, User } from "lucide-react";
+import { BarChart3, FilePlus2, Settings2, Home, Menu, Headset, LogIn, LogOut, Moon, Sun, Laptop, Check, Users, User, ClipboardList } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,7 @@ const ASSET_VERSION = "20261006_v6";
 const navPublico = [
   { to: "/", label: "Início", icon: Home },
   { to: "/abrir", label: "Abrir Chamado", icon: FilePlus2 },
-  { to: "/dashboard", label: "Dashboard", icon: BarChart3 },
+  { to: "/dashboard/acompanhamento", label: "Acompanhar Chamados", icon: ClipboardList },
 ] as const;
 
 const navGestor = [
@@ -205,10 +205,37 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [pathname, regras.seo]);
 
-  const menuConfig = regras.menu || MENU_PADRAO;
+  const menuConfig = useMemo(() => {
+    const base = Array.isArray(regras.menu) && regras.menu.length > 0 ? [...regras.menu] : [...MENU_PADRAO];
+    let lista = [...base];
+    if (!lista.some((m) => m.id === "acompanhamento")) {
+      const idxAbrir = lista.findIndex((m) => m.id === "abrir");
+      const acompItem = MENU_PADRAO.find((m) => m.id === "acompanhamento") || {
+        id: "acompanhamento",
+        label: "Acompanhar Chamados",
+        to: "/dashboard/acompanhamento",
+        visivel: true,
+        ordem: 3,
+      };
+      if (idxAbrir !== -1) {
+        lista.splice(idxAbrir + 1, 0, acompItem);
+      } else {
+        lista.push(acompItem);
+      }
+      lista = lista.map((it, idx) => ({ ...it, ordem: idx + 1 }));
+    }
+    for (const itemPadrao of MENU_PADRAO) {
+      if (!lista.some((m) => m.id === itemPadrao.id)) {
+        lista.push(itemPadrao);
+      }
+    }
+    return lista;
+  }, [regras.menu]);
+
   const iconePorId: Record<string, any> = {
     inicio: Home,
     abrir: FilePlus2,
+    acompanhamento: ClipboardList,
     dashboard: BarChart3,
     meusChamados: FilePlus2,
     atendimento: Headset,
@@ -216,11 +243,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   const itens = useMemo(() => {
-    return (menuConfig || MENU_PADRAO)
+    return menuConfig
       .filter((item) => {
         if (!item.visivel) return false;
-        if (item.id === "meusChamados") return Boolean(session && !isGestor);
-        if (item.id === "atendimento" || item.id === "painel") return isGestor;
+        if (item.id === "meusChamados") return Boolean(session && !isGestor && !isAdmin);
+        if (item.id === "atendimento" || item.id === "painel") return isGestor || isAdmin;
+        if (item.id === "dashboard") return isGestor || isAdmin;
         return true;
       })
       .sort((a, b) => (a.ordem ?? 1) - (b.ordem ?? 1))
@@ -229,7 +257,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         label: item.label,
         icon: iconePorId[item.id] || Home,
       }));
-  }, [menuConfig, session, isGestor]);
+  }, [menuConfig, session, isGestor, isAdmin]);
 
   const links = (mobile: boolean) =>
     itens.map((item) => (
