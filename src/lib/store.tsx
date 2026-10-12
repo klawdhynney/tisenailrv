@@ -719,6 +719,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [session?.user?.id, session?.access_token]);
 
    const updateTicket = useCallback(async (id: number, patch: Partial<Ticket>) => {
+     // Regra de imutabilidade estrita: Chamados finalizados ou cancelados não podem ser alterados
+     // por nenhum perfil (solicitante, gestor ou administrador)
+     const ticketAtualMemoria = tickets.find((t) => t.id === id);
+     if (ticketAtualMemoria && ["Resolvido", "Finalizado", "Cancelado"].includes(ticketAtualMemoria.status)) {
+       toast.error(`Chamado #${id} está ${ticketAtualMemoria.status} e não permite alterações.`);
+       return false;
+     }
+
+     // Se o chamado não estiver na memória, consulta status no banco
+     if (!ticketAtualMemoria) {
+       const { data: ticketDb } = await supabase.from("tickets").select("status").eq("id", id).maybeSingle();
+       if (ticketDb && ["Resolvido", "Finalizado", "Cancelado"].includes(ticketDb.status)) {
+         toast.error(`Chamado #${id} está ${ticketDb.status} e não permite alterações.`);
+         return false;
+       }
+     }
+
      const row = toRow(patch);
      let { error } = await supabase.from("tickets").update(row as never).eq("id", id);
 
@@ -755,14 +772,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
      }
 
      if (error) {
-       console.error("Falha ao atualizar chamado no Supabase:", error.message);
+       if (error.message.toLowerCase().includes("finalizados ou cancelados") || error.message.toLowerCase().includes("não podem ser alterados")) {
+         toast.error("Chamados finalizados ou cancelados não podem ser alterados.");
+       } else {
+         console.error("Falha ao atualizar chamado no Supabase:", error.message);
+       }
        return false;
      }
 
      void processarFilaAlertasServerFn({ data: { authToken: session?.access_token } }).catch(() => {});
      setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
      return true;
-   }, [session?.access_token]);
+   }, [tickets, session?.access_token]);
 
    const removeTicket = useCallback(async (id: number) => {
      const { error } = await supabase.from("tickets").delete().eq("id", id);

@@ -114,39 +114,36 @@ function Acompanhamento() {
 
       let chamadosFiltrados = all;
 
-      // Se o usuário não for gestor nem administrador, exibe estritamente apenas seus próprios chamados
+      // Se o usuário não for gestor nem administrador, a RPC public_ticket_sla_progress já é
+      // estritamente filtrada no servidor por segurança via SECURITY DEFINER para seus próprios chamados.
       if (!isGestor && !isAdmin) {
-        const userEmail = session?.user?.email?.toLowerCase().trim() || "";
-
-        // 1. Busca os IDs pertencentes ao usuário via tabela tickets (protegida por RLS)
-        const { data: meusTicketsDb } = await supabase
-          .from("tickets")
-          .select("id, solicitante_email, criado_por, solicitante_id");
-
-        const meusIds = new Set<number>();
-
-        if (meusTicketsDb && meusTicketsDb.length > 0) {
-          for (const t of meusTicketsDb) {
-            meusIds.add(t.id);
-          }
-        }
-
-        // 2. Busca também do cache local da sessão (chamados recém-criados ou com email vinculado)
         try {
           const cached = JSON.parse(localStorage.getItem("tisenai_meus_tickets") || "[]");
-          if (Array.isArray(cached)) {
+          if (Array.isArray(cached) && cached.length > 0) {
+            const userEmail = session?.user?.email?.toLowerCase().trim() || "";
+            const idsExistentes = new Set(all.map((t) => t.id));
             for (const ct of cached) {
-              if (ct.id) {
+              if (ct.id && !idsExistentes.has(Number(ct.id))) {
                 const ctEmail = (ct.email || ct.solicitante_email || "").toLowerCase().trim();
                 if (!ctEmail || ctEmail === userEmail) {
-                  meusIds.add(Number(ct.id));
+                  all.push({
+                    id: Number(ct.id),
+                    aberto_em: ct.abertoEm || ct.aberto_em || "",
+                    hora: ct.hora || "",
+                    categoria: ct.categoria || "Geral",
+                    status: ct.status || "Aberto",
+                    prioridade: ct.prioridade || "Média",
+                    fechado_em: ct.fechadoEm || ct.fechado_em || null,
+                    horario: ct.horario || "",
+                    sla_reiniciado_em: "",
+                  } as any);
                 }
               }
             }
           }
         } catch {}
 
-        chamadosFiltrados = all.filter((t) => meusIds.has(t.id));
+        chamadosFiltrados = all;
       }
 
       if (mounted) {

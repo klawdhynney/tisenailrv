@@ -384,6 +384,11 @@ function MeusChamados() {
   const [whatsappLocal, setWhatsappLocal] = useState<string | null>(null);
 
   async function handleCancelarMeuChamado(id: number) {
+    const alvo = rows.find((r) => r.id === id);
+    if (alvo && ["Resolvido", "Finalizado", "Cancelado"].includes(alvo.status)) {
+      toast.error("Chamados finalizados ou cancelados não podem ser alterados.");
+      return;
+    }
     setSalvandoId(id);
     try {
       const hoje = obterDataHojeCuiaba();
@@ -458,45 +463,61 @@ function MeusChamados() {
     setLoading(true);
 
     try {
-      // 1. Tenta carregar pela sessão autenticada do Supabase com colunas base garantidas
+      // 1. Tenta carregar pela função RPC get_my_tickets (segura, com todas as colunas e vinculação ampla)
       let chamadosFinais: OwnTicket[] = [];
-      const { data: dbData, error: dbErr } = await supabase
-        .from("tickets")
-        .select("id,aberto_em,hora,descricao,status,prioridade,solicitante,local,setor,procedimento,contato,solicitante_email,fechado_em,horario")
-        .order("id", { ascending: false });
+      const { data: rpcData, error: rpcErr } = await supabase.rpc("get_my_tickets");
 
-      if (!dbErr && dbData && dbData.length > 0) {
-        chamadosFinais = dbData.map((d: any) => ({
+      if (!rpcErr && rpcData && rpcData.length > 0) {
+        chamadosFinais = (rpcData as any[]).map((d: any) => ({
           ...d,
           email: d.solicitante_email,
           fechado_em: d.fechado_em,
           horario: d.horario,
-          sla_pausado: false,
-          sla_pausado_em: null,
-          sla_pausa_motivo: null,
-          sla_segundos_pausados_acumulados: 0,
+          sla_pausado: Boolean(d.sla_pausado),
+          sla_pausado_em: d.sla_pausado_em,
+          sla_pausa_motivo: d.sla_pausa_motivo,
+          sla_segundos_pausados_acumulados: d.sla_segundos_pausados_acumulados || 0,
         }));
       } else {
-        // 2. Se não houver retorno da tabela privada (acesso simples por e-mail ou WhatsApp), busca dos chamados gravados localmente
-        try {
-          const cached = JSON.parse(localStorage.getItem("tisenai_meus_tickets") || "[]");
-          const cleanWhatsapp = (num: string) => (num || "").replace(/\D/g, "");
-          const activeCleanWpp = activeWhatsapp ? cleanWhatsapp(activeWhatsapp) : "";
+        // Fallback 1: Consulta direta na tabela tickets via RLS
+        const { data: dbData, error: dbErr } = await supabase
+          .from("tickets")
+          .select("id,aberto_em,hora,descricao,status,prioridade,solicitante,local,setor,procedimento,contato,solicitante_email,fechado_em,horario")
+          .order("id", { ascending: false });
 
-          chamadosFinais = cached.filter((t: any) => {
-            const emailMatch =
-              activeEmail &&
-              !activeEmail.includes("@whatsapp.senailrv.local") &&
-              (t.email || "").toLowerCase() === activeEmail.toLowerCase();
-            const wppMatch =
-              activeCleanWpp &&
-              ((t.contato && cleanWhatsapp(t.contato).includes(activeCleanWpp)) ||
-                (t.email && cleanWhatsapp(t.email).includes(activeCleanWpp)));
-            const aliasMatch = activeEmail && (t.email || "").toLowerCase() === activeEmail.toLowerCase();
-            return emailMatch || wppMatch || aliasMatch;
-          });
-        } catch {
-          chamadosFinais = [];
+        if (!dbErr && dbData && dbData.length > 0) {
+          chamadosFinais = dbData.map((d: any) => ({
+            ...d,
+            email: d.solicitante_email,
+            fechado_em: d.fechado_em,
+            horario: d.horario,
+            sla_pausado: false,
+            sla_pausado_em: null,
+            sla_pausa_motivo: null,
+            sla_segundos_pausados_acumulados: 0,
+          }));
+        } else {
+          // Fallback 2: Busca dos chamados gravados localmente no navegador
+          try {
+            const cached = JSON.parse(localStorage.getItem("tisenai_meus_tickets") || "[]");
+            const cleanWhatsapp = (num: string) => (num || "").replace(/\D/g, "");
+            const activeCleanWpp = activeWhatsapp ? cleanWhatsapp(activeWhatsapp) : "";
+
+            chamadosFinais = cached.filter((t: any) => {
+              const emailMatch =
+                activeEmail &&
+                !activeEmail.includes("@whatsapp.senailrv.local") &&
+                (t.email || "").toLowerCase() === activeEmail.toLowerCase();
+              const wppMatch =
+                activeCleanWpp &&
+                ((t.contato && cleanWhatsapp(t.contato).includes(activeCleanWpp)) ||
+                  (t.email && cleanWhatsapp(t.email).includes(activeCleanWpp)));
+              const aliasMatch = activeEmail && (t.email || "").toLowerCase() === activeEmail.toLowerCase();
+              return emailMatch || wppMatch || aliasMatch;
+            });
+          } catch {
+            chamadosFinais = [];
+          }
         }
       }
 
@@ -542,6 +563,12 @@ function MeusChamados() {
   }, [activeEmail, activeWhatsapp, session?.user?.id]);
 
   async function addInformation(id: number, customText?: string): Promise<boolean> {
+    const alvo = rows.find((r) => r.id === id);
+    if (alvo && ["Resolvido", "Finalizado", "Cancelado"].includes(alvo.status)) {
+      toast.error("Chamados finalizados ou cancelados não podem ser alterados.");
+      return false;
+    }
+
     const text = (customText ?? drafts[id])?.trim();
     if (!text || text.length < 3) {
       toast.error("Escreva pelo menos 3 caracteres.");
@@ -581,6 +608,11 @@ function MeusChamados() {
   }
 
   async function handleSalvarAtualizacao(t: OwnTicket) {
+    if (["Resolvido", "Finalizado", "Cancelado"].includes(t.status)) {
+      toast.error("Chamados finalizados ou cancelados não podem ser alterados.");
+      return;
+    }
+
     const texto = (textoAtualizacao[t.id] || "").trim();
     if (!texto || texto.length < 3) {
       toast.error("Escreva pelo menos 3 caracteres para atualizar.");
@@ -728,203 +760,231 @@ function MeusChamados() {
             Exibindo {rows.length} {rows.length === 1 ? "chamado" : "chamados"} vinculados a você:
           </p>
 
-          {rows.map((t) => (
-            <article
-              key={t.id}
-              className="rounded-2xl border border-border/80 bg-card p-5 sm:p-6 shadow-xs space-y-4 hover:border-border transition-colors"
-            >
-              {/* Topo do chamado */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-black text-foreground">#{t.id}</span>
-                  <span className="text-xs text-muted-foreground font-medium">
-                    · Aberto em {t.aberto_em}
-                  </span>
+          {rows.map((t) => {
+            const isEncerrado = ["Resolvido", "Finalizado", "Cancelado"].includes(t.status);
+            return (
+              <article
+                key={t.id}
+                className="rounded-2xl border border-border/80 bg-card p-5 sm:p-6 shadow-xs space-y-4 hover:border-border transition-colors"
+              >
+                {/* Topo do chamado */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-black text-foreground">#{t.id}</span>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      · Aberto em {t.aberto_em}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <PrioridadeChip valor={t.prioridade} />
+                    <StatusChip valor={t.status} />
+                    {t.sla_pausado && (
+                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-black bg-[#F59E0B] text-black shadow-xs">
+                        <Pause className="size-3 shrink-0" /> SLA pausado
+                      </span>
+                    )}
+                    {!isEncerrado && (
+                      <ConfirmAction
+                        title={`Deseja cancelar o chamado #${t.id}?`}
+                        description="Esta ação encerrará a solicitação e informará a equipe de TI que o atendimento não é mais necessário."
+                        confirmLabel="Sim, cancelar chamado"
+                        variant="destructive"
+                        size="sm"
+                        className="text-xs h-7 gap-1 ml-1"
+                        disabled={salvandoId === t.id}
+                        onConfirm={() => handleCancelarMeuChamado(t.id)}
+                      >
+                        <X className="size-3" /> Cancelar
+                      </ConfirmAction>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <PrioridadeChip valor={t.prioridade} />
-                  <StatusChip valor={t.status} />
-                  {t.sla_pausado && (
-                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-black bg-[#F59E0B] text-black shadow-xs">
-                      <Pause className="size-3 shrink-0" /> SLA pausado
+
+                {/* Informações de Localização e Solicitante */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">{t.solicitante}</span>
+                  {t.setor && (
+                    <span className="flex items-center gap-1">
+                      <span className="text-foreground/40">•</span> Setor: {t.setor}
                     </span>
                   )}
-                  {t.status !== "Resolvido" && t.status !== "Cancelado" && (
-                    <ConfirmAction
-                      title={`Deseja cancelar o chamado #${t.id}?`}
-                      description="Esta ação encerrará a solicitação e informará a equipe de TI que o atendimento não é mais necessário."
-                      confirmLabel="Sim, cancelar chamado"
-                      variant="destructive"
-                      size="sm"
-                      className="text-xs h-7 gap-1 ml-1"
-                      disabled={salvandoId === t.id}
-                      onConfirm={() => handleCancelarMeuChamado(t.id)}
-                    >
-                      <X className="size-3" /> Cancelar
-                    </ConfirmAction>
+                  {t.local && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="size-3 text-muted-foreground" /> {t.local}
+                    </span>
                   )}
                 </div>
-              </div>
 
-              {/* Informações de Localização e Solicitante */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">{t.solicitante}</span>
-                {t.setor && (
-                  <span className="flex items-center gap-1">
-                    <span className="text-foreground/40">•</span> Setor: {t.setor}
-                  </span>
-                )}
-                {t.local && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="size-3 text-muted-foreground" /> {t.local}
-                  </span>
-                )}
-              </div>
-
-              {/* Banner de SLA Pausado (quando ativo) */}
-              {t.sla_pausado && (
-                <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs flex items-center gap-2.5 animate-in fade-in">
-                  <Pause className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                  <div>
-                    <span className="font-bold text-amber-700 dark:text-amber-300">
-                      SLA pausado pela equipe:
-                    </span>{" "}
-                    <span className="text-foreground">{t.sla_pausa_motivo || "Aguardando tratativa"}</span>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      O relógio de prazo limite foi congelado e o tempo da pausa não contará como atraso.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Descrição */}
-              <div className="rounded-xl bg-muted/40 p-3.5 text-sm text-foreground/90 border border-border/40 whitespace-pre-wrap leading-relaxed">
-                {t.descricao}
-              </div>
-
-              {/* Atualização e Complemento do Chamado com IA */}
-              <SectionErrorBoundary name="Atualização do chamado">
-                <div className="rounded-xl border border-purple-200/80 dark:border-purple-900/50 bg-purple-50/30 dark:bg-purple-950/15 p-3.5 space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                      <Sparkles className="size-3.5 text-purple-600 dark:text-purple-400" />
-                      <span>Atualização e Complemento do Chamado</span>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setAtualizandoTicketId(atualizandoTicketId === t.id ? null : t.id)}
-                      className="h-8 text-xs font-semibold text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800 hover:bg-purple-100/60 dark:hover:bg-purple-900/40 gap-1.5 shadow-2xs"
-                    >
-                      <Sparkles className="size-3.5 text-purple-600 dark:text-purple-400" />
-                      <span>{atualizandoTicketId === t.id ? "Fechar atualização" : "Atualizar chamado com IA"}</span>
-                    </Button>
-                  </div>
-
-                  {atualizandoTicketId === t.id ? (
-                    <div className="pt-2 space-y-3 border-t border-purple-200/60 dark:border-purple-900/50 animate-in fade-in">
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Descreva o novo comportamento do problema ou detalhes adicionais. Clique em <strong>Aprimorar com IA</strong> para estruturar sua mensagem antes de salvar.
+                {/* Banner de SLA Pausado (quando ativo) */}
+                {t.sla_pausado && (
+                  <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs flex items-center gap-2.5 animate-in fade-in">
+                    <Pause className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <div>
+                      <span className="font-bold text-amber-700 dark:text-amber-300">
+                        SLA pausado pela equipe:
+                      </span>{" "}
+                      <span className="text-foreground">{t.sla_pausa_motivo || "Aguardando tratativa"}</span>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        O relógio de prazo limite foi congelado e o tempo da pausa não contará como atraso.
                       </p>
-                      <TextoAssistido
-                        value={textoAtualizacao[t.id] || ""}
-                        onChange={(val) => setTextoAtualizacao((prev) => ({ ...prev, [t.id]: val }))}
-                        placeholder="Ex.: O problema voltou a ocorrer por volta das 14h, e agora a máquina exibe uma mensagem de falha ao salvar..."
-                        rows={3}
-                        ticketId={t.id}
-                        titulo={t.setor ? `Chamado #${t.id} - ${t.setor}` : `Chamado #${t.id}`}
-                        descricao={t.descricao}
-                        categoria={t.setor}
-                        local={t.local}
-                      />
-                      <div className="flex flex-wrap justify-end items-center gap-2 pt-1">
+                    </div>
+                  </div>
+                )}
+
+                {/* Descrição */}
+                <div className="rounded-xl bg-muted/40 p-3.5 text-sm text-foreground/90 border border-border/40 whitespace-pre-wrap leading-relaxed">
+                  {t.descricao}
+                </div>
+
+                {/* Atualização e Complemento do Chamado (apenas se não estiver encerrado) */}
+                {!isEncerrado ? (
+                  <SectionErrorBoundary name="Atualização do chamado">
+                    <div className="rounded-xl border border-purple-200/80 dark:border-purple-900/50 bg-purple-50/30 dark:bg-purple-950/15 p-3.5 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                          <Sparkles className="size-3.5 text-purple-600 dark:text-purple-400" />
+                          <span>Atualização e Complemento do Chamado</span>
+                        </div>
                         <Button
                           type="button"
+                          variant="outline"
                           size="sm"
-                          variant="ghost"
-                          onClick={() => setAtualizandoTicketId(null)}
-                          className="text-xs h-8"
+                          onClick={() => setAtualizandoTicketId(atualizandoTicketId === t.id ? null : t.id)}
+                          className="h-8 text-xs font-semibold text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800 hover:bg-purple-100/60 dark:hover:bg-purple-900/40 gap-1.5 shadow-2xs"
                         >
-                          Cancelar
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="google-blue"
-                          onClick={() => void handleSalvarAtualizacao(t)}
-                          disabled={salvandoId === t.id || !((textoAtualizacao[t.id] || "").trim().length >= 3)}
-                          className="text-xs font-bold gap-1.5 h-8 shadow-xs"
-                        >
-                          {salvandoId === t.id ? (
-                            <RefreshCw className="size-3.5 animate-spin" />
-                          ) : (
-                            <SendHorizontal className="size-3.5" />
-                          )}
-                          Salvar atualização
+                          <Sparkles className="size-3.5 text-purple-600 dark:text-purple-400" />
+                          <span>{atualizandoTicketId === t.id ? "Fechar atualização" : "Atualizar chamado com IA"}</span>
                         </Button>
                       </div>
+
+                      {atualizandoTicketId === t.id ? (
+                        <div className="pt-2 space-y-3 border-t border-purple-200/60 dark:border-purple-900/50 animate-in fade-in">
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Descreva o novo comportamento do problema ou detalhes adicionais. Clique em <strong>Aprimorar com IA</strong> para estruturar sua mensagem antes de salvar.
+                          </p>
+                          <TextoAssistido
+                            value={textoAtualizacao[t.id] || ""}
+                            onChange={(val) => setTextoAtualizacao((prev) => ({ ...prev, [t.id]: val }))}
+                            placeholder="Ex.: O problema voltou a ocorrer por volta das 14h, e agora a máquina exibe uma mensagem de falha ao salvar..."
+                            rows={3}
+                            ticketId={t.id}
+                            titulo={t.setor ? `Chamado #${t.id} - ${t.setor}` : `Chamado #${t.id}`}
+                            descricao={t.descricao}
+                            categoria={t.setor}
+                            local={t.local}
+                          />
+                          <div className="flex flex-wrap justify-end items-center gap-2 pt-1">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setAtualizandoTicketId(null)}
+                              className="text-xs h-8"
+                            >
+                              Cancelar
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="google-blue"
+                              onClick={() => void handleSalvarAtualizacao(t)}
+                              disabled={salvandoId === t.id || !((textoAtualizacao[t.id] || "").trim().length >= 3)}
+                              className="text-xs font-bold gap-1.5 h-8 shadow-xs"
+                            >
+                              {salvandoId === t.id ? (
+                                <RefreshCw className="size-3.5 animate-spin" />
+                              ) : (
+                                <SendHorizontal className="size-3.5" />
+                              )}
+                              Salvar atualização
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground">
+                          O problema mudou ou você tem novas informações? Clique em <strong>Atualizar chamado com IA</strong> para complementar os dados diretamente para os técnicos.
+                        </p>
+                      )}
                     </div>
-                  ) : (
-                    <p className="text-[11px] text-muted-foreground">
-                      O problema mudou ou você tem novas informações? Clique em <strong>Atualizar chamado com IA</strong> para complementar os dados diretamente para os técnicos.
-                    </p>
-                  )}
-                </div>
-              </SectionErrorBoundary>
-
-              {/* Procedimento / Resposta da TI */}
-              {t.procedimento && (
-                <div className="rounded-xl border-l-4 border-l-g-green bg-g-green/5 p-3.5 border border-g-green/20 space-y-1">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-g-green dark:text-green-400">
-                    <CheckCircle2 className="size-3.5" />
-                    <span>Resposta / Procedimento de Atendimento da TI:</span>
+                  </SectionErrorBoundary>
+                ) : (
+                  <div className="rounded-xl border border-border/70 bg-muted/20 p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <span className="font-medium text-muted-foreground flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-g-green shrink-0" />
+                      Chamado {t.status.toLowerCase()} — Este chamado está encerrado e não permite novas alterações.
+                    </span>
+                    <Button asChild size="sm" variant="outline" className="h-7 text-xs font-semibold gap-1">
+                      <Link to="/abrir">
+                        <PlusCircle className="size-3.5" /> Nova solicitação
+                      </Link>
+                    </Button>
                   </div>
-                  <p className="text-xs sm:text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed pl-5">
-                    {t.procedimento}
-                  </p>
+                )}
+
+                {/* Procedimento / Resposta da TI */}
+                {t.procedimento && (
+                  <div className="rounded-xl border-l-4 border-l-g-green bg-g-green/5 p-3.5 border border-g-green/20 space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-g-green dark:text-green-400">
+                      <CheckCircle2 className="size-3.5" />
+                      <span>Resposta / Procedimento de Atendimento da TI:</span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed pl-5">
+                      {t.procedimento}
+                    </p>
+                  </div>
+                )}
+
+                {/* Sistema de Avaliação com Emojis (ao final do suporte) */}
+                {(t.status === "Resolvido" || t.status === "Finalizado" || Boolean(t.procedimento)) && (
+                  <SectionErrorBoundary name="Avaliação do atendimento">
+                    <AvaliacaoAtendimento
+                      ticketId={t.id}
+                      onAvaliar={async (av) => {
+                        if (session?.user?.id) {
+                          try {
+                            await supabase.from("ticket_mensagens").insert({
+                              ticket_id: t.id,
+                              user_id: session.user.id,
+                              autor_nome: session.user.user_metadata?.full_name || t.solicitante || "Solicitante",
+                              autor_email: session.user.email || t.email || activeEmail,
+                              autor_tipo: "solicitante",
+                              evento_tipo: "avaliacao",
+                              mensagem: `[Avaliação do Usuário]: ${av.emoji} ${av.label}${av.comentario ? ` - "${av.comentario}"` : ""}`,
+                            });
+                          } catch {
+                            // silencioso
+                          }
+                        }
+                      }}
+                    />
+                  </SectionErrorBoundary>
+                )}
+
+                {/* Conversa e Interação Direta com a Equipe de TI (Chat) */}
+                <div className="pt-2 border-t border-border/60 space-y-2">
+                  <SectionErrorBoundary name="Chat do chamado">
+                    <TicketChat
+                      ticketId={t.id}
+                      solicitanteNome={t.solicitante}
+                      solicitanteEmail={t.email}
+                      ticketDescricao={t.descricao}
+                      ticketAbertoEm={t.aberto_em}
+                      ticketHora={t.hora}
+                      ticketProcedimento={t.procedimento}
+                      ticketStatus={t.status}
+                      ticketFechadoEm={t.fechado_em}
+                      ticketSlaPausado={t.sla_pausado}
+                      ticketSlaPausadoEm={t.sla_pausado_em}
+                      ticketSlaPausaMotivo={t.sla_pausa_motivo}
+                      currentUserEmail={activeEmail}
+                      currentUserName={session?.user?.user_metadata?.full_name || t.solicitante}
+                      isGestorOrAdmin={false}
+                    />
+                  </SectionErrorBoundary>
                 </div>
-              )}
-
-              {/* Sistema de Avaliação com Emojis (ao final do suporte) */}
-              {(t.status === "Resolvido" || Boolean(t.procedimento)) && (
-                <SectionErrorBoundary name="Avaliação do atendimento">
-                  <AvaliacaoAtendimento
-                    ticketId={t.id}
-                    onAvaliar={(av) => {
-                      void addInformation(
-                        t.id,
-                        `[Avaliação do Usuário]: ${av.emoji} ${av.label}${av.comentario ? ` - "${av.comentario}"` : ""}`,
-                      );
-                    }}
-                  />
-                </SectionErrorBoundary>
-              )}
-
-              {/* Conversa e Interação Direta com a Equipe de TI (Chat) */}
-              <div className="pt-2 border-t border-border/60 space-y-2">
-                <SectionErrorBoundary name="Chat do chamado">
-                  <TicketChat
-                    ticketId={t.id}
-                    solicitanteNome={t.solicitante}
-                    solicitanteEmail={t.email}
-                    ticketDescricao={t.descricao}
-                    ticketAbertoEm={t.aberto_em}
-                    ticketHora={t.hora}
-                    ticketProcedimento={t.procedimento}
-                    ticketStatus={t.status}
-                    ticketFechadoEm={t.fechado_em}
-                    ticketSlaPausado={t.sla_pausado}
-                    ticketSlaPausadoEm={t.sla_pausado_em}
-                    ticketSlaPausaMotivo={t.sla_pausa_motivo}
-                    currentUserEmail={activeEmail}
-                    currentUserName={session?.user?.user_metadata?.full_name || t.solicitante}
-                    isGestorOrAdmin={false}
-                  />
-                </SectionErrorBoundary>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

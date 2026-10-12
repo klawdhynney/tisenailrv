@@ -37,6 +37,7 @@ export interface TextoAssistidoProps {
   rows?: number;
   placeholder?: string;
   ocultarIa?: boolean;
+  disabled?: boolean;
   ticketId?: number;
   titulo?: string;
   categoria?: string;
@@ -51,6 +52,7 @@ export function TextoAssistido({
   rows = 5,
   placeholder,
   ocultarIa = false,
+  disabled = false,
   ticketId,
   titulo,
   categoria,
@@ -111,6 +113,7 @@ export function TextoAssistido({
         rows={rows}
         value={safeValue}
         placeholder={placeholder}
+        disabled={disabled}
         autoComplete="on"
         onClick={(e) => setCursor(e.currentTarget.selectionStart)}
         onKeyUp={(e) => setCursor(e.currentTarget.selectionStart)}
@@ -120,7 +123,7 @@ export function TextoAssistido({
           setTextoAprimorado(null);
         }}
       />
-      {palavras.length > 0 && (
+      {!disabled && palavras.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>Sugestões:</span>
           {palavras.map((p) => (
@@ -139,7 +142,7 @@ export function TextoAssistido({
           ))}
         </div>
       )}
-      {!ocultarIa && (
+      {!ocultarIa && !disabled && (
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"

@@ -210,13 +210,14 @@ function TicketEditor({
   const [edicaoOpcao2, setEdicaoOpcao2] = useState("");
   const autoSuggestedId = useRef<number | null>(null);
   const autoAssignedId = useRef<number | null>(null);
+  const isEncerrado = ["Resolvido", "Finalizado", "Cancelado"].includes(ticket.status);
   useEffect(() => setDraft(prev => ({ ...ticket, responsavel: "Claudinei Lima", status: prev.status === "Aberto" && ticket.status === "Aberto" ? "Em andamento" : ticket.status })), [ticket]);
   useEffect(() => {
-    if (autoAssignedId.current === ticket.id || ["Resolvido", "Cancelado"].includes(ticket.status)) return;
+    if (autoAssignedId.current === ticket.id || isEncerrado) return;
     autoAssignedId.current = ticket.id;
     if (ticket.responsavel === "Claudinei Lima" && ticket.status !== "Aberto") return;
     void updateTicket(ticket.id, { responsavel: "Claudinei Lima", ...(ticket.status === "Aberto" ? { status: "Em andamento" as const } : {}) });
-  }, [ticket.id, ticket.responsavel, ticket.status, updateTicket]);
+  }, [ticket.id, ticket.responsavel, ticket.status, isEncerrado, updateTicket]);
   useEffect(() => {
     if (ticket.status !== "Aberto" || autoSuggestedId.current === ticket.id) return;
     autoSuggestedId.current = ticket.id;
@@ -249,6 +250,10 @@ function TicketEditor({
   const [motivoCancelamento, setMotivoCancelamento] = useState("");
 
   async function executarFinalizacaoChamado() {
+    if (isEncerrado) {
+      toast.error("Chamados finalizados ou cancelados não podem ser alterados.");
+      return;
+    }
     const proc = procedimentoFinalizacao.trim() || draft.procedimento || "Atendimento concluído e resolvido com sucesso pela equipe técnica.";
     const hoje = obterDataHojeCuiaba();
     const hora = obterHoraAgoraCuiaba();
@@ -292,6 +297,10 @@ function TicketEditor({
   }
 
   async function executarCancelamentoChamado() {
+    if (isEncerrado) {
+      toast.error("Chamados finalizados ou cancelados não podem ser alterados.");
+      return;
+    }
     const motivo = motivoCancelamento.trim() || "Cancelado pela equipe de atendimento.";
     const hoje = obterDataHojeCuiaba();
     const hora = obterHoraAgoraCuiaba();
@@ -337,6 +346,10 @@ function TicketEditor({
   }
 
   async function pausarSla() {
+    if (isEncerrado) {
+      toast.error("Chamados finalizados ou cancelados não podem ser alterados.");
+      return;
+    }
     const motivoFinal = motivoPausa === "Outros" && motivoCustom.trim() ? motivoCustom.trim() : motivoPausa;
     const agoraIso = new Date().toISOString();
     const autor = session?.user?.user_metadata?.full_name || session?.user?.email || "Equipe de TI";
@@ -387,6 +400,10 @@ function TicketEditor({
   }
 
   async function retomarSla() {
+    if (isEncerrado) {
+      toast.error("Chamados finalizados ou cancelados não podem ser alterados.");
+      return;
+    }
     const agora = new Date();
     const inicioPausa = ticket.slaPausadoEm ? new Date(ticket.slaPausadoEm) : agora;
     const segPausados = segundosUteis(inicioPausa, agora, regras);
@@ -437,11 +454,19 @@ function TicketEditor({
   }
 
   function alterarPrioridade(novaPrioridade: Ticket["prioridade"]) {
+    if (isEncerrado) {
+      toast.error("Chamados finalizados ou cancelados não podem ser alterados.");
+      return;
+    }
     field("prioridade", novaPrioridade);
     toast.info(`Prioridade alterada para "${novaPrioridade}" no rascunho.`);
   }
 
   async function save() {
+    if (isEncerrado) {
+      toast.error("Chamados finalizados ou cancelados não podem ser alterados.");
+      return;
+    }
     const patch: Partial<Ticket> = {};
     for (const key of editable) {
       if (draft[key] !== ticket[key]) Object.assign(patch, { [key]: draft[key] });
@@ -552,7 +577,7 @@ function TicketEditor({
           </Link>
         </Button>
         <div className="flex flex-wrap items-center gap-2">
-          {draft.status !== "Resolvido" && (
+          {!isEncerrado && draft.status !== "Resolvido" && (
             <Button
               type="button"
               variant="google-green"
@@ -567,7 +592,7 @@ function TicketEditor({
             </Button>
           )}
 
-          {draft.status !== "Cancelado" && (
+          {!isEncerrado && draft.status !== "Cancelado" && (
             <Button
               type="button"
               variant="outline"
@@ -601,6 +626,21 @@ function TicketEditor({
           </div>
         </div>
       </div>
+
+      {/* Banner institucional de somente leitura para chamados encerrados */}
+      {isEncerrado && (
+        <div className="rounded-2xl border-2 border-border/80 bg-muted/40 p-4 flex items-center gap-3 animate-in fade-in">
+          <CheckCircle2 className="size-5 text-g-green shrink-0" />
+          <div className="space-y-0.5">
+            <p className="text-sm font-bold text-foreground">
+              Chamado {ticket.status} — Modo Somente Leitura
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Este chamado já foi concluído ou cancelado e está protegido contra qualquer modificação. Gestores, administradores e solicitantes podem consultar todo o histórico, mas o registro é imutável.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Header com destaque e SLA */}
       <SectionErrorBoundary name="Cabeçalho e SLA">
@@ -798,6 +838,7 @@ function TicketEditor({
               <Input
                 className="h-10 text-sm font-medium"
                 value={draft.solicitante}
+                disabled={isEncerrado}
                 onChange={(e) => field("solicitante", e.target.value)}
               />
             </label>
@@ -814,6 +855,7 @@ function TicketEditor({
               <Input
                 className="h-10 text-sm font-medium"
                 value={draft.setor}
+                disabled={isEncerrado}
                 onChange={(e) => field("setor", e.target.value)}
               />
             </label>
@@ -822,6 +864,7 @@ function TicketEditor({
               <select
                 className="h-10 rounded-xl border border-input bg-background px-3 text-sm font-medium"
                 value={draft.categoria ?? ""}
+                disabled={isEncerrado}
                 onChange={(e) => field("categoria", e.target.value)}
               >
                 {regras.categorias.map((c) => (
@@ -841,7 +884,7 @@ function TicketEditor({
               2. Descrição do Problema
             </h2>
           </div>
-          <TextoAssistido value={draft.descricao} onChange={(value) => field("descricao", value)} ocultarIa={true} />
+          <TextoAssistido value={draft.descricao} onChange={(value) => field("descricao", value)} ocultarIa={true} disabled={isEncerrado} />
         </div>
       </SectionErrorBoundary>
 
@@ -882,7 +925,7 @@ function TicketEditor({
             <Button
               type="button"
               size="sm"
-              disabled={gerandoRespostas || draft.descricao.trim().length < 5}
+              disabled={isEncerrado || gerandoRespostas || draft.descricao.trim().length < 5}
               onClick={gerarRespostasTecnicas}
               className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold shadow-xs hover:shadow-md transition-all border-0 text-xs px-3 py-1.5"
             >
@@ -949,6 +992,7 @@ function TicketEditor({
           <TextoAssistido
             value={draft.procedimento ?? ""}
             onChange={(value) => field("procedimento", value || null)}
+            disabled={isEncerrado}
             ticketId={ticket.id}
             titulo={draft.categoria ? `${draft.categoria} (Chamado #${ticket.id})` : `Chamado #${ticket.id}`}
             categoria={draft.categoria}
@@ -972,7 +1016,7 @@ function TicketEditor({
               <h2 className="text-sm font-bold text-foreground">
                 Prioridade do Chamado (Ordem: Crítico, Alta, Média, Baixa)
               </h2>
-              {suggested && (
+              {!isEncerrado && suggested && (
                 <Button
                   size="sm"
                   type="button"
@@ -995,6 +1039,7 @@ function TicketEditor({
                     key={p}
                     type="button"
                     size="sm"
+                    disabled={isEncerrado}
                     className={`rounded-xl transition-all ${
                       ativo ? prioridadeEstilos[p]?.active : prioridadeEstilos[p]?.inactive
                     }`}
@@ -1022,6 +1067,7 @@ function TicketEditor({
                     key={s}
                     type="button"
                     size="sm"
+                    disabled={isEncerrado}
                     className={`rounded-xl transition-all ${
                       ativo ? statusEstilos[s]?.active : statusEstilos[s]?.inactive
                     }`}
@@ -1079,7 +1125,7 @@ function TicketEditor({
               navigate({ to: "/atendimento" });
             }}
           >
-            Cancelar
+            Voltar
           </Button>
           <ConfirmAction
             title={`Salvar alterações no chamado #${ticket.id}?`}
@@ -1087,7 +1133,7 @@ function TicketEditor({
             confirmLabel="Sim, salvar chamado"
             variant="google-green"
             onConfirm={save}
-            disabled={!hasChanges || saving}
+            disabled={!hasChanges || saving || isEncerrado}
           >
             <Save className="size-4" /> {saving ? "Salvando…" : "Salvar alterações"}
           </ConfirmAction>
