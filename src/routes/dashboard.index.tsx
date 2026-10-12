@@ -237,7 +237,13 @@ function Dashboard() {
         search: { mes: mesQuery || undefined },
         replace: true,
       });
-    } else if (tipoQuery === "pizza" || tipoQuery === "barras" || tipoQuery === "historico") {
+    } else if (tipoQuery === "historico") {
+      navigate({
+        to: "/dashboard/serie-historica",
+        search: { mes: mesQuery || undefined },
+        replace: true,
+      });
+    } else if (tipoQuery === "pizza" || tipoQuery === "barras") {
       setTipoGrafico(tipoQuery);
     }
   }, [tipoQuery, mesQuery, navigate]);
@@ -508,8 +514,8 @@ function Dashboard() {
                 <Filter className="size-4 text-g-blue shrink-0" />
                 <span>
                   {mes === "todos"
-                    ? "Filtrar por mês"
-                    : `Mês: ${MESES_DISPONIVEIS.find((m) => m.key === mes)?.label || mes}`}
+                    ? "Filtrar"
+                    : (MESES_DISPONIVEIS.find((m) => m.key === mes)?.label || mes)}
                 </span>
               </Button>
             </PopoverTrigger>
@@ -613,6 +619,20 @@ function Dashboard() {
             <Link to="/dashboard/indicadores" search={{ mes: mes !== "todos" ? mes : undefined }}>
               <LayoutGrid className="size-4 text-g-blue shrink-0" />
               <span>Indicadores</span>
+            </Link>
+          </Button>
+
+          {/* Botão Série Histórica (Página Solo) */}
+          <Button
+            asChild
+            variant="outline"
+            className="min-h-[40px] h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
+            title="Série Histórica de Chamados"
+            aria-label="Série Histórica"
+          >
+            <Link to="/dashboard/serie-historica" search={{ mes: mes !== "todos" ? mes : undefined }}>
+              <Activity className="size-4 text-purple-600 dark:text-purple-400 shrink-0" />
+              <span>Série Histórica</span>
             </Link>
           </Button>
         </div>
@@ -721,16 +741,15 @@ function Dashboard() {
                     const graficosDisponiveis = [
                       { id: "pizza", label: dashConf?.titulosGraficos?.pizza || "Pizza", icon: PieChartIcon, title: "Gráfico de Rosca / Pizza" },
                       { id: "barras", label: dashConf?.titulosGraficos?.barras || "Barras", icon: BarChart3, title: "Gráfico de Barras horizontais" },
-                      { id: "historico", label: dashConf?.titulosGraficos?.historico || "Série Histórica", icon: Activity, title: "Série histórica por chamados" },
                     ];
                     const ordem = (dashConf?.ordemGraficos && dashConf.ordemGraficos.length > 0
                       ? dashConf.ordemGraficos
-                      : ["pizza", "barras", "historico"]
-                    ).filter((id: string) => id !== "kpi");
+                      : ["pizza", "barras"]
+                    ).filter((id: string) => id !== "kpi" && id !== "historico");
                     const visiveis = (dashConf?.graficos && dashConf.graficos.length > 0
                       ? dashConf.graficos
-                      : ["pizza", "barras", "historico"]
-                    ).filter((id: string) => id !== "kpi");
+                      : ["pizza", "barras"]
+                    ).filter((id: string) => id !== "kpi" && id !== "historico");
                     const filtrados = ordem
                       .map((id) => graficosDisponiveis.find((g) => g.id === id))
                       .filter((g) => Boolean(g && visiveis.includes(g.id)));
