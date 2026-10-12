@@ -580,17 +580,17 @@ function Dashboard() {
             </PopoverContent>
           </Popover>
 
-          {/* Botão Acompanhar chamados */}
+          {/* Botão Ver chamados */}
           <Button
             asChild
             variant="outline"
-            className="min-h-[40px] h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
-            title="Acompanhar chamados"
-            aria-label="Acompanhar chamados"
+            className="min-h-[40px] h-10 px-2.5 sm:px-3 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 whitespace-nowrap transition-colors cursor-pointer"
+            title="Ver chamados"
+            aria-label="Ver chamados"
           >
             <Link to="/dashboard/acompanhamento">
               <ClipboardList className="size-4 text-g-green shrink-0" />
-              <span>Acompanhar chamados</span>
+              <span>Ver chamados</span>
             </Link>
           </Button>
 
@@ -598,7 +598,7 @@ function Dashboard() {
           <Button
             asChild
             variant="outline"
-            className="min-h-[40px] h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
+            className="min-h-[40px] h-10 px-2.5 sm:px-3 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 whitespace-nowrap transition-colors cursor-pointer"
             title="Avaliações de satisfação"
             aria-label="Avaliações"
           >
@@ -612,8 +612,8 @@ function Dashboard() {
           <Button
             asChild
             variant="outline"
-            className="min-h-[40px] h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
-            title="Indicadores Principais (KPIs)"
+            className="min-h-[40px] h-10 px-2.5 sm:px-3 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 whitespace-nowrap transition-colors cursor-pointer"
+            title="Indicadores"
             aria-label="Indicadores"
           >
             <Link to="/dashboard/indicadores" search={{ mes: mes !== "todos" ? mes : undefined }}>
@@ -626,8 +626,8 @@ function Dashboard() {
           <Button
             asChild
             variant="outline"
-            className="min-h-[40px] h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
-            title="Série Histórica de Chamados"
+            className="min-h-[40px] h-10 px-2.5 sm:px-3 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 whitespace-nowrap transition-colors cursor-pointer"
+            title="Série Histórica"
             aria-label="Série Histórica"
           >
             <Link to="/dashboard/serie-historica" search={{ mes: mes !== "todos" ? mes : undefined }}>
