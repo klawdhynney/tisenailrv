@@ -58,12 +58,83 @@ export function ticketsParaLinhas(tickets: Ticket[], camposSelecionados?: string
   });
 }
 
+/**
+ * Higieniza o texto da descrição do chamado para relatórios (PDF e Excel):
+ * - Remove cumprimentos/saudações iniciais (ex: "Prezados,", "Olá,", "Bom dia,")
+ * - Remove despedidas e formalidades finais (ex: "Agradeço a atenção.", "Atenciosamente,")
+ * - Remove apêndices de avaliações e informações adicionais (ex: "Informação adicional do solicitante: [Avaliação...")
+ * - Colapsa espaços desnecessários e quebras de linha em branco, deixando o texto limpo, direto e legível.
+ */
+export function limparDescricaoParaRelatorio(texto: string): string {
+  if (!texto) return "";
+
+  let limpo = texto;
+
+  // 1. Cortar qualquer apêndice de informação adicional do solicitante ou avaliação
+  const regexInfoAdicional = /(informac[aã]o|i\s*n\s*f\s*o\s*r\s*m\s*a\s*c\s*[aã]\s*o)\s*(adicional|a\s*d\s*i\s*c\s*i\s*o\s*n\s*a\s*l)?\s*(do|d\s*o)?\s*(solicitante|s\s*o\s*l\s*i\s*c\s*i\s*t\s*a\s*n\s*t\s*e)?/i;
+  const matchInfo = limpo.search(regexInfoAdicional);
+  if (matchInfo !== -1) {
+    limpo = limpo.slice(0, matchInfo);
+  }
+
+  // Corta também se houver "[Avaliação" ou "[Avaliacao" ou "Surpreso" (respostas de satisfação)
+  const regexAvaliacao = /(\[\s*avaliac[aã]o|\[\s*a\s*v\s*a\s*l\s*i|surpreso\b)/i;
+  const matchAv = limpo.search(regexAvaliacao);
+  if (matchAv !== -1) {
+    limpo = limpo.slice(0, matchAv);
+  }
+
+  // 2. Dividir em linhas para analisar cumprimentos e despedidas
+  const linhas = limpo
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  // 3. Expressões de cumprimento / saudação formal no início
+  const padroesInicio = [
+    /^(prezados?|prezadas?|prezado\(a\)s?|prezada\(o\)s?)\s*[,.:;-]?$/i,
+    /^(ol[aá]|bom dia|boa tarde|boa noite|oi|sauda[cç][oõ]es)\s*[,.:;-]?$/i,
+    /^(prezados?\s+(senhores?|colegas?|atendentes?|amigos?|equipe))\s*[,.:;-]?$/i,
+    /^(a\/c\s+ti|aos\s+cuidados\s+da?\s+ti|equipe\s+de\s+ti|ao\s+suporte|suporte\s+ti)\s*[,.:;-]?$/i,
+  ];
+
+  // 4. Expressões de despedida / formalidade no final
+  const padroesFim = [
+    /^(agrade[cç]o(\s+a\s+aten[cç][aã]o|\s+desde\s+j[aá])?|desde\s+j[aá]\s+agrade[cç]o)\s*[.!]?$/i,
+    /^(atenciosamente|cordialmente|grato|grata|obrigado|obrigada|valeu)\s*[,.:;!-]?$/i,
+    /^(fico\s+no\s+aguardo|no\s+aguardo|atenciosamente,?\s*equipe)\s*[.!]?$/i,
+  ];
+
+  // Remove linhas iniciais de saudação
+  while (linhas.length > 0 && padroesInicio.some((p) => p.test(linhas[0]))) {
+    linhas.shift();
+  }
+
+  // Remove linhas finais de despedida
+  while (linhas.length > 0 && padroesFim.some((p) => p.test(linhas[linhas.length - 1]))) {
+    linhas.pop();
+  }
+
+  // 5. Junta as linhas restantes com espaço único, sem quebras desnecessárias
+  let resultado = linhas.join(" ").replace(/\s+/g, " ").trim();
+
+  // Limpeza adicional de prefixos ou sufixos inline caso não tenham sido linha separada
+  resultado = resultado
+    .replace(/^(prezados?|prezadas?|ol[aá]|bom dia|boa tarde|boa noite)\s*,\s*/i, "")
+    .replace(/\s*(agrade[cç]o(\s+a\s+aten[cç][aã]o)?|atenciosamente|cordialmente)\s*[.!]?$/i, "")
+    .trim();
+
+  return resultado || texto.replace(/\s+/g, " ").trim();
+}
+
 export function ticketsParaLinhasAtendimento(
   tickets: Ticket[],
   colunasAtivas?: { id: string; label: string }[],
   regras?: Regras | null
 ): LinhaExportacao[] {
   return tickets.map((t) => {
+    const descricaoLimpa = limparDescricaoParaRelatorio(t.descricao || "");
+
     // Se colunas específicas forem passadas explicitamente
     if (colunasAtivas && colunasAtivas.length > 0) {
       const sla = calcularSla(t, regras || ({} as Regras));
@@ -80,8 +151,8 @@ export function ticketsParaLinhasAtendimento(
         "Solicitante": t.solicitante,
         setor: extrairSetor(t.setor),
         "Setor": extrairSetor(t.setor),
-        descricao: t.descricao || "",
-        "Descrição do problema": t.descricao || "",
+        descricao: descricaoLimpa,
+        "Descrição do problema": descricaoLimpa,
         status: obterRotuloStatus(t.status, regras),
         "Status": obterRotuloStatus(t.status, regras),
         slaPrazo: `${formatarDataHora(sla.prazo)} - ${sla.situacao}`,
@@ -117,7 +188,7 @@ export function ticketsParaLinhasAtendimento(
       "Aberto em": formatarData(t.abertoEm, t.hora),
       "Solicitante": t.solicitante,
       "Setor": extrairSetor(t.setor),
-      "Descrição do problema": t.descricao || "",
+      "Descrição do problema": descricaoLimpa,
       "Responsável": t.responsavel || "—",
       "Fechado em": t.fechadoEm ? formatarData(t.fechadoEm, t.horario) : "—",
       "Status": obterRotuloStatus(t.status, regras),
