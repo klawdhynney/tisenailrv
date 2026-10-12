@@ -212,21 +212,15 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
     });
   }
 
-  // Exportação com as colunas visíveis e respeitando mês e status filtrados
+  // Exportação com rigorosamente as 8 colunas da planilha oficial de atendimento
   const dispararExportacaoXlsx = () => {
-    const colunasParaExportar = colunasVisiveis
-      .filter((c) => c.exportarExcel !== false && c.id !== "atender")
-      .map((c) => ({ id: c.id, label: c.label }));
-    const dados = ticketsParaLinhasAtendimento(rows, colunasParaExportar, regras);
+    const dados = ticketsParaLinhasAtendimento(rows, undefined, regras);
     exportarXlsx(dados, "Planilha_Atendimento_TI");
   };
 
   const dispararExportacaoPdf = () => {
-    const colunasParaExportar = colunasVisiveis
-      .filter((c) => c.exportarPdf !== false && c.id !== "atender")
-      .map((c) => ({ id: c.id, label: c.label }));
-    const dados = ticketsParaLinhasAtendimento(rows, colunasParaExportar, regras);
-    exportarPdf(dados, "Planilha_Atendimento_TI", "Planilha de Atendimento de Chamados");
+    const dados = ticketsParaLinhasAtendimento(rows, undefined, regras);
+    exportarPdf(dados, "Planilha_Atendimento_TI", "Central de Atendimento ao Usuário · Planilha de Chamados");
   };
 
   return (

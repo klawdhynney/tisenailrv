@@ -60,53 +60,68 @@ export function ticketsParaLinhas(tickets: Ticket[], camposSelecionados?: string
 
 export function ticketsParaLinhasAtendimento(
   tickets: Ticket[],
-  colunasAtivas: { id: string; label: string }[],
+  colunasAtivas?: { id: string; label: string }[],
   regras?: Regras | null
 ): LinhaExportacao[] {
   return tickets.map((t) => {
-    const sla = calcularSla(t, regras || ({} as Regras));
-    const mapaValores: Record<string, string | number> = {
-      atender: "",
-      "Atender": "",
-      numero: t.id,
-      "Nº": t.id,
-      abertoEm: formatarData(t.abertoEm, t.hora),
-      "Aberto em": formatarData(t.abertoEm, t.hora),
-      prioridade: t.prioridade,
-      "Prioridade": t.prioridade,
-      solicitante: t.solicitante,
-      "Solicitante": t.solicitante,
-      setor: extrairSetor(t.setor),
-      "Setor": extrairSetor(t.setor),
-      descricao: t.descricao,
-      "Descrição do problema": t.descricao,
-      status: obterRotuloStatus(t.status, regras),
-      "Status": obterRotuloStatus(t.status, regras),
-      slaPrazo: `${formatarDataHora(sla.prazo)} - ${sla.situacao}`,
-      "SLA / Prazo": `${formatarDataHora(sla.prazo)} - ${sla.situacao}`,
-      procedimento: t.procedimento || "",
-      "Procedimento": t.procedimento || "",
-      fechadoEm: formatarData(t.fechadoEm, t.horario),
-      "Fechado em": formatarData(t.fechadoEm, t.horario),
-      responsavel: t.responsavel || "",
-      "Responsável": t.responsavel || "",
-      local: extrairLocal(t),
-      "Local": extrairLocal(t),
-      categoria: t.categoria || "",
-      "Categoria": t.categoria || "",
-      email: t.solicitanteEmail || "",
-      "E-mail": t.solicitanteEmail || "",
-      whatsapp: t.contato || "",
-      "WhatsApp": t.contato || "",
-    };
+    // Se colunas específicas forem passadas explicitamente
+    if (colunasAtivas && colunasAtivas.length > 0) {
+      const sla = calcularSla(t, regras || ({} as Regras));
+      const mapaValores: Record<string, string | number> = {
+        atender: "",
+        "Atender": "",
+        numero: t.id,
+        "Nº": t.id,
+        abertoEm: formatarData(t.abertoEm, t.hora),
+        "Aberto em": formatarData(t.abertoEm, t.hora),
+        prioridade: t.prioridade,
+        "Prioridade": t.prioridade,
+        solicitante: t.solicitante,
+        "Solicitante": t.solicitante,
+        setor: extrairSetor(t.setor),
+        "Setor": extrairSetor(t.setor),
+        descricao: t.descricao || "",
+        "Descrição do problema": t.descricao || "",
+        status: obterRotuloStatus(t.status, regras),
+        "Status": obterRotuloStatus(t.status, regras),
+        slaPrazo: `${formatarDataHora(sla.prazo)} - ${sla.situacao}`,
+        "SLA / Prazo": `${formatarDataHora(sla.prazo)} - ${sla.situacao}`,
+        procedimento: t.procedimento || "",
+        "Procedimento": t.procedimento || "",
+        fechadoEm: t.fechadoEm ? formatarData(t.fechadoEm, t.horario) : "—",
+        "Fechado em": t.fechadoEm ? formatarData(t.fechadoEm, t.horario) : "—",
+        responsavel: t.responsavel || "—",
+        "Responsável": t.responsavel || "—",
+        local: extrairLocal(t),
+        "Local": extrairLocal(t),
+        categoria: t.categoria || "",
+        "Categoria": t.categoria || "",
+        email: t.solicitanteEmail || "",
+        "E-mail": t.solicitanteEmail || "",
+        whatsapp: t.contato || "",
+        "WhatsApp": t.contato || "",
+      };
 
-    const linha: LinhaExportacao = {};
-    for (const col of colunasAtivas) {
-      if (col.id === "atender" || col.label === "Atender") continue;
-      const val = mapaValores[col.id] ?? mapaValores[col.label] ?? "";
-      linha[col.label] = val;
+      const linha: LinhaExportacao = {};
+      for (const col of colunasAtivas) {
+        if (col.id === "atender" || col.label === "Atender") continue;
+        const val = mapaValores[col.id] ?? mapaValores[col.label] ?? "";
+        linha[col.label] = val;
+      }
+      return linha;
     }
-    return linha;
+
+    // Padrão oficial da planilha de atendimento: apenas as 8 colunas na sequência exata
+    return {
+      "Nº": t.id,
+      "Aberto em": formatarData(t.abertoEm, t.hora),
+      "Solicitante": t.solicitante,
+      "Setor": extrairSetor(t.setor),
+      "Descrição do problema": t.descricao || "",
+      "Responsável": t.responsavel || "—",
+      "Fechado em": t.fechadoEm ? formatarData(t.fechadoEm, t.horario) : "—",
+      "Status": obterRotuloStatus(t.status, regras),
+    };
   });
 }
 
@@ -134,9 +149,30 @@ export async function exportarXlsx(linhas: LinhaExportacao[], nome: string) {
   const XLSX = await import("xlsx");
   const planilha = XLSX.utils.json_to_sheet(linhas);
 
-  // Organiza largura das colunas baseada no conteúdo
   const colunas = Object.keys(linhas[0] ?? {});
+  const largurasPadrao: Record<string, number> = {
+    "Nº": 8,
+    "Numero": 8,
+    "Aberto em": 18,
+    "Data": 14,
+    "Hora": 10,
+    "Solicitante": 22,
+    "Setor": 18,
+    "Descrição do problema": 55,
+    "Descricao": 55,
+    "Responsável": 22,
+    "Responsavel": 22,
+    "Fechado em": 18,
+    "Fechamento": 14,
+    "Status": 16,
+    "Prioridade": 14,
+    "SLA / Prazo": 25,
+  };
+
   const larguras = colunas.map((col) => {
+    if (largurasPadrao[col]) {
+      return { wch: largurasPadrao[col] };
+    }
     let maxLen = col.length;
     for (const linha of linhas) {
       const val = linha[col];
@@ -146,8 +182,7 @@ export async function exportarXlsx(linhas: LinhaExportacao[], nome: string) {
         if (primeiraLinhaLen > maxLen) maxLen = primeiraLinhaLen;
       }
     }
-    // Largura com folga, mínimo 14 e máximo 52
-    return { wch: Math.min(Math.max(maxLen + 4, 14), 52) };
+    return { wch: Math.min(Math.max(maxLen + 4, 14), 55) };
   });
   planilha["!cols"] = larguras;
 
@@ -155,7 +190,7 @@ export async function exportarXlsx(linhas: LinhaExportacao[], nome: string) {
   planilha["!freeze"] = { xSplit: "0", ySplit: "1" };
   planilha["!views"] = [{ state: "frozen", xSplit: 0, ySplit: 1 }];
 
-  // Configurar fonte tamanho 12, quebra de linha (wrap text) e estilos visuais
+  // Configurar estilos: quebra de linha (wrapText), alinhamento vertical e fonte
   for (const cellAddress in planilha) {
     if (cellAddress.startsWith("!")) continue;
     const isHeader = /^[A-Z]+1$/.test(cellAddress);
@@ -163,12 +198,12 @@ export async function exportarXlsx(linhas: LinhaExportacao[], nome: string) {
 
     existingCell.s = isHeader
       ? {
-          font: { name: "Arial", sz: 12, bold: true, color: { rgb: "FFFFFF" } },
-          fill: { fgColor: { rgb: "1A73E8" } },
+          font: { name: "Arial", sz: 11, bold: true, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "E26B00" } }, // Fundo laranja da tabela de atendimento
           alignment: { wrapText: true, vertical: "center", horizontal: "center" },
         }
       : {
-          font: { name: "Arial", sz: 12 },
+          font: { name: "Arial", sz: 11 },
           alignment: { wrapText: true, vertical: "center" },
         };
     planilha[cellAddress] = existingCell;
@@ -198,72 +233,100 @@ export async function exportarPdf(linhas: LinhaExportacao[], nome: string, titul
   const [{ jsPDF }, autoTableModule] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
   const autoTable = autoTableModule.default;
   const colunas = Object.keys(linhas[0] ?? {});
+  const dataEmissao = new Date().toLocaleDateString("pt-BR");
+  const horaEmissao = new Date().toLocaleTimeString("pt-BR").slice(0, 5);
 
-  // Orientação paisagem para comportar colunas e fonte tamanho 12 com folga
+  // Orientação paisagem em A4 (297mm x 210mm) com margens de 10mm (largura útil = 277mm)
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
   // Banner Cabeçalho com padrão de cores do projeto (Google Blue)
   doc.setFillColor(26, 115, 232);
-  doc.rect(0, 0, doc.internal.pageSize.getWidth(), 20, "F");
+  doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, "F");
 
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.text(titulo, 12, 10);
+  doc.text(`TI SENAI LRV · ${titulo}`, 10, 9.5);
 
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
   doc.text(
-    `TI SENAI LRV · Emitido em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR").slice(0, 5)} · Total de registros: ${linhas.length}`,
-    12,
-    16,
+    `Emitido em ${dataEmissao} às ${horaEmissao} · Total de registros: ${linhas.length} · Relatório oficial do sistema`,
+    10,
+    15,
   );
 
+  // Mapeamento de larguras adaptativas para que todas as informações fiquem visíveis sem corte
+  const columnStyles: Record<number, any> = {};
+  colunas.forEach((col, idx) => {
+    if (col === "Nº" || col === "Numero") {
+      columnStyles[idx] = { cellWidth: 14, halign: "center", fontStyle: "bold", textColor: [26, 115, 232] };
+    } else if (col === "Aberto em" || col === "Data") {
+      columnStyles[idx] = { cellWidth: 28, halign: "center" };
+    } else if (col === "Solicitante") {
+      columnStyles[idx] = { cellWidth: 32, halign: "left" };
+    } else if (col === "Setor") {
+      columnStyles[idx] = { cellWidth: 26, halign: "left" };
+    } else if (col === "Descrição do problema" || col === "Descricao") {
+      columnStyles[idx] = { cellWidth: 93, halign: "left" };
+    } else if (col === "Responsável" || col === "Responsavel") {
+      columnStyles[idx] = { cellWidth: 30, halign: "left" };
+    } else if (col === "Fechado em" || col === "Fechamento") {
+      columnStyles[idx] = { cellWidth: 28, halign: "center" };
+    } else if (col === "Status") {
+      columnStyles[idx] = { cellWidth: 26, halign: "center", fontStyle: "bold" };
+    }
+  });
+
   autoTable(doc, {
-    startY: 24,
+    startY: 22,
     head: [colunas],
     body: linhas.map((linha) => colunas.map((c) => String(linha[c] ?? ""))),
     theme: "striped",
     styles: {
-      fontSize: 12, // Tamanho 12 em todo o conteúdo
-      cellPadding: 2.5,
-      overflow: "linebreak", // Quebra automática de linha
+      fontSize: 8.5,
+      cellPadding: 2.2,
+      overflow: "linebreak", // Quebra automática de linha garantida
       textColor: [32, 33, 36],
       lineColor: [220, 224, 230],
-      lineWidth: 0.1,
+      lineWidth: 0.12,
       valign: "middle",
     },
     headStyles: {
-      fillColor: [26, 115, 232], // Azul Google do tema
+      fillColor: [26, 115, 232],
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 12,
-      cellPadding: 3,
+      fontSize: 9,
+      cellPadding: 2.8,
       halign: "center",
       valign: "middle",
     },
     alternateRowStyles: {
-      fillColor: [248, 250, 252], // Linhas alternadas no padrão de cores do site
+      fillColor: [248, 250, 252],
     },
-    margin: { left: 10, right: 10, top: 24, bottom: 15 },
+    columnStyles,
+    margin: { left: 10, right: 10, top: 22, bottom: 12 },
     rowPageBreak: "avoid",
-    didDrawPage: (data) => {
-      const str = `Página ${data.pageNumber} de ${doc.getNumberOfPages()}`;
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(128, 128, 128);
-      doc.text(
-        str,
-        doc.internal.pageSize.getWidth() - 32,
-        doc.internal.pageSize.getHeight() - 8,
-      );
-      doc.text(
-        "TI SENAI LRV · Documento oficial gerado pelo sistema",
-        10,
-        doc.internal.pageSize.getHeight() - 8,
-      );
-    },
   });
+
+  // Numeração correta de páginas e rodapé em todas as páginas
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(128, 128, 128);
+    doc.text(
+      `TI SENAI LRV · Documento oficial gerado pelo sistema · Emitido em ${dataEmissao} às ${horaEmissao}`,
+      10,
+      doc.internal.pageSize.getHeight() - 6,
+    );
+    doc.text(
+      `Página ${i} de ${totalPages}`,
+      doc.internal.pageSize.getWidth() - 28,
+      doc.internal.pageSize.getHeight() - 6,
+    );
+  }
 
   const nomeFinal = nome.endsWith(".pdf") ? nome : `${nome}.pdf`;
   doc.save(nomeFinal);
