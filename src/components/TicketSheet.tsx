@@ -416,6 +416,7 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
                   {colunasVisiveis.map((c) => {
                     const isAtender = c.id === "atender" || c.label === "Atender" || c.label === "CALL";
                     const isNumero = c.id === "numero" || c.label === "Nº";
+                    const isSla = c.id === "slaPrazo" || c.id === "sla" || c.label?.includes("SLA");
 
                     let larguraCls = "min-w-[120px]";
                     if (isAtender) larguraCls = "w-[56px] min-w-[56px] max-w-[56px]";
@@ -426,7 +427,7 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
                     else if (c.id === "setor") larguraCls = "w-[120px] min-w-[105px] max-w-[135px]";
                     else if (c.id === "descricao") larguraCls = "min-w-[190px] max-w-[270px]";
                     else if (c.id === "procedimento") larguraCls = "min-w-[160px] max-w-[240px]";
-                    else if (c.id === "slaPrazo") larguraCls = "w-[145px] min-w-[135px]";
+                    else if (isSla) larguraCls = "w-[125px] min-w-[115px]";
                     else if (c.id === "status") larguraCls = "w-[115px] min-w-[105px]";
 
                     const stickyCls = isAtender
@@ -437,6 +438,8 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
 
                     const rotuloHeader = isAtender
                       ? (c.label === "CALL" ? "Atender" : c.label || "Atender")
+                      : isSla
+                      ? "SLA"
                       : c.label;
 
                     return (
@@ -641,18 +644,19 @@ function TicketRow({
       case "status":
         return <StatusChip valor={t.status} />;
       case "slaPrazo":
+      case "sla":
         return (
-          <div className="flex flex-col gap-1 min-w-[135px]">
+          <div
+            className="flex flex-col gap-1 min-w-[110px]"
+            title={`Prazo de atendimento: ${formatarDataHora(sla.prazo)} (${sla.situacao})`}
+          >
             <div className="flex items-center gap-1.5">
               <SlaChip valor={sla.situacao} />
             </div>
-            <span className="text-[11px] text-muted-foreground font-medium whitespace-nowrap">
-              {formatarDataHora(sla.prazo)}
-            </span>
             {!["Resolvido", "Cancelado"].includes(t.status) && (
               <span
                 className="font-mono text-[11px] tabular-nums text-g-blue font-bold tracking-tight"
-                title="Tempo útil restante conforme expediente"
+                title={`Tempo útil restante conforme expediente · Prazo: ${formatarDataHora(sla.prazo)}`}
               >
                 {relogio}
               </span>

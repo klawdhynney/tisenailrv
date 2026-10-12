@@ -193,7 +193,11 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
       ...(regrasSalvas.atendimento || {}),
       colunas:
         Array.isArray(regrasSalvas.atendimento?.colunas) && regrasSalvas.atendimento.colunas.length > 0
-          ? regrasSalvas.atendimento.colunas
+          ? regrasSalvas.atendimento.colunas.map((col) =>
+              col.id === "slaPrazo" && (col.label === "SLA / Prazo" || col.label === "SLA / PRAZO")
+                ? { ...col, label: "SLA" }
+                : col
+            )
           : [...COLUNAS_ATENDIMENTO_PADRAO],
       botoesStatusVisiveis:
         Array.isArray(regrasSalvas.atendimento?.botoesStatusVisiveis) &&

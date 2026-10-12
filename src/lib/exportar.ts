@@ -157,6 +157,8 @@ export function ticketsParaLinhasAtendimento(
         "Status": obterRotuloStatus(t.status, regras),
         slaPrazo: `${formatarDataHora(sla.prazo)} - ${sla.situacao}`,
         "SLA / Prazo": `${formatarDataHora(sla.prazo)} - ${sla.situacao}`,
+        SLA: sla.situacao,
+        sla: sla.situacao,
         procedimento: t.procedimento || "",
         "Procedimento": t.procedimento || "",
         fechadoEm: t.fechadoEm ? formatarData(t.fechadoEm, t.horario) : "—",
@@ -238,6 +240,7 @@ export async function exportarXlsx(linhas: LinhaExportacao[], nome: string) {
     "Status": 16,
     "Prioridade": 14,
     "SLA / Prazo": 25,
+    "SLA": 16,
   };
 
   const larguras = colunas.map((col) => {
