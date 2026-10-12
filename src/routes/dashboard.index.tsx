@@ -414,154 +414,6 @@ function Dashboard() {
             {dashConf?.descricao || "Métricas de transparência dos atendimentos de TI SENAI LRV."}
           </p>
         </div>
-
-        {/* Ações do cabeçalho alinhadas à direita */}
-        <div className="flex flex-col items-end gap-2 shrink-0 self-end sm:self-center">
-          {/* Linha superior: Filtro Mês, Acompanhar chamados, Avaliações */}
-          <div className="flex items-center justify-end gap-2 shrink-0 flex-nowrap">
-            {/* Botão Filtrar (com Popover seletor de mês) */}
-            <Popover open={filtroAberto} onOpenChange={setFiltroAberto}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer",
-                    mes !== "todos" && "border-g-blue/60 bg-g-blue/5 text-g-blue font-bold"
-                  )}
-                  title={
-                    mes === "todos"
-                      ? "Filtrar por mês"
-                      : `Filtro ativo: ${MESES_DISPONIVEIS.find((m) => m.key === mes)?.label || mes}`
-                  }
-                  aria-label="Filtrar chamados por mês"
-                >
-                  <Filter className="size-4 text-g-blue shrink-0" />
-                  <span className="hidden sm:inline">
-                    {mes === "todos"
-                      ? "Filtrar"
-                      : `Mês: ${MESES_DISPONIVEIS.find((m) => m.key === mes)?.label || mes}`}
-                  </span>
-                  {mes !== "todos" && (
-                    <span className="sm:hidden size-2 rounded-full bg-g-blue shrink-0" aria-hidden="true" />
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-64 p-3 space-y-2.5 rounded-xl border border-border bg-popover text-popover-foreground shadow-md"
-                align="end"
-              >
-                <div className="flex items-center justify-between pb-2 border-b border-border">
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Filtrar por mês
-                  </span>
-                  {mes !== "todos" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMes("todos");
-                        setFiltroAberto(false);
-                      }}
-                      className="text-xs text-g-blue hover:underline font-semibold cursor-pointer"
-                    >
-                      Limpar
-                    </button>
-                  )}
-                </div>
-                <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMes("todos");
-                      setFiltroAberto(false);
-                    }}
-                    className={cn(
-                      "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-between",
-                      mes === "todos"
-                        ? "bg-g-blue/10 text-g-blue font-bold"
-                        : "hover:bg-muted text-foreground"
-                    )}
-                  >
-                    <span>Todos os meses</span>
-                    {mes === "todos" && <Check className="size-3.5 text-g-blue" />}
-                  </button>
-                  {MESES_DISPONIVEIS.map((m) => (
-                    <button
-                      key={m.key}
-                      type="button"
-                      onClick={() => {
-                        setMes(m.key);
-                        setFiltroAberto(false);
-                      }}
-                      className={cn(
-                        "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-between",
-                        mes === m.key
-                          ? "bg-g-blue/10 text-g-blue font-bold"
-                          : "hover:bg-muted text-foreground"
-                      )}
-                    >
-                      <span>{m.label}</span>
-                      {mes === m.key && <Check className="size-3.5 text-g-blue" />}
-                    </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Botão Acompanhar chamados */}
-            <Button
-              asChild
-              variant="outline"
-              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
-              title="Acompanhar chamados"
-              aria-label="Acompanhar chamados"
-            >
-              <Link to="/dashboard/acompanhamento">
-                <ClipboardList className="size-4 text-g-green shrink-0" />
-                <span className="hidden sm:inline">Acompanhar chamados</span>
-              </Link>
-            </Button>
-
-            {/* Botão Avaliações */}
-            <Button
-              asChild
-              variant="outline"
-              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
-              title="Avaliações de satisfação"
-              aria-label="Avaliações"
-            >
-              <Link to="/dashboard/avaliacoes" search={{ mes: mes !== "todos" ? mes : undefined }}>
-                <Star className="size-4 text-amber-500 fill-amber-400 shrink-0" />
-                <span className="hidden sm:inline">Avaliações</span>
-              </Link>
-            </Button>
-          </div>
-
-          {/* Linha inferior: Botões de exportação alinhados à direita, na mesma linha entre si */}
-          <div className="no-print flex items-center justify-end gap-2 shrink-0 flex-wrap">
-            <Button
-              variant="outline"
-              onClick={baixarResumo}
-              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-export-border,var(--border)/80)] bg-[var(--btn-export-bg,var(--card))] hover:bg-[var(--btn-export-hover-bg,var(--accent))] hover:text-[var(--btn-export-hover-text,var(--accent-foreground))] text-[var(--btn-export-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
-              disabled={isLoading}
-              title="Exportar planilha"
-              aria-label="Exportar planilha"
-            >
-              <FileSpreadsheet className="size-4 text-g-green shrink-0" />
-              <span>Exportar planilha</span>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={baixarPdf}
-              className="min-h-[44px] h-11 sm:h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-export-border,var(--border)/80)] bg-[var(--btn-export-bg,var(--card))] hover:bg-[var(--btn-export-hover-bg,var(--accent))] hover:text-[var(--btn-export-hover-text,var(--accent-foreground))] text-[var(--btn-export-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
-              disabled={isLoading}
-              title="Exportar PDF"
-              aria-label="Exportar PDF"
-            >
-              <FileText className="size-4 text-g-red shrink-0" />
-              <span>Exportar PDF</span>
-            </Button>
-          </div>
-        </div>
       </div>
 
       {/* Cartões de Indicadores Gerais do Topo */}
@@ -627,6 +479,150 @@ function Dashboard() {
           </div>
         )}
       </SectionErrorBoundary>
+
+      {/* Barra de Ações e Filtros em Linha Única */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+          {/* Botão Filtrar (com Popover seletor de mês) */}
+          <Popover open={filtroAberto} onOpenChange={setFiltroAberto}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "min-h-[40px] h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer",
+                  mes !== "todos" && "border-g-blue/60 bg-g-blue/5 text-g-blue font-bold"
+                )}
+                title={
+                  mes === "todos"
+                    ? "Filtrar por mês"
+                    : `Filtro ativo: ${MESES_DISPONIVEIS.find((m) => m.key === mes)?.label || mes}`
+                }
+                aria-label="Filtrar chamados por mês"
+              >
+                <Filter className="size-4 text-g-blue shrink-0" />
+                <span>
+                  {mes === "todos"
+                    ? "Filtrar por mês"
+                    : `Mês: ${MESES_DISPONIVEIS.find((m) => m.key === mes)?.label || mes}`}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-64 p-3 space-y-2.5 rounded-xl border border-border bg-popover text-popover-foreground shadow-md"
+              align="start"
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-border">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Filtrar por mês
+                </span>
+                {mes !== "todos" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMes("todos");
+                      setFiltroAberto(false);
+                    }}
+                    className="text-xs text-g-blue hover:underline font-semibold cursor-pointer"
+                  >
+                    Limpar
+                  </button>
+                )}
+              </div>
+              <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMes("todos");
+                    setFiltroAberto(false);
+                  }}
+                  className={cn(
+                    "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-between",
+                    mes === "todos"
+                      ? "bg-g-blue/10 text-g-blue font-bold"
+                      : "hover:bg-muted text-foreground"
+                  )}
+                >
+                  <span>Todos os meses</span>
+                  {mes === "todos" && <Check className="size-3.5 text-g-blue" />}
+                </button>
+                {MESES_DISPONIVEIS.map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => {
+                      setMes(m.key);
+                      setFiltroAberto(false);
+                    }}
+                    className={cn(
+                      "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-between",
+                      mes === m.key
+                        ? "bg-g-blue/10 text-g-blue font-bold"
+                        : "hover:bg-muted text-foreground"
+                    )}
+                  >
+                    <span>{m.label}</span>
+                    {mes === m.key && <Check className="size-3.5 text-g-blue" />}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Botão Acompanhar chamados */}
+          <Button
+            asChild
+            variant="outline"
+            className="min-h-[40px] h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
+            title="Acompanhar chamados"
+            aria-label="Acompanhar chamados"
+          >
+            <Link to="/dashboard/acompanhamento">
+              <ClipboardList className="size-4 text-g-green shrink-0" />
+              <span>Acompanhar chamados</span>
+            </Link>
+          </Button>
+
+          {/* Botão Avaliações */}
+          <Button
+            asChild
+            variant="outline"
+            className="min-h-[40px] h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-dash-top-border,var(--border)/80)] bg-[var(--btn-dash-top-bg,var(--card))] hover:bg-[var(--btn-dash-top-hover-bg,var(--accent))] hover:text-[var(--btn-dash-top-hover-text,var(--accent-foreground))] text-[var(--btn-dash-top-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
+            title="Avaliações de satisfação"
+            aria-label="Avaliações"
+          >
+            <Link to="/dashboard/avaliacoes" search={{ mes: mes !== "todos" ? mes : undefined }}>
+              <Star className="size-4 text-amber-500 fill-amber-400 shrink-0" />
+              <span>Avaliações</span>
+            </Link>
+          </Button>
+        </div>
+
+        {/* Botões de exportação na mesma linha */}
+        <div className="no-print flex items-center justify-end gap-2 shrink-0">
+          <Button
+            variant="outline"
+            onClick={baixarResumo}
+            className="min-h-[40px] h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-export-border,var(--border)/80)] bg-[var(--btn-export-bg,var(--card))] hover:bg-[var(--btn-export-hover-bg,var(--accent))] hover:text-[var(--btn-export-hover-text,var(--accent-foreground))] text-[var(--btn-export-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
+            disabled={isLoading}
+            title="Exportar planilha"
+            aria-label="Exportar planilha"
+          >
+            <FileSpreadsheet className="size-4 text-g-green shrink-0" />
+            <span>Exportar planilha</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={baixarPdf}
+            className="min-h-[40px] h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--btn-export-border,var(--border)/80)] bg-[var(--btn-export-bg,var(--card))] hover:bg-[var(--btn-export-hover-bg,var(--accent))] hover:text-[var(--btn-export-hover-text,var(--accent-foreground))] text-[var(--btn-export-text,var(--foreground))] shadow-xs gap-1.5 shrink-0 transition-colors cursor-pointer"
+            disabled={isLoading}
+            title="Exportar PDF"
+            aria-label="Exportar PDF"
+          >
+            <FileText className="size-4 text-g-red shrink-0" />
+            <span>Exportar PDF</span>
+          </Button>
+        </div>
+      </div>
 
       {/* Seção Categórica */}
       <div className="border-t-2 border-border/80 pt-6 space-y-4">
