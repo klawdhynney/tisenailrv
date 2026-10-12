@@ -221,7 +221,7 @@ function PaginaAvaliacoes() {
         </div>
       </div>
 
-      {/* Seção Unificada de Gráficos de Satisfação e Facilidade de Abertura */}
+      {/* Seção Unificada de Indicadores de Satisfação e Facilidade de Abertura */}
       <DashboardSatisfacao mesSelecionado={periodo} semBordaSuperior={true} />
 
       {/* Lista de Comentários Qualitativos (Anônimos: apenas nota, chamado e data) */}

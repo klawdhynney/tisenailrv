@@ -1,42 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-} from "recharts";
+import { useMemo } from "react";
 import {
   Star,
   ThumbsUp,
   Smile,
-  TrendingUp,
-  FolderKanban,
-  UserCheck,
-  BarChart3,
-  PieChart as PieIcon,
   CheckCircle2,
   Sparkles,
-  HelpCircle,
   Activity,
-  Layers,
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
-import { useIsMobile } from "@/hooks/use-mobile";
-import type { AvaliacaoItemDashboard } from "@/lib/types";
 
 const CORES_NOTAS: Record<number, string> = {
   1: "#ea4335", // Vermelho
@@ -71,12 +47,9 @@ export function DashboardSatisfacao({
   mesSelecionado = "todos",
   semBordaSuperior = false,
 }: DashboardSatisfacaoProps) {
-  const { tickets, regras, avaliacoesList, evaluationLoading, evaluationError, recarregarEvaluationStats } = useStore();
-  const isMobile = useIsMobile();
+  const { tickets, avaliacoesList, evaluationLoading, evaluationError, recarregarEvaluationStats } = useStore();
   const avaliacoes = avaliacoesList;
   const carregando = evaluationLoading;
-  const [tipoGraficoDistribuicao, setTipoGraficoDistribuicao] = useState<"barras" | "pizza">("barras");
-  const [visaoDimensao, setVisaoDimensao] = useState<"atendente" | "categoria">("categoria");
 
   // Mapeamento auxiliar de chamados para obter categoria e responsável se faltar
   const mapaChamados = useMemo(() => {
@@ -175,6 +148,7 @@ export function DashboardSatisfacao({
     }
     return [1, 2, 3, 4, 5].map((nota) => ({
       nota: `${nota} ★`,
+      notaNum: nota,
       name: ROTULOS_SATISFACAO[nota - 1] || `Nota ${nota}`,
       quantidade: contagem[nota],
       porcentagem: totalAvaliacoes > 0 ? Math.round((contagem[nota] / totalAvaliacoes) * 100) : 0,
@@ -193,119 +167,13 @@ export function DashboardSatisfacao({
     }
     return [1, 2, 3, 4, 5].map((nota) => ({
       nota: `${nota} ★`,
+      notaNum: nota,
       name: ROTULOS_FACILIDADE[nota - 1] || `Opção ${nota}`,
       quantidade: contagem[nota],
       porcentagem: totalFacilidade > 0 ? Math.round((contagem[nota] / totalFacilidade) * 100) : 0,
       cor: CORES_NOTAS[nota] || "#1a73e8",
     }));
   }, [avaliacoesComFacilidade, totalFacilidade]);
-
-  // 5. EVOLUÇÃO TEMPORAL: Médias de Satisfação e Facilidade ao longo do tempo
-  const dadosEvolucaoTemporal = useMemo(() => {
-    if (avaliacoesFiltradas.length === 0) return [];
-
-    const agrupado: Record<
-      string,
-      {
-        somaSat: number;
-        qtdSat: number;
-        somaFac: number;
-        qtdFac: number;
-        timestamp: number;
-      }
-    > = {};
-
-    const ordenadas = [...avaliacoesFiltradas].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-    );
-
-    // Se o filtro for "todos", agrupa por mês (MM/AAAA); se for um mês específico, agrupa por dia (DD/MM)
-    const formatoMes = mesSelecionado === "todos";
-
-    for (const a of ordenadas) {
-      const d = new Date(a.created_at);
-      if (isNaN(d.getTime())) continue;
-
-      const chave = formatoMes
-        ? d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" })
-        : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-
-      if (!agrupado[chave]) {
-        agrupado[chave] = { somaSat: 0, qtdSat: 0, somaFac: 0, qtdFac: 0, timestamp: d.getTime() };
-      }
-
-      agrupado[chave].somaSat += a.nota;
-      agrupado[chave].qtdSat += 1;
-
-      if (a.nota_facilidade) {
-        agrupado[chave].somaFac += a.nota_facilidade;
-        agrupado[chave].qtdFac += 1;
-      }
-    }
-
-    return Object.entries(agrupado).map(([data, item]) => ({
-      data,
-      mediaSatisfacao: Number((item.somaSat / item.qtdSat).toFixed(2)),
-      mediaFacilidade: item.qtdFac > 0 ? Number((item.somaFac / item.qtdFac).toFixed(2)) : null,
-      totalRespostas: item.qtdSat,
-    }));
-  }, [avaliacoesFiltradas, mesSelecionado]);
-
-  // 6. SATISFAÇÃO POR ATENDENTE E POR CATEGORIA
-  const dadosPorAtendente = useMemo(() => {
-    const mapa: Record<string, { soma: number; count: number }> = {};
-    for (const a of avaliacoesFiltradas) {
-      const atend = a.atendente || "Equipe de TI";
-      if (!mapa[atend]) mapa[atend] = { soma: 0, count: 0 };
-      mapa[atend].soma += a.nota;
-      mapa[atend].count += 1;
-    }
-    return Object.entries(mapa)
-      .map(([nome, item]) => ({
-        nome,
-        media: Number((item.soma / item.count).toFixed(2)),
-        total: item.count,
-      }))
-      .sort((a, b) => b.media - a.media);
-  }, [avaliacoesFiltradas]);
-
-  const dadosPorCategoria = useMemo(() => {
-    const mapa: Record<string, { soma: number; count: number }> = {};
-    for (const a of avaliacoesFiltradas) {
-      const cat = a.categoria || "Geral / Outros";
-      if (!mapa[cat]) mapa[cat] = { soma: 0, count: 0 };
-      mapa[cat].soma += a.nota;
-      mapa[cat].count += 1;
-    }
-    return Object.entries(mapa)
-      .map(([nome, item]) => ({
-        nome,
-        media: Number((item.soma / item.count).toFixed(2)),
-        total: item.count,
-      }))
-      .sort((a, b) => b.media - a.media);
-  }, [avaliacoesFiltradas]);
-
-  // Custom Tooltip Reutilizável com Design System Google
-  const CustomTooltipGrafico = ({ active, payload, label }: any) => {
-    if (!active || !payload || !payload.length) return null;
-    return (
-      <div className="rounded-xl border-2 border-border/80 bg-card/95 px-3.5 py-2.5 shadow-xl backdrop-blur-md transition-all text-xs space-y-1">
-        <p className="font-bold text-foreground">{label || payload[0]?.payload?.name || payload[0]?.name}</p>
-        {payload.map((p: any, i: number) => (
-          <div key={i} className="flex items-center justify-between gap-3 text-muted-foreground">
-            <span className="flex items-center gap-1.5 font-medium">
-              <span className="size-2 rounded-full" style={{ backgroundColor: p.color || p.fill }} />
-              {p.name}:
-            </span>
-            <span className="font-bold text-foreground">
-              {p.value} {typeof p.value === "number" && p.value <= 5 && p.value > 0 && !Number.isInteger(p.value) ? "★" : ""}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  };
 
   return (
     <section className={`space-y-6 ${semBordaSuperior ? "" : "pt-4 border-t-2 border-border/80"}`}>
@@ -322,7 +190,7 @@ export function DashboardSatisfacao({
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Métricas de satisfação do atendimento da TI e facilidade no processo de abertura de chamados.
+            Métricas e indicadores de satisfação do atendimento da TI e facilidade no processo de abertura de chamados.
           </p>
         </div>
 
@@ -362,12 +230,12 @@ export function DashboardSatisfacao({
           <Smile className="size-12 text-muted-foreground/60 mx-auto" />
           <h3 className="text-base font-bold text-foreground">Nenhuma avaliação no período selecionado</h3>
           <p className="text-xs text-muted-foreground max-w-md mx-auto">
-            Assim que os usuários avaliarem a facilidade de abertura ou o suporte nos chamados concluídos, os gráficos e notas médias aparecerão aqui automaticamente.
+            Assim que os usuários avaliarem a facilidade de abertura ou o suporte nos chamados concluídos, os indicadores e notas médias aparecerão aqui automaticamente.
           </p>
         </Card>
       ) : (
         <div className="space-y-6">
-          {/* CARDS BIG NUMBERS (KPIs) */}
+          {/* CARDS BIG NUMBERS (KPIs / INDICADORES PRINCIPAIS) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Média de Satisfação do Atendimento */}
             <Card className="rounded-2xl border-l-4 border-l-amber-500 border-border/80 bg-card shadow-sm hover:shadow-md transition-all">
@@ -467,316 +335,83 @@ export function DashboardSatisfacao({
             </Card>
           </div>
 
-          {/* LINHA 1 DE GRÁFICOS: DISTRIBUIÇÃO DAS DUAS PERGUNTAS (SEPARADAS PARA NÃO MISTURAR) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Gráfico 1: Distribuição das Notas de Satisfação do Atendimento */}
-            <Card className="rounded-2xl border-2 border-border/80 bg-card p-5 shadow-sm space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
-                <div>
-                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                    <Star className="size-4 text-amber-500 fill-current" />
-                    Distribuição da Satisfação com o Atendimento
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Notas de 1 (Muito insatisfeito) a 5 (Muito satisfeito)
-                  </p>
+          {/* INDICADORES RESUMO: DISTRIBUIÇÃO NUMÉRICA DE NOTAS (SEM GRÁFICOS) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Indicador: Distribuição das Notas de Atendimento */}
+            <Card className="rounded-2xl border border-border/80 bg-card p-4 shadow-xs">
+              <div className="flex items-center justify-between pb-3 border-b border-border/60">
+                <div className="flex items-center gap-2">
+                  <Star className="size-4 text-amber-500 fill-amber-400" />
+                  <h3 className="text-sm font-bold text-foreground">Distribuição: Satisfação com Atendimento</h3>
                 </div>
-                <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant={tipoGraficoDistribuicao === "barras" ? "google-blue" : "outline"}
-                    className="h-7 px-2.5 text-xs font-bold"
-                    onClick={() => setTipoGraficoDistribuicao("barras")}
-                  >
-                    <BarChart3 className="size-3.5 mr-1" /> Barras
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={tipoGraficoDistribuicao === "pizza" ? "google-blue" : "outline"}
-                    className="h-7 px-2.5 text-xs font-bold"
-                    onClick={() => setTipoGraficoDistribuicao("pizza")}
-                  >
-                    <PieIcon className="size-3.5 mr-1" /> Pizza
-                  </Button>
-                </div>
-              </div>
-
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  {tipoGraficoDistribuicao === "barras" ? (
-                    <BarChart
-                      data={dadosDistribuicaoSatisfacao}
-                      layout="vertical"
-                      margin={{ top: 10, right: 25, left: 25, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
-                      <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                      <YAxis
-                        type="category"
-                        dataKey="nota"
-                        width={40}
-                        tick={{ fontSize: 11, fontWeight: "bold" }}
-                      />
-                      <Tooltip content={<CustomTooltipGrafico />} />
-                      <Bar dataKey="quantidade" radius={[0, 6, 6, 0]}>
-                        {dadosDistribuicaoSatisfacao.map((entry, index) => (
-                          <Cell key={`cell-sat-${index}`} fill={entry.cor} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  ) : (
-                    <PieChart>
-                      <Tooltip content={<CustomTooltipGrafico />} />
-                      <Pie
-                        data={dadosDistribuicaoSatisfacao.filter((d) => d.quantidade > 0)}
-                        dataKey="quantidade"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={3}
-                      >
-                        {dadosDistribuicaoSatisfacao.map((entry, index) => (
-                          <Cell key={`cell-pie-sat-${index}`} fill={entry.cor} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  )}
-                </ResponsiveContainer>
-              </div>
-
-              {/* Legenda Resumida */}
-              <div className="grid grid-cols-5 gap-1.5 pt-2 border-t border-border/40 text-center">
-                {dadosDistribuicaoSatisfacao.map((d) => (
-                  <div key={d.nota} className="p-1 rounded-lg bg-muted/40">
-                    <span className="block text-[11px] font-bold" style={{ color: d.cor }}>
-                      {d.nota}
-                    </span>
-                    <span className="block text-xs font-black text-foreground">{d.quantidade}</span>
-                    <span className="block text-[10px] text-muted-foreground">{d.porcentagem}%</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Gráfico 2: Distribuição das Notas de Facilidade de Abertura */}
-            <Card className="rounded-2xl border-2 border-border/80 bg-card p-5 shadow-sm space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
-                <div>
-                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                    <ThumbsUp className="size-4 text-g-blue fill-current" />
-                    Distribuição da Facilidade para Abrir Chamados
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Escala de 1 (Muito difícil) a 5 (Muito fácil)
-                  </p>
-                </div>
-                <Badge variant="outline" className="text-xs text-g-blue border-g-blue/40">
-                  {totalFacilidade} respostas
+                <Badge variant="outline" className="text-[11px] font-bold text-amber-600 border-amber-400/50">
+                  Média: {notaMediaSatisfacao.toFixed(1)} ★
                 </Badge>
               </div>
 
-              <div className="h-64 w-full">
-                {totalFacilidade === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                    <HelpCircle className="size-8 text-muted-foreground/60 mb-2" />
-                    <p className="text-xs font-semibold text-muted-foreground">
-                      Ainda não há avaliações registradas para facilidade de abertura neste recorte.
-                    </p>
-                  </div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    {tipoGraficoDistribuicao === "barras" ? (
-                      <BarChart
-                        data={dadosDistribuicaoFacilidade}
-                        layout="vertical"
-                        margin={{ top: 10, right: 25, left: 25, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
-                        <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                        <YAxis
-                          type="category"
-                          dataKey="nota"
-                          width={40}
-                          tick={{ fontSize: 11, fontWeight: "bold" }}
+              <div className="mt-3 space-y-2">
+                {dadosDistribuicaoSatisfacao
+                  .slice()
+                  .reverse()
+                  .map((d) => (
+                    <div key={d.nota} className="flex items-center gap-3 text-xs">
+                      <span className="w-12 font-bold text-foreground flex items-center gap-1 shrink-0">
+                        {d.nota}
+                      </span>
+                      <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${d.porcentagem}%`,
+                            backgroundColor: d.cor,
+                          }}
                         />
-                        <Tooltip content={<CustomTooltipGrafico />} />
-                        <Bar dataKey="quantidade" radius={[0, 6, 6, 0]}>
-                          {dadosDistribuicaoFacilidade.map((entry, index) => (
-                            <Cell key={`cell-fac-${index}`} fill={entry.cor} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    ) : (
-                      <PieChart>
-                        <Tooltip content={<CustomTooltipGrafico />} />
-                        <Pie
-                          data={dadosDistribuicaoFacilidade.filter((d) => d.quantidade > 0)}
-                          dataKey="quantidade"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={80}
-                          paddingAngle={3}
-                        >
-                          {dadosDistribuicaoFacilidade.map((entry, index) => (
-                            <Cell key={`cell-pie-fac-${index}`} fill={entry.cor} />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    )}
-                  </ResponsiveContainer>
-                )}
-              </div>
-
-              {/* Legenda Resumida */}
-              <div className="grid grid-cols-5 gap-1.5 pt-2 border-t border-border/40 text-center">
-                {dadosDistribuicaoFacilidade.map((d) => (
-                  <div key={d.nota} className="p-1 rounded-lg bg-muted/40">
-                    <span className="block text-[11px] font-bold" style={{ color: d.cor }}>
-                      {d.nota}
-                    </span>
-                    <span className="block text-xs font-black text-foreground">{d.quantidade}</span>
-                    <span className="block text-[10px] text-muted-foreground">{d.porcentagem}%</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
-
-          {/* LINHA 2 DE GRÁFICOS: EVOLUÇÃO TEMPORAL E DIMENSÕES (ATENDENTE / CATEGORIA) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Gráfico 3: Evolução Temporal das Duas Médias Lado a Lado */}
-            <Card className="rounded-2xl border-2 border-border/80 bg-card p-5 shadow-sm space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
-                <div>
-                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                    <TrendingUp className="size-4 text-g-green" />
-                    Evolução Temporal das Médias
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Acompanhamento das médias de Satisfação e Facilidade ao longo do tempo
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 text-[11px] font-semibold">
-                  <span className="flex items-center gap-1.5 text-amber-500">
-                    <span className="size-2.5 rounded-full bg-amber-500" /> Atendimento
-                  </span>
-                  <span className="flex items-center gap-1.5 text-g-blue">
-                    <span className="size-2.5 rounded-full bg-g-blue" /> Facilidade
-                  </span>
-                </div>
-              </div>
-
-              <div className="h-64 w-full">
-                {dadosEvolucaoTemporal.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
-                    Dados temporais insuficientes para exibir a curva de tendência.
-                  </div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={dadosEvolucaoTemporal}
-                      margin={{ top: 15, right: 20, left: -10, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis dataKey="data" tick={{ fontSize: 11 }} />
-                      <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} tick={{ fontSize: 11 }} />
-                      <Tooltip content={<CustomTooltipGrafico />} />
-                      <Line
-                        type="monotone"
-                        dataKey="mediaSatisfacao"
-                        name="Satisfação Atendimento"
-                        stroke="#f9ab00"
-                        strokeWidth={3}
-                        dot={{ r: 4, fill: "#f9ab00" }}
-                        activeDot={{ r: 6 }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="mediaFacilidade"
-                        name="Facilidade Abertura"
-                        stroke="#1a73e8"
-                        strokeWidth={3}
-                        dot={{ r: 4, fill: "#1a73e8" }}
-                        activeDot={{ r: 6 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </Card>
-
-            {/* Gráfico 4: Satisfação por Atendente ou por Categoria */}
-            <Card className="rounded-2xl border-2 border-border/80 bg-card p-5 shadow-sm space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
-                <div>
-                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                    <Layers className="size-4 text-purple-600" />
-                    Satisfação por {visaoDimensao === "atendente" ? "Atendente / Técnico" : "Categoria de Chamado"}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Média de estrelas atribuídas pelos solicitantes
-                  </p>
-                </div>
-                <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant={visaoDimensao === "categoria" ? "google-blue" : "outline"}
-                    className="h-7 px-2.5 text-xs font-bold"
-                    onClick={() => setVisaoDimensao("categoria")}
-                  >
-                    <FolderKanban className="size-3.5 mr-1" /> Categoria
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={visaoDimensao === "atendente" ? "google-blue" : "outline"}
-                    className="h-7 px-2.5 text-xs font-bold"
-                    onClick={() => setVisaoDimensao("atendente")}
-                  >
-                    <UserCheck className="size-3.5 mr-1" /> Atendente
-                  </Button>
-                </div>
-              </div>
-
-              <div className="h-64 w-full">
-                {(() => {
-                  const listaDimensao = visaoDimensao === "atendente" ? dadosPorAtendente : dadosPorCategoria;
-                  if (listaDimensao.length === 0) {
-                    return (
-                      <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
-                        Sem dados disponíveis para a dimensão selecionada.
                       </div>
-                    );
-                  }
-                  return (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={listaDimensao.slice(0, 7)}
-                        layout="vertical"
-                        margin={{ top: 10, right: 30, left: isMobile ? 10 : 35, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
-                        <XAxis type="number" domain={[0, 5]} ticks={[1, 2, 3, 4, 5]} tick={{ fontSize: 11 }} />
-                        <YAxis
-                          type="category"
-                          dataKey="nome"
-                          width={isMobile ? 85 : 120}
-                          tick={{ fontSize: 10, fontWeight: "medium" }}
+                      <span className="w-20 text-right font-bold text-foreground shrink-0">
+                        {d.quantidade}{" "}
+                        <span className="text-[10px] text-muted-foreground font-normal">({d.porcentagem}%)</span>
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </Card>
+
+            {/* Indicador: Distribuição das Notas de Facilidade */}
+            <Card className="rounded-2xl border border-border/80 bg-card p-4 shadow-xs">
+              <div className="flex items-center justify-between pb-3 border-b border-border/60">
+                <div className="flex items-center gap-2">
+                  <ThumbsUp className="size-4 text-g-blue fill-g-blue/30" />
+                  <h3 className="text-sm font-bold text-foreground">Distribuição: Facilidade de Abertura</h3>
+                </div>
+                <Badge variant="outline" className="text-[11px] font-bold text-g-blue border-g-blue/40">
+                  {totalFacilidade > 0 ? `Média: ${notaMediaFacilidade.toFixed(1)} ★` : "Sem dados"}
+                </Badge>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {dadosDistribuicaoFacilidade
+                  .slice()
+                  .reverse()
+                  .map((d) => (
+                    <div key={d.nota} className="flex items-center gap-3 text-xs">
+                      <span className="w-12 font-bold text-foreground flex items-center gap-1 shrink-0">
+                        {d.nota}
+                      </span>
+                      <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${d.porcentagem}%`,
+                            backgroundColor: d.cor,
+                          }}
                         />
-                        <Tooltip content={<CustomTooltipGrafico />} />
-                        <Bar
-                          dataKey="media"
-                          name="Nota Média (★)"
-                          fill="#a142f4"
-                          radius={[0, 6, 6, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  );
-                })()}
+                      </div>
+                      <span className="w-20 text-right font-bold text-foreground shrink-0">
+                        {d.quantidade}{" "}
+                        <span className="text-[10px] text-muted-foreground font-normal">({d.porcentagem}%)</span>
+                      </span>
+                    </div>
+                  ))}
               </div>
             </Card>
           </div>
