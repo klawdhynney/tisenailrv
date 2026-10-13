@@ -708,7 +708,9 @@ export function aplicarCoresCustomizadasNoDocumento(
         if (!coresBotoes && parsed.coresBotoes) coresBotoes = parsed.coresBotoes;
         if (!coresSite && parsed.coresSite) coresSite = parsed.coresSite;
       }
-    } catch {}
+    } catch (e) {
+      void e;
+    }
   }
 
   // 1. Injeta cores de botões conforme o modo ativo (claro ou escuro)
@@ -953,7 +955,9 @@ export function aplicarTemaNoDocumento({
       document.head.appendChild(metaThemeColor);
     }
     metaThemeColor.content = cores.fundo;
-  } catch {}
+  } catch (e) {
+    void e;
+  }
 
   // 8. Persiste no localStorage
   try {
@@ -964,7 +968,9 @@ export function aplicarTemaNoDocumento({
     }
     // Mantém compatibilidade com a chave legada
     localStorage.setItem("tema-ti", isDark ? "escuro" : "claro");
-  } catch {}
+  } catch (e) {
+    void e;
+  }
 
   return true;
 }

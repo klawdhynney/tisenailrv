@@ -58,7 +58,9 @@ function AuthPage() {
       try {
         const fromStorage = sessionStorage.getItem("auth_return_to");
         if (fromStorage && fromStorage.startsWith("/") && !fromStorage.startsWith("/auth")) return fromStorage;
-      } catch {}
+      } catch (e) {
+        void e;
+      }
     }
     return null;
   }, [search.returnTo, search.redirectTo]);
@@ -68,7 +70,9 @@ function AuthPage() {
     if (destino) {
       try {
         router.preloadRoute({ to: destino as any }).catch(() => {});
-      } catch {}
+      } catch (e) {
+        void e;
+      }
     }
   }, [destino, router]);
 
@@ -89,7 +93,9 @@ function AuthPage() {
     if (session && authPronto) {
       try {
         sessionStorage.removeItem("auth_return_to");
-      } catch {}
+      } catch (e) {
+        void e;
+      }
       const rotaFinal = destino || (isGestor ? "/atendimento" : "/meus-chamados");
       navigate({ to: rotaFinal as any, replace: true });
     }
@@ -108,7 +114,9 @@ function AuthPage() {
         if (destino) {
           try {
             sessionStorage.setItem("auth_return_to", destino);
-          } catch {}
+          } catch (e) {
+            void e;
+          }
           callbackUrl.searchParams.set("returnTo", destino);
           callbackUrl.searchParams.set("redirectTo", destino);
         }

@@ -1,0 +1,36 @@
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy: frame-ancestors 'self'
+
+/assets/*
+  cache-control: public, max-age=31536000, immutable
+
+/*.png
+  cache-control: public, max-age=31536000, immutable
+
+/*.webp
+  cache-control: public, max-age=31536000, immutable
+
+/*.svg
+  cache-control: public, max-age=31536000, immutable
+
+/*.ico
+  cache-control: public, max-age=31536000, immutable
+
+/favicon.png
+  cache-control: public, max-age=31536000, immutable
+
+/apple-touch-icon.png
+  cache-control: public, max-age=31536000, immutable
+
+/icone.png
+  cache-control: public, max-age=31536000, immutable
+
+/capa-inicio.png
+  cache-control: public, max-age=31536000, immutable
+
+/capa.png
+  cache-control: public, max-age=31536000, immutable

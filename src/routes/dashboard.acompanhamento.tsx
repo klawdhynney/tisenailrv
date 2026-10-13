@@ -1,5 +1,5 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Eye, Search, ArrowLeft, ShieldCheck, ExternalLink, RotateCcw, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,7 +80,7 @@ function Acompanhamento() {
     return () => clearInterval(timer);
   }, []);
 
-  const carregarChamados = async (mounted = true) => {
+  const carregarChamados = useCallback(async (mounted = true) => {
     try {
       setLoading(true);
       const all: ProgressTicket[] = [];
@@ -141,7 +141,9 @@ function Acompanhamento() {
               }
             }
           }
-        } catch {}
+        } catch (err) {
+          console.warn("[Acompanhamento] Erro ao ler chamados do cache local:", err);
+        }
 
         chamadosFiltrados = all;
       }
@@ -152,7 +154,7 @@ function Acompanhamento() {
     } finally {
       if (mounted) setLoading(false);
     }
-  };
+  }, [isGestor, isAdmin, session?.user?.email]);
 
   useEffect(() => {
     if (!authPronto) return;
@@ -170,7 +172,7 @@ function Acompanhamento() {
       mounted = false;
       void supabase.removeChannel(channel);
     };
-  }, [authPronto, isGestor, isAdmin, session?.user?.id]);
+  }, [authPronto, carregarChamados]);
 
   const filtered = useMemo(() => {
     return progress.filter((t) => {

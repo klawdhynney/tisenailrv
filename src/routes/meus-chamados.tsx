@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -30,12 +30,6 @@ export const Route = createFileRoute("/meus-chamados")({
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
 
-    const testUser =
-      (window as any).__TEST_USER__ ||
-      (localStorage.getItem("sb-mock-user")
-        ? JSON.parse(localStorage.getItem("sb-mock-user") || "null")
-        : null);
-    if (testUser) return;
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -453,7 +447,7 @@ function MeusChamados() {
   const activeEmail = session?.user?.email?.toLowerCase() ?? emailLocal;
   const activeWhatsapp = whatsappLocal;
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!activeEmail && !activeWhatsapp) {
       setRows([]);
       setLoading(false);
@@ -556,11 +550,11 @@ function MeusChamados() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [activeEmail, activeWhatsapp]);
 
   useEffect(() => {
     void load();
-  }, [activeEmail, activeWhatsapp, session?.user?.id]);
+  }, [load]);
 
   async function addInformation(id: number, customText?: string): Promise<boolean> {
     const alvo = rows.find((r) => r.id === id);

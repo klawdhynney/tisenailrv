@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   ArrowLeft,
   Check,
@@ -218,11 +218,22 @@ function TicketEditor({
     if (ticket.responsavel === "Claudinei Lima" && ticket.status !== "Aberto") return;
     void updateTicket(ticket.id, { responsavel: "Claudinei Lima", ...(ticket.status === "Aberto" ? { status: "Em andamento" as const } : {}) });
   }, [ticket.id, ticket.responsavel, ticket.status, isEncerrado, updateTicket]);
+  const suggestPriority = useCallback(async () => {
+    setSuggesting(true);
+    try {
+      setSuggested(await sugerirPrioridade({ data: { id: ticket.id } }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível sugerir uma prioridade.");
+    } finally {
+      setSuggesting(false);
+    }
+  }, [ticket.id]);
+
   useEffect(() => {
     if (ticket.status !== "Aberto" || autoSuggestedId.current === ticket.id) return;
     autoSuggestedId.current = ticket.id;
     void suggestPriority();
-  }, [ticket.id, ticket.status]);
+  }, [ticket.id, ticket.status, suggestPriority]);
   const sla = calcularSla(ticket, regras);
   const field = <K extends keyof Ticket>(key: K, value: Ticket[K]) => setDraft(prev => ({ ...prev, [key]: value }));
   const editable = ["solicitante", "setor", "local", "descricao", "categoria", "prioridade", "responsavel", "status", "procedimento", "contato"] as const;
@@ -528,12 +539,6 @@ function TicketEditor({
   }
 
   const hasChanges = editable.some(k => draft[k] !== ticket[k]);
-  async function suggestPriority() {
-    setSuggesting(true);
-    try { setSuggested(await sugerirPrioridade({ data: { id: ticket.id } })); }
-    catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível sugerir uma prioridade."); }
-    finally { setSuggesting(false); }
-  }
 
   async function gerarRespostasTecnicas() {
     setGerandoRespostas(true);

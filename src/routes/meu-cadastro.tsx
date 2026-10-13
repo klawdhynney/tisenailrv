@@ -33,13 +33,6 @@ export const Route = createFileRoute("/meu-cadastro")({
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
 
-    const testUser =
-      (window as any).__TEST_USER__ ||
-      (localStorage.getItem("sb-mock-user")
-        ? JSON.parse(localStorage.getItem("sb-mock-user") || "null")
-        : null);
-    if (testUser) return;
-
     const { data } = await supabase.auth.getUser();
     if (!data.user) {
       throw redirect({ to: "/auth", search: { redirectTo: "/meu-cadastro" } });

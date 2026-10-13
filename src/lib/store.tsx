@@ -341,32 +341,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Sessão
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const testUser =
-        (window as any).__TEST_USER__ ||
-        (localStorage.getItem("sb-mock-user")
-          ? JSON.parse(localStorage.getItem("sb-mock-user") || "null")
-          : null);
-      if (testUser) {
-        const role = testUser.user_metadata?.role || testUser.role || "usuario";
-        const eAdmin = role === "admin";
-        const eGestor = eAdmin || role === "gestor";
-        setSession({
-          user: testUser,
-          access_token: "mock-token",
-          token_type: "bearer",
-          expires_in: 3600,
-          refresh_token: "mock-refresh",
-          expires_at: Date.now() + 3600000,
-        } as any);
-        setIsAdmin(eAdmin);
-        setIsGestor(eGestor);
-        setUserRole(role);
-        setUserBlocked(false);
-        setAuthPronto(true);
-        return;
-      }
-    }
     const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     supabase.auth.getSession().then(({ data: d }) => setSession(d.session));
     return () => data.subscription.unsubscribe();
@@ -383,25 +357,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setUserBlocked(false);
       setAuthPronto(true);
       return;
-    }
-
-    if (typeof window !== "undefined") {
-      const testUser =
-        (window as any).__TEST_USER__ ||
-        (localStorage.getItem("sb-mock-user")
-          ? JSON.parse(localStorage.getItem("sb-mock-user") || "null")
-          : null);
-      if (testUser && testUser.id === uid) {
-        const role = testUser.user_metadata?.role || testUser.role || "usuario";
-        const eAdmin = role === "admin";
-        const eGestor = eAdmin || role === "gestor";
-        setIsAdmin(eAdmin);
-        setIsGestor(eGestor);
-        setUserRole(role);
-        setUserBlocked(false);
-        setAuthPronto(true);
-        return;
-      }
     }
 
     const cacheChave = `auth_perm_cache_${uid}`;
@@ -435,19 +390,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const profileData = profileRes.status === "fulfilled" ? profileRes.value.data : null;
       const isBloqueado = profileData?.bloqueado === true || (profileData as any)?.status === "inativo";
 
-      const ADMINS_INICIAIS = [
-        "klaw.com@gmail.com",
-        "klawdhynney@gmail.com",
-        "claudineigoncalvesdelima@hotmail.com",
-        "claudinei.lima@senaimt.ind.br",
-      ];
-      const emailNormalizado = (session?.user.email || "").toLowerCase().trim();
-      const eAdminAutorizado = ADMINS_INICIAIS.includes(emailNormalizado);
-
       const adminVal = adminRes.status === "fulfilled" ? adminRes.value.data : false;
       const gestorVal = gestorRes.status === "fulfilled" ? gestorRes.value.data : false;
 
-      const eAdmin = adminVal === true || eAdminAutorizado;
+      const eAdmin = adminVal === true;
       const eGestor = eAdmin || gestorVal === true;
       const papelFinal: PapelUsuario = eAdmin ? "admin" : eGestor ? "gestor" : "usuario";
 

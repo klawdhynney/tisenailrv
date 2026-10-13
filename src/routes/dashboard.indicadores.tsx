@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   Check,
@@ -163,15 +163,18 @@ function PaginaIndicadores() {
     [publicStats, mes]
   );
 
-  const contar = (campo: "categoria" | "setor" | "prioridade" | "status") => {
-    const mapa = new Map<string, number>();
-    for (const r of linhas) {
-      if (!r) continue;
-      const chave = r[campo] || "Não informado";
-      mapa.set(chave, (mapa.get(chave) ?? 0) + (r.total || 0));
-    }
-    return [...mapa].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  };
+  const contar = useCallback(
+    (campo: "categoria" | "setor" | "prioridade" | "status") => {
+      const mapa = new Map<string, number>();
+      for (const r of linhas) {
+        if (!r) continue;
+        const chave = r[campo] || "Não informado";
+        mapa.set(chave, (mapa.get(chave) ?? 0) + (r.total || 0));
+      }
+      return [...mapa].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+    },
+    [linhas]
+  );
 
   const dadosSla = useMemo(() => {
     const counts = new Map<string, number>();
@@ -212,7 +215,7 @@ function PaginaIndicadores() {
     if (visao === "setores") return contar("setor");
     if (visao === "prioridades") return contar("prioridade");
     return contar("status");
-  }, [visao, dadosSla, linhas]);
+  }, [visao, dadosSla, contar]);
 
   const totalVal = useMemo(() => dados.reduce((sum, d) => sum + d.value, 0), [dados]);
   const media = dados.length > 0 ? (totalVal / dados.length).toFixed(1) : "0";

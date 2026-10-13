@@ -30,12 +30,6 @@ export const Route = createFileRoute("/abrir")({
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
 
-    const testUser =
-      (window as any).__TEST_USER__ ||
-      (localStorage.getItem("sb-mock-user")
-        ? JSON.parse(localStorage.getItem("sb-mock-user") || "null")
-        : null);
-    if (testUser) return;
     const { data } = await supabase.auth.getUser();
     if (!data.user) {
       throw redirect({ to: "/auth", search: { redirectTo: "/abrir" } });
@@ -320,6 +314,13 @@ function AbrirChamado() {
       }
     }
 
+    // Validação de e-mail corporativo ou pessoal válido
+    const emailCandidate = (session?.user?.email || form.email || "").trim().toLowerCase();
+    const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailCandidate);
+    if (!emailValido) {
+      novosErros.email = "Um endereço de e-mail válido é obrigatório para notificações e acompanhamento.";
+    }
+
     setErros(novosErros);
     if (Object.keys(novosErros).length) {
       toast.error("Confira os campos destacados.");
@@ -359,7 +360,14 @@ function AbrirChamado() {
 
           const descricaoFinal = [form.descricao ? form.descricao.trim() : "", customData].filter(Boolean).join("\n\n");
           const nomeFinal = (form.solicitante || session?.user?.user_metadata?.full_name || "Solicitante").trim();
-          const emailCalculado = session?.user?.email || (form.email ? form.email.trim().toLowerCase() : "usuario@senailrv.local");
+          const emailCalculado = (session?.user?.email || form.email || "").trim().toLowerCase();
+
+          if (!emailCalculado || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailCalculado)) {
+            toast.error("É obrigatório estar autenticado com um e-mail válido para registrar o chamado.");
+            setEnviando(false);
+            return;
+          }
+
           const contatoCalculado = `${nomeFinal} (${emailCalculado})`;
 
           const ticketId = await addTicket(
@@ -765,16 +773,27 @@ function AbrirChamado() {
           <form onSubmit={enviar} className="grid gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
               {isCampoAtivo("solicitante") && (
-                <Campo label={getCampoLabel("solicitante", "Seu nome")} obrigatorio={isCampoObrigatorio("solicitante")} erro={erros.solicitante}>
-                  <Input autoComplete="name" value={form.solicitante} onChange={(e) => set("solicitante", e.target.value)} placeholder="Digite seu nome completo" />
+                <Campo id="campo-solicitante" label={getCampoLabel("solicitante", "Seu nome")} obrigatorio={isCampoObrigatorio("solicitante")} erro={erros.solicitante}>
+                  <Input
+                    id="campo-solicitante"
+                    autoComplete="name"
+                    value={form.solicitante}
+                    onChange={(e) => set("solicitante", e.target.value)}
+                    placeholder="Digite seu nome completo"
+                    aria-invalid={Boolean(erros.solicitante)}
+                    aria-describedby={erros.solicitante ? "campo-solicitante-erro" : undefined}
+                  />
                 </Campo>
               )}
 
-              <Campo label="E-mail da conta">
+              <Campo id="campo-email" label="E-mail da conta" erro={erros.email}>
                 <div className="relative">
                   <Input
+                    id="campo-email"
                     value={session?.user?.email || form.email}
                     disabled
+                    aria-invalid={Boolean(erros.email)}
+                    aria-describedby={erros.email ? "campo-email-erro" : undefined}
                     className="bg-muted cursor-not-allowed text-muted-foreground font-mono text-xs pl-8"
                   />
                   <Mail className="size-3.5 text-muted-foreground absolute left-2.5 top-3" />
@@ -785,11 +804,14 @@ function AbrirChamado() {
             {(isCampoAtivo("setor") || isCampoAtivo("categoria")) && (
               <div className="grid gap-5 sm:grid-cols-2">
                 {isCampoAtivo("setor") && (
-                  <Campo label={getCampoLabel("setor", "Setor")} obrigatorio={isCampoObrigatorio("setor")} erro={erros.setor}>
+                  <Campo id="campo-setor" label={getCampoLabel("setor", "Setor")} obrigatorio={isCampoObrigatorio("setor")} erro={erros.setor}>
                     <select
-                      className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm"
+                      id="campo-setor"
+                      className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       value={form.setor}
                       onChange={(e) => set("setor", e.target.value)}
+                      aria-invalid={Boolean(erros.setor)}
+                      aria-describedby={erros.setor ? "campo-setor-erro" : undefined}
                     >
                       <option value="">Selecione...</option>
                       {regras.setores.map((s) => (
@@ -799,11 +821,14 @@ function AbrirChamado() {
                   </Campo>
                 )}
                 {isCampoAtivo("categoria") && (
-                  <Campo label={getCampoLabel("categoria", "Tipo de problema")} obrigatorio={isCampoObrigatorio("categoria")} erro={erros.categoria}>
+                  <Campo id="campo-categoria" label={getCampoLabel("categoria", "Tipo de problema")} obrigatorio={isCampoObrigatorio("categoria")} erro={erros.categoria}>
                     <select
-                      className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm"
+                      id="campo-categoria"
+                      className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       value={form.categoria}
                       onChange={(e) => set("categoria", e.target.value)}
+                      aria-invalid={Boolean(erros.categoria)}
+                      aria-describedby={erros.categoria ? "campo-categoria-erro" : undefined}
                     >
                       <option value="">Selecione...</option>
                       {regras.categorias.map((c) => (
@@ -816,16 +841,30 @@ function AbrirChamado() {
             )}
 
             {isCampoAtivo("local") && (
-              <Campo label={getCampoLabel("local", configAbrir?.rotuloLocal || "Local do problema*")} obrigatorio={isCampoObrigatorio("local")} erro={erros.local}>
-                <Input value={form.local} onChange={(e) => set("local", e.target.value)} placeholder={configAbrir?.placeholderLocal || "Ex.: Bloco A, Sala 3, Mesa 02"} />
+              <Campo id="campo-local" label={getCampoLabel("local", configAbrir?.rotuloLocal || "Local do problema*")} obrigatorio={isCampoObrigatorio("local")} erro={erros.local}>
+                <Input
+                  id="campo-local"
+                  value={form.local}
+                  onChange={(e) => set("local", e.target.value)}
+                  placeholder={configAbrir?.placeholderLocal || "Ex.: Bloco A, Sala 3, Mesa 02"}
+                  aria-invalid={Boolean(erros.local)}
+                  aria-describedby={erros.local ? "campo-local-erro" : undefined}
+                />
               </Campo>
             )}
 
             {customFields.length > 0 && (
               <div className="grid gap-5 sm:grid-cols-2">
                 {customFields.map((c) => (
-                  <Campo key={c.id} label={c.label} obrigatorio={c.obrigatorio} erro={erros[c.id]}>
-                    <Input value={customForm[c.id] ?? ""} onChange={(e) => set(c.id, e.target.value)} placeholder={`Informe ${c.label.toLowerCase()}`} />
+                  <Campo id={`campo-${c.id}`} key={c.id} label={c.label} obrigatorio={c.obrigatorio} erro={erros[c.id]}>
+                    <Input
+                      id={`campo-${c.id}`}
+                      value={customForm[c.id] ?? ""}
+                      onChange={(e) => set(c.id, e.target.value)}
+                      placeholder={`Informe ${c.label.toLowerCase()}`}
+                      aria-invalid={Boolean(erros[c.id])}
+                      aria-describedby={erros[c.id] ? `campo-${c.id}-erro` : undefined}
+                    />
                   </Campo>
                 ))}
               </div>
@@ -1099,11 +1138,13 @@ function Campo({
   label,
   obrigatorio = false,
   erro,
+  id,
   children,
 }: {
   label: string;
   obrigatorio?: boolean;
   erro?: string | undefined;
+  id?: string;
   children: React.ReactNode;
 }) {
   const hasAsterisk = label.endsWith("*");
@@ -1112,7 +1153,7 @@ function Campo({
 
   return (
     <div>
-      <Label className="mb-2 flex items-center gap-1 text-sm font-medium">
+      <Label htmlFor={id} className="mb-2 flex items-center gap-1 text-sm font-medium">
         <span>{displayLabel}</span>
         {isRequired && (
           <span className="font-bold text-[var(--g-red)] text-sm select-none" title="Campo obrigatório">
@@ -1121,7 +1162,11 @@ function Campo({
         )}
       </Label>
       {children}
-      {erro && <p className="mt-1 text-xs font-medium text-[var(--g-red)]">{erro}</p>}
+      {erro && (
+        <p id={id ? `${id}-erro` : undefined} role="alert" className="mt-1 text-xs font-medium text-[var(--g-red)] animate-in fade-in">
+          {erro}
+        </p>
+      )}
     </div>
   );
 }

@@ -8,15 +8,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async ({ location }) => {
-    // Durante SSR, posterga validação baseada em localStorage para o cliente
     if (typeof window === "undefined") return;
-
-    const testUser =
-      (window as any).__TEST_USER__ ||
-      (localStorage.getItem("sb-mock-user")
-        ? JSON.parse(localStorage.getItem("sb-mock-user") || "null")
-        : null);
-    if (testUser) return { user: testUser };
 
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
