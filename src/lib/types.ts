@@ -363,6 +363,7 @@ export interface AbrirChamadoConfig {
   sucessoTitulo?: string;
   sucessoDescricao?: string;
   botaoWhatsappTexto?: string;
+  exibirTutorial?: boolean;
 }
 
 export const ABRIR_CHAMADO_PADRAO: AbrirChamadoConfig = {
@@ -386,6 +387,7 @@ export const ABRIR_CHAMADO_PADRAO: AbrirChamadoConfig = {
   sucessoTitulo: "Chamado #{numero} enviado!",
   sucessoDescricao: "Sua solicitação foi registrada no sistema e encaminhada para a equipe técnica.",
   botaoWhatsappTexto: "Enviar chamado pelo WhatsApp",
+  exibirTutorial: true,
 };
 
 export interface AcompanhamentoConfig {

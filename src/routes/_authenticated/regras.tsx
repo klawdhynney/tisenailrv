@@ -45,6 +45,7 @@ import {
   History,
   MessageSquare,
   MousePointerClick,
+  PlayCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -1210,6 +1211,29 @@ function Regras() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Tutorial Interativo com Narração */}
+              <div className="flex items-center justify-between rounded-xl border border-purple-500/30 bg-purple-50/50 dark:bg-purple-950/20 p-4">
+                <div className="space-y-1 pr-4">
+                  <div className="flex items-center gap-2">
+                    <PlayCircle className="size-4 text-purple-600 dark:text-purple-400" />
+                    <Label className="text-sm font-semibold text-foreground">
+                      Exibir tutorial interativo com demonstração na página
+                    </Label>
+                    <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                      Vídeo / Áudio pt-BR
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Exibe a demonstração interativa animada com narração em português do Brasil e transcrição completa no final da página (/abrir), orientando os usuários passo a passo.
+                  </p>
+                </div>
+                <Switch
+                  checked={abrirConf.exibirTutorial ?? true}
+                  onCheckedChange={(checked) => salvarAbrir({ exibirTutorial: checked })}
+                  disabled={!isAdmin}
+                />
+              </div>
+
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold">Título do Cabeçalho</Label>

@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, lazy, Suspense } from "react";
+const TutorialPlayer = lazy(() => import("@/components/tutorial/TutorialPlayer"));
 import { useConfirm } from "@/hooks/useConfirm";
 import { Cpu, MapPin, CheckCircle2, ArrowLeft, SendHorizontal, Mail, Star, FileText, MessageCircle, Sparkles, Wand2, UserCheck, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -1011,6 +1012,19 @@ function AbrirChamado() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Tutorial Interativo com Demonstração e Narração em Áudio pt-BR */}
+      {configAbrir?.exibirTutorial !== false && (
+        <Suspense
+          fallback={
+            <div className="w-full h-56 rounded-2xl border border-border/60 bg-muted/20 animate-pulse flex items-center justify-center text-xs text-muted-foreground my-8">
+              Carregando tutorial interativo...
+            </div>
+          }
+        >
+          <TutorialPlayer />
+        </Suspense>
+      )}
 
       {/* Caixa modal de confirmação */}
       {confirmandoEnvio && (
