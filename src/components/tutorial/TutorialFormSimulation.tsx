@@ -46,7 +46,7 @@ export function TutorialFormSimulation({
         i++;
         setTypedName(targetName.slice(0, i));
         if (i >= targetName.length) clearInterval(timer);
-      }, 70);
+      }, 45);
       return () => clearInterval(timer);
     } else {
       setTypedName(targetName);
@@ -66,7 +66,7 @@ export function TutorialFormSimulation({
         i++;
         setTypedDesc(targetDesc.slice(0, i));
         if (i >= targetDesc.length) clearInterval(timer);
-      }, 40);
+      }, 28);
       return () => clearInterval(timer);
     } else {
       setTypedDesc(targetDesc);

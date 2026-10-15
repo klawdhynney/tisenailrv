@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState, useRef, lazy, Suspense } from "react";
 const TutorialPlayer = lazy(() => import("@/components/tutorial/TutorialPlayer"));
+const TutorialModal = lazy(() => import("@/components/tutorial/TutorialModal"));
 import { useConfirm } from "@/hooks/useConfirm";
-import { Cpu, MapPin, CheckCircle2, ArrowLeft, SendHorizontal, Mail, Star, FileText, MessageCircle, Sparkles, Wand2, UserCheck, AlertCircle } from "lucide-react";
+import { Cpu, MapPin, CheckCircle2, ArrowLeft, SendHorizontal, Mail, Star, FileText, MessageCircle, Sparkles, Wand2, UserCheck, AlertCircle, Play } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -101,6 +102,8 @@ function AbrirChamado() {
   const [aprimorandoTexto, setAprimorandoTexto] = useState(false);
   const [dialogSubstituirAberto, setDialogSubstituirAberto] = useState(false);
   const [sugestaoPendente, setSugestaoPendente] = useState<string | null>(null);
+  const [modalTutorialAberto, setModalTutorialAberto] = useState(false);
+  const btnTutorialTopoRef = useRef<HTMLButtonElement | null>(null);
 
   const confirm = useConfirm();
   const dadosCarregadosRef = useRef({ solicitante: "", email: "", setor: "", local: "" });
@@ -742,9 +745,25 @@ function AbrirChamado() {
           <span className="rounded-xl bg-g-green/15 p-3 text-g-green"><Cpu className="size-7" /></span>
           <h1 className="text-2xl sm:text-3xl font-bold">{configAbrir?.titulo || "Abrir chamado de TI"}</h1>
         </div>
-        <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
+        <p className="mt-2 text-xs sm:text-sm text-muted-foreground max-w-2xl mx-auto">
           {configAbrir?.textoApoio || "Abra o seu chamado, descreva o problema e informe o local exato para agilizar o atendimento."}
         </p>
+
+        {configAbrir?.exibirTutorial !== false && (
+          <div className="mt-3.5 flex justify-center">
+            <Button
+              ref={btnTutorialTopoRef}
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setModalTutorialAberto(true)}
+              className="rounded-full border-purple-500/30 bg-purple-50/70 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-semibold text-xs sm:text-sm gap-2 shadow-2xs hover:border-purple-400 transition-all cursor-pointer"
+            >
+              <Play className="size-3.5 fill-current text-purple-600 dark:text-purple-400" />
+              <span>Ver demonstração em vídeo</span>
+            </Button>
+          </div>
+        )}
       </div>
 
       <Card className="rounded-2xl border-t-4 border-g-blue shadow-md">
@@ -1144,6 +1163,17 @@ function AbrirChamado() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal Dialog do Tutorial Interativo */}
+      {configAbrir?.exibirTutorial !== false && modalTutorialAberto && (
+        <Suspense fallback={null}>
+          <TutorialModal
+            open={modalTutorialAberto}
+            onClose={() => setModalTutorialAberto(false)}
+            triggerRef={btnTutorialTopoRef}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

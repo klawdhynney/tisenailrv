@@ -83,6 +83,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@breezystack/lamejs": "^1.2.7",
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "2.25.3",
     "@playwright/test": "^1.63.0",
@@ -99,9 +100,11 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
     "google-tts-api": "^2.0.2",
+    "mpg123-decoder": "^1.0.3",
     "nitro": "3.0.260603-beta",
     "postgres": "^3.4.9",
     "prettier": "^3.7.3",
+    "soundtouch-ts": "^1.1.1",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "8.1.5"

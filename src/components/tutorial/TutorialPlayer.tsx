@@ -7,23 +7,42 @@ import {
   ArrowRight,
   RotateCcw,
   CheckCircle,
-  HelpCircle,
   Clock,
   ShieldCheck,
   Subtitles,
-  ExternalLink,
+  X,
 } from "lucide-react";
-import { TUTORIAL_PASSOS, TOTAL_DURACAO_SEGUNDOS, type TutorialStep } from "@/content/tutorial-abrir-chamado";
+import {
+  TUTORIAL_PASSOS,
+  TOTAL_DURACAO_SEGUNDOS,
+  AUDIO_BASE_PATH,
+  AUDIO_TUTORIAL_VERSAO,
+  type TutorialStep,
+} from "@/content/tutorial-abrir-chamado";
+import { aplicarPronuncia } from "@/content/tutorial-pronuncia";
 import { TutorialFormSimulation } from "./TutorialFormSimulation";
 import { TutorialControls } from "./TutorialControls";
 import { TutorialTranscript } from "./TutorialTranscript";
 
-export function TutorialPlayer() {
+interface TutorialPlayerProps {
+  autoStart?: boolean;
+  isModal?: boolean;
+  onClose?: () => void;
+}
+
+export function TutorialPlayer({
+  autoStart = false,
+  isModal = false,
+  onClose,
+}: TutorialPlayerProps) {
+  // Identificador de instância único para evitar concorrência de áudio
+  const playerId = useRef("tut_" + Math.random().toString(36).slice(2, 8)).current;
+
   const [stepIndex, setStepIndex] = useState(0);
-  const [hasStarted, setHasStarted] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [hasStarted, setHasStarted] = useState(autoStart);
+  const [isPlaying, setIsPlaying] = useState(autoStart);
   const [isMuted, setIsMuted] = useState(false);
-  const [playbackRate, setPlaybackRate] = useState(1);
+  const [playbackRate, setPlaybackRate] = useState(1); // 1x é agora o novo padrão rápido nativo
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -33,9 +52,25 @@ export function TutorialPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const stepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Invalida preferência de velocidade antiga salva em versões anteriores
+  useEffect(() => {
+    try {
+      localStorage.removeItem("tutorial_speed");
+    } catch {}
+  }, []);
+
+  // Se autoStart for solicitado na montagem
+  useEffect(() => {
+    if (autoStart) {
+      setHasStarted(true);
+      setIsPlaying(true);
+      setIsCompleted(false);
+    }
+  }, [autoStart]);
+
   const currentStep: TutorialStep = TUTORIAL_PASSOS[stepIndex] ?? TUTORIAL_PASSOS[0];
 
-  // Cálculo de progresso percentual baseado nos tempos acumulados dos passos
+  // Cálculo de progresso percentual baseado nos tempos acumulados dos passos acelerados
   const elapsedSeconds = TUTORIAL_PASSOS.slice(0, stepIndex).reduce((acc, s) => acc + s.duracaoSegundos, 0);
   const progressPct = Math.min(100, Math.max(0, ((elapsedSeconds + (isPlaying ? 1 : 0)) / TOTAL_DURACAO_SEGUNDOS) * 100));
 
@@ -100,7 +135,33 @@ export function TutorialPlayer() {
     }
   }, []);
 
-  // Executar áudio ou fallback quando stepIndex ou isPlaying mudar
+  // Controle de concorrência: apenas um tutorial toca áudio por vez
+  useEffect(() => {
+    const handlePauseOthers = (e: Event) => {
+      const custom = e as CustomEvent<{ senderId: string }>;
+      if (custom.detail?.senderId !== playerId) {
+        setIsPlaying(false);
+        if (audioRef.current) audioRef.current.pause();
+        stopSpeechSynthesis();
+      }
+    };
+
+    window.addEventListener("tutorial:pause-others", handlePauseOthers);
+    return () => {
+      window.removeEventListener("tutorial:pause-others", handlePauseOthers);
+    };
+  }, [playerId, stopSpeechSynthesis]);
+
+  // Notificar outros players para pausar quando este começar a tocar
+  useEffect(() => {
+    if (isPlaying) {
+      window.dispatchEvent(
+        new CustomEvent("tutorial:pause-others", { detail: { senderId: playerId } })
+      );
+    }
+  }, [isPlaying, playerId]);
+
+  // Executar áudio acelerado ou fallback quando stepIndex ou isPlaying mudar
   useEffect(() => {
     if (!hasStarted) return;
 
@@ -119,8 +180,8 @@ export function TutorialPlayer() {
       return;
     }
 
-    // Caminho do áudio gravado em public/
-    const audioSrc = `/audio/tutorial/step-${currentStep.id}.mp3`;
+    // Caminho com versionamento v2 para evitar cache de áudios antigos
+    const audioSrc = `${AUDIO_BASE_PATH}/step-${currentStep.id}.mp3?v=${AUDIO_TUTORIAL_VERSAO}`;
 
     if (!audioRef.current) {
       audioRef.current = new Audio();
@@ -131,8 +192,6 @@ export function TutorialPlayer() {
     audio.playbackRate = playbackRate;
     audio.muted = isMuted;
 
-    let isAudioPlaying = false;
-
     // Quando o áudio do passo termina, avança automaticamente
     audio.onended = () => {
       handleNextStep();
@@ -140,7 +199,9 @@ export function TutorialPlayer() {
 
     // Caso ocorra erro de carregamento do MP3, ativa o fallback inteligente Web Speech API
     audio.onerror = () => {
-      console.warn(`[Tutorial] Áudio pré-gerado step-${currentStep.id}.mp3 não disponível. Usando fallback SpeechSynthesis.`);
+      console.warn(
+        `[Tutorial] Áudio v2 step-${currentStep.id}.mp3 não disponível. Ativando fallback SpeechSynthesis pt-BR.`
+      );
       setUsingFallbackSpeech(true);
       playSpeechSynthesisFallback();
     };
@@ -149,7 +210,6 @@ export function TutorialPlayer() {
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
-          isAudioPlaying = true;
           setUsingFallbackSpeech(false);
         })
         .catch((err) => {
@@ -159,21 +219,22 @@ export function TutorialPlayer() {
         });
     }
 
-    // Função interna para Web Speech API
+    // Função interna para Web Speech API com taxa equivalente rápida
     function playSpeechSynthesisFallback() {
       if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-        // Fallback do fallback: usa timer de duração do passo
         const durationMs = (currentStep.duracaoSegundos * 1000) / playbackRate;
         stepTimerRef.current = setTimeout(handleNextStep, durationMs);
         return;
       }
 
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(currentStep.narracao);
+      // Aplica a pronúncia fonética também no fallback do navegador
+      const textoParaFalar = currentStep.fala || aplicarPronuncia(currentStep.textoLeitura);
+      const utterance = new SpeechSynthesisUtterance(textoParaFalar);
       utterance.lang = "pt-BR";
-      utterance.rate = playbackRate;
+      // Ritmo mais ágil equivalente ao novo padrão acelerado
+      utterance.rate = playbackRate * 1.35;
 
-      // Tenta selecionar uma voz pt-BR do aparelho
       const voices = window.speechSynthesis.getVoices();
       const ptVoice = voices.find((v) => v.lang === "pt-BR" || v.lang.startsWith("pt"));
       if (ptVoice) {
@@ -217,7 +278,7 @@ export function TutorialPlayer() {
     }
   }, [isMuted]);
 
-  // Limpeza de áudio ao trocar de aba ou sair da rota
+  // Limpeza de áudio ao trocar de aba ou desmontar
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -238,10 +299,9 @@ export function TutorialPlayer() {
     };
   }, [stopSpeechSynthesis]);
 
-  // Teclado para acessibilidade (Espaço, setas, M, F, Esc)
+  // Teclado para acessibilidade (Espaço, setas, M, F)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignora se o usuário estiver digitando em campos de input reais fora do player
       const activeTag = document.activeElement?.tagName.toLowerCase();
       if (activeTag === "input" || activeTag === "textarea" || activeTag === "select") {
         return;
@@ -291,41 +351,49 @@ export function TutorialPlayer() {
 
   // Ação para voltar ao formulário real e focar primeiro campo
   const handleScrollToRealForm = () => {
-    const solicitanteInput = document.getElementById("solicitante") || document.querySelector("input[name='solicitante']");
-    if (solicitanteInput) {
-      solicitanteInput.scrollIntoView({ behavior: "smooth", block: "center" });
-      (solicitanteInput as HTMLElement).focus();
-    } else {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    if (onClose) {
+      onClose();
     }
+    setTimeout(() => {
+      const solicitanteInput =
+        document.getElementById("solicitante") || document.querySelector("input[name='solicitante']");
+      if (solicitanteInput) {
+        solicitanteInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        (solicitanteInput as HTMLElement).focus();
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }, 150);
   };
 
   return (
     <section
       aria-label="Demonstração interativa de como abrir um chamado"
-      className="w-full space-y-4 my-8"
+      className={`w-full ${isModal ? "space-y-3" : "space-y-4 my-8"}`}
     >
-      {/* Cabeçalho da Seção */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-1 rounded-md bg-purple-600/10 text-purple-600 dark:text-purple-400">
-              <Sparkles className="size-4" />
-            </span>
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
-              Veja como abrir um chamado
-            </h2>
+      {/* Cabeçalho da Seção (apenas se não estiver dentro de modal) */}
+      {!isModal && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-1 rounded-md bg-purple-600/10 text-purple-600 dark:text-purple-400">
+                <Sparkles className="size-4" />
+              </span>
+              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
+                Veja como abrir um chamado
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              Tutorial interativo ágil em áudio pt-BR e demonstração animada em tempo real.
+            </p>
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Tutorial passo a passo em áudio e vídeo animado para orientar você no preenchimento correto.
-          </p>
-        </div>
 
-        <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
-          <Clock className="size-3.5 text-purple-500" />
-          <span>Duração: ~1 min 15 seg</span>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+            <Clock className="size-3.5 text-purple-500" />
+            <span>Duração: ~50 segundos</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Player Principal com proporção 16:9 preservada para evitar Layout Shift */}
       <div
@@ -338,30 +406,30 @@ export function TutorialPlayer() {
         <div className="relative w-full aspect-video bg-slate-950 flex items-center justify-center overflow-hidden">
           {!hasStarted ? (
             /* CAPA DE APRESENTAÇÃO */
-            <div className="relative w-full h-full flex flex-col justify-between p-6 sm:p-10 bg-gradient-to-br from-purple-950/70 via-slate-900 to-indigo-950/80 text-white select-none">
+            <div className="relative w-full h-full flex flex-col justify-between p-5 sm:p-8 bg-gradient-to-br from-purple-950/80 via-slate-900 to-indigo-950/80 text-white select-none">
               <div className="flex items-center justify-between">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-200 border border-purple-400/30 text-xs font-semibold backdrop-blur-xs">
                   <Sparkles className="size-3.5 text-purple-300" />
-                  Demonstração Interativa com Áudio pt-BR
+                  Demonstração Rápida com Áudio pt-BR
                 </span>
                 <span className="text-xs text-slate-300 font-mono">
-                  9 passos · 73s
+                  9 passos · 50s
                 </span>
               </div>
 
-              <div className="my-auto text-center max-w-lg mx-auto space-y-3">
-                <h3 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-xs">
+              <div className="my-auto text-center max-w-lg mx-auto space-y-2.5">
+                <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white drop-shadow-xs">
                   Como abrir um chamado passo a passo
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-200 leading-relaxed drop-shadow-xs">
-                  Veja a demonstração animada em tempo real com narração em português: aprenda a conferir seus dados, escolher setor, descrever o problema e usar recursos de IA.
+                  Aprenda em menos de 1 minuto: identificação protegida, setor, descrição com apoio de IA e acompanhamento.
                 </p>
 
                 <div className="pt-2 flex justify-center">
                   <button
                     type="button"
                     onClick={handleStartPlay}
-                    className="group inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm shadow-lg hover:shadow-purple-500/30 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+                    className="group inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm shadow-lg hover:shadow-purple-500/30 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
                     aria-label="Assistir demonstração"
                   >
                     <Play className="size-5 fill-white group-hover:scale-110 transition-transform" />
@@ -374,39 +442,39 @@ export function TutorialPlayer() {
                 <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1">
                     <CheckCircle className="size-3.5 text-emerald-400" />
-                    Sem jargão técnico
+                    Pronúncia nativa "tê í"
                   </span>
                   <span className="flex items-center gap-1">
                     <ShieldCheck className="size-3.5 text-blue-400" />
                     Dados de teste protegidos
                   </span>
                 </div>
-                <span className="text-slate-400">
-                  Clique no botão acima para iniciar com som
+                <span className="text-slate-400 hidden sm:inline">
+                  Clique no botão para iniciar
                 </span>
               </div>
             </div>
           ) : isCompleted ? (
             /* TELA FINAL DE CONCLUSÃO */
             <div className="relative w-full h-full flex flex-col items-center justify-center p-6 text-center bg-card text-foreground space-y-4 animate-in fade-in zoom-in-95">
-              <div className="size-16 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                <CheckCircle className="size-10" />
+              <div className="size-14 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <CheckCircle className="size-8" />
               </div>
 
-              <div className="max-w-md space-y-1.5">
-                <h3 className="text-xl font-bold tracking-tight text-foreground">
+              <div className="max-w-md space-y-1">
+                <h3 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
                   Pronto! Você já sabe como abrir seu chamado
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Agora é com você. Preencha o formulário acima com seus dados reais para receber suporte rápido da nossa equipe técnica.
+                  Agora é com você. Preencha o formulário com seus dados reais para suporte imediato da equipe técnica da Central de TI.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={handleRestart}
-                  className="px-4 py-2 rounded-xl border border-border text-foreground hover:bg-muted text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                  className="px-4 py-2 rounded-xl border border-border text-foreground hover:bg-muted text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <RotateCcw className="size-3.5" />
                   Assistir novamente
@@ -415,7 +483,7 @@ export function TutorialPlayer() {
                 <button
                   type="button"
                   onClick={handleScrollToRealForm}
-                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
                 >
                   <span>Preencher meu chamado</span>
                   <ArrowRight className="size-3.5" />
@@ -438,7 +506,7 @@ export function TutorialPlayer() {
                   aria-live="polite"
                   className="absolute bottom-12 left-4 right-4 z-20 flex justify-center pointer-events-none"
                 >
-                  <div className="px-4 py-2 rounded-xl bg-black/85 text-white text-xs sm:text-sm font-medium text-center shadow-lg backdrop-blur-xs max-w-xl border border-white/10 leading-snug animate-in fade-in duration-150">
+                  <div className="px-4 py-1.5 rounded-xl bg-black/85 text-white text-xs sm:text-sm font-medium text-center shadow-lg backdrop-blur-xs max-w-xl border border-white/10 leading-snug animate-in fade-in duration-150">
                     {currentStep.legenda}
                   </div>
                 </div>
@@ -469,12 +537,14 @@ export function TutorialPlayer() {
         />
       </div>
 
-      {/* Bloco recolhível: Ler o passo a passo em texto */}
-      <TutorialTranscript
-        steps={TUTORIAL_PASSOS}
-        currentStepIndex={stepIndex}
-        onSelectStep={handleSelectStep}
-      />
+      {/* Bloco recolhível: Ler o passo a passo em texto (apenas na versão completa de rodapé) */}
+      {!isModal && (
+        <TutorialTranscript
+          steps={TUTORIAL_PASSOS}
+          currentStepIndex={stepIndex}
+          onSelectStep={handleSelectStep}
+        />
+      )}
     </section>
   );
 }

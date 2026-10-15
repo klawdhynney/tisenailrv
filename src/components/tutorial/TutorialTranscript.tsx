@@ -84,7 +84,7 @@ export function TutorialTranscript({
                   </div>
 
                   <p className="text-xs text-muted-foreground leading-relaxed pl-7">
-                    &ldquo;{st.narracao}&rdquo;
+                    &ldquo;{st.textoLeitura || st.legenda}&rdquo;
                   </p>
                 </div>
               );
