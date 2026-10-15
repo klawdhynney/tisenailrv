@@ -133,7 +133,10 @@ export function ticketsParaLinhasAtendimento(
   regras?: Regras | null
 ): LinhaExportacao[] {
   return tickets.map((t) => {
-    const descricaoLimpa = limparDescricaoParaRelatorio(t.descricao || "");
+    // Para planilhas (Excel), preserva o texto original da descrição sem cortes agressivos
+    const descricaoFormatada = t.descricao
+      ? t.descricao.replace(/\r?\n+/g, " ").replace(/\s+/g, " ").trim()
+      : "";
 
     // Se colunas específicas forem passadas explicitamente
     if (colunasAtivas && colunasAtivas.length > 0) {
@@ -151,8 +154,8 @@ export function ticketsParaLinhasAtendimento(
         "Solicitante": t.solicitante,
         setor: extrairSetor(t.setor),
         "Setor": extrairSetor(t.setor),
-        descricao: descricaoLimpa,
-        "Descrição do problema": descricaoLimpa,
+        descricao: descricaoFormatada,
+        "Descrição do problema": descricaoFormatada,
         status: obterRotuloStatus(t.status, regras),
         "Status": obterRotuloStatus(t.status, regras),
         slaPrazo: `${formatarDataHora(sla.prazo)} - ${sla.situacao}`,
@@ -184,18 +187,136 @@ export function ticketsParaLinhasAtendimento(
       return linha;
     }
 
-    // Padrão oficial da planilha de atendimento: apenas as 8 colunas na sequência exata
+    // Padrão oficial da planilha de atendimento: exatamente as 8 colunas da regra e do modelo
     return {
       "Nº": t.id,
       "Aberto em": formatarData(t.abertoEm, t.hora),
       "Solicitante": t.solicitante,
       "Setor": extrairSetor(t.setor),
-      "Descrição do problema": descricaoLimpa,
+      "Descrição do problema": descricaoFormatada,
       "Responsável": t.responsavel || "—",
       "Fechado em": t.fechadoEm ? formatarData(t.fechadoEm, t.horario) : "—",
       "Status": obterRotuloStatus(t.status, regras),
     };
   });
+}
+
+function letrasParaIndice(letras: string): number {
+  let num = 0;
+  for (let i = 0; i < letras.length; i++) {
+    num = num * 26 + (letras.charCodeAt(i) - 64);
+  }
+  return num - 1;
+}
+
+export function aplicarEstiloPlanilha(
+  planilha: any,
+  linhas: LinhaExportacao[],
+  corCabecalhoHex: string = "E26B00"
+) {
+  if (!planilha || !linhas || linhas.length === 0) return;
+  const colunas = Object.keys(linhas[0] ?? {});
+
+  const largurasPadrao: Record<string, number> = {
+    "Nº": 9,
+    "Numero": 9,
+    "Aberto em": 19,
+    "Data": 14,
+    "Hora": 10,
+    "Solicitante": 24,
+    "Setor": 20,
+    "Descrição do problema": 65,
+    "Descricao": 65,
+    "Responsável": 22,
+    "Responsavel": 22,
+    "Fechado em": 19,
+    "Fechamento": 14,
+    "Status": 18,
+    "Prioridade": 14,
+    "SLA": 16,
+    "SLA / Prazo": 25,
+    "Procedimento": 40,
+    "Dimensão": 22,
+    "Item / Descrição": 38,
+    "Item / Categoria": 38,
+    "Quantidade": 14,
+    "Chamados": 14,
+    "Participação": 16,
+    "Porcentagem": 16,
+  };
+
+  const larguras = colunas.map((col) => {
+    if (largurasPadrao[col]) {
+      return { wch: largurasPadrao[col] };
+    }
+    let maxLen = col.length;
+    for (const linha of linhas) {
+      const val = linha[col];
+      if (val !== undefined && val !== null) {
+        const strVal = String(val);
+        const primeiraLinhaLen = strVal.split("\n")[0]?.length ?? strVal.length;
+        if (primeiraLinhaLen > maxLen) maxLen = primeiraLinhaLen;
+      }
+    }
+    return { wch: Math.min(Math.max(maxLen + 4, 14), 65) };
+  });
+  planilha["!cols"] = larguras;
+
+  // Altura do cabeçalho
+  planilha["!rows"] = [{ hpt: 26 }];
+
+  // AutoFiltro na primeira linha (ícone de filtro nas colunas como no Excel oficial)
+  if (planilha["!ref"]) {
+    planilha["!autofilter"] = { ref: planilha["!ref"] };
+  }
+
+  // Congelar primeira linha (cabeçalho)
+  planilha["!freeze"] = { xSplit: "0", ySplit: "1" };
+  planilha["!views"] = [{ state: "frozen", xSplit: 0, ySplit: 1 }];
+
+  // Colunas centralizadas
+  const colsCentralizadas = new Set([
+    "Nº", "Numero", "Aberto em", "Data", "Hora", "Fechado em", "Fechamento", "Status", "Prioridade", "SLA", "Quantidade", "Chamados", "Participação", "Porcentagem"
+  ]);
+
+  for (const cellAddress in planilha) {
+    if (cellAddress.startsWith("!")) continue;
+    const match = cellAddress.match(/^([A-Z]+)(\d+)$/);
+    if (!match) continue;
+
+    const colLetras = match[1];
+    const rowNum = parseInt(match[2], 10);
+    const isHeader = rowNum === 1;
+    const isEvenRow = rowNum % 2 === 0;
+
+    const colIndex = letrasParaIndice(colLetras);
+    const colNome = colunas[colIndex] ?? "";
+    const isCentralizada = colsCentralizadas.has(colNome);
+
+    const existingCell = planilha[cellAddress] || {};
+
+    existingCell.s = isHeader
+      ? {
+          font: { name: "Arial", sz: 11, bold: true, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: corCabecalhoHex } },
+          alignment: { wrapText: true, vertical: "center", horizontal: "center" },
+        }
+      : {
+          font: { name: "Arial", sz: 11 },
+          fill: isEvenRow && corCabecalhoHex === "E26B00"
+            ? { fgColor: { rgb: "FDE8D3" } } // Pêssego suave para linhas alternadas no modelo da tabela oficial
+            : isEvenRow
+            ? { fgColor: { rgb: "F1F5F9" } }
+            : { fgColor: { rgb: "FFFFFF" } },
+          alignment: {
+            wrapText: true,
+            vertical: "center",
+            horizontal: isCentralizada ? "center" : "left",
+          },
+        };
+
+    planilha[cellAddress] = existingCell;
+  }
 }
 
 export function exportarCsv(linhas: LinhaExportacao[], nome: string) {
@@ -217,76 +338,224 @@ export function exportarCsv(linhas: LinhaExportacao[], nome: string) {
   baixarBlob(`\uFEFF${conteudo}`, "text/csv;charset=utf-8", nomeFinal);
 }
 
-export async function exportarXlsx(linhas: LinhaExportacao[], nome: string) {
+export interface AbaPlanilhaXlsx {
+  nomeAba: string;
+  linhas: LinhaExportacao[];
+  corCabecalho?: string;
+}
+
+export interface OpcoesExportacaoXlsx {
+  abasAdicionais?: AbaPlanilhaXlsx[];
+  corCabecalho?: string;
+}
+
+export async function exportarXlsx(
+  linhas: LinhaExportacao[],
+  nome: string,
+  opcoes?: OpcoesExportacaoXlsx
+) {
   if (!linhas || linhas.length === 0) return;
   const XLSX = await import("xlsx");
+  const workbook = XLSX.utils.book_new();
+
+  const corCabecalho = opcoes?.corCabecalho || (nome.toLowerCase().includes("atendimento") ? "E26B00" : "1A73E8");
   const planilha = XLSX.utils.json_to_sheet(linhas);
+  aplicarEstiloPlanilha(planilha, linhas, corCabecalho);
+  XLSX.utils.book_append_sheet(workbook, planilha, "Chamados");
 
-  const colunas = Object.keys(linhas[0] ?? {});
-  const largurasPadrao: Record<string, number> = {
-    "Nº": 8,
-    "Numero": 8,
-    "Aberto em": 18,
-    "Data": 14,
-    "Hora": 10,
-    "Solicitante": 22,
-    "Setor": 18,
-    "Descrição do problema": 55,
-    "Descricao": 55,
-    "Responsável": 22,
-    "Responsavel": 22,
-    "Fechado em": 18,
-    "Fechamento": 14,
-    "Status": 16,
-    "Prioridade": 14,
-    "SLA / Prazo": 25,
-    "SLA": 16,
-  };
-
-  const larguras = colunas.map((col) => {
-    if (largurasPadrao[col]) {
-      return { wch: largurasPadrao[col] };
-    }
-    let maxLen = col.length;
-    for (const linha of linhas) {
-      const val = linha[col];
-      if (val !== undefined && val !== null) {
-        const strVal = String(val);
-        const primeiraLinhaLen = strVal.split("\n")[0]?.length ?? strVal.length;
-        if (primeiraLinhaLen > maxLen) maxLen = primeiraLinhaLen;
+  if (opcoes?.abasAdicionais) {
+    for (const aba of opcoes.abasAdicionais) {
+      if (aba.linhas && aba.linhas.length > 0) {
+        const sheetAba = XLSX.utils.json_to_sheet(aba.linhas);
+        aplicarEstiloPlanilha(sheetAba, aba.linhas, aba.corCabecalho || "1A73E8");
+        XLSX.utils.book_append_sheet(workbook, sheetAba, aba.nomeAba);
       }
     }
-    return { wch: Math.min(Math.max(maxLen + 4, 14), 55) };
-  });
-  planilha["!cols"] = larguras;
-
-  // Congelar primeira linha (cabeçalho)
-  planilha["!freeze"] = { xSplit: "0", ySplit: "1" };
-  planilha["!views"] = [{ state: "frozen", xSplit: 0, ySplit: 1 }];
-
-  // Configurar estilos: quebra de linha (wrapText), alinhamento vertical e fonte
-  for (const cellAddress in planilha) {
-    if (cellAddress.startsWith("!")) continue;
-    const isHeader = /^[A-Z]+1$/.test(cellAddress);
-    const existingCell = planilha[cellAddress] || {};
-
-    existingCell.s = isHeader
-      ? {
-          font: { name: "Arial", sz: 11, bold: true, color: { rgb: "FFFFFF" } },
-          fill: { fgColor: { rgb: "E26B00" } }, // Fundo laranja da tabela de atendimento
-          alignment: { wrapText: true, vertical: "center", horizontal: "center" },
-        }
-      : {
-          font: { name: "Arial", sz: 11 },
-          alignment: { wrapText: true, vertical: "center" },
-        };
-    planilha[cellAddress] = existingCell;
   }
 
-  const arquivo = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(arquivo, planilha, "Chamados");
   const nomeFinal = nome.endsWith(".xlsx") ? nome : `${nome}.xlsx`;
-  XLSX.writeFile(arquivo, nomeFinal);
+  XLSX.writeFile(workbook, nomeFinal);
+}
+
+export interface DadosConsolidadosExportacao {
+  visao?: string;
+  categorias?: { name: string; value: number }[];
+  setores?: { name: string; value: number }[];
+  prioridades?: { name: string; value: number }[];
+  status?: { name: string; value: number }[];
+  sla?: { name: string; value: number }[];
+}
+
+export interface OpcoesPlanilhaAtendimento {
+  nome?: string;
+  mes?: string;
+  regras?: Regras | null;
+  colunasAtivas?: { id: string; label: string }[];
+  dadosConsolidados?: DadosConsolidadosExportacao;
+}
+
+export async function exportarPlanilhaAtendimentoXlsx(
+  tickets: Ticket[],
+  opcoes?: OpcoesPlanilhaAtendimento
+) {
+  const XLSX = await import("xlsx");
+  const workbook = XLSX.utils.book_new();
+
+  // 1. Ordena os tickets por ID decrescente (mais recentes no topo, como no modelo oficial)
+  const ticketsOrdenados = [...(tickets || [])].sort((a, b) => b.id - a.id);
+  const linhasChamados = ticketsParaLinhasAtendimento(ticketsOrdenados, opcoes?.colunasAtivas, opcoes?.regras);
+
+  // Se não houver chamados no recorte, inclui cabeçalho padrão com linha informativa
+  const linhasParaPlanilha =
+    linhasChamados.length > 0
+      ? linhasChamados
+      : [
+          {
+            "Nº": "",
+            "Aberto em": "",
+            "Solicitante": "",
+            "Setor": "",
+            "Descrição do problema": "Nenhum chamado registrado para os filtros selecionados.",
+            "Responsável": "",
+            "Fechado em": "",
+            "Status": "",
+          },
+        ];
+
+  const sheetChamados = XLSX.utils.json_to_sheet(linhasParaPlanilha);
+  aplicarEstiloPlanilha(sheetChamados, linhasParaPlanilha, "E26B00");
+  XLSX.utils.book_append_sheet(workbook, sheetChamados, "Chamados");
+
+  // 2. Monta aba secundária: Balanço Consolidado (fornecendo tanto a planilha analítica quanto o balanço)
+  const totalVal = ticketsOrdenados.length;
+  const linhasBalanco: LinhaExportacao[] = [];
+  const dadosCons = opcoes?.dadosConsolidados;
+
+  // Status
+  const statusItems =
+    dadosCons?.status ||
+    (() => {
+      const mapa = new Map<string, number>();
+      for (const t of ticketsOrdenados) {
+        const st = obterRotuloStatus(t.status, opcoes?.regras);
+        mapa.set(st, (mapa.get(st) ?? 0) + 1);
+      }
+      return [...mapa.entries()].map(([name, value]) => ({ name, value }));
+    })();
+
+  for (const item of statusItems) {
+    const pct = totalVal > 0 ? `${((item.value / totalVal) * 100).toFixed(1)}%` : "0%";
+    linhasBalanco.push({
+      "Dimensão": "Status do Chamado",
+      "Item / Descrição": item.name,
+      "Quantidade": item.value,
+      "Participação": pct,
+    });
+  }
+
+  // SLA
+  const slaItems =
+    dadosCons?.sla ||
+    (() => {
+      const mapa = new Map<string, number>();
+      for (const t of ticketsOrdenados) {
+        try {
+          const sit = calcularSla(t, opcoes?.regras || ({} as Regras)).situacao;
+          mapa.set(sit, (mapa.get(sit) ?? 0) + 1);
+        } catch {
+          mapa.set("—", (mapa.get("—") ?? 0) + 1);
+        }
+      }
+      return ["No prazo", "Estourado", "SLA pausado", "Cancelado", "Aguardando", "—"]
+        .filter((n) => mapa.has(n))
+        .map((name) => ({ name, value: mapa.get(name) ?? 0 }));
+    })();
+
+  for (const item of slaItems) {
+    const pct = totalVal > 0 ? `${((item.value / totalVal) * 100).toFixed(1)}%` : "0%";
+    linhasBalanco.push({
+      "Dimensão": "Cumprimento de SLA",
+      "Item / Descrição": item.name,
+      "Quantidade": item.value,
+      "Participação": pct,
+    });
+  }
+
+  // Prioridades
+  const prioridadesItems =
+    dadosCons?.prioridades ||
+    (() => {
+      const mapa = new Map<string, number>();
+      for (const t of ticketsOrdenados) {
+        const p = t.prioridade || "Média";
+        mapa.set(p, (mapa.get(p) ?? 0) + 1);
+      }
+      return [...mapa.entries()].map(([name, value]) => ({ name, value }));
+    })();
+
+  for (const item of prioridadesItems) {
+    const pct = totalVal > 0 ? `${((item.value / totalVal) * 100).toFixed(1)}%` : "0%";
+    linhasBalanco.push({
+      "Dimensão": "Prioridade",
+      "Item / Descrição": item.name,
+      "Quantidade": item.value,
+      "Participação": pct,
+    });
+  }
+
+  // Setores
+  const setoresItems =
+    dadosCons?.setores ||
+    (() => {
+      const mapa = new Map<string, number>();
+      for (const t of ticketsOrdenados) {
+        const s = extrairSetor(t.setor) || "Não informado";
+        mapa.set(s, (mapa.get(s) ?? 0) + 1);
+      }
+      return [...mapa.entries()].sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value }));
+    })();
+
+  for (const item of setoresItems) {
+    const pct = totalVal > 0 ? `${((item.value / totalVal) * 100).toFixed(1)}%` : "0%";
+    linhasBalanco.push({
+      "Dimensão": "Setor Solicitante",
+      "Item / Descrição": item.name,
+      "Quantidade": item.value,
+      "Participação": pct,
+    });
+  }
+
+  // Categorias
+  const categoriasItems =
+    dadosCons?.categorias ||
+    (() => {
+      const mapa = new Map<string, number>();
+      for (const t of ticketsOrdenados) {
+        const c = t.categoria || "Geral";
+        mapa.set(c, (mapa.get(c) ?? 0) + 1);
+      }
+      return [...mapa.entries()].sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value }));
+    })();
+
+  for (const item of categoriasItems) {
+    const pct = totalVal > 0 ? `${((item.value / totalVal) * 100).toFixed(1)}%` : "0%";
+    linhasBalanco.push({
+      "Dimensão": "Categoria / Assunto",
+      "Item / Descrição": item.name,
+      "Quantidade": item.value,
+      "Participação": pct,
+    });
+  }
+
+  if (linhasBalanco.length > 0) {
+    const sheetBalanco = XLSX.utils.json_to_sheet(linhasBalanco);
+    aplicarEstiloPlanilha(sheetBalanco, linhasBalanco, "1A73E8");
+    XLSX.utils.book_append_sheet(workbook, sheetBalanco, "Balanço Consolidado");
+  }
+
+  const nomeArquivo = opcoes?.nome || "Planilha_Atendimento_TI";
+  const nomeFinal = nomeArquivo.endsWith(".xlsx") ? nomeArquivo : `${nomeArquivo}.xlsx`;
+  XLSX.writeFile(workbook, nomeFinal);
 }
 
 export function exportarXml(linhas: LinhaExportacao[], nome: string) {

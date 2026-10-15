@@ -142,7 +142,7 @@ const mesAtualPadrao = () => {
 };
 
 function Dashboard() {
-  const { publicStats, dailyStats, evaluationStats, isGestor, isAdmin, regras, session, authPronto } = useStore();
+  const { publicStats, dailyStats, evaluationStats, isGestor, isAdmin, regras, session, authPronto, tickets } = useStore();
   const { wrapAsync, isLoading } = useLoading();
   const search = Route.useSearch();
   const navigate = useNavigate();
@@ -330,19 +330,30 @@ function Dashboard() {
 
   const baixarResumo = async () => {
     await wrapAsync(async () => {
-      const { exportarXlsx } = await import("@/lib/exportar");
-      const totalVal = dados.reduce((sum, item) => sum + item.value, 0);
-      const linhasExp = dados.map((r) => {
-        const pct = totalVal > 0 ? `${((r.value / totalVal) * 100).toFixed(1)}%` : "0%";
-        return {
-          Visão: visao,
-          Item: r.name,
-          Chamados: r.value,
-          Porcentagem: pct,
-        };
+      const { exportarPlanilhaAtendimentoXlsx } = await import("@/lib/exportar");
+      let ticketsParaExportar = tickets;
+      if (!ticketsParaExportar || ticketsParaExportar.length === 0) {
+        const { fromRow } = await import("@/lib/store");
+        const { data } = await supabase.from("tickets").select("*").order("id", { ascending: false });
+        if (data) ticketsParaExportar = data.map(fromRow);
+      }
+      const filtrados = (ticketsParaExportar || []).filter(
+        (t) => mes === "todos" || (t.abertoEm && t.abertoEm.startsWith(mes))
+      );
+      await exportarPlanilhaAtendimentoXlsx(filtrados, {
+        nome: mes && mes !== "todos" ? `Planilha_Atendimento_TI_${mes}` : "Planilha_Atendimento_TI",
+        mes,
+        regras,
+        dadosConsolidados: {
+          visao,
+          categorias,
+          setores,
+          prioridades: contar("prioridade"),
+          status: contar("status"),
+          sla: dadosSla,
+        },
       });
-      exportarXlsx(linhasExp, `dashboard-${visao}-${mes}.xlsx`);
-    });
+    }, "Exportando planilha de atendimento...");
   };
 
   const baixarPdf = async () => {

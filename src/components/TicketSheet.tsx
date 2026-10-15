@@ -24,7 +24,7 @@ import {
   type Ticket,
 } from "@/lib/types";
 import { FiltroMes } from "@/components/FiltroMes";
-import { exportarPdf, exportarXlsx, ticketsParaLinhasAtendimento } from "@/lib/exportar";
+import { exportarPdf, exportarPlanilhaAtendimentoXlsx, exportarXlsx, ticketsParaLinhasAtendimento } from "@/lib/exportar";
 
 interface TicketSheetProps {
   attendance?: boolean;
@@ -212,10 +212,13 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
     });
   }
 
-  // Exportação com rigorosamente as 8 colunas da planilha oficial de atendimento
+  // Exportação com todas as 8 colunas oficiais da regra e modelo, mais aba de balanço consolidado
   const dispararExportacaoXlsx = () => {
-    const dados = ticketsParaLinhasAtendimento(rows, undefined, regras);
-    exportarXlsx(dados, "Planilha_Atendimento_TI");
+    exportarPlanilhaAtendimentoXlsx(rows, {
+      nome: month && month !== "todos" ? `Planilha_Atendimento_TI_${month}` : "Planilha_Atendimento_TI",
+      mes: month,
+      regras,
+    });
   };
 
   const dispararExportacaoPdf = () => {
