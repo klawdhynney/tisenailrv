@@ -36,6 +36,7 @@ export interface TutorialStep {
 
 export const AUDIO_TUTORIAL_VERSAO = "v2";
 export const AUDIO_BASE_PATH = `/audio/tutorial/${AUDIO_TUTORIAL_VERSAO}`;
+export const TUTORIAL_SIMULATED_URL = "https://tisenailrv.app/abrir";
 
 export const TUTORIAL_PASSOS: TutorialStep[] = [
   {

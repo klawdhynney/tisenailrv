@@ -403,6 +403,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setUserRole(isBloqueado ? "usuario" : papelFinal);
       setAuthPronto(true);
 
+      const emailNormalizado = (session?.user.email || (profileData as any)?.email || "").toLowerCase().trim();
       const nomePadrao = session?.user.user_metadata?.full_name || session?.user.user_metadata?.name || emailNormalizado.split("@")[0] || "Usuário";
       setPerfilUsuario({
         id: uid,

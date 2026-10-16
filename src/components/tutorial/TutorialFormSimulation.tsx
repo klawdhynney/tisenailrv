@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   MousePointer,
 } from "lucide-react";
-import type { TutorialStep } from "@/content/tutorial-abrir-chamado";
+import { type TutorialStep, TUTORIAL_SIMULATED_URL } from "@/content/tutorial-abrir-chamado";
 
 interface TutorialFormSimulationProps {
   step: TutorialStep;
@@ -84,7 +84,7 @@ export function TutorialFormSimulation({
           <span className="size-2 rounded-full bg-amber-400/80 inline-block" />
           <span className="size-2 rounded-full bg-emerald-400/80 inline-block" />
           <span className="ml-2 font-mono text-[10px] text-muted-foreground/90">
-            https://ti.senailrv.com.br/abrir
+            {TUTORIAL_SIMULATED_URL}
           </span>
         </div>
         <div className="flex items-center gap-2">

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-ro
 import { useEffect, useState, useRef, lazy, Suspense } from "react";
 const TutorialPlayer = lazy(() => import("@/components/tutorial/TutorialPlayer"));
 const TutorialModal = lazy(() => import("@/components/tutorial/TutorialModal"));
+import { tutorialAudio } from "@/components/tutorial/tutorial-audio-manager";
 import { useConfirm } from "@/hooks/useConfirm";
 import { Cpu, MapPin, CheckCircle2, ArrowLeft, SendHorizontal, Mail, Star, FileText, MessageCircle, Sparkles, Wand2, UserCheck, AlertCircle, Play } from "lucide-react";
 import { toast } from "sonner";
@@ -756,7 +757,10 @@ function AbrirChamado() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setModalTutorialAberto(true)}
+              onClick={() => {
+                tutorialAudio.releaseOwner("tutorial-footer");
+                setModalTutorialAberto(true);
+              }}
               className="rounded-full border-purple-500/30 bg-purple-50/70 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-semibold text-xs sm:text-sm gap-2 shadow-2xs hover:border-purple-400 transition-all cursor-pointer"
             >
               <Play className="size-3.5 fill-current text-purple-600 dark:text-purple-400" />
@@ -1169,7 +1173,10 @@ function AbrirChamado() {
         <Suspense fallback={null}>
           <TutorialModal
             open={modalTutorialAberto}
-            onClose={() => setModalTutorialAberto(false)}
+            onClose={() => {
+              tutorialAudio.releaseOwner("tutorial-modal");
+              setModalTutorialAberto(false);
+            }}
             triggerRef={btnTutorialTopoRef}
           />
         </Suspense>

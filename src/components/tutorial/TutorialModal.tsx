@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from "react";
 import { X, Sparkles } from "lucide-react";
 import { TutorialPlayer } from "./TutorialPlayer";
 
+import { tutorialAudio } from "./tutorial-audio-manager";
+
 interface TutorialModalProps {
   open: boolean;
   onClose: () => void;
@@ -12,6 +14,21 @@ export function TutorialModal({ open, onClose, triggerRef }: TutorialModalProps)
   const modalContentRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
+  const handleClose = () => {
+    tutorialAudio.releaseOwner("tutorial-modal");
+    onClose();
+  };
+
+  // Garante liberação imediata do áudio da janela modal ao fechar ou desmontar
+  useEffect(() => {
+    if (!open) {
+      tutorialAudio.releaseOwner("tutorial-modal");
+    }
+    return () => {
+      tutorialAudio.releaseOwner("tutorial-modal");
+    };
+  }, [open]);
+
   // Fecha com a tecla ESC e prende o foco
   useEffect(() => {
     if (!open) return;
@@ -19,13 +36,13 @@ export function TutorialModal({ open, onClose, triggerRef }: TutorialModalProps)
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        handleClose();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
+  }, [open]);
 
   // Gerenciamento de foco: ao fechar, devolve o foco para o botão de origem
   useEffect(() => {
@@ -45,7 +62,7 @@ export function TutorialModal({ open, onClose, triggerRef }: TutorialModalProps)
       onClick={(e) => {
         // Fecha com clique fora
         if (e.target === e.currentTarget) {
-          onClose();
+          handleClose();
         }
       }}
     >
@@ -67,7 +84,7 @@ export function TutorialModal({ open, onClose, triggerRef }: TutorialModalProps)
           <button
             ref={closeButtonRef}
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="size-8 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Fechar tutorial"
             title="Fechar (Esc)"

@@ -24,6 +24,8 @@ import { TutorialFormSimulation } from "./TutorialFormSimulation";
 import { TutorialControls } from "./TutorialControls";
 import { TutorialTranscript } from "./TutorialTranscript";
 
+import { tutorialAudio } from "./tutorial-audio-manager";
+
 interface TutorialPlayerProps {
   autoStart?: boolean;
   isModal?: boolean;
@@ -35,8 +37,7 @@ export function TutorialPlayer({
   isModal = false,
   onClose,
 }: TutorialPlayerProps) {
-  // Identificador de instância único para evitar concorrência de áudio
-  const playerId = useRef("tut_" + Math.random().toString(36).slice(2, 8)).current;
+  const ownerId = isModal ? "tutorial-modal" : "tutorial-footer";
 
   const [stepIndex, setStepIndex] = useState(0);
   const [hasStarted, setHasStarted] = useState(autoStart);
@@ -49,8 +50,6 @@ export function TutorialPlayer({
   const [usingFallbackSpeech, setUsingFallbackSpeech] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const stepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Invalida preferência de velocidade antiga salva em versões anteriores
   useEffect(() => {
@@ -58,15 +57,6 @@ export function TutorialPlayer({
       localStorage.removeItem("tutorial_speed");
     } catch {}
   }, []);
-
-  // Se autoStart for solicitado na montagem
-  useEffect(() => {
-    if (autoStart) {
-      setHasStarted(true);
-      setIsPlaying(true);
-      setIsCompleted(false);
-    }
-  }, [autoStart]);
 
   const currentStep: TutorialStep = TUTORIAL_PASSOS[stepIndex] ?? TUTORIAL_PASSOS[0];
 
@@ -82,6 +72,7 @@ export function TutorialPlayer({
     } else {
       setIsPlaying(false);
       setIsCompleted(true);
+      tutorialAudio.stopAll("tutorial_completed");
     }
   }, [stepIndex]);
 
@@ -128,176 +119,94 @@ export function TutorialPlayer({
     setIsPlaying((prev) => !prev);
   };
 
-  // Parar narração por fallback SpeechSynthesis se ativa
-  const stopSpeechSynthesis = useCallback(() => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-  }, []);
-
-  // Controle de concorrência: apenas um tutorial toca áudio por vez
+  // Sincronização entre instâncias (ex: ao tocar no modal, pausa o rodapé e vice-versa)
   useEffect(() => {
-    const handlePauseOthers = (e: Event) => {
-      const custom = e as CustomEvent<{ senderId: string }>;
-      if (custom.detail?.senderId !== playerId) {
+    const unsubscribe = tutorialAudio.subscribe((event) => {
+      if (event.ownerId !== ownerId && (event.type === "play" || event.type === "owner_change")) {
         setIsPlaying(false);
-        if (audioRef.current) audioRef.current.pause();
-        stopSpeechSynthesis();
       }
-    };
+    });
+    return unsubscribe;
+  }, [ownerId]);
 
-    window.addEventListener("tutorial:pause-others", handlePauseOthers);
-    return () => {
-      window.removeEventListener("tutorial:pause-others", handlePauseOthers);
-    };
-  }, [playerId, stopSpeechSynthesis]);
-
-  // Notificar outros players para pausar quando este começar a tocar
-  useEffect(() => {
-    if (isPlaying) {
-      window.dispatchEvent(
-        new CustomEvent("tutorial:pause-others", { detail: { senderId: playerId } })
-      );
-    }
-  }, [isPlaying, playerId]);
-
-  // Executar áudio acelerado ou fallback quando stepIndex ou isPlaying mudar
+  // Executar áudio acelerado ou fallback centralizado no singleton
   useEffect(() => {
     if (!hasStarted) return;
 
-    // Se estiver pausado
-    if (!isPlaying) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      stopSpeechSynthesis();
-      if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
+    // Se estiver pausado ou concluído
+    if (!isPlaying || isCompleted) {
+      tutorialAudio.pause(ownerId);
       return;
     }
 
-    // Se a demonstração foi concluída, não toca som
-    if (isCompleted) {
-      return;
-    }
-
-    // Caminho com versionamento v2 para evitar cache de áudios antigos
     const audioSrc = `${AUDIO_BASE_PATH}/step-${currentStep.id}.mp3?v=${AUDIO_TUTORIAL_VERSAO}`;
+    const textoFonético = currentStep.fala || aplicarPronuncia(currentStep.textoLeitura);
 
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-    }
-
-    const audio = audioRef.current;
-    audio.src = audioSrc;
-    audio.playbackRate = playbackRate;
-    audio.muted = isMuted;
-
-    // Quando o áudio do passo termina, avança automaticamente
-    audio.onended = () => {
-      handleNextStep();
-    };
-
-    // Caso ocorra erro de carregamento do MP3, ativa o fallback inteligente Web Speech API
-    audio.onerror = () => {
-      console.warn(
-        `[Tutorial] Áudio v2 step-${currentStep.id}.mp3 não disponível. Ativando fallback SpeechSynthesis pt-BR.`
-      );
-      setUsingFallbackSpeech(true);
-      playSpeechSynthesisFallback();
-    };
-
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          setUsingFallbackSpeech(false);
-        })
-        .catch((err) => {
-          console.warn("[Tutorial] Reprodução de áudio bloqueada ou com falha. Tentando síntese do navegador:", err);
-          setUsingFallbackSpeech(true);
-          playSpeechSynthesisFallback();
-        });
-    }
-
-    // Função interna para Web Speech API com taxa equivalente rápida
-    function playSpeechSynthesisFallback() {
-      if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-        const durationMs = (currentStep.duracaoSegundos * 1000) / playbackRate;
-        stepTimerRef.current = setTimeout(handleNextStep, durationMs);
-        return;
-      }
-
-      window.speechSynthesis.cancel();
-      // Aplica a pronúncia fonética também no fallback do navegador
-      const textoParaFalar = currentStep.fala || aplicarPronuncia(currentStep.textoLeitura);
-      const utterance = new SpeechSynthesisUtterance(textoParaFalar);
-      utterance.lang = "pt-BR";
-      // Ritmo mais ágil equivalente ao novo padrão acelerado
-      utterance.rate = playbackRate * 1.35;
-
-      const voices = window.speechSynthesis.getVoices();
-      const ptVoice = voices.find((v) => v.lang === "pt-BR" || v.lang.startsWith("pt"));
-      if (ptVoice) {
-        utterance.voice = ptVoice;
-      }
-
-      utterance.onend = () => {
+    tutorialAudio.playStep({
+      ownerId,
+      stepId: currentStep.id,
+      audioSrc,
+      playbackRate,
+      isMuted,
+      fallbackText: textoFonético,
+      fallbackDurationMs: currentStep.duracaoSegundos,
+      onEnded: () => {
         handleNextStep();
-      };
-
-      utterance.onerror = () => {
-        const durationMs = (currentStep.duracaoSegundos * 1000) / playbackRate;
-        stepTimerRef.current = setTimeout(handleNextStep, durationMs);
-      };
-
-      window.speechSynthesis.speak(utterance);
-    }
+      },
+      onFallbackChange: (fallback) => {
+        setUsingFallbackSpeech(fallback);
+      },
+    });
 
     return () => {
-      if (audio) {
-        audio.pause();
-        audio.onended = null;
-        audio.onerror = null;
-      }
-      stopSpeechSynthesis();
-      if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
+      tutorialAudio.pause(ownerId);
     };
-  }, [hasStarted, isPlaying, stepIndex, currentStep, playbackRate, isMuted, isCompleted, handleNextStep, stopSpeechSynthesis]);
+  }, [
+    hasStarted,
+    isPlaying,
+    stepIndex,
+    currentStep.id,
+    currentStep.fala,
+    currentStep.textoLeitura,
+    currentStep.duracaoSegundos,
+    playbackRate,
+    isMuted,
+    isCompleted,
+    ownerId,
+    handleNextStep,
+  ]);
 
-  // Atualizar playbackRate no áudio se mudar enquanto toca
+  // Atualizar taxa de reprodução no motor de áudio
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.playbackRate = playbackRate;
-    }
+    tutorialAudio.setPlaybackRate(playbackRate);
   }, [playbackRate]);
 
-  // Atualizar mudo no áudio se mudar
+  // Atualizar mudo no motor de áudio
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.muted = isMuted;
-    }
+    tutorialAudio.setMuted(isMuted);
   }, [isMuted]);
 
-  // Limpeza de áudio ao trocar de aba ou desmontar
+  // Liberação completa de recursos ao desmontar este player
+  useEffect(() => {
+    return () => {
+      tutorialAudio.releaseOwner(ownerId);
+    };
+  }, [ownerId]);
+
+  // Limpeza de áudio ao trocar de aba no navegador
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         setIsPlaying(false);
-        if (audioRef.current) audioRef.current.pause();
-        stopSpeechSynthesis();
+        tutorialAudio.pause(ownerId);
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-      }
-      stopSpeechSynthesis();
     };
-  }, [stopSpeechSynthesis]);
+  }, [ownerId]);
 
   // Teclado para acessibilidade (Espaço, setas, M, F)
   useEffect(() => {
