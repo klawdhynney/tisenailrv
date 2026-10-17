@@ -23,7 +23,7 @@ const ticketsMock = [
     hora: "18:56",
     solicitante: "João Félix",
     setor: "Área Técnica",
-    descricao: "Solicito a troca do toner da impressora localizada na área técnica. Informação adicional do solicitante:",
+    descricao: "Solicito a troca do toner da impressora localizada na área técnica. Informação adicional do solicitante: [Avaliação do Usuário]: 😮 Surpreso",
     responsavel: "Claudinei Lima",
     status: "Resolvido",
     fechadoEm: "2026-10-09",
@@ -75,9 +75,18 @@ assert.strictEqual(linhas[1]["Solicitante"], "João Félix");
 assert.strictEqual(linhas[1]["Setor"], "Área Técnica");
 assert.strictEqual(linhas[1]["Fechado em"], "09/10/2026 20:47");
 assert.strictEqual(linhas[1]["Status"], "Finalizado");
+assert.strictEqual(
+  linhas[1]["Descrição do problema"],
+  "Solicito a troca do toner da impressora localizada na área técnica.",
+  "A descrição deve manter estritamente a descrição do problema, sem acréscimos posteriores"
+);
 assert(
-  linhas[1]["Descrição do problema"].includes("Informação adicional do solicitante:"),
-  "A descrição deve manter a informação adicional sem cortes agressivos"
+  !linhas[1]["Descrição do problema"].includes("Informação adicional"),
+  "A descrição não deve conter 'Informação adicional'"
+);
+assert(
+  !linhas[1]["Descrição do problema"].includes("Avaliação"),
+  "A descrição não deve conter 'Avaliação'"
 );
 
 console.log("✓ Todos os testes de colunas e dados passaram com sucesso!");

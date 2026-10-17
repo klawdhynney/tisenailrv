@@ -22,8 +22,42 @@ function escaparXml(valor: string | number) {
     .replace(/'/g, "&apos;");
 }
 
+/**
+ * Expressão regular para identificar e isolar qualquer apêndice inserido posteriormente ao chamado
+ * (ex.: informações adicionais do solicitante, registros de chat ou avaliações de satisfação).
+ */
+const REGEX_APENDICE_DESCRICAO = /(?:[\r\n]+|\s+)(?:\[\s*(?:informa[cç][aã]o|info)\s+(?:adicional|complementar|do\s+solicitante|do\s+usu[aá]rio)(?:\s+em\s+[^\]]+)?\]\s*:?|informa[cç][aã]o\s+(?:adicional|complementar)(?:\s+do\s+solicitante)?\s*:?|informa[cç][aã]o\s+do\s+(?:solicitante|usu[aá]rio)\s*:?|(?:\[\s*)?avalia[cç][aã]o(?:\s+do\s+(?:usu[aá]rio|solicitante))?[^\]\r\n]*\]?\s*:?)/i;
+
+/**
+ * Retorna estritamente a descrição do problema original do chamado,
+ * removendo qualquer acréscimo posterior (informações adicionais, avaliações com emoji, etc.),
+ * garantindo que o relatório contenha apenas a descrição do problema.
+ */
+export function extrairApenasDescricao(texto: string): string {
+  if (!texto) return "";
+  let limpo = texto.replace(/\r?\n+/g, " ").replace(/\s+/g, " ").trim();
+
+  // Procurar apêndices adicionados ao chamado
+  const match = limpo.search(REGEX_APENDICE_DESCRICAO);
+  if (match !== -1) {
+    limpo = limpo.slice(0, match).trim();
+  }
+
+  // Se por ventura sobrar apenas avaliação solta como [Avaliação do Usuário]...
+  const matchAvaliacao = limpo.search(/(?:\[\s*)?avalia[cç][aã]o(?:\s+do\s+(?:usu[aá]rio|solicitante))?/i);
+  if (matchAvaliacao !== -1) {
+    limpo = limpo.slice(0, matchAvaliacao).trim();
+  }
+
+  // Limpa eventuais hífens, dois-pontos ou travessões soltos deixados no final após o corte
+  limpo = limpo.replace(/[\s\-\–—:]+$/, "").trim();
+
+  return limpo || texto.trim();
+}
+
 export function ticketsParaLinhas(tickets: Ticket[], camposSelecionados?: string[], regras?: Regras | null): LinhaExportacao[] {
   return tickets.map((t) => {
+    const descricaoLimpa = extrairApenasDescricao(t.descricao || "");
     const linhaCompleta: LinhaExportacao = {
       Numero: t.id,
       Data: t.abertoEm,
@@ -32,7 +66,7 @@ export function ticketsParaLinhas(tickets: Ticket[], camposSelecionados?: string
       SolicitanteEmail: t.solicitanteEmail ?? "",
       Setor: extrairSetor(t.setor),
       Local: extrairLocal(t),
-      Descricao: t.descricao,
+      Descricao: descricaoLimpa,
       Categoria: t.categoria ?? "",
       Prioridade: t.prioridade,
       Responsavel: t.responsavel ?? "",
@@ -62,30 +96,17 @@ export function ticketsParaLinhas(tickets: Ticket[], camposSelecionados?: string
  * Higieniza o texto da descrição do chamado para relatórios (PDF e Excel):
  * - Remove cumprimentos/saudações iniciais (ex: "Prezados,", "Olá,", "Bom dia,")
  * - Remove despedidas e formalidades finais (ex: "Agradeço a atenção.", "Atenciosamente,")
- * - Remove apêndices de avaliações e informações adicionais (ex: "Informação adicional do solicitante: [Avaliação...")
+ * - Remove apêndices de avaliações e informações adicionais
  * - Colapsa espaços desnecessários e quebras de linha em branco, deixando o texto limpo, direto e legível.
  */
 export function limparDescricaoParaRelatorio(texto: string): string {
   if (!texto) return "";
 
-  let limpo = texto;
-
-  // 1. Cortar qualquer apêndice de informação adicional do solicitante ou avaliação
-  const regexInfoAdicional = /(informac[aã]o|i\s*n\s*f\s*o\s*r\s*m\s*a\s*c\s*[aã]\s*o)\s*(adicional|a\s*d\s*i\s*c\s*i\s*o\s*n\s*a\s*l)?\s*(do|d\s*o)?\s*(solicitante|s\s*o\s*l\s*i\s*c\s*i\s*t\s*a\s*n\s*t\s*e)?/i;
-  const matchInfo = limpo.search(regexInfoAdicional);
-  if (matchInfo !== -1) {
-    limpo = limpo.slice(0, matchInfo);
-  }
-
-  // Corta também se houver "[Avaliação" ou "[Avaliacao" ou "Surpreso" (respostas de satisfação)
-  const regexAvaliacao = /(\[\s*avaliac[aã]o|\[\s*a\s*v\s*a\s*l\s*i|surpreso\b)/i;
-  const matchAv = limpo.search(regexAvaliacao);
-  if (matchAv !== -1) {
-    limpo = limpo.slice(0, matchAv);
-  }
+  // 1. Isola apenas a descrição do problema descartando apêndices
+  const textoBase = extrairApenasDescricao(texto);
 
   // 2. Dividir em linhas para analisar cumprimentos e despedidas
-  const linhas = limpo
+  const linhas = textoBase
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter(Boolean);
@@ -124,7 +145,7 @@ export function limparDescricaoParaRelatorio(texto: string): string {
     .replace(/\s*(agrade[cç]o(\s+a\s+aten[cç][aã]o)?|atenciosamente|cordialmente)\s*[.!]?$/i, "")
     .trim();
 
-  return resultado || texto.replace(/\s+/g, " ").trim();
+  return resultado || textoBase;
 }
 
 export function ticketsParaLinhasAtendimento(
@@ -133,10 +154,8 @@ export function ticketsParaLinhasAtendimento(
   regras?: Regras | null
 ): LinhaExportacao[] {
   return tickets.map((t) => {
-    // Para planilhas (Excel), preserva o texto original da descrição sem cortes agressivos
-    const descricaoFormatada = t.descricao
-      ? t.descricao.replace(/\r?\n+/g, " ").replace(/\s+/g, " ").trim()
-      : "";
+    // Deixa apenas a descrição do problema, sem apêndices de informação adicional ou avaliações
+    const descricaoFormatada = extrairApenasDescricao(t.descricao || "");
 
     // Se colunas específicas forem passadas explicitamente
     if (colunasAtivas && colunasAtivas.length > 0) {
