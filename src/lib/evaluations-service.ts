@@ -399,6 +399,16 @@ export async function sincronizarAvaliacoesComBanco(isGestorOuAdmin: boolean): P
   }
 
   const listaLocal = lerAvaliacoesLocais();
+
+  // Se não há avaliações locais pendentes e a sincronização já rodou nesta sessão, evita chamadas redundantes
+  if (typeof window !== "undefined") {
+    try {
+      if (listaLocal.length === 0 && sessionStorage.getItem("tisenai_avaliacoes_sincronizadas") === "true") {
+        return { sincronizados: 0, falhas: 0, mensagem: "Avaliações já sincronizadas nesta sessão." };
+      }
+    } catch {}
+  }
+
   const todosParaSincronizar = [...listaLocal, ...AVALIACOES_LEGADO_INICIAIS];
   const mapa = new Map<number, AvaliacaoItemDashboard>();
   for (const item of todosParaSincronizar) {
@@ -408,7 +418,8 @@ export async function sincronizarAvaliacoesComBanco(isGestorOuAdmin: boolean): P
   let sincronizados = 0;
   let falhas = 0;
 
-  for (const item of mapa.values()) {
+  // Processamento concorrente para evitar travar a rede em cascata
+  const promessas = Array.from(mapa.values()).map(async (item) => {
     try {
       const { error: rpcErr } = await (supabase.rpc as any)("submit_ticket_evaluation", {
         p_ticket_id: item.ticket_id,
@@ -443,12 +454,17 @@ export async function sincronizarAvaliacoesComBanco(isGestorOuAdmin: boolean): P
     } catch {
       falhas++;
     }
-  }
+  });
 
-  // Se conseguiu sincronizar no banco, limpa armazenamento local
-  if (sincronizados > 0 && typeof window !== "undefined") {
+  await Promise.allSettled(promessas);
+
+  // Se concluiu a rodada nesta sessão, registra flag para não repetir desnecessariamente a cada navegação
+  if (typeof window !== "undefined") {
     try {
-      localStorage.removeItem("tisenai_avaliacoes_locais");
+      sessionStorage.setItem("tisenai_avaliacoes_sincronizadas", "true");
+      if (sincronizados > 0) {
+        localStorage.removeItem("tisenai_avaliacoes_locais");
+      }
     } catch {
       // ignore
     }

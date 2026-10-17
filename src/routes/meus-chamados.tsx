@@ -368,8 +368,23 @@ function MeusChamados() {
   const { session, sair, authPronto, regras, updateTicket } = useStore();
   const configMeus = { ...MEUS_CHAMADOS_PADRAO, ...(regras.meusChamados ?? {}) };
   const navigate = useNavigate();
-  const [rows, setRows] = useState<OwnTicket[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<OwnTicket[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = sessionStorage.getItem("tisenai_meus_chamados_cache");
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return !sessionStorage.getItem("tisenai_meus_chamados_cache");
+      } catch {}
+    }
+    return true;
+  });
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [atualizandoTicketId, setAtualizandoTicketId] = useState<number | null>(null);
   const [textoAtualizacao, setTextoAtualizacao] = useState<Record<number, string>>({});
@@ -454,14 +469,21 @@ function MeusChamados() {
       return;
     }
 
-    setLoading(true);
+    if (rows.length === 0) setLoading(true);
 
     try {
-      // 1. Tenta carregar pela função RPC get_my_tickets (segura, com todas as colunas e vinculação ampla)
+      // 1. Executa get_my_tickets e progresso público em paralelo absoluto
       let chamadosFinais: OwnTicket[] = [];
-      const { data: rpcData, error: rpcErr } = await supabase.rpc("get_my_tickets");
+      const [rpcResult, progressResult] = await Promise.allSettled([
+        supabase.rpc("get_my_tickets"),
+        supabase.rpc("public_ticket_sla_progress"),
+      ]);
 
-      if (!rpcErr && rpcData && rpcData.length > 0) {
+      const rpcVal = rpcResult.status === "fulfilled" ? rpcResult.value : null;
+      const rpcData = rpcVal?.data;
+      const rpcErr = rpcVal?.error;
+
+      if (!rpcErr && Array.isArray(rpcData)) {
         chamadosFinais = (rpcData as any[]).map((d: any) => ({
           ...d,
           email: d.solicitante_email,
@@ -473,7 +495,7 @@ function MeusChamados() {
           sla_segundos_pausados_acumulados: d.sla_segundos_pausados_acumulados || 0,
         }));
       } else {
-        // Fallback 1: Consulta direta na tabela tickets via RLS
+        // Fallback 1: Consulta direta na tabela tickets via RLS somente se RPC falhou
         const { data: dbData, error: dbErr } = await supabase
           .from("tickets")
           .select("id,aberto_em,hora,descricao,status,prioridade,solicitante,local,setor,procedimento,contato,solicitante_email,fechado_em,horario")
@@ -515,35 +537,37 @@ function MeusChamados() {
         }
       }
 
-      // 3. Atualiza os dados com o progresso público em tempo real (SLA, status, prioridade)
-      try {
-        const { data: publicProgress } = await supabase.rpc("public_ticket_sla_progress");
-        if (publicProgress && publicProgress.length > 0) {
-          const progressMap = new Map((publicProgress as any[]).map((p) => [p.id, p]));
+      // 2. Atualiza os dados com o progresso público já carregado em paralelo
+      const progVal = progressResult.status === "fulfilled" ? progressResult.value : null;
+      const publicProgress = progVal?.data;
+      if (publicProgress && Array.isArray(publicProgress) && publicProgress.length > 0) {
+        const progressMap = new Map((publicProgress as any[]).map((p) => [p.id, p]));
 
-          chamadosFinais = chamadosFinais.map((t) => {
-            const live = progressMap.get(t.id);
-            if (live) {
-              return {
-                ...t,
-                status: live.status || t.status,
-                prioridade: live.prioridade || t.prioridade,
-                aberto_em: live.aberto_em || t.aberto_em,
-                hora: live.hora || t.hora,
-                sla_pausado: Boolean(live.sla_pausado),
-                sla_pausado_em: live.sla_pausado_em || t.sla_pausado_em,
-                sla_pausa_motivo: live.sla_pausa_motivo || t.sla_pausa_motivo,
-                sla_segundos_pausados_acumulados: live.sla_segundos_pausados_acumulados || t.sla_segundos_pausados_acumulados,
-              };
-            }
-            return t;
-          });
-        }
-      } catch (rpcErr) {
-        console.warn("Aviso ao carregar progresso público:", rpcErr);
+        chamadosFinais = chamadosFinais.map((t) => {
+          const live = progressMap.get(t.id);
+          if (live) {
+            return {
+              ...t,
+              status: live.status || t.status,
+              prioridade: live.prioridade || t.prioridade,
+              aberto_em: live.aberto_em || t.aberto_em,
+              hora: live.hora || t.hora,
+              sla_pausado: Boolean(live.sla_pausado),
+              sla_pausado_em: live.sla_pausado_em || t.sla_pausado_em,
+              sla_pausa_motivo: live.sla_pausa_motivo || t.sla_pausa_motivo,
+              sla_segundos_pausados_acumulados: live.sla_segundos_pausados_acumulados || t.sla_segundos_pausados_acumulados,
+            };
+          }
+          return t;
+        });
       }
 
       setRows(chamadosFinais);
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem("tisenai_meus_chamados_cache", JSON.stringify(chamadosFinais));
+        } catch {}
+      }
     } catch (err) {
       console.error(err);
       toast.error("Não foi possível carregar todos os chamados.");

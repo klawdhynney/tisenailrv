@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -39,6 +39,7 @@ import {
   PARAMETROS_SLA_PADRAO,
   PARAMETROS_STATUS_PADRAO,
   PRIORIDADES,
+  REGRAS_PADRAO,
   type AtendimentoConfig,
   type ColunaLargura,
   type ColunaPlanilhaConfig,
@@ -79,8 +80,12 @@ export function PainelAtendimentoConfig({
 
   const configAtend: AtendimentoConfig = {
     ...ATENDIMENTO_PADRAO,
-    ...(regras.atendimento ?? {}),
+    ...(regras?.atendimento ?? {}),
   };
+
+  const expediente = regras?.expediente ?? REGRAS_PADRAO.expediente;
+  const prazos = regras?.prazos ?? REGRAS_PADRAO.prazos;
+  const diasAtivosPadrao = Array.isArray(expediente?.dias) ? expediente.dias : [1, 2, 3, 4, 5];
 
   const colunas: ColunaPlanilhaConfig[] =
     Array.isArray(configAtend.colunas) && configAtend.colunas.length > 0
@@ -127,15 +132,15 @@ export function PainelAtendimentoConfig({
     }
   };
 
-  const horariosPorDia = regras.expediente?.horariosPorDia ?? {};
+  const horariosPorDia = expediente?.horariosPorDia ?? {};
   const atualizarHorarioDia = (
     diaNum: number,
     dados: Partial<{ ativo: boolean; inicio: string; fim: string }>,
   ) => {
     const atual = horariosPorDia[diaNum] ?? {
-      ativo: regras.expediente.dias.includes(diaNum),
-      inicio: regras.expediente.inicio,
-      fim: regras.expediente.fim,
+      ativo: diasAtivosPadrao.includes(diaNum),
+      inicio: expediente?.inicio ?? "07:00",
+      fim: expediente?.fim ?? "17:00",
     };
     const novoDia = { ...atual, ...dados };
     const novoMap = { ...horariosPorDia, [diaNum]: novoDia };
@@ -146,7 +151,7 @@ export function PainelAtendimentoConfig({
 
     onChange({
       expediente: {
-        ...regras.expediente,
+        ...expediente,
         dias: novosDiasAtivos,
         horariosPorDia: novoMap,
       },
@@ -767,7 +772,7 @@ export function PainelAtendimentoConfig({
             <CardContent className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-4">
                 {PRIORIDADES.map((p) => {
-                  const valorAtual = regras.prazos[p] ?? 16;
+                  const valorAtual = prazos[p] ?? REGRAS_PADRAO.prazos[p] ?? 16;
                   return (
                     <div key={p} className="rounded-xl border border-border/80 p-3 bg-card shadow-2xs">
                       <span className="text-xs font-bold text-foreground block mb-1.5">{p}</span>
@@ -779,7 +784,7 @@ export function PainelAtendimentoConfig({
                           value={valorAtual}
                           onChange={(e) =>
                             onChange({
-                              prazos: { ...regras.prazos, [p]: Math.max(1, Number(e.target.value)) },
+                              prazos: { ...prazos, [p]: Math.max(1, Number(e.target.value)) },
                             })
                           }
                         />
@@ -844,10 +849,10 @@ export function PainelAtendimentoConfig({
                     <Input
                       type="time"
                       className="h-8 w-24 text-xs font-bold"
-                      value={regras.expediente.inicio}
+                      value={expediente?.inicio ?? "07:00"}
                       onChange={(e) =>
                         onChange({
-                          expediente: { ...regras.expediente, inicio: e.target.value },
+                          expediente: { ...expediente, inicio: e.target.value },
                         })
                       }
                     />
@@ -857,10 +862,10 @@ export function PainelAtendimentoConfig({
                     <Input
                       type="time"
                       className="h-8 w-24 text-xs font-bold"
-                      value={regras.expediente.fim}
+                      value={expediente?.fim ?? "17:00"}
                       onChange={(e) =>
                         onChange({
-                          expediente: { ...regras.expediente, fim: e.target.value },
+                          expediente: { ...expediente, fim: e.target.value },
                         })
                       }
                     />
@@ -871,9 +876,9 @@ export function PainelAtendimentoConfig({
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 {DIAS_SEMANA.map((dia) => {
                   const conf = horariosPorDia[dia.num] ?? {
-                    ativo: regras.expediente.dias.includes(dia.num),
-                    inicio: regras.expediente.inicio,
-                    fim: regras.expediente.fim,
+                    ativo: diasAtivosPadrao.includes(dia.num),
+                    inicio: expediente?.inicio ?? "07:00",
+                    fim: expediente?.fim ?? "17:00",
                   };
 
                   return (

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, memo } from "react";
 import { Eye, FileSpreadsheet, FileText, Headset, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -225,6 +225,14 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
     const dados = ticketsParaLinhasAtendimento(rows, undefined, regras);
     exportarPdf(dados, "Planilha_Atendimento_TI", "Central de Atendimento ao Usuário · Planilha de Chamados");
   };
+
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    if (!attendance) return;
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, [attendance]);
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -463,6 +471,8 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
                     ticket={t}
                     colunas={colunasVisiveis}
                     attendance={attendance}
+                    now={now}
+                    regras={regras}
                   />
                 ))}
                 {!visible.length && (
@@ -528,24 +538,19 @@ export function TicketSheet({ attendance = false }: TicketSheetProps) {
   );
 }
 
-function TicketRow({
+const TicketRow = memo(function TicketRow({
   ticket: t,
   colunas,
   attendance = false,
+  now,
+  regras,
 }: {
   ticket: Ticket;
   colunas: ColunaPlanilhaConfig[];
   attendance?: boolean;
+  now: Date;
+  regras: Regras;
 }) {
-  const { regras } = useStore();
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    if (!attendance) return;
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
-  }, [attendance]);
-
   const sla = calcularSla(t, regras, now);
   const atrasado = Boolean(sla.prazo && now > sla.prazo && !t.slaPausado);
   const restanteSeg = t.slaPausado
@@ -747,7 +752,7 @@ function TicketRow({
       })}
     </tr>
   );
-}
+});
 
 function TicketCard({ ticket: t, attendance = false }: { ticket: Ticket; attendance?: boolean }) {
   const { regras } = useStore();

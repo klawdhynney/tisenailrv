@@ -10,6 +10,13 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
     if (typeof window === "undefined") return;
 
+    // 1. Tenta recuperar sessão válida do cache local primeiro (instantâneo)
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData?.session?.user) {
+      return { user: sessionData.session.user };
+    }
+
+    // 2. Fallback com getUser se não houver sessão local
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
       throw redirect({
