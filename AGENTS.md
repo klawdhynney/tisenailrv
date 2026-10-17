@@ -20,6 +20,8 @@ As exportações de dashboard e planilha são geradas no navegador; dados detalh
 `useStore`/contexto ficam separados do `StoreProvider`, e utilitários em `types.ts`, para evitar tela em branco após atualizações.
 Temas `claro`, `pastel`, `escuro` usam `tema-ti` e classes exclusivas `.pastel`/`.dark` na raiz, para preservar a preferência e a paleta Google.
 O WhatsApp só abre resumo preenchido depois do registro; dados pessoais lembrados ficam apenas no navegador com consentimento, sem guardar descrições.
+Sempre ao inicializar ou no primeiro contato de qualquer atendimento, puxe o repositório atualizado do GitHub para a pasta local (`git pull origin main`) e garanta a sincronização antes de qualquer ação.
 Sempre que o usuário solicitar qualquer alteração, após validar o build (`bun run build`), faça o commit e o envio (`git push origin main`) para manter o repositório do GitHub e Lovable sincronizados automaticamente.
 Os e-mails de autenticação usam os seis modelos React Email e o handler gerenciado em `/lovable/email/auth/webhook`; preserve todos os tipos de ação e o acesso sem redirecionamento às rotas `/lovable/*` para que confirmações e recuperações continuem funcionando.
 Alertas por e-mail aos solicitantes usam a fila `alertas_email_fila`, disparados por triggers no banco e processados server-side por `src/lib/email-alertas/processor.server.ts` via provedor isolado `provider.server.ts`.
+
