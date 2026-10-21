@@ -1,5 +1,12 @@
 import type { Ticket, Regras } from "./types";
-import { extrairSetor, extrairLocal, obterRotuloStatus } from "./types";
+import {
+  extrairSetor,
+  extrairLocal,
+  obterRotuloStatus,
+  CORES_PRIORIDADE,
+  CORES_STATUS,
+  CORES_SLA,
+} from "./types";
 import { calcularSla, formatarData, formatarDataHora } from "./sla";
 
 export type LinhaExportacao = Record<string, string | number>;
@@ -809,6 +816,529 @@ export interface DashboardExportData {
   };
 }
 
+const CORES_GOOGLE_PALETA = [
+  "#1a73e8", // Google Blue
+  "#ea4335", // Google Red
+  "#f9ab00", // Google Yellow
+  "#34a853", // Google Green
+  "#a142f4", // Google Purple
+  "#24c1e0", // Google Cyan
+  "#fa7b17", // Google Orange
+  "#f439a0", // Google Pink
+];
+
+function obterCorItemGrafico(nome: string, index: number, tipoVisao: string): string {
+  if (nome === "Outros") return "#94A3B8";
+  if (tipoVisao === "sla") {
+    return CORES_SLA[nome]?.bg || CORES_GOOGLE_PALETA[index % CORES_GOOGLE_PALETA.length];
+  }
+  if (tipoVisao === "prioridades") {
+    return CORES_PRIORIDADE[nome]?.bg || CORES_GOOGLE_PALETA[index % CORES_GOOGLE_PALETA.length];
+  }
+  if (tipoVisao === "status") {
+    return CORES_STATUS[nome]?.bg || CORES_GOOGLE_PALETA[index % CORES_GOOGLE_PALETA.length];
+  }
+  return CORES_GOOGLE_PALETA[index % CORES_GOOGLE_PALETA.length];
+}
+
+function desenharCaminhoArredondado(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number | [number, number, number, number]
+) {
+  if (typeof ctx.roundRect === "function") {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+    return;
+  }
+  const rad = typeof r === "number" ? [r, r, r, r] : r;
+  ctx.beginPath();
+  ctx.moveTo(x + rad[0], y);
+  ctx.lineTo(x + w - rad[1], y);
+  ctx.arcTo(x + w, y, x + w, y + rad[1], rad[1]);
+  ctx.lineTo(x + w, y + h - rad[2]);
+  ctx.arcTo(x + w, y + h, x + w - rad[2], y + h, rad[2]);
+  ctx.lineTo(x + rad[3], y + h);
+  ctx.arcTo(x, y + h, x, y + h - rad[3], rad[3]);
+  ctx.lineTo(x, y + rad[0]);
+  ctx.arcTo(x, y, x + rad[0], y, rad[0]);
+  ctx.closePath();
+}
+
+/**
+ * Gera imagem de alta resolução com os gráficos da dimensão categórica:
+ * Rosca de Distribuição + Barras de Volume com percentuais + Card de Legenda com cores do site.
+ */
+function gerarGraficoCategoricoBase64(
+  itens: { name: string; value: number }[],
+  tipoVisao: "recorrentes" | "setores" | "prioridades" | "status" | "sla",
+  tituloCurto: string,
+  corHex: string
+): string | null {
+  if (typeof document === "undefined") return null;
+
+  const canvas = document.createElement("canvas");
+  const width = 1400;
+  const height = 440;
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  // Fundo principal do card (estilo container do site)
+  ctx.fillStyle = "#FFFFFF";
+  desenharCaminhoArredondado(ctx, 0, 0, width, height, 16);
+  ctx.fill();
+
+  ctx.strokeStyle = "#E2E8F0";
+  ctx.lineWidth = 1.5;
+  desenharCaminhoArredondado(ctx, 1, 1, width - 2, height - 2, 16);
+  ctx.stroke();
+
+  const totalVal = itens.reduce((s, x) => s + x.value, 0);
+
+  if (itens.length === 0 || totalVal === 0) {
+    ctx.fillStyle = "#64748B";
+    ctx.font = "bold 16px 'Helvetica Neue', Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Nenhum chamado registrado para esta dimensão no período.", width / 2, height / 2);
+    return canvas.toDataURL("image/png");
+  }
+
+  // Se houver mais que 6 itens, agrupa o excedente em "Outros"
+  const maxItensExibir = 6;
+  const itensProcessados: { name: string; value: number; cor: string; pct: number }[] = [];
+  if (itens.length <= maxItensExibir) {
+    itens.forEach((it, idx) => {
+      itensProcessados.push({
+        name: it.name,
+        value: it.value,
+        cor: obterCorItemGrafico(it.name, idx, tipoVisao),
+        pct: totalVal > 0 ? (it.value / totalVal) * 100 : 0,
+      });
+    });
+  } else {
+    const top = itens.slice(0, maxItensExibir - 1);
+    const resto = itens.slice(maxItensExibir - 1);
+    const somaResto = resto.reduce((s, x) => s + x.value, 0);
+
+    top.forEach((it, idx) => {
+      itensProcessados.push({
+        name: it.name,
+        value: it.value,
+        cor: obterCorItemGrafico(it.name, idx, tipoVisao),
+        pct: totalVal > 0 ? (it.value / totalVal) * 100 : 0,
+      });
+    });
+
+    if (somaResto > 0) {
+      itensProcessados.push({
+        name: "Outros",
+        value: somaResto,
+        cor: "#94A3B8",
+        pct: totalVal > 0 ? (somaResto / totalVal) * 100 : 0,
+      });
+    }
+  }
+
+  // =========================================================================
+  // COLUNA 1: DISTRIBUIÇÃO (GRÁFICO DE ROSCA / DONUT CHART) - x: 20 a 380
+  // =========================================================================
+  ctx.fillStyle = corHex;
+  ctx.beginPath();
+  ctx.arc(42, 38, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = corHex;
+  ctx.font = "bold 13px 'Helvetica Neue', Arial, sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText("DISTRIBUIÇÃO POR " + tituloCurto.toUpperCase(), 54, 38);
+
+  const cx = 195;
+  const cy = 245;
+  const outerR = 135;
+  const innerR = 62;
+
+  let startAngle = -Math.PI / 2;
+  itensProcessados.forEach((it) => {
+    const sliceAngle = (it.value / totalVal) * Math.PI * 2;
+    const endAngle = startAngle + sliceAngle;
+
+    ctx.fillStyle = it.cor;
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, startAngle, endAngle, false);
+    ctx.arc(cx, cy, innerR, endAngle, startAngle, true);
+    ctx.closePath();
+    ctx.fill();
+
+    // Separador sutil branco entre fatias
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Rótulo de porcentagem nas fatias maiores ou iguais a 5%
+    if (it.pct >= 5) {
+      const midAngle = startAngle + sliceAngle / 2;
+      const labelR = (outerR + innerR) / 2;
+      const lx = cx + labelR * Math.cos(midAngle);
+      const ly = cy + labelR * Math.sin(midAngle);
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "900 12px 'Helvetica Neue', Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`${Math.round(it.pct)}%`, lx, ly);
+    }
+
+    startAngle = endAngle;
+  });
+
+  // Centro do Donut
+  ctx.fillStyle = "#FFFFFF";
+  ctx.beginPath();
+  ctx.arc(cx, cy, innerR - 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#0F172A";
+  ctx.font = "900 30px 'Helvetica Neue', Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(String(totalVal), cx, cy - 7);
+
+  ctx.fillStyle = "#64748B";
+  ctx.font = "bold 10px 'Helvetica Neue', Arial, sans-serif";
+  ctx.fillText("TOTAL", cx, cy + 16);
+
+  // Divisória vertical suave entre coluna 1 e coluna 2
+  ctx.strokeStyle = "#F1F5F9";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(385, 25);
+  ctx.lineTo(385, height - 25);
+  ctx.stroke();
+
+  // =========================================================================
+  // COLUNA 2: VOLUME (GRÁFICO DE BARRAS HORIZONTAIS) - x: 405 a 970
+  // =========================================================================
+  ctx.fillStyle = corHex;
+  ctx.font = "bold 13px 'Helvetica Neue', Arial, sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText("VOLUME POR " + tituloCurto.toUpperCase(), 410, 32);
+
+  ctx.fillStyle = "#64748B";
+  ctx.font = "11px 'Helvetica Neue', Arial, sans-serif";
+  ctx.fillText("Comparativo quantitativo e proporção dos registros", 410, 50);
+
+  const numRows = itensProcessados.length;
+  const barAreaTop = 75;
+  const barAreaHeight = height - barAreaTop - 25;
+  const rowHeight = barAreaHeight / numRows;
+  const maxVal = Math.max(...itensProcessados.map((it) => it.value), 1);
+
+  const barTrackStartX = 575;
+  const barTrackWidth = 270;
+
+  // Linhas de grade verticais sutis
+  [0.25, 0.5, 0.75, 1.0].forEach((ratio) => {
+    const gridX = barTrackStartX + barTrackWidth * ratio;
+    ctx.strokeStyle = "#F1F5F9";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(gridX, barAreaTop);
+    ctx.lineTo(gridX, barAreaTop + barAreaHeight);
+    ctx.stroke();
+  });
+
+  itensProcessados.forEach((it, idx) => {
+    const rowY = barAreaTop + idx * rowHeight;
+    const barHeight = Math.min(22, rowHeight * 0.6);
+    const barY = rowY + (rowHeight - barHeight) / 2;
+
+    // Nome na esquerda
+    ctx.fillStyle = "#1E293B";
+    ctx.font = "bold 12.5px 'Helvetica Neue', Arial, sans-serif";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    const nomeTruncado = it.name.length > 20 ? it.name.slice(0, 19) + "…" : it.name;
+    ctx.fillText(nomeTruncado, barTrackStartX - 14, barY + barHeight / 2);
+
+    // Track de fundo da barra
+    ctx.fillStyle = "#F1F5F9";
+    desenharCaminhoArredondado(ctx, barTrackStartX, barY, barTrackWidth, barHeight, 5);
+    ctx.fill();
+
+    // Barra preenchida
+    const fillWidth = Math.max(8, (it.value / maxVal) * barTrackWidth);
+    ctx.fillStyle = it.cor;
+    desenharCaminhoArredondado(ctx, barTrackStartX, barY, fillWidth, barHeight, [0, 5, 5, 0]);
+    ctx.fill();
+
+    // Rótulo de contagem e porcentagem ao lado direito da barra: "10 (33.3%)"
+    ctx.fillStyle = "#0F172A";
+    ctx.font = "bold 12px 'Helvetica Neue', Arial, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${it.value} (${it.pct.toFixed(1)}%)`, barTrackStartX + fillWidth + 10, barY + barHeight / 2);
+  });
+
+  // =========================================================================
+  // COLUNA 3: LEGENDA (CARD DE LEGENDA DO SITE) - x: 990 a 1375
+  // =========================================================================
+  const cardLegendaX = 990;
+  const cardLegendaY = 20;
+  const cardLegendaW = 385;
+  const cardLegendaH = height - 40;
+
+  ctx.fillStyle = "#F8FAFC";
+  desenharCaminhoArredondado(ctx, cardLegendaX, cardLegendaY, cardLegendaW, cardLegendaH, 14);
+  ctx.fill();
+
+  ctx.strokeStyle = "#E2E8F0";
+  ctx.lineWidth = 1.2;
+  desenharCaminhoArredondado(ctx, cardLegendaX, cardLegendaY, cardLegendaW, cardLegendaH, 14);
+  ctx.stroke();
+
+  // Cabeçalho da Legenda: "LEGENDA" e "X chamados"
+  ctx.fillStyle = "#1A73E8";
+  ctx.font = "900 12px 'Helvetica Neue', Arial, sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText("LEGENDA", cardLegendaX + 16, cardLegendaY + 22);
+
+  ctx.fillStyle = "#64748B";
+  ctx.font = "bold 11px monospace, Courier, sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText(`${totalVal} chamados`, cardLegendaX + cardLegendaW - 16, cardLegendaY + 22);
+
+  // Linha separadora do cabeçalho da legenda
+  ctx.strokeStyle = "#E2E8F0";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cardLegendaX + 14, cardLegendaY + 40);
+  ctx.lineTo(cardLegendaX + cardLegendaW - 14, cardLegendaY + 40);
+  ctx.stroke();
+
+  // Lista de Itens da Legenda
+  const legListTop = cardLegendaY + 46;
+  const legListHeight = cardLegendaH - 52;
+  const legRowHeight = legListHeight / numRows;
+
+  itensProcessados.forEach((it, idx) => {
+    const itemCenterY = legListTop + idx * legRowHeight + legRowHeight / 2;
+
+    // Dot circular colorido
+    ctx.fillStyle = it.cor;
+    ctx.beginPath();
+    ctx.arc(cardLegendaX + 22, itemCenterY, 5.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Nome do item na legenda
+    ctx.fillStyle = "#1E293B";
+    ctx.font = "bold 12px 'Helvetica Neue', Arial, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    const nomeLeg = it.name.length > 18 ? it.name.slice(0, 17) + "…" : it.name;
+    ctx.fillText(nomeLeg, cardLegendaX + 36, itemCenterY);
+
+    // Contagem e porcentagem: "10 (33.3%)" alinhados à direita
+    ctx.fillStyle = "#0F172A";
+    ctx.font = "bold 11.5px monospace, Courier, sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(`${it.value} (${it.pct.toFixed(1)}%)`, cardLegendaX + cardLegendaW - 16, itemCenterY);
+  });
+
+  return canvas.toDataURL("image/png");
+}
+
+/**
+ * Gera imagem de alta resolução com a curva da Série Histórica (evolução temporal mês a mês).
+ */
+function gerarGraficoHistoricoBase64(
+  serie: {
+    mes: string;
+    label: string;
+    total: number;
+    resolvidos: number;
+    emAtendimento: number;
+    taxa: string;
+  }[]
+): string | null {
+  if (typeof document === "undefined") return null;
+
+  const canvas = document.createElement("canvas");
+  const width = 1400;
+  const height = 440;
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  // Fundo principal do card
+  ctx.fillStyle = "#FFFFFF";
+  desenharCaminhoArredondado(ctx, 0, 0, width, height, 16);
+  ctx.fill();
+
+  ctx.strokeStyle = "#E2E8F0";
+  ctx.lineWidth = 1.5;
+  desenharCaminhoArredondado(ctx, 1, 1, width - 2, height - 2, 16);
+  ctx.stroke();
+
+  if (serie.length === 0) {
+    ctx.fillStyle = "#64748B";
+    ctx.font = "bold 16px 'Helvetica Neue', Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Nenhum dado histórico registrado.", width / 2, height / 2);
+    return canvas.toDataURL("image/png");
+  }
+
+  // Cabeçalho da Série Histórica
+  ctx.fillStyle = "#7C3AED";
+  ctx.font = "bold 13px 'Helvetica Neue', Arial, sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText("SÉRIE HISTÓRICA CONTÍNUA (EVOLUÇÃO TEMPORAL)", 35, 32);
+
+  ctx.fillStyle = "#64748B";
+  ctx.font = "11px 'Helvetica Neue', Arial, sans-serif";
+  ctx.fillText("Evolução mês a mês dos chamados registrados, resolvidos e em andamento", 35, 50);
+
+  // Legenda no canto superior direito
+  const legendas = [
+    { label: "Total de Chamados", cor: "#1A73E8" },
+    { label: "Finalizados", cor: "#34A853" },
+    { label: "Em Atendimento", cor: "#F9AB00" },
+  ];
+  let legX = width - 40;
+  ctx.textAlign = "right";
+  legendas.reverse().forEach((leg) => {
+    ctx.font = "bold 11px 'Helvetica Neue', Arial, sans-serif";
+    ctx.fillStyle = "#334155";
+    ctx.fillText(leg.label, legX, 40);
+    const textWidth = ctx.measureText(leg.label).width;
+
+    ctx.fillStyle = leg.cor;
+    ctx.beginPath();
+    ctx.arc(legX - textWidth - 10, 40, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    legX -= textWidth + 30;
+  });
+
+  // Área do gráfico
+  const padLeft = 70;
+  const padRight = 50;
+  const padTop = 80;
+  const padBottom = 55;
+  const chartW = width - padLeft - padRight;
+  const chartH = height - padTop - padBottom;
+
+  const maxVal = Math.max(...serie.map((s) => Math.max(s.total, s.resolvidos, s.emAtendimento)), 5);
+  const maxTeto = Math.ceil(maxVal / 5) * 5;
+
+  // Linhas de grade horizontais e números no eixo Y
+  const gridSteps = 4;
+  for (let i = 0; i <= gridSteps; i++) {
+    const valStep = Math.round((maxTeto / gridSteps) * (gridSteps - i));
+    const gridY = padTop + (chartH / gridSteps) * i;
+
+    ctx.strokeStyle = "#F1F5F9";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(padLeft, gridY);
+    ctx.lineTo(padLeft + chartW, gridY);
+    ctx.stroke();
+
+    ctx.fillStyle = "#64748B";
+    ctx.font = "bold 11px monospace, Courier, sans-serif";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(valStep), padLeft - 12, gridY);
+  }
+
+  const obterPonto = (idx: number, valor: number) => {
+    const x = serie.length === 1 ? padLeft + chartW / 2 : padLeft + (idx / (serie.length - 1)) * chartW;
+    const y = padTop + chartH - (valor / maxTeto) * chartH;
+    return { x, y };
+  };
+
+  const desenharSerie = (chave: "total" | "resolvidos" | "emAtendimento", cor: string, gradienteCor: string) => {
+    const pontos = serie.map((s, idx) => obterPonto(idx, s[chave]));
+
+    // Preenchimento de área sob a curva
+    const grad = ctx.createLinearGradient(0, padTop, 0, padTop + chartH);
+    grad.addColorStop(0, gradienteCor);
+    grad.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(pontos[0].x, padTop + chartH);
+    ctx.lineTo(pontos[0].x, pontos[0].y);
+    for (let i = 1; i < pontos.length; i++) {
+      ctx.lineTo(pontos[i].x, pontos[i].y);
+    }
+    ctx.lineTo(pontos[pontos.length - 1].x, padTop + chartH);
+    ctx.closePath();
+    ctx.fill();
+
+    // Linha principal da série
+    ctx.strokeStyle = cor;
+    ctx.lineWidth = chave === "total" ? 3.8 : 2.8;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(pontos[0].x, pontos[0].y);
+    for (let i = 1; i < pontos.length; i++) {
+      ctx.lineTo(pontos[i].x, pontos[i].y);
+    }
+    ctx.stroke();
+
+    // Pontos (círculos com centro branco e borda colorida)
+    pontos.forEach((p, idx) => {
+      ctx.fillStyle = "#FFFFFF";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = cor;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      if (chave === "total") {
+        ctx.fillStyle = "#0F172A";
+        ctx.font = "900 12px 'Helvetica Neue', Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(String(serie[idx].total), p.x, p.y - 8);
+      }
+    });
+  };
+
+  desenharSerie("emAtendimento", "#F9AB00", "rgba(249, 171, 0, 0.22)");
+  desenharSerie("resolvidos", "#34A853", "rgba(52, 168, 83, 0.25)");
+  desenharSerie("total", "#1A73E8", "rgba(26, 115, 232, 0.32)");
+
+  // Rótulos dos meses no eixo X
+  serie.forEach((s, idx) => {
+    const p = obterPonto(idx, 0);
+    ctx.fillStyle = "#475569";
+    ctx.font = "bold 11.5px 'Helvetica Neue', Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(s.label, p.x, padTop + chartH + 12);
+  });
+
+  return canvas.toDataURL("image/png");
+}
+
 export async function exportarDashboardCompletoPdf(dados: DashboardExportData, nome: string) {
   const [{ jsPDF }, autoTableModule] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -1012,21 +1542,28 @@ export async function exportarDashboardCompletoPdf(dados: DashboardExportData, n
     currentY = (doc.lastAutoTable?.finalY ?? currentY + 30) + 9;
   }
 
-  // Função auxiliar para seções analíticas categóricas
+  // Função auxiliar para seções analíticas categóricas com inclusão do gráfico visual e tabela detalhada
   const criarSecaoCategorica = (
     titulo: string,
     itens: { name: string; value: number }[],
     corHeader: [number, number, number],
+    tipoVisao: "recorrentes" | "setores" | "prioridades" | "status" | "sla",
+    tituloCurto: string,
+    corHex: string,
   ) => {
     const totalSecao = itens.reduce((s, x) => s + x.value, 0);
-    const body = itens.length === 0
-      ? [["Nenhum registro para o período", "0", "0%"]]
-      : itens.map((it) => {
-          const pct = totalSecao > 0 ? `${((it.value / totalSecao) * 100).toFixed(1)}%` : "0%";
-          return [it.name, String(it.value), pct];
-        });
+    const body =
+      itens.length === 0
+        ? [["Nenhum registro para o período", "0", "0%"]]
+        : itens.map((it) => {
+            const pct = totalSecao > 0 ? `${((it.value / totalSecao) * 100).toFixed(1)}%` : "0%";
+            return [it.name, String(it.value), pct];
+          });
 
-    if (currentY > 215) {
+    const chartHeightMm = 58;
+
+    // Se o título + gráfico não couberem na página atual, abre nova página
+    if (currentY + chartHeightMm + 24 > 275) {
       doc.addPage();
       desenharBannerTopo();
       currentY = 30;
@@ -1036,7 +1573,25 @@ export async function exportarDashboardCompletoPdf(dados: DashboardExportData, n
     doc.setFontSize(11.5);
     doc.setTextColor(corHeader[0], corHeader[1], corHeader[2]);
     doc.text(titulo, 14, currentY);
-    currentY += 2.5;
+    currentY += 4;
+
+    // Renderiza o gráfico visual com Rosca de Distribuição, Barras de Volume e Legenda do site
+    try {
+      const chartImg = gerarGraficoCategoricoBase64(itens, tipoVisao, tituloCurto, corHex);
+      if (chartImg) {
+        doc.addImage(chartImg, "PNG", 14, currentY, 182, chartHeightMm);
+        currentY += chartHeightMm + 5;
+      }
+    } catch (err) {
+      console.error("Erro ao desenhar gráfico no PDF:", err);
+    }
+
+    // Se a tabela não couber após o gráfico, move para a próxima página
+    if (currentY > 260) {
+      doc.addPage();
+      desenharBannerTopo();
+      currentY = 30;
+    }
 
     autoTable(doc, {
       startY: currentY,
@@ -1068,19 +1623,55 @@ export async function exportarDashboardCompletoPdf(dados: DashboardExportData, n
     });
 
     // @ts-expect-error autoTable attaches lastAutoTable
-    currentY = (doc.lastAutoTable?.finalY ?? currentY + 30) + 8;
+    currentY = (doc.lastAutoTable?.finalY ?? currentY + 30) + 9;
   };
 
-  // 3. ANÁLISE CATEGÓRICA MULTIDIMENSIONAL
-  criarSecaoCategorica("3. Chamados Recorrentes (Categorias / Motivos)", dados.recorrentes, [26, 115, 232]);
-  criarSecaoCategorica("4. Chamados por Setores Solicitantes", dados.setores, [234, 67, 53]);
-  criarSecaoCategorica("5. Prioridades dos Chamados", dados.prioridades, [249, 171, 0]);
-  criarSecaoCategorica("6. Status dos Chamados", dados.status, [52, 168, 83]);
-  criarSecaoCategorica("7. SLA / Prazos dos Chamados", dados.sla, [161, 66, 244]);
+  // 3. ANÁLISE CATEGÓRICA MULTIDIMENSIONAL COM TODOS OS GRÁFICOS DO SITE
+  criarSecaoCategorica(
+    "3. Chamados Recorrentes (Categorias / Motivos)",
+    dados.recorrentes,
+    [26, 115, 232],
+    "recorrentes",
+    "Categoria",
+    "#1a73e8",
+  );
+  criarSecaoCategorica(
+    "4. Chamados por Setores Solicitantes",
+    dados.setores,
+    [234, 67, 53],
+    "setores",
+    "Setor",
+    "#ea4335",
+  );
+  criarSecaoCategorica(
+    "5. Prioridades dos Chamados",
+    dados.prioridades,
+    [249, 171, 0],
+    "prioridades",
+    "Prioridade",
+    "#f9ab00",
+  );
+  criarSecaoCategorica(
+    "6. Status dos Chamados",
+    dados.status,
+    [52, 168, 83],
+    "status",
+    "Status",
+    "#34a853",
+  );
+  criarSecaoCategorica(
+    "7. SLA / Prazos dos Chamados",
+    dados.sla,
+    [161, 66, 244],
+    "sla",
+    "SLA",
+    "#a142f4",
+  );
 
   // 4. SÉRIE HISTÓRICA (EVOLUÇÃO TEMPORAL MÊS A MÊS)
   if (dados.serieHistorica && dados.serieHistorica.length > 0) {
-    if (currentY > 190) {
+    const histChartHeightMm = 60;
+    if (currentY + histChartHeightMm + 24 > 275) {
       doc.addPage();
       desenharBannerTopo();
       currentY = 30;
@@ -1090,7 +1681,17 @@ export async function exportarDashboardCompletoPdf(dados: DashboardExportData, n
     doc.setFontSize(12);
     doc.setTextColor(124, 58, 237);
     doc.text("8. Série Histórica de Chamados (Evolução Temporal)", 14, currentY);
-    currentY += 3;
+    currentY += 4;
+
+    try {
+      const histChartImg = gerarGraficoHistoricoBase64(dados.serieHistorica);
+      if (histChartImg) {
+        doc.addImage(histChartImg, "PNG", 14, currentY, 182, histChartHeightMm);
+        currentY += histChartHeightMm + 5;
+      }
+    } catch (err) {
+      console.error("Erro ao desenhar gráfico da série histórica no PDF:", err);
+    }
 
     // Resumo executivo da série histórica
     const totalHistorico = dados.serieHistorica.reduce((acc, it) => acc + it.total, 0);
