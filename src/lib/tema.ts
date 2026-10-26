@@ -6,7 +6,77 @@
  */
 
 export type ModoTema = "claro" | "escuro" | "auto";
-export type PaletaId = "padrao" | "big-tech" | "interstellar" | "personalizada";
+export type PaletaId = "padrao" | "big-tech" | "interstellar" | "liquid-glass" | "personalizada";
+
+export interface LiquidGlassConfig {
+  intensidade: number; // 0 a 100, padrão 60
+  desfoque: number; // 0 a 32 px, padrão 16
+  brilhoBorda: number; // 0 a 100, padrão 70
+  movimentoFundo: boolean; // padrão true
+  refracao: boolean; // padrão false (desligada em celular)
+  modoEconomicoAuto: boolean; // padrão true
+}
+
+export const LIQUID_GLASS_CONFIG_PADRAO: LiquidGlassConfig = {
+  intensidade: 60,
+  desfoque: 16,
+  brilhoBorda: 70,
+  movimentoFundo: true,
+  refracao: false,
+  modoEconomicoAuto: true,
+};
+
+export function validarLiquidGlassConfig(config?: Partial<LiquidGlassConfig> | null): LiquidGlassConfig {
+  if (!config || typeof config !== "object") {
+    return { ...LIQUID_GLASS_CONFIG_PADRAO };
+  }
+  const clamp = (val: any, min: number, max: number, fallback: number) => {
+    const num = Number(val);
+    return isNaN(num) ? fallback : Math.max(min, Math.min(max, num));
+  };
+  return {
+    intensidade: clamp(config.intensidade, 0, 100, 60),
+    desfoque: clamp(config.desfoque, 0, 32, 16),
+    brilhoBorda: clamp(config.brilhoBorda, 0, 100, 70),
+    movimentoFundo: config.movimentoFundo !== false,
+    refracao: Boolean(config.refracao),
+    modoEconomicoAuto: config.modoEconomicoAuto !== false,
+  };
+}
+
+/**
+ * Detecta se o dispositivo necessita de Modo Econômico automático:
+ * Baixo hardware (<= 4 núcleos ou <= 4GB RAM), economia de dados ativa,
+ * prefers-reduced-motion, prefers-reduced-transparency, forced-colors ou prefers-contrast.
+ */
+export function detectarModoEconomico(modoEconomicoAutoAtivo: boolean = true): boolean {
+  if (typeof window === "undefined") return false;
+  if (!modoEconomicoAutoAtivo) return false;
+
+  try {
+    const prefereReduzirMovimento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const prefereReduzirTransparencia = window.matchMedia?.("(prefers-reduced-transparency: reduce)").matches;
+    const prefereMaisContraste = window.matchMedia?.("(prefers-contrast: more)").matches;
+    const forcedColors = window.matchMedia?.("(forced-colors: active)").matches;
+    if (prefereReduzirMovimento || prefereReduzirTransparencia || prefereMaisContraste || forcedColors) {
+      return true;
+    }
+  } catch {}
+
+  try {
+    const nav = navigator as any;
+    if (nav?.connection?.saveData === true) {
+      return true;
+    }
+    const cores = nav?.hardwareConcurrency;
+    const memory = nav?.deviceMemory;
+    if ((cores && cores <= 4) || (memory && memory <= 4)) {
+      return true;
+    }
+  } catch {}
+
+  return false;
+}
 
 export interface PaletaPersonalizadaConfig {
   corPrimaria: string;
@@ -20,6 +90,7 @@ export interface TemaConfig {
   modoPadrao: ModoTema;
   paletaAtiva: PaletaId;
   paletaPersonalizada: PaletaPersonalizadaConfig;
+  liquidGlass?: LiquidGlassConfig;
 }
 
 export const PALETA_PERSONALIZADA_PADRAO: PaletaPersonalizadaConfig = {
@@ -34,6 +105,7 @@ export const TEMA_CONFIG_PADRAO: TemaConfig = {
   modoPadrao: "auto",
   paletaAtiva: "padrao",
   paletaPersonalizada: PALETA_PERSONALIZADA_PADRAO,
+  liquidGlass: LIQUID_GLASS_CONFIG_PADRAO,
 };
 
 // ==========================================
@@ -580,6 +652,66 @@ export const PALETAS: Record<Exclude<PaletaId, "personalizada">, PaletaInfo> = {
       },
     },
   },
+
+  "liquid-glass": {
+    id: "liquid-glass",
+    nome: "Liquid Glass",
+    descricao: "Estilo Apple: vidro translúcido com efeito líquido, fundo vivo em movimento lento, reflexos sutis e acabamento aero/glass premium.",
+    destaqueClaro: {
+      fundo: "#F5F3F4", // Signal
+      card: "rgba(255, 255, 255, 0.70)",
+      texto: "#0F172A",
+      primaria: "#0284C7",
+      sucesso: "#0D9488",
+      alerta: "#D97706",
+      perigo: "#E11D48",
+      borda: "rgba(255, 255, 255, 0.60)",
+    },
+    destaqueEscuro: {
+      fundo: "#0B132B", // Space
+      card: "rgba(28, 37, 65, 0.65)", // Orbit translúcido
+      texto: "#F8FAFC",
+      primaria: "#38BDF8", // Cyan Ice vibrante
+      sucesso: "#34D399",
+      alerta: "#FBBF24",
+      perigo: "#F87171",
+      borda: "rgba(205, 231, 240, 0.25)",
+    },
+    coresGraficoClaro: [
+      "#0284C7", // Cyan/Sky
+      "#0D9488", // Emerald
+      "#D97706", // Amber
+      "#E11D48", // Rose
+      "#6366F1", // Indigo
+      "#0891B2", // Cyan Ice
+      "#2563EB", // Blue
+      "#059669", // Mint
+    ],
+    coresGraficoEscuro: [
+      "#38BDF8", // Bright Sky
+      "#34D399", // Emerald Light
+      "#FBBF24", // Amber Light
+      "#F87171", // Rose Light
+      "#818CF8", // Indigo Light
+      "#22D3EE", // Cyan Glow
+      "#60A5FA", // Blue Light
+      "#4ADE80", // Green Glow
+    ],
+    serieHistorica: {
+      claro: {
+        gradienteOceano: ["#38BDF8", "#0284C7", "#0C4A6E"],
+        linha: "#0284C7",
+        resolvidos: "#0D9488",
+        emAtendimento: "#D97706",
+      },
+      escuro: {
+        gradienteOceano: ["#7DD3FC", "#0284C7", "#0B132B"],
+        linha: "#38BDF8",
+        resolvidos: "#34D399",
+        emAtendimento: "#FBBF24",
+      },
+    },
+  },
 };
 
 /**
@@ -684,6 +816,7 @@ export interface AplicarTemaParams {
   modo: ModoTema;
   paleta: PaletaId;
   custom?: PaletaPersonalizadaConfig;
+  liquidGlass?: LiquidGlassConfig;
   coresBotoes?: CoresBotoesPorTemaConfig;
   coresSite?: CoresSiteConfig;
 }
@@ -877,6 +1010,7 @@ export function aplicarTemaNoDocumento({
   modo,
   paleta,
   custom,
+  liquidGlass,
   coresBotoes,
   coresSite,
 }: AplicarTemaParams): boolean {
@@ -916,7 +1050,93 @@ export function aplicarTemaNoDocumento({
 
   root.style.setProperty("--ring", cores.primaria);
 
-  if (paleta === "personalizada" || paleta === "interstellar" || paleta === "big-tech") {
+  if (paleta === "liquid-glass") {
+    // Carrega configuração de Liquid Glass ou usa cache
+    let lgConfig = liquidGlass;
+    if (!lgConfig) {
+      try {
+        const cached = localStorage.getItem("tema-ti-liquid-glass");
+        if (cached) lgConfig = JSON.parse(cached);
+      } catch {}
+    }
+    const cfg = validarLiquidGlassConfig(lgConfig);
+    const ehEconomico = detectarModoEconomico(cfg.modoEconomicoAuto);
+    const isMobile = typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(max-width: 768px)").matches : false;
+
+    root.setAttribute("data-modo-economico", ehEconomico ? "true" : "false");
+    root.setAttribute("data-liquid-motion", cfg.movimentoFundo && !ehEconomico ? "true" : "false");
+    root.setAttribute("data-liquid-refraction", cfg.refracao && !isMobile && !ehEconomico ? "true" : "false");
+
+    const intFator = cfg.intensidade / 100;
+    const blurVal = ehEconomico ? Math.min(cfg.desfoque, 4) : cfg.desfoque;
+    const satVal = ehEconomico ? 110 : 185;
+    const bordaVal = cfg.brilhoBorda / 100;
+
+    if (isDark) {
+      const cardAlpha = ehEconomico ? 0.94 : (0.45 + (1 - intFator) * 0.40);
+      const borderAlpha = bordaVal * 0.35;
+      const bordaLuz = `rgba(205, 231, 240, ${borderAlpha.toFixed(3)})`;
+      const cardGlassBg = `rgba(28, 37, 65, ${cardAlpha.toFixed(3)})`;
+      const cardOpaqueBg = `rgba(15, 23, 42, 0.95)`;
+
+      root.style.setProperty("--glass-bg", cardGlassBg);
+      root.style.setProperty("--glass-opaque-bg", cardOpaqueBg);
+      root.style.setProperty("--glass-border", bordaLuz);
+      root.style.setProperty("--glass-blur", `${blurVal}px`);
+      root.style.setProperty("--glass-saturate", `${satVal}%`);
+      root.style.setProperty("--glass-highlight", `linear-gradient(135deg, rgba(205, 231, 240, ${(bordaVal * 0.45).toFixed(3)}) 0%, rgba(205, 231, 240, 0.02) 100%)`);
+      root.style.setProperty("--glass-shadow", `0 8px 32px 0 rgba(0, 0, 0, 0.45), 0 2px 10px 0 rgba(0, 0, 0, 0.3), inset 0 1px 1px 0 rgba(205, 231, 240, ${(borderAlpha * 1.2).toFixed(3)})`);
+
+      root.style.setProperty("--background", "#0B132B");
+      root.style.setProperty("--foreground", "#F8FAFC");
+      root.style.setProperty("--card", cardGlassBg);
+      root.style.setProperty("--card-foreground", "#F8FAFC");
+      root.style.setProperty("--popover", cardGlassBg);
+      root.style.setProperty("--popover-foreground", "#F8FAFC");
+      root.style.setProperty("--border", bordaLuz);
+      root.style.setProperty("--input", "rgba(28, 37, 65, 0.92)");
+      root.style.setProperty("--ring", "#38BDF8");
+    } else {
+      const cardAlpha = ehEconomico ? 0.94 : (0.50 + (1 - intFator) * 0.38);
+      const borderAlpha = bordaVal * 0.65;
+      const bordaLuz = `rgba(255, 255, 255, ${borderAlpha.toFixed(3)})`;
+      const cardGlassBg = `rgba(255, 255, 255, ${cardAlpha.toFixed(3)})`;
+      const cardOpaqueBg = `rgba(255, 255, 255, 0.95)`;
+
+      root.style.setProperty("--glass-bg", cardGlassBg);
+      root.style.setProperty("--glass-opaque-bg", cardOpaqueBg);
+      root.style.setProperty("--glass-border", bordaLuz);
+      root.style.setProperty("--glass-blur", `${blurVal}px`);
+      root.style.setProperty("--glass-saturate", `${satVal}%`);
+      root.style.setProperty("--glass-highlight", `linear-gradient(135deg, rgba(255, 255, 255, ${(bordaVal * 0.75).toFixed(3)}) 0%, rgba(255, 255, 255, 0.05) 100%)`);
+      root.style.setProperty("--glass-shadow", `0 8px 32px 0 rgba(15, 23, 42, 0.08), 0 2px 8px 0 rgba(0, 0, 0, 0.04), inset 0 1px 1px 0 rgba(255, 255, 255, ${(borderAlpha * 1.3).toFixed(3)})`);
+
+      root.style.setProperty("--background", "#F5F3F4");
+      root.style.setProperty("--foreground", "#0F172A");
+      root.style.setProperty("--card", cardGlassBg);
+      root.style.setProperty("--card-foreground", "#0F172A");
+      root.style.setProperty("--popover", cardGlassBg);
+      root.style.setProperty("--popover-foreground", "#0F172A");
+      root.style.setProperty("--border", "rgba(226, 232, 240, 0.75)");
+      root.style.setProperty("--input", "rgba(255, 255, 255, 0.92)");
+      root.style.setProperty("--ring", "#0284C7");
+    }
+
+    try {
+      localStorage.setItem("tema-ti-liquid-glass", JSON.stringify(cfg));
+    } catch {}
+  } else if (paleta === "personalizada" || paleta === "interstellar" || paleta === "big-tech") {
+    root.removeAttribute("data-modo-economico");
+    root.removeAttribute("data-liquid-motion");
+    root.removeAttribute("data-liquid-refraction");
+    root.style.removeProperty("--glass-bg");
+    root.style.removeProperty("--glass-opaque-bg");
+    root.style.removeProperty("--glass-border");
+    root.style.removeProperty("--glass-blur");
+    root.style.removeProperty("--glass-saturate");
+    root.style.removeProperty("--glass-highlight");
+    root.style.removeProperty("--glass-shadow");
+
     root.style.setProperty("--background", cores.fundo);
     root.style.setProperty("--card", cores.card);
     root.style.setProperty("--popover", cores.card);
@@ -927,6 +1147,17 @@ export function aplicarTemaNoDocumento({
     root.style.setProperty("--input", cores.borda);
   } else {
     // Na paleta padrão, remove overrides para permitir as definições de oklch do styles.css
+    root.removeAttribute("data-modo-economico");
+    root.removeAttribute("data-liquid-motion");
+    root.removeAttribute("data-liquid-refraction");
+    root.style.removeProperty("--glass-bg");
+    root.style.removeProperty("--glass-opaque-bg");
+    root.style.removeProperty("--glass-border");
+    root.style.removeProperty("--glass-blur");
+    root.style.removeProperty("--glass-saturate");
+    root.style.removeProperty("--glass-highlight");
+    root.style.removeProperty("--glass-shadow");
+
     root.style.removeProperty("--background");
     root.style.removeProperty("--card");
     root.style.removeProperty("--popover");
@@ -996,8 +1227,8 @@ export const TEMA_INLINE_SCRIPT = `
     
     // Cores de fundo imediatas para o meta theme-color
     var bg = isDark
-      ? (paleta === 'interstellar' ? '#0B132B' : paleta === 'big-tech' ? '#121214' : '#0F172A')
-      : (paleta === 'interstellar' ? '#F5F3F4' : paleta === 'big-tech' ? '#F5F5F7' : '#F8FAFC');
+      ? (paleta === 'interstellar' || paleta === 'liquid-glass' ? '#0B132B' : paleta === 'big-tech' ? '#121214' : '#0F172A')
+      : (paleta === 'interstellar' || paleta === 'liquid-glass' ? '#F5F3F4' : paleta === 'big-tech' ? '#F5F5F7' : '#F8FAFC');
       
     var meta = document.querySelector('meta[name="theme-color"]');
     if (!meta) {
@@ -1006,6 +1237,39 @@ export const TEMA_INLINE_SCRIPT = `
       document.head.appendChild(meta);
     }
     meta.setAttribute('content', bg);
+
+    if (paleta === 'liquid-glass') {
+      try {
+        var rawLg = localStorage.getItem('tema-ti-liquid-glass');
+        var lg = rawLg ? JSON.parse(rawLg) : { intensidade: 60, desfoque: 16, brilhoBorda: 70, movimentoFundo: true };
+        var intF = (lg.intensidade || 60) / 100;
+        var blur = lg.desfoque !== undefined ? lg.desfoque : 16;
+        var bB = (lg.brilhoBorda !== undefined ? lg.brilhoBorda : 70) / 100;
+        if (isDark) {
+          var cA = 0.45 + (1 - intF) * 0.40;
+          var bA = bB * 0.35;
+          root.style.setProperty('--glass-bg', 'rgba(28, 37, 65, ' + cA.toFixed(3) + ')');
+          root.style.setProperty('--glass-opaque-bg', 'rgba(15, 23, 42, 0.95)');
+          root.style.setProperty('--glass-border', 'rgba(205, 231, 240, ' + bA.toFixed(3) + ')');
+          root.style.setProperty('--glass-blur', blur + 'px');
+          root.style.setProperty('--glass-saturate', '185%');
+          root.style.setProperty('--background', '#0B132B');
+          root.style.setProperty('--card', 'rgba(28, 37, 65, ' + cA.toFixed(3) + ')');
+          root.style.setProperty('--foreground', '#F8FAFC');
+        } else {
+          var cA = 0.50 + (1 - intF) * 0.38;
+          var bA = bB * 0.65;
+          root.style.setProperty('--glass-bg', 'rgba(255, 255, 255, ' + cA.toFixed(3) + ')');
+          root.style.setProperty('--glass-opaque-bg', 'rgba(255, 255, 255, 0.95)');
+          root.style.setProperty('--glass-border', 'rgba(255, 255, 255, ' + bA.toFixed(3) + ')');
+          root.style.setProperty('--glass-blur', blur + 'px');
+          root.style.setProperty('--glass-saturate', '185%');
+          root.style.setProperty('--background', '#F5F3F4');
+          root.style.setProperty('--card', 'rgba(255, 255, 255, ' + cA.toFixed(3) + ')');
+          root.style.setProperty('--foreground', '#0F172A');
+        }
+      } catch(e){}
+    }
 
     // Carrega cache de regras para Zero FOUC de cores customizadas
     var cachedRegras = localStorage.getItem('tisenai_regras_cache');

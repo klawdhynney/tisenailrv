@@ -165,6 +165,7 @@ export type {
   ModoTema,
   PaletaId,
   PaletaPersonalizadaConfig,
+  LiquidGlassConfig,
   TemaConfig,
   CorBotaoItem,
   CoresBotoesConfig,
@@ -175,6 +176,7 @@ export type {
 } from "./tema";
 import {
   TEMA_CONFIG_PADRAO,
+  LIQUID_GLASS_CONFIG_PADRAO,
   CORES_BOTOES_PADRAO,
   CORES_SITE_PADRAO,
   CATEGORIAS_BOTOES,
@@ -182,7 +184,7 @@ import {
   type CoresBotoesPorTemaConfig,
   type CoresSiteConfig,
 } from "./tema";
-export { CATEGORIAS_BOTOES, CORES_BOTOES_PADRAO, CORES_SITE_PADRAO };
+export { CATEGORIAS_BOTOES, CORES_BOTOES_PADRAO, CORES_SITE_PADRAO, LIQUID_GLASS_CONFIG_PADRAO };
 
 export interface IdentidadeVisualConfig {
   tituloSite: string;

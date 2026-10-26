@@ -19,6 +19,7 @@ import defaultIcone from "@/assets/icone.png";
 import { BotaoRetornar } from "@/components/BotaoRetornar";
 import { ContainerPadrao } from "@/components/ContainerPadrao";
 import { AvisoCadastroPendente } from "@/components/AvisoCadastroPendente";
+import { LiquidGlassBackground } from "@/components/LiquidGlassBackground";
 import { MENU_PADRAO, SEO_PADRAO } from "@/lib/types";
 
 const ASSET_VERSION = "20261006_v6";
@@ -59,6 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       modo: modoTema,
       paleta,
       custom,
+      liquidGlass: regras?.temaConfig?.liquidGlass,
       coresBotoes: regras?.coresBotoes,
       coresSite: regras?.coresSite,
     });
@@ -92,6 +94,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         modo: "auto",
         paleta,
         custom,
+        liquidGlass: regras?.temaConfig?.liquidGlass,
         coresBotoes: regras?.coresBotoes,
         coresSite: regras?.coresSite,
       });
@@ -108,6 +111,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       modo: novo,
       paleta,
       custom,
+      liquidGlass: regras?.temaConfig?.liquidGlass,
       coresBotoes: regras?.coresBotoes,
       coresSite: regras?.coresSite,
     });
@@ -430,7 +434,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen max-w-full overflow-x-hidden flex flex-col justify-between">
+    <div className="min-h-screen max-w-full overflow-x-hidden flex flex-col justify-between relative">
+      <LiquidGlassBackground />
       <header className="fixed top-0 left-0 right-0 z-50 border-b-2 border-border bg-card/95 backdrop-blur pt-[env(safe-area-inset-top)] shadow-2xs">
         <ContainerPadrao className="flex items-center justify-between gap-3 py-2.5 sm:py-3">
           <Link to="/" className="flex shrink-0 items-center gap-2 sm:gap-2.5 group min-h-[44px]" title={`${tituloSite} - Início`}>

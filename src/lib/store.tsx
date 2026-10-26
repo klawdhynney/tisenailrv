@@ -31,6 +31,7 @@ import {
   ATENDIMENTO_PADRAO,
   COLUNAS_ATENDIMENTO_PADRAO,
   MEUS_CHAMADOS_PADRAO,
+  LIQUID_GLASS_CONFIG_PADRAO,
   type ConfiguracaoHistoricoItem,
   type AvaliacaoItemDashboard,
   type Regras,
@@ -225,6 +226,7 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
           corPerigo: "#EA4335",
           corNeutra: "#1F2430",
         },
+        liquidGlass: LIQUID_GLASS_CONFIG_PADRAO,
       }),
       ...(regrasSalvas.temaConfig || {}),
       paletaPersonalizada: {
@@ -236,6 +238,10 @@ function mesclarComPadroes(regrasSalvas: Partial<Regras>): Regras {
           corNeutra: "#1F2430",
         }),
         ...(regrasSalvas.temaConfig?.paletaPersonalizada || {}),
+      },
+      liquidGlass: {
+        ...(REGRAS_PADRAO.temaConfig?.liquidGlass ?? LIQUID_GLASS_CONFIG_PADRAO),
+        ...(regrasSalvas.temaConfig?.liquidGlass || {}),
       },
     },
     coresBotoes: {

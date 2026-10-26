@@ -2899,3 +2899,35 @@ CREATE POLICY "Solicitante ve apenas seus chamados" ON public.tickets
     )
   );
 
+-- ═════════════════════════════════════════════════════════════════════════
+-- 20261026010000: Paleta Liquid Glass (Estilo Apple) em configuracoes
+-- ═════════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS public.configuracoes (
+  id INT PRIMARY KEY,
+  regras JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+INSERT INTO public.configuracoes (id, regras, updated_at)
+VALUES (1, '{}'::jsonb, timezone('utc'::text, now()))
+ON CONFLICT (id) DO NOTHING;
+
+ALTER TABLE public.configuracoes ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'configuracoes'
+      AND policyname = 'Leitura publica de configuracoes'
+  ) THEN
+    CREATE POLICY "Leitura publica de configuracoes"
+      ON public.configuracoes
+      FOR SELECT
+      TO public
+      USING (true);
+  END IF;
+END $$;
+
+
